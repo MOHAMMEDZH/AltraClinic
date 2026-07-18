@@ -1,0 +1,85 @@
+.wrap {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.intro {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.phone {
+  margin: 0;
+  font-size: var(--text-section-title);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.templateBtn {
+  height: 36px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.templateActive {
+  background: color-mix(in srgb, var(--color-primary-500) 10%, var(--color-surface));
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-700);
+}
+
+.messageField {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.messageLabel {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
+  color: var(--color-on-primary, #fff);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primaryBtn:hover {
+  background: var(--color-primary-700);
+}

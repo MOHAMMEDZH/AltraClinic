@@ -1,0 +1,17 @@
+.panel { display: grid; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.title { margin: 0; font-size: var(--text-base); font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); }
+.card { display: grid; gap: var(--space-1); padding: var(--space-3); border-radius: var(--radius-md); background: color-mix(in srgb, var(--color-border) 12%, transparent); }
+.label { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.card strong { font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+.good { color: var(--color-success); }
+.warn { color: var(--color-warning); }
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th, .table td { padding: var(--space-2); border-bottom: 1px solid var(--color-border-subtle); text-align: start; }
+.table th { font-size: var(--text-xs); color: var(--color-text-secondary); }
+.hint { margin: 0; font-size: var(--text-sm); color: var(--color-text-tertiary); }
+.error { margin: 0; font-size: var(--text-sm); color: var(--color-danger); }
+.srOnly {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

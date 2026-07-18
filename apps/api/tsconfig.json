@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "declaration": false,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+    "@booking/dashboard-export": ["../../packages/dashboard-export/src/index.ts"],
+    "@booking/dashboard-export/node": ["../../packages/dashboard-export/src/node.ts"],
+    "@booking/dashboard-export/pdf": ["../../packages/dashboard-export/src/pdf.ts"],
+    "@booking/dashboard-export/excel": ["../../packages/dashboard-export/src/excel.ts"],
+    "@booking/module-registry": ["../../packages/module-registry/src/index.ts"],
+    "@booking/module-registry/notification": ["../../packages/module-registry/src/notification/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
+}

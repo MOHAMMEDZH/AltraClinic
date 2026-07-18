@@ -1,0 +1,70 @@
+import {
+  ACTIVITY_BUILTIN_PROVIDER_KEY,
+  ACTIVITY_CONTRIBUTION_SCHEMA_VERSION,
+  type CanonicalActivityHub,
+} from './activity-types';
+
+/** Activity navigation hubs — declared on notifications module only. */
+export const CANONICAL_ACTIVITY_HUBS: readonly CanonicalActivityHub[] = [
+  {
+    hubId: 'activity-center',
+    localId: 'hub-activity-center',
+    moduleId: 'notifications',
+    activityKind: 'hub',
+    ownerModuleId: 'platform',
+    providerKey: ACTIVITY_BUILTIN_PROVIDER_KEY,
+    labelKey: 'activity.hub.center',
+    descriptionKey: 'activity.hub.center.description',
+    route: '/activity',
+    deepLinkTemplate: '/activity',
+    resourceId: 'api.notifications',
+    actions: ['view', 'export'],
+    branchScope: 'cross-branch',
+    retentionPolicy: 'hot-90d',
+    archivePolicy: 'archive-after-hot',
+    sortOrder: 0,
+    contributionSchemaVersion: ACTIVITY_CONTRIBUTION_SCHEMA_VERSION,
+  },
+  {
+    hubId: 'security-feed',
+    localId: 'hub-security-feed',
+    moduleId: 'notifications',
+    activityKind: 'hub',
+    ownerModuleId: 'platform',
+    providerKey: ACTIVITY_BUILTIN_PROVIDER_KEY,
+    labelKey: 'activity.hub.security',
+    descriptionKey: 'activity.hub.security.description',
+    route: '/activity/security',
+    deepLinkTemplate: '/activity/security',
+    resourceId: 'api.identity',
+    actions: ['view', 'export'],
+    branchScope: 'tenant',
+    retentionPolicy: 'hot-730d',
+    archivePolicy: 'legal-hold-compatible',
+    sortOrder: 10,
+    contributionSchemaVersion: ACTIVITY_CONTRIBUTION_SCHEMA_VERSION,
+  },
+  {
+    hubId: 'mine-feed',
+    localId: 'hub-mine-feed',
+    moduleId: 'notifications',
+    activityKind: 'hub',
+    ownerModuleId: 'platform',
+    providerKey: ACTIVITY_BUILTIN_PROVIDER_KEY,
+    labelKey: 'activity.hub.mine',
+    descriptionKey: 'activity.hub.mine.description',
+    route: '/activity/mine',
+    deepLinkTemplate: '/activity/mine',
+    resourceId: 'api.notifications',
+    actions: ['view'],
+    branchScope: 'cross-branch',
+    retentionPolicy: 'hot-90d',
+    archivePolicy: 'archive-after-hot',
+    sortOrder: 20,
+    contributionSchemaVersion: ACTIVITY_CONTRIBUTION_SCHEMA_VERSION,
+  },
+] as const;
+
+export const CANONICAL_ACTIVITY_HUB_COUNT = CANONICAL_ACTIVITY_HUBS.length;
+
+export const CANONICAL_ACTIVITY_HUB_IDS = CANONICAL_ACTIVITY_HUBS.map((h) => h.hubId);

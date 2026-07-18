@@ -1,0 +1,157 @@
+.wrap {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.bopSwatch {
+  background: var(--color-danger);
+  border-radius: 50%;
+}
+.archBlock {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.archLabel {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+}
+.archScroll {
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+}
+.arch {
+  display: grid;
+  grid-template-columns: repeat(16, 44px);
+  gap: 6px;
+  width: max-content;
+  min-width: min(100%, 734px);
+}
+.midline {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-1) 0;
+}
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 48px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.1s, border-color 0.15s;
+  font-variant-numeric: tabular-nums;
+}
+.cell:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+.cell:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+.missing {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.num {
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+  line-height: 1;
+}
+.pd {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.bop {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+.mobility {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--color-warning);
+}
+.delta {
+  position: absolute;
+  bottom: 1px;
+  font-size: 8px;
+  font-weight: 700;
+}
+.deltaGood {
+  color: var(--color-success);
+}
+.deltaBad {
+  color: var(--color-danger);
+}
+.pd_healthy {
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+}
+.pd_watch {
+  background: color-mix(in srgb, #eab308 14%, var(--color-surface));
+  border-color: color-mix(in srgb, #eab308 40%, var(--color-border));
+}
+.pd_moderate {
+  background: color-mix(in srgb, #f97316 14%, var(--color-surface));
+  border-color: color-mix(in srgb, #f97316 40%, var(--color-border));
+}
+.pd_severe {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+}
+.pd_critical {
+  background: color-mix(in srgb, var(--color-danger) 22%, var(--color-surface));
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}

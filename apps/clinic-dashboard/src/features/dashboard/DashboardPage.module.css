@@ -1,0 +1,650 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  width: 100%;
+  padding-bottom: var(--space-10);
+}
+
+.pageExecutive .badge {
+  background: color-mix(in srgb, var(--color-primary-500) 14%, var(--color-surface));
+  color: var(--color-primary-800);
+}
+
+.pageClinical .badge {
+  background: color-mix(in srgb, var(--color-secondary-500) 14%, var(--color-surface));
+  color: var(--color-secondary-800);
+}
+
+.pageOperational .badge {
+  background: color-mix(in srgb, var(--color-info) 14%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-info) 80%, black);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.headerMain {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, var(--text-page-title));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  max-width: 56ch;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--color-text-tertiary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary-500) 10%, var(--color-surface));
+  color: var(--color-primary-700);
+  font-weight: 600;
+}
+
+.rangeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.toolbarScroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .toolbarScroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: var(--space-1);
+    scrollbar-width: thin;
+  }
+}
+
+.toolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.toolbarBtn:hover {
+  background: var(--color-bg);
+  border-color: color-mix(in srgb, var(--color-primary-500) 35%, var(--color-border));
+}
+
+.toolbarBtnActive {
+  border-color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface));
+}
+
+.toolbarBtnCompact {
+  padding-inline: var(--space-2);
+  font-size: var(--text-caption);
+}
+
+.customRangeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.customRangeField {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+}
+
+.customRangeLabel {
+  font-weight: 500;
+}
+
+.customRangeInput {
+  height: 40px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.kpiCardLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.kpiCardLink:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.drillLink {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-primary-700);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.drillLink:hover {
+  text-decoration: underline;
+}
+
+.listItemLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.listItemLink:hover .listPrimary {
+  color: var(--color-primary-600);
+}
+
+.performanceLink {
+  display: grid;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.performanceLink:hover .listPrimary {
+  color: var(--color-primary-600);
+}
+
+.healthItemLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.healthItemLink:hover .healthItem {
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, var(--color-border));
+}
+
+.emptyFilter {
+  grid-column: 1 / -1;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.searchWrap {
+  position: relative;
+  min-width: min(100%, 280px);
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding-inline: var(--space-10) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.spanFull {
+  grid-column: 1 / -1;
+}
+
+.spanHalf {
+  grid-column: span 6;
+}
+
+.spanThird {
+  grid-column: span 4;
+}
+
+.spanTwoThirds {
+  grid-column: span 8;
+}
+
+@media (max-width: 1024px) {
+  .spanHalf,
+  .spanThird,
+  .spanTwoThirds {
+    grid-column: 1 / -1;
+  }
+}
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  animation: widgetEnter var(--transition-normal) ease-out both;
+}
+
+@keyframes widgetEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget {
+    animation: none;
+  }
+
+  .spin,
+  :global(.spin) {
+    animation: none;
+  }
+}
+
+.widgetHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.widgetTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.widgetDesc {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+}
+
+.widgetBody {
+  flex: 1;
+  padding: var(--space-4) var(--space-5);
+  min-height: 120px;
+}
+
+.widgetFooter {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-caption);
+  color: var(--color-text-tertiary);
+}
+
+.kpiGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.kpiCard {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.kpiCard:hover {
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.kpiLabel {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpiValue {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpiDelta {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+.deltaUp {
+  color: var(--color-success);
+}
+
+.deltaDown {
+  color: var(--color-error);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  border: 1px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.listItem:hover {
+  border-color: var(--color-border);
+}
+
+.listPrimary {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--text-body);
+}
+
+.listSecondary {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+.statusConfirmed {
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  color: #14532d;
+}
+
+.statusPending {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  color: #92400e;
+}
+
+.statusWaiting {
+  background: color-mix(in srgb, var(--color-info) 12%, var(--color-surface));
+  color: #1d4ed8;
+}
+
+.chartWrap {
+  width: 100%;
+  height: 240px;
+  min-height: 200px;
+}
+
+/* Recharts applies series stroke color inline on tooltip text — override for WCAG AA contrast */
+.chartWrap :global(.recharts-tooltip-item-name),
+.chartWrap :global(.recharts-tooltip-item-value),
+.chartWrap :global(.recharts-tooltip-label) {
+  color: var(--color-text-primary) !important;
+}
+
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.quickAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: var(--text-body);
+  text-decoration: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quickAction:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-bg));
+  border-color: color-mix(in srgb, var(--color-primary-500) 35%, var(--color-border));
+}
+
+.empty,
+.error,
+.skeleton {
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  min-height: 120px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--text-body);
+}
+
+.skeletonBlock {
+  width: 100%;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 0%,
+    color-mix(in srgb, var(--color-border) 50%, var(--color-bg)) 50%,
+    var(--color-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.offlineNote {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  color: var(--color-text-primary);
+  font-size: var(--text-body);
+}
+
+.healthGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.healthItem {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.healthScore {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
+.staleDotOffline {
+  background: var(--color-warning);
+}
+
+.staleDotLive {
+  background: var(--color-info);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-info) 25%, transparent);
+}
+
+.branchSelectWrap {
+  display: inline-flex;
+  min-width: min(100%, 180px);
+}
+
+.branchSelect {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding-inline: var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.staleDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.performanceList {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.performanceItem {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.performanceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.performanceBarTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.performanceBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary-500);
+  min-width: 4px;
+}
+
+.notificationUnread {
+  border-inline-start: 3px solid var(--color-primary-500);
+  padding-inline-start: var(--space-2);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin,
+:global(.spin) {
+  animation: spin 0.8s linear infinite;
+}

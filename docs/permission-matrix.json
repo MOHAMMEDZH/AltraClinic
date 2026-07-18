@@ -1,0 +1,603 @@
+{
+  "version": "2026-06-16.enterprise.v3",
+  "_comment": "Runtime permission matrix. 7 actions: view/create/update/delete/approve/export/manage. 12 roles.",
+  "roles": [
+    { "key": "super_admin",        "name": "Super Admin",        "inherits": [] },
+    { "key": "owner",              "name": "Owner",               "inherits": [] },
+    { "key": "general_manager",    "name": "General Manager",     "inherits": [] },
+    { "key": "doctor",             "name": "Doctor",              "inherits": [] },
+    { "key": "dentist",            "name": "Dentist",             "inherits": [] },
+    { "key": "specialist",         "name": "Specialist",          "inherits": [] },
+    { "key": "nurse",              "name": "Nurse",               "inherits": [] },
+    { "key": "assistant",          "name": "Assistant",           "inherits": [] },
+    { "key": "receptionist",       "name": "Receptionist",        "inherits": [] },
+    { "key": "accountant",         "name": "Accountant",          "inherits": [] },
+    { "key": "inventory_manager",  "name": "Inventory Manager",   "inherits": [] },
+    { "key": "patient",            "name": "Patient",             "inherits": [] }
+  ],
+  "actions": ["view", "create", "update", "delete", "approve", "export", "manage"],
+  "resources": [
+
+    {
+      "id": "api.identity",
+      "kind": "api",
+      "name": "Identity / User Management API",
+      "description": "User registration, profile retrieval, role management.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner"],
+        "delete":  ["super_admin"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/identity/register",  "action": "create" },
+        { "method": "GET",  "path": "/identity/:id",       "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.search",
+      "kind": "api",
+      "name": "Global Search API",
+      "description": "Tenant-scoped unified search across permitted entities (Cmd+K).",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist", "accountant", "inventory_manager"],
+        "create":  ["super_admin"],
+        "update":  ["super_admin"],
+        "delete":  ["super_admin"],
+        "approve": ["super_admin"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/search", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.patients",
+      "kind": "api",
+      "name": "Patients API",
+      "description": "Patient demographics, records, and search.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/patients",     "action": "create" },
+        { "method": "GET",  "path": "/patients/:id", "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.scheduling",
+      "kind": "api",
+      "name": "Scheduling / Appointments API",
+      "description": "Appointment booking, reschedule, cancellation.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist", "patient"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant", "patient"],
+        "update":  ["super_admin", "owner", "general_manager", "receptionist", "assistant", "doctor", "dentist", "specialist"],
+        "delete":  ["super_admin", "owner", "general_manager", "receptionist"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "receptionist"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/scheduling/appointments",     "action": "create" },
+        { "method": "GET",  "path": "/scheduling/appointments/:id", "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.queue",
+      "kind": "api",
+      "name": "Queue API",
+      "description": "Real-time waiting queue management.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "receptionist", "assistant", "doctor", "dentist", "specialist", "nurse"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "receptionist", "assistant"],
+        "delete":  ["super_admin", "owner", "general_manager"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/queue/waiting", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.emr",
+      "kind": "api",
+      "name": "EMR / Encounters API",
+      "description": "Clinical encounters, diagnoses, medications, observations.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant"],
+        "create":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse"],
+        "update":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist"],
+        "export":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET",  "path": "/emr/encounters/metrics/summary", "action": "view"   },
+        { "method": "GET",  "path": "/emr/encounters/clinical-inventory/items", "action": "view" },
+        { "method": "GET",  "path": "/emr/encounters",                  "action": "view"   },
+        { "method": "POST", "path": "/emr/encounters",                  "action": "create" },
+        { "method": "GET",  "path": "/emr/encounters/:id/materials",    "action": "view"   },
+        { "method": "POST", "path": "/emr/encounters/:id/materials",    "action": "update" },
+        { "method": "GET",  "path": "/emr/encounters/:id",              "action": "view"   },
+        { "method": "PATCH","path": "/emr/encounters/:id",              "action": "update" }
+      ]
+    },
+
+    {
+      "id": "api.dental",
+      "kind": "api",
+      "name": "Dental API",
+      "description": "Dental treatment records, charting, procedures.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "dentist", "doctor", "assistant"],
+        "create":  ["super_admin", "owner", "general_manager", "dentist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "dentist", "assistant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager", "dentist"],
+        "export":  ["super_admin", "owner", "general_manager", "dentist"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET",  "path": "/dental/metrics/summary",        "action": "view"   },
+        { "method": "GET",  "path": "/dental/overview",               "action": "view"   },
+        { "method": "GET",  "path": "/dental/procedure-materials", "action": "view" },
+        { "method": "POST", "path": "/dental/procedure-materials", "action": "manage" },
+        { "method": "GET",  "path": "/dental/clinical-inventory/items", "action": "view" },
+        { "method": "POST", "path": "/dental/chart",                  "action": "create" },
+        { "method": "GET",  "path": "/dental/chart/:patientId",       "action": "view"   },
+        { "method": "GET",  "path": "/dental/chart/:patientId/materials", "action": "view" },
+        { "method": "POST", "path": "/dental/chart/:patientId/materials", "action": "update" },
+        { "method": "POST", "path": "/dental/chart/:patientId/materials/batch", "action": "update" },
+        { "method": "PATCH","path": "/dental/chart/:patientId/teeth", "action": "update" },
+        { "method": "POST", "path": "/dental/treatment",              "action": "create" }
+      ]
+    },
+
+    {
+      "id": "api.beauty",
+      "kind": "api",
+      "name": "Beauty / Aesthetic Services API",
+      "description": "Beauty workspace records (consultations, treatment plans, sessions, annotations). Legacy /beauty/service routes are deprecated — use /beauty/record.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "specialist", "assistant", "receptionist"],
+        "create":  ["super_admin", "owner", "general_manager", "specialist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "specialist", "assistant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET",   "path": "/beauty/metrics/summary",                 "action": "view"   },
+        { "method": "GET",   "path": "/beauty/overview",                        "action": "view"   },
+        { "method": "GET",   "path": "/beauty/analytics",                       "action": "view"   },
+        { "method": "GET",   "path": "/beauty/record/:patientId",               "action": "view"   },
+        { "method": "POST",  "path": "/beauty/record",                          "action": "create" },
+        { "method": "PATCH", "path": "/beauty/record/:patientId",               "action": "update" },
+        { "method": "POST",  "path": "/beauty/record/:patientId/annotations", "action": "create" },
+        { "method": "GET",  "path": "/beauty/procedure-materials", "action": "view" },
+        { "method": "POST", "path": "/beauty/procedure-materials", "action": "manage" },
+        { "method": "GET",  "path": "/beauty/clinical-inventory/items", "action": "view" },
+        { "method": "GET",  "path": "/beauty/record/:patientId/materials", "action": "view" },
+        { "method": "POST", "path": "/beauty/record/:patientId/materials", "action": "update" },
+        { "method": "POST", "path": "/beauty/record/:patientId/materials/batch", "action": "update" },
+        { "method": "POST",  "path": "/beauty/service",                         "action": "create", "notes": "DEPRECATED — use POST /beauty/record. Removal planned Phase 3 (target 2026-09-15)." },
+        { "method": "GET",   "path": "/beauty/service/:id",                     "action": "view",   "notes": "DEPRECATED — use GET /beauty/record/:patientId. Removal planned Phase 3 (target 2026-09-15)." }
+      ]
+    },
+
+    {
+      "id": "api.inventory",
+      "kind": "api",
+      "name": "Inventory API",
+      "description": "Inventory items, stock levels, consumption tracking.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "inventory_manager", "assistant", "accountant", "doctor", "dentist", "specialist", "receptionist"],
+        "create":  ["super_admin", "owner", "general_manager", "inventory_manager"],
+        "update":  ["super_admin", "owner", "general_manager", "inventory_manager", "assistant", "doctor", "dentist", "specialist"],
+        "delete":  ["super_admin", "owner", "general_manager"],
+        "approve": ["super_admin", "owner", "general_manager", "inventory_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "inventory_manager", "accountant"],
+        "manage":  ["super_admin", "owner", "general_manager", "inventory_manager"]
+      },
+      "operations": [
+        { "method": "GET",  "path": "/inventory/categories",           "action": "view"   },
+        { "method": "POST", "path": "/inventory/categories",           "action": "manage" },
+        { "method": "GET",  "path": "/inventory/suppliers",            "action": "view"   },
+        { "method": "POST", "path": "/inventory/suppliers",            "action": "manage" },
+        { "method": "GET",  "path": "/inventory/suppliers/:supplierId", "action": "view"  },
+        { "method": "PATCH", "path": "/inventory/suppliers/:supplierId", "action": "manage" },
+        { "method": "POST", "path": "/inventory/suppliers/:supplierId/deactivate", "action": "manage" },
+        { "method": "POST", "path": "/inventory/suppliers/:supplierId/reactivate", "action": "manage" },
+        { "method": "GET",  "path": "/inventory/purchase-orders", "action": "view" },
+        { "method": "POST", "path": "/inventory/purchase-orders", "action": "create" },
+        { "method": "GET",  "path": "/inventory/purchase-orders/:orderId", "action": "view" },
+        { "method": "POST", "path": "/inventory/purchase-orders/:orderId/submit", "action": "update" },
+        { "method": "POST", "path": "/inventory/purchase-orders/:orderId/approve", "action": "approve" },
+        { "method": "POST", "path": "/inventory/purchase-orders/:orderId/cancel", "action": "update" },
+        { "method": "POST", "path": "/inventory/purchase-orders/lines/:lineId/receive", "action": "update" },
+        { "method": "GET",  "path": "/inventory/stock-requests", "action": "view" },
+        { "method": "POST", "path": "/inventory/stock-requests", "action": "update" },
+        { "method": "GET",  "path": "/inventory/stock-requests/:requestId", "action": "view" },
+        { "method": "POST", "path": "/inventory/stock-requests/:requestId/submit", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-requests/:requestId/approve", "action": "approve" },
+        { "method": "POST", "path": "/inventory/stock-requests/:requestId/reject", "action": "approve" },
+        { "method": "POST", "path": "/inventory/stock-requests/:requestId/cancel", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-requests/lines/:lineId/fulfill", "action": "update" },
+        { "method": "GET",  "path": "/inventory/movements",              "action": "view"   },
+        { "method": "GET",  "path": "/inventory/consumptions",           "action": "view"   },
+        { "method": "POST", "path": "/inventory/item/:itemId/adjust",    "action": "update" },
+        { "method": "GET",  "path": "/inventory/summary",              "action": "view"   },
+        { "method": "GET",  "path": "/inventory/analytics",            "action": "view"   },
+        { "method": "GET",  "path": "/inventory/expiry/summary",       "action": "view"   },
+        { "method": "GET",  "path": "/inventory/batches",              "action": "view"   },
+        { "method": "GET",  "path": "/inventory/item/:itemId/batches", "action": "view"   },
+        { "method": "POST", "path": "/inventory/batch/:batchId/dispose", "action": "update" },
+        { "method": "POST", "path": "/inventory/item",                 "action": "create" },
+        { "method": "PATCH", "path": "/inventory/item/:itemId",        "action": "update" },
+        { "method": "POST", "path": "/inventory/item/:itemId/receive", "action": "update" },
+        { "method": "POST", "path": "/inventory/item/:itemId/archive", "action": "delete" },
+        { "method": "POST", "path": "/inventory/item/:itemId/reactivate", "action": "update" },
+        { "method": "POST", "path": "/inventory/item/consume",         "action": "update" },
+        { "method": "GET",  "path": "/inventory/lookup",                   "action": "view"   },
+        { "method": "GET",  "path": "/inventory/items/export",             "action": "export" },
+        { "method": "POST", "path": "/inventory/items/bulk-archive",       "action": "delete" },
+        { "method": "GET",  "path": "/inventory/item/:itemId",         "action": "view"   },
+        { "method": "GET",  "path": "/inventory/items",                "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.billing",
+      "kind": "api",
+      "name": "Billing / Invoices API",
+      "description": "Invoice creation, line items, payments, cancellations.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager", "accountant"],
+        "update":  ["super_admin", "owner", "general_manager", "accountant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager", "accountant"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/billing/invoices",                        "action": "create"  },
+        { "method": "POST", "path": "/billing/invoices/bill-consumptions",       "action": "create"  },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/line-items",  "action": "update"  },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/issue",       "action": "update"  },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/payments",    "action": "approve" },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/cancel",      "action": "delete"  },
+        { "method": "GET",  "path": "/billing/invoices/:invoiceId",             "action": "view"    },
+        { "method": "GET",  "path": "/billing/invoices",                        "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.commission",
+      "kind": "api",
+      "name": "Commission API",
+      "description": "Commission calculation, rules, approvals, and disputes.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager", "accountant"],
+        "update":  ["super_admin", "owner", "general_manager", "accountant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager", "accountant"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/commissions/calculate",              "action": "create"  },
+        { "method": "POST", "path": "/commissions/rules",                  "action": "manage"  },
+        { "method": "POST", "path": "/commissions/:commissionId/approve",  "action": "approve" },
+        { "method": "POST", "path": "/commissions/:commissionId/pay",      "action": "approve" },
+        { "method": "POST", "path": "/commissions/:commissionId/dispute",  "action": "update"  },
+        { "method": "GET",  "path": "/commissions/:commissionId",          "action": "view"    },
+        { "method": "GET",  "path": "/commissions",                        "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.subscription",
+      "kind": "api",
+      "name": "Subscription API",
+      "description": "Clinic subscription plans, activation, cancellation.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/subscriptions",                       "action": "create" },
+        { "method": "POST", "path": "/subscriptions/:subscriptionId/cancel","action": "delete" },
+        { "method": "GET",  "path": "/subscriptions/:subscriptionId",       "action": "view"   },
+        { "method": "GET",  "path": "/subscriptions",                       "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.notifications",
+      "kind": "api",
+      "name": "Notifications API",
+      "description": "Send, list, and acknowledge notifications.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist", "accountant", "inventory_manager", "patient"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist", "accountant", "inventory_manager", "patient"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/notifications",                       "action": "create" },
+        { "method": "GET",  "path": "/notifications/:notificationId",       "action": "view"   },
+        { "method": "GET",  "path": "/notifications",                       "action": "view"   },
+        { "method": "POST", "path": "/notifications/:notificationId/read",  "action": "update" }
+      ]
+    },
+
+    {
+      "id": "api.audit",
+      "kind": "api",
+      "name": "Audit Log API",
+      "description": "Immutable audit trail for all system events.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin"],
+        "delete":  ["super_admin"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/audit/entries",      "action": "create" },
+        { "method": "GET",  "path": "/audit/entries/:id",  "action": "view"   },
+        { "method": "GET",  "path": "/audit/entries",      "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.loyalty",
+      "kind": "api",
+      "name": "Loyalty API",
+      "description": "Loyalty accounts, point earning, redemption, rewards.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist", "patient"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant"],
+        "update":  ["super_admin", "owner", "general_manager", "assistant", "receptionist", "patient"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/loyalty/accounts",                           "action": "create"  },
+        { "method": "GET",  "path": "/loyalty/accounts/:accountId",                "action": "view"    },
+        { "method": "POST", "path": "/loyalty/accounts/:accountId/earn",           "action": "update"  },
+        { "method": "POST", "path": "/loyalty/accounts/:accountId/redeem",         "action": "update"  },
+        { "method": "POST", "path": "/loyalty/accounts/:accountId/suspend",        "action": "approve" },
+        { "method": "POST", "path": "/loyalty/accounts/:accountId/reactivate",     "action": "approve" },
+        { "method": "POST", "path": "/loyalty/rewards",                            "action": "create"  },
+        { "method": "GET",  "path": "/loyalty/rewards",                            "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.reporting",
+      "kind": "report",
+      "name": "Reporting API",
+      "description": "Operational and clinical report generation.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "accountant", "doctor", "dentist", "specialist"],
+        "create":  ["super_admin", "owner", "general_manager", "accountant"],
+        "update":  ["super_admin", "owner", "general_manager", "accountant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant", "doctor", "dentist", "specialist"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST",   "path": "/reporting/reports",                    "action": "create" },
+        { "method": "GET",    "path": "/reporting/reports/:reportId",          "action": "view"   },
+        { "method": "GET",    "path": "/reporting/reports",                    "action": "view"   },
+        { "method": "EXPORT", "path": "/reporting/reports/:reportId/export",   "action": "export" }
+      ]
+    },
+
+    {
+      "id": "api.analytics",
+      "kind": "report",
+      "name": "Analytics API",
+      "description": "Business intelligence metrics, dashboards, and analytics reports.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "accountant", "inventory_manager"],
+        "create":  ["super_admin", "owner", "general_manager", "accountant"],
+        "update":  ["super_admin", "owner", "general_manager", "accountant"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager", "accountant", "doctor", "dentist", "specialist", "inventory_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST",   "path": "/analytics/metrics",                       "action": "create" },
+        { "method": "GET",    "path": "/analytics/metrics/:metricId",              "action": "view"   },
+        { "method": "GET",    "path": "/analytics/metrics",                        "action": "view"   },
+        { "method": "POST",   "path": "/analytics/dashboards",                     "action": "create" },
+        { "method": "GET",    "path": "/analytics/dashboards/:dashboardId",        "action": "view"   },
+        { "method": "GET",    "path": "/analytics/dashboards",                     "action": "view"   },
+        { "method": "POST",   "path": "/analytics/reports",                        "action": "create" },
+        { "method": "GET",    "path": "/analytics/reports/:reportId",              "action": "view"   },
+        { "method": "GET",    "path": "/analytics/reports",                        "action": "view"   },
+        { "method": "EXPORT", "path": "/analytics/reports/:reportId/export",       "action": "export" }
+      ]
+    },
+
+    {
+      "id": "api.workflow",
+      "kind": "operation",
+      "name": "Workflow API",
+      "description": "Clinical and operational workflow lifecycle management.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager", "assistant", "receptionist"],
+        "delete":  ["super_admin", "owner", "general_manager"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/workflows",                          "action": "create" },
+        { "method": "POST", "path": "/workflows/:workflowId/advance",      "action": "update" },
+        { "method": "POST", "path": "/workflows/:workflowId/cancel",       "action": "delete" },
+        { "method": "GET",  "path": "/workflows/:workflowId",              "action": "view"   },
+        { "method": "GET",  "path": "/workflows",                          "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.ai",
+      "kind": "operation",
+      "name": "AI Models API",
+      "description": "AI/ML model lifecycle: creation, validation, deployment, retirement.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "specialist", "doctor"],
+        "create":  ["super_admin", "owner", "general_manager", "specialist"],
+        "update":  ["super_admin", "owner", "general_manager", "specialist"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/ai/models",                    "action": "create"  },
+        { "method": "POST", "path": "/ai/models/:modelId/validate",  "action": "approve" },
+        { "method": "POST", "path": "/ai/models/:modelId/deploy",    "action": "approve" },
+        { "method": "POST", "path": "/ai/models/:modelId/retire",    "action": "delete"  },
+        { "method": "GET",  "path": "/ai/models/:modelId",           "action": "view"    },
+        { "method": "GET",  "path": "/ai/models",                    "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.patient_portal",
+      "kind": "api",
+      "name": "Patient Portal API",
+      "description": "Patient portal account lifecycle, caregiver access management.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "receptionist", "assistant", "patient"],
+        "create":  ["super_admin", "owner", "general_manager", "receptionist", "assistant", "patient"],
+        "update":  ["super_admin", "owner", "general_manager", "receptionist", "assistant", "patient"],
+        "delete":  ["super_admin", "owner", "general_manager", "receptionist"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "POST",  "path": "/patient-portal/accounts",                                        "action": "create"  },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/activate",              "action": "approve" },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/suspend",               "action": "approve" },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/reactivate",            "action": "approve" },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/deactivate",            "action": "delete"  },
+        { "method": "PATCH", "path": "/patient-portal/accounts/:portalAccountId/preferences",           "action": "update"  },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/caregiver-access",      "action": "create"  },
+        { "method": "POST",  "path": "/patient-portal/accounts/:portalAccountId/caregiver-access/:grantId/revoke", "action": "delete" },
+        { "method": "GET",   "path": "/patient-portal/accounts/:portalAccountId",                       "action": "view"    },
+        { "method": "GET",   "path": "/patient-portal/accounts",                                        "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.platform_admin",
+      "kind": "operation",
+      "name": "Platform Admin API",
+      "description": "Super-admin control plane: tenant provisioning, suspension, plan management, privileged access.",
+      "permissions": {
+        "view":    ["super_admin"],
+        "create":  ["super_admin"],
+        "update":  ["super_admin"],
+        "delete":  ["super_admin"],
+        "approve": ["super_admin"],
+        "export":  ["super_admin"],
+        "manage":  ["super_admin"]
+      },
+      "operations": [
+        { "method": "POST",  "path": "/platform/tenants",                                                          "action": "create"  },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/activate",                              "action": "approve" },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/suspend",                               "action": "approve" },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/resume",                                "action": "approve" },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/archive",                               "action": "delete"  },
+        { "method": "PATCH", "path": "/platform/tenants/:platformTenantId/plan",                                  "action": "manage"  },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access",                     "action": "create"  },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access/:grantId/approve",    "action": "approve" },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access/:grantId/reject",     "action": "approve" },
+        { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access/:grantId/revoke",     "action": "delete"  },
+        { "method": "GET",   "path": "/platform/tenants/:platformTenantId",                                       "action": "view"    },
+        { "method": "GET",   "path": "/platform/tenants",                                                         "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.tenant",
+      "kind": "api",
+      "name": "Tenant API",
+      "description": "Clinic tenant configuration and settings.",
+      "permissions": {
+        "view":    ["super_admin", "owner"],
+        "create":  ["super_admin", "owner"],
+        "update":  ["super_admin", "owner"],
+        "delete":  ["super_admin"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "POST", "path": "/tenants",      "action": "create" },
+        { "method": "GET",  "path": "/tenants/:id",  "action": "view"   }
+      ]
+    },
+
+    {
+      "id": "api.importExport",
+      "kind": "api",
+      "name": "Import / Export Center API",
+      "description": "Import/Export Center orchestration platform (foundation). Business adapters remain in owning modules.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": []
+    }
+  ]
+}

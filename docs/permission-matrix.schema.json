@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://booking-system.local/schemas/permission-matrix.schema.json",
+  "title": "Permission Matrix",
+  "type": "object",
+  "required": ["version", "roles", "actions", "resources"],
+  "properties": {
+    "version": { "type": "string", "minLength": 1 },
+    "roles": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["key", "name"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z_]+$" },
+          "name": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "actions": {
+      "type": "array",
+      "const": ["view", "create", "update", "delete", "approve", "export"]
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "permissions", "operations"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_.-]+$" },
+          "kind": { "type": "string", "enum": ["screen", "api", "report", "operation", "export"] },
+          "name": { "type": "string", "minLength": 1 },
+          "permissions": {
+            "type": "object",
+            "required": ["view", "create", "update", "delete", "approve", "export"],
+            "properties": {
+              "view": { "$ref": "#/$defs/roleList" },
+              "create": { "$ref": "#/$defs/roleList" },
+              "update": { "$ref": "#/$defs/roleList" },
+              "delete": { "$ref": "#/$defs/roleList" },
+              "approve": { "$ref": "#/$defs/roleList" },
+              "export": { "$ref": "#/$defs/roleList" }
+            },
+            "additionalProperties": false
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["method", "path", "action"],
+              "properties": {
+                "method": { "type": "string", "enum": ["GET", "POST", "PATCH", "PUT", "DELETE", "SCREEN", "EXPORT"] },
+                "path": { "type": "string", "minLength": 1 },
+                "action": { "type": "string", "enum": ["view", "create", "update", "delete", "approve", "export"] },
+                "notes": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "roleList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z_]+$" }
+    }
+  },
+  "additionalProperties": false
+}

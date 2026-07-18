@@ -1,0 +1,68 @@
+.builder { display: grid; gap: var(--space-4); }
+.phaseCard {
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  background: var(--color-surface); overflow: hidden;
+}
+.phaseHead {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border);
+}
+.visitNum {
+  padding: var(--space-1) var(--space-2); border-radius: var(--radius-full);
+  font-size: var(--text-xs); font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent); color: var(--color-accent);
+}
+.phaseName { margin: 0; flex: 1; font-size: var(--text-sm); font-weight: 700; }
+.phaseNameInput {
+  flex: 1; min-width: 160px; padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  font-size: var(--text-sm); font-weight: 600; background: var(--color-surface);
+}
+.dateInput {
+  padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); font-size: var(--text-xs); background: var(--color-surface);
+}
+.procList { list-style: none; margin: 0; padding: var(--space-2); display: grid; gap: var(--space-2); }
+.procRow {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-surface); transition: opacity 0.15s, box-shadow 0.15s;
+}
+.procRow:hover { box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 8%, transparent); }
+.dragging { opacity: 0.45; }
+.grip { flex-shrink: 0; margin-top: 2px; color: var(--color-text-tertiary); cursor: grab; }
+.procMain { flex: 1; min-width: 0; display: grid; gap: var(--space-2); }
+.procTop { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; }
+.code { font-size: var(--text-xs); font-weight: 700; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.desc { font-size: var(--text-sm); font-weight: 600; }
+.procMeta { margin: 0; font-size: var(--text-xs); color: var(--color-text-secondary); display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.procFields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-2); }
+.procFields label { display: grid; gap: 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-tertiary); }
+.procFields input, .procFields select {
+  padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); font-size: var(--text-sm); background: var(--color-surface);
+}
+.depLabel { grid-column: 1 / -1; }
+.removeBtn {
+  flex-shrink: 0; padding: var(--space-1); border: none; background: transparent;
+  color: var(--color-text-tertiary); cursor: pointer; border-radius: var(--radius-sm);
+}
+.removeBtn:hover { color: #ef4444; background: color-mix(in srgb, #ef4444 8%, transparent); }
+.depBadge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
+  border-radius: var(--radius-full); font-size: 10px; font-weight: 600;
+  background: var(--color-surface-subtle); color: var(--color-text-secondary);
+}
+.addRow { padding: var(--space-2) var(--space-4) var(--space-4); }
+.catalog {
+  display: grid; gap: 2px; max-height: 240px; overflow-y: auto;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);
+}
+.catalogItem {
+  display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-2); align-items: center;
+  padding: var(--space-2) var(--space-3); border: none; background: transparent; text-align: start;
+  cursor: pointer; font-size: var(--text-sm);
+}
+.catalogItem:hover { background: var(--color-surface-subtle); }
+.catalogMeta { font-size: var(--text-xs); font-weight: 700; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }

@@ -1,0 +1,191 @@
+name: Phase 28 Licensing Verification
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/api/src/modules/subscription/**'
+      - 'apps/api/src/common/**/licensing*'
+      - 'apps/api/prisma/**'
+      - 'apps/clinic-dashboard/src/features/subscription/**'
+      - 'apps/clinic-dashboard/src/lib/license-gate*'
+      - 'apps/clinic-dashboard/src/layouts/LicensedApplicationShell.tsx'
+      - 'apps/clinic-dashboard/e2e/licensing-matrix.spec.ts'
+      - 'apps/clinic-dashboard/e2e/helpers/licensing-tenants.ts'
+      - 'docker-compose.test.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/phase28-licensing-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/api/src/modules/subscription/**'
+      - 'apps/api/src/common/**/licensing*'
+      - 'apps/api/prisma/**'
+      - 'apps/clinic-dashboard/src/features/subscription/**'
+      - 'apps/clinic-dashboard/src/lib/license-gate*'
+      - 'apps/clinic-dashboard/src/layouts/LicensedApplicationShell.tsx'
+      - 'apps/clinic-dashboard/e2e/licensing-matrix.spec.ts'
+      - 'apps/clinic-dashboard/e2e/helpers/licensing-tenants.ts'
+      - 'docker-compose.test.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/phase28-licensing-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: phase28-licensing-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  licensing-backend:
+    name: Licensing backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Run licensing Jest suites
+        working-directory: apps/api
+        run: >-
+          npx jest --runInBand
+          src/modules/subscription/tests/licensing-engine.service.spec.ts
+          src/modules/subscription/tests/licensing-lifecycle-state.service.spec.ts
+          src/modules/subscription/tests/licensing-commercial-audit.service.spec.ts
+          src/modules/subscription/tests/licensing-audit.service.spec.ts
+          src/modules/subscription/tests/licensing-execution.guard.spec.ts
+          src/common/tests/licensing-bypass.integration.spec.ts
+
+  licensing-frontend:
+    name: Licensing frontend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run clinic-dashboard licensing unit tests
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx vitest run
+          src/lib/license-gate.spec.ts
+          src/features/subscription/hooks/useSubscriptionEntitlements.spec.ts
+          src/features/subscription/components/FeatureGate.spec.ts
+          src/features/subscription/lib/subscription-routes.spec.ts
+          src/features/subscription/config/subscription-config.spec.ts
+
+  licensing-e2e:
+    name: Licensing Playwright matrix
+    runs-on: ubuntu-latest
+    needs: [licensing-backend, licensing-frontend]
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: booking
+          POSTGRES_PASSWORD: booking_test
+          POSTGRES_DB: booking_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U booking -d booking_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgresql://booking:booking_test@localhost:5433/booking_test?schema=public
+      REDIS_URL: redis://localhost:6380
+      REDIS_OPTIONAL: 'false'
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES: '900'
+      JWT_REFRESH_EXPIRES: '604800'
+      VITE_ENABLE_DEMO_FALLBACK: 'false'
+      PLAYWRIGHT_API_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+      PLAYWRIGHT_DASHBOARD_PORT: '5173'
+      PLAYWRIGHT_API_PORT: '3000'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Apply migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Seed database (includes licensing E2E tenants)
+        working-directory: apps/api
+        run: npm run db:seed
+
+      - name: Verify licensing E2E seed present
+        working-directory: apps/api
+        run: node -e "const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient(); p.user.findFirst({where:{email:'expired@lic-e2e.clinic'}}).then(u=>{if(!u){process.exit(1)}}).finally(()=>p.$disconnect())"
+
+      - name: Install Playwright browser
+        working-directory: apps/clinic-dashboard
+        run: npx playwright install --with-deps chromium
+
+      - name: Run licensing Playwright matrix
+        working-directory: apps/clinic-dashboard
+        run: npx playwright test e2e/licensing-matrix.spec.ts
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase28-licensing-playwright-report
+          path: |
+            apps/clinic-dashboard/playwright-report/
+            apps/clinic-dashboard/test-results/
+          retention-days: 14
+
+      - name: Upload API logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase28-licensing-ci-context
+          path: apps/api/prisma/migrations/
+          retention-days: 7

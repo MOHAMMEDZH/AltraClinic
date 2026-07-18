@@ -1,0 +1,12 @@
+.wrap {
+  height: 220px;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}

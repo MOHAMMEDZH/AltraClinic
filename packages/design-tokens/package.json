@@ -1,0 +1,9 @@
+{
+  "name": "@booking/design-tokens",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./tokens.css": "./css/tokens.css",
+    "./globals.css": "./css/globals.css"
+  }
+}

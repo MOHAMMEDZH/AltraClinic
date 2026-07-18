@@ -1,0 +1,35 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.label {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.value {
+  margin: var(--space-1) 0 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.warning .value { color: var(--color-warning); }
+.info .value { color: var(--color-info); }
+.success .value { color: var(--color-success); }
+.muted .value { color: var(--color-text-secondary); }
+.neutral .value { color: var(--color-text-primary); }
+.primary .value { color: var(--color-primary); }
+.danger .value { color: var(--color-danger); }

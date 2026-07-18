@@ -1,0 +1,11 @@
+.unbilledPanel { display: grid; gap: var(--space-4); }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+
+.tableWrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th, .table td { padding: var(--space-3); text-align: start; border-bottom: 1px solid var(--color-border); }
+.table th { background: var(--color-surface-muted); font-weight: 600; }
+
+.empty { padding: var(--space-6); text-align: center; color: var(--color-text-secondary); }
+.hint { margin: 0; color: var(--color-text-secondary); font-size: var(--text-sm); }

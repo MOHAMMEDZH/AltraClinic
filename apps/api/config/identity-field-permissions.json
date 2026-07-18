@@ -1,0 +1,9 @@
+{
+  "fields": [
+    { "field": "roles", "minAction": "manage", "roles": ["super_admin", "owner", "general_manager"] },
+    { "field": "employmentStatus", "minAction": "manage", "roles": ["super_admin", "owner", "general_manager"] },
+    { "field": "managerId", "minAction": "manage", "roles": ["super_admin", "owner", "general_manager", "branch_manager"] },
+    { "field": "branchAccessMode", "minAction": "manage", "roles": ["super_admin", "owner", "general_manager"] },
+    { "field": "notes", "minAction": "update", "roles": ["super_admin", "owner", "general_manager", "branch_manager"] }
+  ]
+}

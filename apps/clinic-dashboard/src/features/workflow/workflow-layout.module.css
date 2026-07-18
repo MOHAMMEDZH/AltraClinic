@@ -1,0 +1,305 @@
+.stepBuilder {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.stepRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.canvas {
+  min-height: 280px;
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary-500) 3%, var(--color-surface));
+}
+
+.canvasFlow {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 280px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary-500) 3%, var(--color-surface));
+}
+
+.canvasStepWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.canvasStep {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: start;
+  cursor: pointer;
+}
+
+.canvasStepSelected {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+}
+
+.canvasStepType {
+  display: block;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.canvasStepLabel {
+  display: block;
+  font-weight: 600;
+}
+
+.canvasBranch {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.canvasArrow {
+  color: var(--color-text-muted);
+  padding: var(--space-1) 0;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.kanbanColumn {
+  min-width: 160px;
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.kanbanColumnTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+  text-transform: capitalize;
+}
+
+.kanbanList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.kanbanCard {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: start;
+  cursor: pointer;
+}
+
+.kanbanCardTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-text) 30%, transparent);
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer {
+  width: min(420px, 100%);
+  height: 100%;
+  background: var(--color-surface);
+  padding: var(--space-4);
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.drawerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.workspaceNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.workspaceTab {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.workspaceTabActive {
+  background: var(--color-primary-500);
+  color: var(--color-on-primary, #fff);
+  border-color: var(--color-primary-500);
+}
+
+.workspaceLinks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.builderGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.canvasDragHandle {
+  float: inline-end;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: grab;
+  user-select: none;
+}
+
+.canvasStepDragging {
+  opacity: 0.55;
+}
+
+.canvasStepDropTarget {
+  outline: 2px dashed var(--color-primary-500);
+}
+
+.canvasFork {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: var(--space-1);
+}
+
+.canvasForkLine {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.canvasForkBadge {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  color: var(--color-primary-600, var(--color-primary-500));
+  font-weight: 600;
+}
+
+.canvasForkPaths {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  max-width: 320px;
+  padding: var(--space-1) 0;
+  font-size: var(--text-sm);
+}
+
+.canvasForkPath {
+  color: var(--color-primary-600, var(--color-primary-500));
+}
+
+.canvasForkPathMuted {
+  color: var(--color-text-muted);
+}
+
+.builderPreviewBanner {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-surface));
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+
+.builderValidationErrors {
+  margin: 0 0 var(--space-3);
+  padding-inline-start: var(--space-4);
+  color: var(--color-danger, #b42318);
+  font-size: var(--text-sm);
+}
+
+.virtualGrid4,
+.virtualGrid4Row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.virtualGrid5,
+.virtualGrid5Row {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 1.4fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.virtualGrid3,
+.virtualGrid3Row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.approvalRowFields {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.realtimeIndicator {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-inline-start: auto;
+}
+
+.realtimeLive {
+  color: var(--color-success, #067647);
+}
+
+@media (max-width: 768px) {
+  .builderGrid {
+    grid-template-columns: 1fr;
+  }
+}

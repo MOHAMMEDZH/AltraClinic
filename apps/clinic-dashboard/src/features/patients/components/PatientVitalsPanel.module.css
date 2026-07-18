@@ -1,0 +1,46 @@
+.panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-body-lg);
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.card {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.label {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-body-lg);
+  font-weight: 600;
+}
+
+.meta {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-tertiary);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}

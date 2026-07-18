@@ -1,0 +1,118 @@
+name: Clinic Dashboard CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/clinic-dashboard/**'
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/clinic-dashboard-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/clinic-dashboard/**'
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/clinic-dashboard-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: clinic-dashboard-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run clinic-dashboard unit tests
+        run: npm run test:dashboard
+
+      - name: Build clinic-dashboard
+        run: npm run build:dashboard
+
+  inventory-e2e:
+    name: Inventory E2E
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_emr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_emr"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_emr?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES: '900'
+      JWT_REFRESH_EXPIRES: '604800'
+      REDIS_OPTIONAL: 'true'
+      NODE_ENV: test
+      PLAYWRIGHT_API_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Prepare database schema
+        working-directory: apps/api
+        run: npx prisma db push --skip-generate
+
+      - name: Seed demo data
+        working-directory: apps/api
+        run: npx prisma db seed
+
+      - name: Install Playwright browser
+        working-directory: apps/clinic-dashboard
+        run: npx playwright install --with-deps chromium
+
+      - name: Run inventory Playwright tests
+        working-directory: apps/clinic-dashboard
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/clinic-dashboard/playwright-report/
+          retention-days: 7

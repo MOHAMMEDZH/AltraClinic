@@ -1,0 +1,39 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.priorityNormal {
+  background: color-mix(in srgb, var(--color-text-tertiary) 15%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.priorityAppointment {
+  background: color-mix(in srgb, var(--color-info) 15%, transparent);
+  color: var(--color-info);
+}
+
+.priorityWalkIn {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
+}
+
+.priorityHigh {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+
+.priorityVip {
+  background: color-mix(in srgb, #9333ea 18%, transparent);
+  color: #9333ea;
+}
+
+.priorityEmergency {
+  background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+  color: var(--color-danger);
+}

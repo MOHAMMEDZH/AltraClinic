@@ -1,0 +1,366 @@
+import type { ComponentType } from 'react';
+import { Outlet } from 'react-router-dom';
+import { DashboardPage } from '@/features/dashboard/DashboardPage';
+import { PatientsPage } from '@/features/patients/PatientsPage';
+import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
+import { EncountersPage } from '@/features/emr/EncountersPage';
+import { EncounterDetailPage } from '@/features/emr/EncounterDetailPage';
+import { AppointmentsPage } from '@/features/scheduling/AppointmentsPage';
+import { MyAppointmentsPage } from '@/features/patient-portal/MyAppointmentsPage';
+import { QueuePage } from '@/features/queue/QueuePage';
+import { QueueAnalyticsPage } from '@/features/queue/QueueAnalyticsPage';
+import { QueueHistoryPage } from '@/features/queue/QueueHistoryPage';
+import { QueueDisplayPage } from '@/features/queue/QueueDisplayPage';
+import { DentalPage } from '@/features/dental/DentalPage';
+import { LazyDentalChartPage, LazyTreatmentPlanPage } from '@/features/dental/lazy-dental-routes';
+import { LazyBeautyPage, LazyBeautyWorkspacePage, LazyBeautyPresentationPage, LazyBeautyImagingPage } from '@/features/beauty/lazy-beauty-routes';
+import { LazyDentalImagingPage } from '@/features/media/lazy-imaging';
+import {
+  LazyAnalyticsHomePage,
+  LazyExecutiveAnalyticsPage,
+  LazyFinancialAnalyticsPage,
+  LazyPatientAnalyticsPage,
+  LazyOperationsAnalyticsPage,
+  LazyInventoryAnalyticsPage,
+  LazyClinicalAnalyticsPage,
+  LazyDentalAnalyticsPage,
+  LazyBeautyAnalyticsPage,
+  LazyStaffAnalyticsPage,
+  LazyBranchAnalyticsPage,
+  LazyForecastingAnalyticsPage,
+  LazyAnalyticsBuilderPage,
+  LazyAnalyticsExportPage,
+} from '@/features/analytics/lazy-analytics-routes';
+import {
+  LazyUserManagementLayout,
+  LazyUsersHomePage,
+  LazyUsersDirectoryPage,
+  LazyUserDetailPage,
+  LazyCreateUserWizardPage,
+  LazyUsersAuditPage,
+  LazyRolesOverviewPage,
+  LazyUsersInvitationsPage,
+} from '@/features/user-management/lazy-user-management-routes';
+import {
+  LazyNotificationsLayout,
+  LazyNotificationsHomePage,
+  LazyNotificationsInboxPage,
+  LazyNotificationDetailPage,
+  LazyNotificationComposerPage,
+  LazyNotificationDraftsPage,
+  LazyNotificationTemplatesPage,
+  LazyNotificationAutomationPage,
+  LazyNotificationDeliveryLogPage,
+  LazyNotificationChannelsPage,
+  LazyNotificationPreferencesPage,
+} from '@/features/notifications/lazy-notifications-routes';
+import {
+  LazyImportExportLayout,
+  LazyImportExportOverviewPage,
+  LazyImportExportCatalogPage,
+  LazyImportExportJobsPage,
+  LazyImportExportJobDetailPage,
+  LazyImportExportImportsPage,
+  LazyImportExportImportWizardPage,
+  LazyImportExportExportsPage,
+  LazyImportExportExportWizardPage,
+  LazyImportExportArtifactsPage,
+  LazyImportExportHealthPage,
+} from '@/features/import-export/lazy-import-export-routes';
+import {
+  LazyWorkflowLayout,
+  LazyWorkflowsHomePage,
+  LazyWorkflowsInstancesPage,
+  LazyWorkflowDetailPage,
+  LazyWorkflowBuilderPage,
+  LazyWorkflowTemplatesPage,
+  LazyWorkflowTasksPage,
+  LazyWorkflowApprovalsPage,
+  LazyWorkflowAutomationPage,
+  LazyWorkflowMonitoringPage,
+  LazyWorkflowLogsPage,
+  LazyWorkflowAuditPage,
+} from '@/features/workflow/lazy-workflow-routes';
+import {
+  LazyAiLayout,
+  LazyAiHomePage,
+  LazyAiChatPage,
+  LazyAiWorkspacePage,
+  LazyAiPromptsPage,
+  LazyAiHistoryPage,
+  LazyAiSettingsPage,
+  LazyAiAdminPage,
+} from '@/features/ai/lazy-ai-routes';
+import {
+  LazyInventoryDashboardPage,
+  LazyInventoryPage,
+  LazyInventoryItemDetailPage,
+  LazyExpiryPage,
+  LazySuppliersPage,
+  LazyProcurementPage,
+  LazyWarehousesPage,
+  LazyTransfersPage,
+  LazyStockCountsPage,
+  LazyStockRequestsPage,
+  LazyInventoryReportsPage,
+  LazyWarehouseDetailPage,
+  LazyCategoriesPage,
+  LazySupplierDetailPage,
+} from '@/features/inventory/lazy-inventory-routes';
+import {
+  LazyBillingDashboardPage,
+  LazyBillingInvoicesPage,
+  LazyBillingReportsPage,
+  LazyCreateInvoicePage,
+  LazyInvoiceDetailPage,
+  LazyOutstandingPage,
+  LazyUnbilledPage,
+  LazyCashboxPage,
+  LazyPricingPage,
+  LazyPosCheckoutPage,
+  LazyReceiptPrintPage,
+  LazyCommissionPage,
+  LazyCommissionRulesPage,
+} from '@/features/billing/lazy-billing-routes';
+import {
+  LazySubscriptionLayout,
+  LazySubscriptionDashboardPage,
+  LazySubscriptionPlansPage,
+  LazySubscriptionFeaturesPage,
+  LazySubscriptionUsagePage,
+  LazySubscriptionAiUsagePage,
+  LazySubscriptionInvoicesPage,
+  LazySubscriptionPaymentsPage,
+  LazySubscriptionLicensePage,
+  LazySubscriptionAnalyticsPage,
+  LazySubscriptionAdminPage,
+} from '@/features/subscription/lazy-subscription-routes';
+import {
+  LazySettingsLayout,
+  LazySettingsHomePage,
+  LazyGeneralSettingsPage,
+  LazyClinicProfilePage,
+  LazyLocalizationSettingsPage,
+  LazyBrandingSettingsPage,
+  LazyFeatureFlagsSettingsPage,
+  LazyBranchesSettingsPage,
+  LazySettingsSearchPage,
+  LazyBillingSettingsPage,
+  LazyInventorySettingsPage,
+  LazyReportsSettingsPage,
+  LazyIntegrationsSettingsPage,
+  LazyAuditSettingsPage,
+  LazyDeveloperSettingsPage,
+  LazyAdvancedSettingsPage,
+  LazySecurityPoliciesSettingsPage,
+  LazyNotificationDefaultsSettingsPage,
+} from '@/features/settings/lazy-settings-routes';
+import {
+  LazyExportCenterPage,
+  LazyReportBuilderPage,
+  LazyReportCategoryPage,
+  LazyReportDetailPage,
+  LazyReportingHomePage,
+} from '@/features/reporting/lazy-reporting-routes';
+import { SecurityLayout } from '@/features/auth/security/SecurityLayout';
+import { AccountSecurityPage } from '@/features/auth/security/AccountSecurityPage';
+import { ChangePasswordPage } from '@/features/auth/security/ChangePasswordPage';
+import { SessionsPage } from '@/features/auth/security/SessionsPage';
+import { DevicesPage } from '@/features/auth/security/DevicesPage';
+import { ProfileSecuritySettingsPage } from '@/features/auth/security/ProfileSecuritySettingsPage';
+import { MfaSettingsPage } from '@/features/auth/security/MfaSettingsPage';
+import type { RouteLayoutKey } from './route-types';
+
+type RouteComponent = ComponentType;
+
+const PAGE_COMPONENTS: Record<string, RouteComponent> = {
+  'page.dashboard': DashboardPage,
+  'page.appointments': AppointmentsPage,
+  'page.myAppointments': MyAppointmentsPage,
+  'page.queue': QueuePage,
+  'page.queueHistory': QueueHistoryPage,
+  'page.queueAnalytics': QueueAnalyticsPage,
+  'page.queueDisplay': QueueDisplayPage,
+  'page.patients': PatientsPage,
+  'page.patientDetail': PatientDetailPage,
+  'page.encounters': EncountersPage,
+  'page.encounterDetail': EncounterDetailPage,
+  'page.dental': DentalPage,
+  'page.dentalChart': LazyDentalChartPage,
+  'page.dentalPlan': LazyTreatmentPlanPage,
+  'page.dentalImaging': LazyDentalImagingPage,
+  'page.beauty': LazyBeautyPage,
+  'page.beautyWorkspace': LazyBeautyWorkspacePage,
+  'page.beautyPresentation': LazyBeautyPresentationPage,
+  'page.beautyImaging': LazyBeautyImagingPage,
+  'page.billingDashboard': LazyBillingDashboardPage,
+  'page.billingInvoices': LazyBillingInvoicesPage,
+  'page.billingInvoiceNew': LazyCreateInvoicePage,
+  'page.billingInvoiceDetail': LazyInvoiceDetailPage,
+  'page.billingOutstanding': LazyOutstandingPage,
+  'page.billingUnbilled': LazyUnbilledPage,
+  'page.billingCashbox': LazyCashboxPage,
+  'page.billingPricing': LazyPricingPage,
+  'page.billingPos': LazyPosCheckoutPage,
+  'page.billingReports': LazyBillingReportsPage,
+  'page.billingReceipt': LazyReceiptPrintPage,
+  'page.billingCommissions': LazyCommissionPage,
+  'page.billingCommissionRules': LazyCommissionRulesPage,
+  'page.inventoryDashboard': LazyInventoryDashboardPage,
+  'page.inventoryCatalog': LazyInventoryPage,
+  'page.inventoryExpiry': LazyExpiryPage,
+  'page.inventorySuppliers': LazySuppliersPage,
+  'page.inventoryProcurement': LazyProcurementPage,
+  'page.inventoryWarehouses': LazyWarehousesPage,
+  'page.inventoryWarehouseDetail': LazyWarehouseDetailPage,
+  'page.inventoryCategories': LazyCategoriesPage,
+  'page.inventorySupplierDetail': LazySupplierDetailPage,
+  'page.inventoryTransfers': LazyTransfersPage,
+  'page.inventoryStockCounts': LazyStockCountsPage,
+  'page.inventoryStockRequests': LazyStockRequestsPage,
+  'page.inventoryReports': LazyInventoryReportsPage,
+  'page.inventoryItemDetail': LazyInventoryItemDetailPage,
+  'page.reportingHome': LazyReportingHomePage,
+  'page.reportCategory': LazyReportCategoryPage,
+  'page.reportBuilder': LazyReportBuilderPage,
+  'page.reportExport': LazyExportCenterPage,
+  'page.reportDetail': LazyReportDetailPage,
+  'page.analyticsHome': LazyAnalyticsHomePage,
+  'page.analyticsExecutive': LazyExecutiveAnalyticsPage,
+  'page.analyticsFinancial': LazyFinancialAnalyticsPage,
+  'page.analyticsPatients': LazyPatientAnalyticsPage,
+  'page.analyticsOperations': LazyOperationsAnalyticsPage,
+  'page.analyticsInventory': LazyInventoryAnalyticsPage,
+  'page.analyticsClinical': LazyClinicalAnalyticsPage,
+  'page.analyticsDental': LazyDentalAnalyticsPage,
+  'page.analyticsBeauty': LazyBeautyAnalyticsPage,
+  'page.analyticsStaff': LazyStaffAnalyticsPage,
+  'page.analyticsBranches': LazyBranchAnalyticsPage,
+  'page.analyticsForecasting': LazyForecastingAnalyticsPage,
+  'page.analyticsBuilder': LazyAnalyticsBuilderPage,
+  'page.analyticsExport': LazyAnalyticsExportPage,
+  'page.workflowsHome': LazyWorkflowsHomePage,
+  'page.workflowsInstances': LazyWorkflowsInstancesPage,
+  'page.workflowDetail': LazyWorkflowDetailPage,
+  'page.workflowTasks': LazyWorkflowTasksPage,
+  'page.workflowApprovals': LazyWorkflowApprovalsPage,
+  'page.workflowBuilder': LazyWorkflowBuilderPage,
+  'page.workflowTemplates': LazyWorkflowTemplatesPage,
+  'page.workflowAutomation': LazyWorkflowAutomationPage,
+  'page.workflowMonitoring': LazyWorkflowMonitoringPage,
+  'page.workflowLogs': LazyWorkflowLogsPage,
+  'page.workflowAudit': LazyWorkflowAuditPage,
+  'page.aiHome': LazyAiHomePage,
+  'page.aiChat': LazyAiChatPage,
+  'page.aiWorkspace': LazyAiWorkspacePage,
+  'page.aiPrompts': LazyAiPromptsPage,
+  'page.aiHistory': LazyAiHistoryPage,
+  'page.aiSettings': LazyAiSettingsPage,
+  'page.aiAdmin': LazyAiAdminPage,
+  'page.settingsHome': LazySettingsHomePage,
+  'page.settingsGeneral': LazyGeneralSettingsPage,
+  'page.settingsProfile': LazyClinicProfilePage,
+  'page.settingsLocalization': LazyLocalizationSettingsPage,
+  'page.settingsBranding': LazyBrandingSettingsPage,
+  'page.settingsFeatures': LazyFeatureFlagsSettingsPage,
+  'page.settingsBranches': LazyBranchesSettingsPage,
+  'page.settingsSearch': LazySettingsSearchPage,
+  'page.settingsBilling': LazyBillingSettingsPage,
+  'page.settingsInventory': LazyInventorySettingsPage,
+  'page.settingsReports': LazyReportsSettingsPage,
+  'page.settingsIntegrations': LazyIntegrationsSettingsPage,
+  'page.settingsAudit': LazyAuditSettingsPage,
+  'page.settingsDeveloper': LazyDeveloperSettingsPage,
+  'page.settingsNotificationDefaults': LazyNotificationDefaultsSettingsPage,
+  'page.settingsSecurityPolicies': LazySecurityPoliciesSettingsPage,
+  'page.settingsAdvanced': LazyAdvancedSettingsPage,
+  'page.securityAccount': AccountSecurityPage,
+  'page.securityPassword': ChangePasswordPage,
+  'page.securitySessions': SessionsPage,
+  'page.securityDevices': DevicesPage,
+  'page.securityMfa': MfaSettingsPage,
+  'page.securityProfile': ProfileSecuritySettingsPage,
+  'page.usersHome': LazyUsersHomePage,
+  'page.usersDirectory': LazyUsersDirectoryPage,
+  'page.usersCreate': LazyCreateUserWizardPage,
+  'page.usersInvite': LazyCreateUserWizardPage,
+  'page.usersAudit': LazyUsersAuditPage,
+  'page.usersInvitations': LazyUsersInvitationsPage,
+  'page.usersRoles': LazyRolesOverviewPage,
+  'page.userDetail': LazyUserDetailPage,
+  'page.notificationsHome': LazyNotificationsHomePage,
+  'page.notificationsInbox': LazyNotificationsInboxPage,
+  'page.notificationDetail': LazyNotificationDetailPage,
+  'page.notificationsCompose': LazyNotificationComposerPage,
+  'page.notificationsDrafts': LazyNotificationDraftsPage,
+  'page.notificationsTemplates': LazyNotificationTemplatesPage,
+  'page.notificationsAutomation': LazyNotificationAutomationPage,
+  'page.notificationsDelivery': LazyNotificationDeliveryLogPage,
+  'page.notificationsChannels': LazyNotificationChannelsPage,
+  'page.notificationsPreferences': LazyNotificationPreferencesPage,
+  'page.importExportHome': LazyImportExportOverviewPage,
+  'page.importExportCatalog': LazyImportExportCatalogPage,
+  'page.importExportJobs': LazyImportExportJobsPage,
+  'page.importExportJobDetail': LazyImportExportJobDetailPage,
+  'page.importExportImports': LazyImportExportImportsPage,
+  'page.importExportImportWizard': LazyImportExportImportWizardPage,
+  'page.importExportExports': LazyImportExportExportsPage,
+  'page.importExportExportWizard': LazyImportExportExportWizardPage,
+  'page.importExportArtifacts': LazyImportExportArtifactsPage,
+  'page.importExportHealth': LazyImportExportHealthPage,
+  'page.subscriptionDashboard': LazySubscriptionDashboardPage,
+  'page.subscriptionPlans': LazySubscriptionPlansPage,
+  'page.subscriptionFeatures': LazySubscriptionFeaturesPage,
+  'page.subscriptionUsage': LazySubscriptionUsagePage,
+  'page.subscriptionAiUsage': LazySubscriptionAiUsagePage,
+  'page.subscriptionInvoices': LazySubscriptionInvoicesPage,
+  'page.subscriptionPayments': LazySubscriptionPaymentsPage,
+  'page.subscriptionLicense': LazySubscriptionLicensePage,
+  'page.subscriptionAnalytics': LazySubscriptionAnalyticsPage,
+  'page.subscriptionAdmin': LazySubscriptionAdminPage,
+};
+
+const LAYOUT_COMPONENTS: Record<RouteLayoutKey, RouteComponent> = {
+  workflow: LazyWorkflowLayout,
+  ai: LazyAiLayout,
+  settings: LazySettingsLayout,
+  security: SecurityLayout,
+  users: LazyUserManagementLayout,
+  notifications: LazyNotificationsLayout,
+  subscription: LazySubscriptionLayout,
+  importExport: LazyImportExportLayout,
+};
+
+/** Passthrough for path-only grouping routes (e.g. settings/*). */
+function RouteOutlet() {
+  return <Outlet />;
+}
+
+const STRUCTURAL_COMPONENTS: Record<string, RouteComponent> = {
+  'core.outlet': RouteOutlet,
+  'core.settingsGroup': RouteOutlet,
+  'layout.workflow': LazyWorkflowLayout,
+  'layout.ai': LazyAiLayout,
+  'layout.settings': LazySettingsLayout,
+  'layout.security': SecurityLayout,
+  'layout.users': LazyUserManagementLayout,
+  'layout.notifications': LazyNotificationsLayout,
+  'layout.importExport': LazyImportExportLayout,
+  'layout.subscription': LazySubscriptionLayout,
+};
+
+export function resolveRouteComponent(componentKey: string): RouteComponent {
+  const component = PAGE_COMPONENTS[componentKey] ?? STRUCTURAL_COMPONENTS[componentKey];
+  if (!component) {
+    throw new Error(`Unknown route componentKey: ${componentKey}`);
+  }
+  return component;
+}
+
+export function resolveLayoutComponent(layoutKey: RouteLayoutKey): RouteComponent {
+  return LAYOUT_COMPONENTS[layoutKey];
+}
+
+export function listRegisteredComponentKeys(): string[] {
+  return [...Object.keys(PAGE_COMPONENTS), ...Object.keys(STRUCTURAL_COMPONENTS)];
+}

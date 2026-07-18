@@ -1,0 +1,88 @@
+.gridWrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.headerRow {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.rowFocused {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -2px;
+}
+
+.cell,
+.cellNum,
+.cellAction {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cellNum {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.invoiceLink,
+.viewLink {
+  color: var(--color-primary-600);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.invoiceLink:hover,
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.badge,
+.badgeWarn,
+.badgeSuccess,
+.badgeDanger {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--color-surface-muted);
+}
+
+.badgeWarn {
+  background: color-mix(in srgb, var(--color-warning) 20%, var(--color-surface));
+}
+
+.badgeSuccess {
+  background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface));
+}
+
+.badgeDanger {
+  background: color-mix(in srgb, var(--color-danger) 20%, var(--color-surface));
+}
+
+.skeleton {
+  min-height: 200px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}

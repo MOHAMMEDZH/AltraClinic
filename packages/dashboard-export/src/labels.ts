@@ -1,0 +1,68 @@
+import type { DashboardExportLabels } from './types';
+
+const labelsEn: Omit<DashboardExportLabels, 'title'> = {
+  generatedAt: 'Generated',
+  kpisSection: 'Key performance indicators',
+  healthSection: 'Business health',
+  revenueTrendSection: 'Revenue trend',
+  appointmentTrendSection: 'Appointment trend',
+  patientGrowthSection: 'Patient growth',
+  branchSection: 'Branch performance',
+  doctorSection: 'Provider performance',
+  metric: 'Metric',
+  value: 'Value',
+  date: 'Date',
+  amount: 'Amount',
+  count: 'Count',
+  appointments: 'Appointments',
+  revenue: 'Revenue',
+  encounters: 'Encounters',
+  provider: 'Provider',
+  branch: 'Branch',
+  totalPatients: 'Total patients',
+  appointmentsToday: 'Appointments today',
+  queueWaiting: 'In queue',
+  revenueToday: 'Revenue today',
+  revenueMonth: 'Month revenue',
+  outstandingAmount: 'Outstanding',
+  lowStockCount: 'Low stock items',
+  utilization: 'Chair utilization',
+  collection: 'Collection rate',
+  noShow: 'No-show rate',
+};
+
+const labelsAr: Omit<DashboardExportLabels, 'title'> = {
+  generatedAt: 'تاريخ الإنشاء',
+  kpisSection: 'مؤشرات الأداء الرئيسية',
+  healthSection: 'صحة الأعمال',
+  revenueTrendSection: 'اتجاه الإيراد',
+  appointmentTrendSection: 'اتجاه المواعيد',
+  patientGrowthSection: 'نمو المرضى',
+  branchSection: 'أداء الفروع',
+  doctorSection: 'أداء المقدمين',
+  metric: 'المؤشر',
+  value: 'القيمة',
+  date: 'التاريخ',
+  amount: 'المبلغ',
+  count: 'العدد',
+  appointments: 'المواعيد',
+  revenue: 'الإيراد',
+  encounters: 'الزيارات',
+  provider: 'المقدم',
+  branch: 'الفرع',
+  totalPatients: 'إجمالي المرضى',
+  appointmentsToday: 'مواعيد اليوم',
+  queueWaiting: 'في الطابور',
+  revenueToday: 'إيراد اليوم',
+  revenueMonth: 'إيراد الشهر',
+  outstandingAmount: 'المستحقات',
+  lowStockCount: 'أصناف منخفضة المخزون',
+  utilization: 'استخدام الكراسي',
+  collection: 'نسبة التحصيل',
+  noShow: 'نسبة الغياب',
+};
+
+export function getDashboardExportLabels(locale: string, title: string): DashboardExportLabels {
+  const base = locale.startsWith('ar') ? labelsAr : labelsEn;
+  return { title, ...base };
+}

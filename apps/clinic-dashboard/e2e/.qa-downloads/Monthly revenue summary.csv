@@ -1,0 +1,126 @@
+﻿Monthly revenue summary
+Generated,"Jun 20, 2026, 1:23 PM"
+
+Key performance indicators
+Metric,Value
+Total patients,2
+Appointments today,3
+In queue,1
+Revenue today,SYP 0
+Month revenue,SYP 0
+Outstanding,SYP 0
+Low stock items,1
+
+Business health
+Metric,Value
+Chair utilization,0%
+Collection rate,100%
+No-show rate,0%
+
+Revenue trend
+Date,Amount
+"May 22, 2026",SYP 0
+"May 23, 2026",SYP 0
+"May 24, 2026",SYP 0
+"May 25, 2026",SYP 0
+"May 26, 2026",SYP 0
+"May 27, 2026",SYP 0
+"May 28, 2026",SYP 0
+"May 29, 2026",SYP 0
+"May 30, 2026",SYP 0
+"May 31, 2026",SYP 0
+"Jun 1, 2026",SYP 0
+"Jun 2, 2026",SYP 0
+"Jun 3, 2026",SYP 0
+"Jun 4, 2026",SYP 0
+"Jun 5, 2026",SYP 0
+"Jun 6, 2026",SYP 0
+"Jun 7, 2026",SYP 0
+"Jun 8, 2026",SYP 0
+"Jun 9, 2026",SYP 0
+"Jun 10, 2026",SYP 0
+"Jun 11, 2026",SYP 0
+"Jun 12, 2026",SYP 0
+"Jun 13, 2026",SYP 0
+"Jun 14, 2026",SYP 0
+"Jun 15, 2026",SYP 0
+"Jun 16, 2026",SYP 0
+"Jun 17, 2026",SYP 0
+"Jun 18, 2026",SYP 0
+"Jun 19, 2026",SYP 0
+"Jun 20, 2026",SYP 0
+
+Appointment trend
+Date,Count
+"May 22, 2026",0
+"May 23, 2026",0
+"May 24, 2026",0
+"May 25, 2026",0
+"May 26, 2026",0
+"May 27, 2026",0
+"May 28, 2026",0
+"May 29, 2026",0
+"May 30, 2026",0
+"May 31, 2026",0
+"Jun 1, 2026",0
+"Jun 2, 2026",0
+"Jun 3, 2026",0
+"Jun 4, 2026",0
+"Jun 5, 2026",0
+"Jun 6, 2026",0
+"Jun 7, 2026",0
+"Jun 8, 2026",0
+"Jun 9, 2026",0
+"Jun 10, 2026",0
+"Jun 11, 2026",0
+"Jun 12, 2026",0
+"Jun 13, 2026",0
+"Jun 14, 2026",0
+"Jun 15, 2026",0
+"Jun 16, 2026",0
+"Jun 17, 2026",0
+"Jun 18, 2026",0
+"Jun 19, 2026",0
+"Jun 20, 2026",3
+
+Patient growth
+Date,Count
+"May 22, 2026",0
+"May 23, 2026",0
+"May 24, 2026",0
+"May 25, 2026",0
+"May 26, 2026",0
+"May 27, 2026",0
+"May 28, 2026",0
+"May 29, 2026",0
+"May 30, 2026",0
+"May 31, 2026",0
+"Jun 1, 2026",0
+"Jun 2, 2026",0
+"Jun 3, 2026",0
+"Jun 4, 2026",0
+"Jun 5, 2026",0
+"Jun 6, 2026",0
+"Jun 7, 2026",0
+"Jun 8, 2026",0
+"Jun 9, 2026",0
+"Jun 10, 2026",0
+"Jun 11, 2026",0
+"Jun 12, 2026",0
+"Jun 13, 2026",0
+"Jun 14, 2026",0
+"Jun 15, 2026",0
+"Jun 16, 2026",0
+"Jun 17, 2026",0
+"Jun 18, 2026",2
+"Jun 19, 2026",0
+"Jun 20, 2026",0
+
+Branch performance
+Branch,Appointments,Revenue
+Main Branch,3,SYP 0
+North Branch,0,SYP 0
+
+Provider performance
+Provider,Appointments,Encounters
+Demo Owner,3,3

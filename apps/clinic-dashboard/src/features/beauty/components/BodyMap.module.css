@@ -1,0 +1,19 @@
+.wrap { display: grid; gap: var(--space-4); }
+.hint { margin: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
+.svg { width: 100%; max-width: 280px; margin-inline: auto; }
+.part, .torso, .limb { fill: color-mix(in srgb, var(--color-border) 20%, var(--color-surface)); stroke: var(--color-border); stroke-width: 1; }
+.zone { fill: transparent; stroke: transparent; cursor: pointer; }
+.zone:hover, .zone:focus-visible { fill: color-mix(in srgb, var(--color-accent) 12%, transparent); stroke: var(--color-accent); outline: none; }
+.pin { fill: var(--color-accent); stroke: var(--color-surface); stroke-width: 2; }
+.zoneGrid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.zoneBtn {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.zoneBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.zoneBtn:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); }

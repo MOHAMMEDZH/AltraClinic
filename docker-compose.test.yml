@@ -1,0 +1,32 @@
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: booking-system-pg-test
+    environment:
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking_test
+      POSTGRES_DB: booking_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - booking_pg_test_data:/var/lib/postgresql/data
+      - ./docker/postgres-test-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking -d booking_test"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: booking-system-redis-test
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  booking_pg_test_data:

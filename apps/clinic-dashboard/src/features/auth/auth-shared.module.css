@@ -1,0 +1,60 @@
+.linkRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}
+
+.link {
+  color: var(--color-primary-700);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  color: var(--color-primary-600);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.formStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.inlineLink {
+  color: var(--color-primary-700);
+  font-weight: 600;
+  font-size: var(--text-body);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
+.tenantHint {
+  font-size: var(--text-caption);
+  color: var(--color-text-tertiary);
+}

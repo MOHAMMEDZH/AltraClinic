@@ -1,0 +1,31 @@
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/app/providers/AuthProvider';
+import {
+  fetchDashboardOverview,
+  type DashboardCustomRange,
+  type DashboardOverview,
+  type DashboardRange,
+} from '../api/dashboard-api';
+
+export function useDashboardOverview(
+  branchId: string | null | undefined,
+  range: DashboardRange = '7d',
+  customRange?: DashboardCustomRange,
+) {
+  const { getValidAccessToken, user } = useAuth();
+  const branchKey = branchId === null ? 'all' : (branchId ?? user?.branchId ?? 'default');
+  const customKey =
+    range === 'custom' && customRange ? `${customRange.from}:${customRange.to}` : 'preset';
+
+  return useQuery({
+    queryKey: ['dashboard', 'overview', user?.tenantId, branchKey, range, customKey],
+    queryFn: async (): Promise<DashboardOverview> => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return fetchDashboardOverview(token, branchId, user.tenantId, range, customRange);
+    },
+    enabled: Boolean(user?.tenantId),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+}

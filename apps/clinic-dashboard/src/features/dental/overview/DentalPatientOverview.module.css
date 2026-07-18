@@ -1,0 +1,87 @@
+.wrap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.compact {
+  gap: var(--space-2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-caption);
+}
+
+.grid dt {
+  color: var(--color-text-tertiary);
+}
+
+.grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+}
+
+.link,
+.planLink {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-600);
+}
+
+.planLink {
+  font-weight: 500;
+}
+
+.alerts {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-warning-500) 6%, var(--color-surface));
+}
+
+.alertsTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.alertList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-caption);
+}
+
+.alertList a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.alertList a:hover {
+  text-decoration: underline;
+}
+
+.skeleton {
+  min-height: 80px;
+  background: var(--color-skeleton);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

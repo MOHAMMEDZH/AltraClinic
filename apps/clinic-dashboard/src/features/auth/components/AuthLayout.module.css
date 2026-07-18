@@ -1,0 +1,214 @@
+.layout {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(320px, 42%) 1fr;
+  }
+
+  html[dir='rtl'] .layout {
+    grid-template-columns: 1fr minmax(320px, 42%);
+  }
+}
+
+.brandPanel {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-10);
+  background: linear-gradient(
+    145deg,
+    var(--color-primary-700) 0%,
+    var(--color-primary-500) 45%,
+    var(--color-secondary-600) 100%
+  );
+  color: white;
+}
+
+@media (min-width: 900px) {
+  .brandPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  html[dir='rtl'] .brandPanel {
+    order: 2;
+  }
+}
+
+.brandGlow {
+  position: absolute;
+  inset: auto -20% -30% -10%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brandLogo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brandIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.brandHeadline {
+  margin: var(--space-10) 0 var(--space-4);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.2;
+  font-weight: 700;
+  max-width: 18ch;
+}
+
+.brandCopy {
+  margin: 0;
+  max-width: 42ch;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1rem;
+}
+
+.trustList {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trustItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-body);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.trustDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+}
+
+.toolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.toolbarBtn:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.formContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  animation: authEnter var(--transition-normal) ease-out;
+}
+
+@keyframes authEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardHeader {
+  margin-bottom: var(--space-6);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-2);
+  font-size: clamp(1.5rem, 4vw, var(--text-page-title));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cardSubtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.cardBody {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2);
+}
+
+.footer {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption);
+}
+
+.offlineBanner {
+  margin: 0 var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+  color: var(--color-text-primary);
+  font-size: var(--text-body);
+}

@@ -1,0 +1,42 @@
+{
+  "totalRows": 100000,
+  "benchmarks": [
+    {
+      "name": "firstPage",
+      "durationMs": 58,
+      "thresholdMs": 250,
+      "passed": true,
+      "rowCount": 51
+    },
+    {
+      "name": "deepPage",
+      "durationMs": 21,
+      "thresholdMs": 400,
+      "passed": true,
+      "rowCount": 51
+    },
+    {
+      "name": "search",
+      "durationMs": 236,
+      "thresholdMs": 600,
+      "passed": true,
+      "rowCount": 1
+    },
+    {
+      "name": "overviewCount",
+      "durationMs": 28,
+      "thresholdMs": 800,
+      "passed": true,
+      "rowCount": 100011
+    },
+    {
+      "name": "unreadCount",
+      "durationMs": 34,
+      "thresholdMs": 400,
+      "passed": true,
+      "rowCount": 100009
+    }
+  ],
+  "passed": true,
+  "ranAt": "2026-07-05T19:57:24.927Z"
+}

@@ -1,0 +1,3393 @@
+{
+  "roles": [
+    {
+      "key": "super_admin",
+      "name": "Super Admin",
+      "description": "Full platform access — cross-tenant control plane"
+    },
+    {
+      "key": "owner",
+      "name": "Owner",
+      "description": "Clinic owner — full access within tenant"
+    },
+    {
+      "key": "general_manager",
+      "name": "General Manager",
+      "description": "General manager — operational control within tenant"
+    },
+    {
+      "key": "doctor",
+      "name": "Doctor",
+      "description": "Licensed physician — clinical access"
+    },
+    {
+      "key": "dentist",
+      "name": "Dentist",
+      "description": "Licensed dentist — dental clinical access"
+    },
+    {
+      "key": "specialist",
+      "name": "Specialist",
+      "description": "Specialist clinician — specialized clinical access"
+    },
+    {
+      "key": "nurse",
+      "name": "Nurse",
+      "description": "Nursing staff — care coordination access"
+    },
+    {
+      "key": "assistant",
+      "name": "Assistant",
+      "description": "Clinical/administrative assistant"
+    },
+    {
+      "key": "receptionist",
+      "name": "Receptionist",
+      "description": "Front-desk reception — scheduling and check-in"
+    },
+    {
+      "key": "accountant",
+      "name": "Accountant",
+      "description": "Finance and billing management"
+    },
+    {
+      "key": "inventory_manager",
+      "name": "Inventory Manager",
+      "description": "Inventory and supply chain management"
+    },
+    {
+      "key": "patient",
+      "name": "Patient",
+      "description": "Self-service patient portal access"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "api.identity:view",
+      "resource": "api.identity",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:create",
+      "resource": "api.identity",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:update",
+      "resource": "api.identity",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:delete",
+      "resource": "api.identity",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:approve",
+      "resource": "api.identity",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:export",
+      "resource": "api.identity",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.identity:manage",
+      "resource": "api.identity",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Identity / User Management API"
+    },
+    {
+      "id": "api.patients:view",
+      "resource": "api.patients",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:create",
+      "resource": "api.patients",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:update",
+      "resource": "api.patients",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:delete",
+      "resource": "api.patients",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:approve",
+      "resource": "api.patients",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:export",
+      "resource": "api.patients",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.patients:manage",
+      "resource": "api.patients",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Patients API"
+    },
+    {
+      "id": "api.scheduling:view",
+      "resource": "api.scheduling",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:create",
+      "resource": "api.scheduling",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:update",
+      "resource": "api.scheduling",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:delete",
+      "resource": "api.scheduling",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:approve",
+      "resource": "api.scheduling",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:export",
+      "resource": "api.scheduling",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.scheduling:manage",
+      "resource": "api.scheduling",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Scheduling / Appointments API"
+    },
+    {
+      "id": "api.queue:view",
+      "resource": "api.queue",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:create",
+      "resource": "api.queue",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:update",
+      "resource": "api.queue",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:delete",
+      "resource": "api.queue",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:approve",
+      "resource": "api.queue",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:export",
+      "resource": "api.queue",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.queue:manage",
+      "resource": "api.queue",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Queue API"
+    },
+    {
+      "id": "api.emr:view",
+      "resource": "api.emr",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:create",
+      "resource": "api.emr",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:update",
+      "resource": "api.emr",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:delete",
+      "resource": "api.emr",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:approve",
+      "resource": "api.emr",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:export",
+      "resource": "api.emr",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.emr:manage",
+      "resource": "api.emr",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "EMR / Encounters API"
+    },
+    {
+      "id": "api.dental:view",
+      "resource": "api.dental",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:create",
+      "resource": "api.dental",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:update",
+      "resource": "api.dental",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:delete",
+      "resource": "api.dental",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:approve",
+      "resource": "api.dental",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:export",
+      "resource": "api.dental",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.dental:manage",
+      "resource": "api.dental",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Dental API"
+    },
+    {
+      "id": "api.beauty:view",
+      "resource": "api.beauty",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:create",
+      "resource": "api.beauty",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:update",
+      "resource": "api.beauty",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:delete",
+      "resource": "api.beauty",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:approve",
+      "resource": "api.beauty",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:export",
+      "resource": "api.beauty",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.beauty:manage",
+      "resource": "api.beauty",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Beauty / Aesthetic Services API"
+    },
+    {
+      "id": "api.inventory:view",
+      "resource": "api.inventory",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:create",
+      "resource": "api.inventory",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:update",
+      "resource": "api.inventory",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:delete",
+      "resource": "api.inventory",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:approve",
+      "resource": "api.inventory",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:export",
+      "resource": "api.inventory",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.inventory:manage",
+      "resource": "api.inventory",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Inventory API"
+    },
+    {
+      "id": "api.billing:view",
+      "resource": "api.billing",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:create",
+      "resource": "api.billing",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:update",
+      "resource": "api.billing",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:delete",
+      "resource": "api.billing",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:approve",
+      "resource": "api.billing",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:export",
+      "resource": "api.billing",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.billing:manage",
+      "resource": "api.billing",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Billing / Invoices API"
+    },
+    {
+      "id": "api.commission:view",
+      "resource": "api.commission",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:create",
+      "resource": "api.commission",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:update",
+      "resource": "api.commission",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:delete",
+      "resource": "api.commission",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:approve",
+      "resource": "api.commission",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:export",
+      "resource": "api.commission",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.commission:manage",
+      "resource": "api.commission",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Commission API"
+    },
+    {
+      "id": "api.subscription:view",
+      "resource": "api.subscription",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:create",
+      "resource": "api.subscription",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:update",
+      "resource": "api.subscription",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:delete",
+      "resource": "api.subscription",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:approve",
+      "resource": "api.subscription",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:export",
+      "resource": "api.subscription",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.subscription:manage",
+      "resource": "api.subscription",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Subscription API"
+    },
+    {
+      "id": "api.notifications:view",
+      "resource": "api.notifications",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:create",
+      "resource": "api.notifications",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:update",
+      "resource": "api.notifications",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:delete",
+      "resource": "api.notifications",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:approve",
+      "resource": "api.notifications",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:export",
+      "resource": "api.notifications",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.notifications:manage",
+      "resource": "api.notifications",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Notifications API"
+    },
+    {
+      "id": "api.audit:view",
+      "resource": "api.audit",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:create",
+      "resource": "api.audit",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:update",
+      "resource": "api.audit",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:delete",
+      "resource": "api.audit",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:approve",
+      "resource": "api.audit",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:export",
+      "resource": "api.audit",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.audit:manage",
+      "resource": "api.audit",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Audit Log API"
+    },
+    {
+      "id": "api.loyalty:view",
+      "resource": "api.loyalty",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:create",
+      "resource": "api.loyalty",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:update",
+      "resource": "api.loyalty",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:delete",
+      "resource": "api.loyalty",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:approve",
+      "resource": "api.loyalty",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:export",
+      "resource": "api.loyalty",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.loyalty:manage",
+      "resource": "api.loyalty",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Loyalty API"
+    },
+    {
+      "id": "api.reporting:view",
+      "resource": "api.reporting",
+      "action": "view",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:create",
+      "resource": "api.reporting",
+      "action": "create",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:update",
+      "resource": "api.reporting",
+      "action": "update",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:delete",
+      "resource": "api.reporting",
+      "action": "delete",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:approve",
+      "resource": "api.reporting",
+      "action": "approve",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:export",
+      "resource": "api.reporting",
+      "action": "export",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.reporting:manage",
+      "resource": "api.reporting",
+      "action": "manage",
+      "resourceKind": "report",
+      "resourceName": "Reporting API"
+    },
+    {
+      "id": "api.analytics:view",
+      "resource": "api.analytics",
+      "action": "view",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:create",
+      "resource": "api.analytics",
+      "action": "create",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:update",
+      "resource": "api.analytics",
+      "action": "update",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:delete",
+      "resource": "api.analytics",
+      "action": "delete",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:approve",
+      "resource": "api.analytics",
+      "action": "approve",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:export",
+      "resource": "api.analytics",
+      "action": "export",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.analytics:manage",
+      "resource": "api.analytics",
+      "action": "manage",
+      "resourceKind": "report",
+      "resourceName": "Analytics API"
+    },
+    {
+      "id": "api.workflow:view",
+      "resource": "api.workflow",
+      "action": "view",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:create",
+      "resource": "api.workflow",
+      "action": "create",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:update",
+      "resource": "api.workflow",
+      "action": "update",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:delete",
+      "resource": "api.workflow",
+      "action": "delete",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:approve",
+      "resource": "api.workflow",
+      "action": "approve",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:export",
+      "resource": "api.workflow",
+      "action": "export",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.workflow:manage",
+      "resource": "api.workflow",
+      "action": "manage",
+      "resourceKind": "operation",
+      "resourceName": "Workflow API"
+    },
+    {
+      "id": "api.ai:view",
+      "resource": "api.ai",
+      "action": "view",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:create",
+      "resource": "api.ai",
+      "action": "create",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:update",
+      "resource": "api.ai",
+      "action": "update",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:delete",
+      "resource": "api.ai",
+      "action": "delete",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:approve",
+      "resource": "api.ai",
+      "action": "approve",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:export",
+      "resource": "api.ai",
+      "action": "export",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.ai:manage",
+      "resource": "api.ai",
+      "action": "manage",
+      "resourceKind": "operation",
+      "resourceName": "AI Models API"
+    },
+    {
+      "id": "api.patient_portal:view",
+      "resource": "api.patient_portal",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:create",
+      "resource": "api.patient_portal",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:update",
+      "resource": "api.patient_portal",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:delete",
+      "resource": "api.patient_portal",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:approve",
+      "resource": "api.patient_portal",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:export",
+      "resource": "api.patient_portal",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.patient_portal:manage",
+      "resource": "api.patient_portal",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Patient Portal API"
+    },
+    {
+      "id": "api.platform_admin:view",
+      "resource": "api.platform_admin",
+      "action": "view",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:create",
+      "resource": "api.platform_admin",
+      "action": "create",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:update",
+      "resource": "api.platform_admin",
+      "action": "update",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:delete",
+      "resource": "api.platform_admin",
+      "action": "delete",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:approve",
+      "resource": "api.platform_admin",
+      "action": "approve",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:export",
+      "resource": "api.platform_admin",
+      "action": "export",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.platform_admin:manage",
+      "resource": "api.platform_admin",
+      "action": "manage",
+      "resourceKind": "operation",
+      "resourceName": "Platform Admin API"
+    },
+    {
+      "id": "api.tenant:view",
+      "resource": "api.tenant",
+      "action": "view",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:create",
+      "resource": "api.tenant",
+      "action": "create",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:update",
+      "resource": "api.tenant",
+      "action": "update",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:delete",
+      "resource": "api.tenant",
+      "action": "delete",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:approve",
+      "resource": "api.tenant",
+      "action": "approve",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:export",
+      "resource": "api.tenant",
+      "action": "export",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    },
+    {
+      "id": "api.tenant:manage",
+      "resource": "api.tenant",
+      "action": "manage",
+      "resourceKind": "api",
+      "resourceName": "Tenant API"
+    }
+  ],
+  "rolePermissions": [
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.identity:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.identity:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.identity:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.identity:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patients:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patients:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patients:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patients:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.patients:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patients:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patients:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patients:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.scheduling:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.scheduling:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.scheduling:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:delete"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:delete"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.scheduling:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:export"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.scheduling:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.scheduling:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.scheduling:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.scheduling:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.queue:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.queue:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.queue:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.queue:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.queue:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:delete"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.queue:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.queue:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.queue:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.emr:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.emr:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.emr:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.emr:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.emr:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.emr:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.emr:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.emr:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.dental:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:create"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.dental:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.dental:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:update"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.dental:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.dental:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:approve"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.dental:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:export"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.dental:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.dental:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.dental:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.dental:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.beauty:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:create"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.beauty:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.beauty:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.beauty:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.beauty:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.beauty:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.beauty:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.beauty:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.inventory:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:create"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:update"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.inventory:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:delete"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:approve"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:export"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.inventory:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.inventory:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.inventory:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.inventory:manage"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.inventory:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.billing:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:create"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.billing:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:update"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.billing:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:approve"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.billing:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.billing:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.billing:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.billing:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.billing:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.commission:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:create"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.commission:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:update"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.commission:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:approve"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.commission:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.commission:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.commission:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.commission:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.commission:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.subscription:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.subscription:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.subscription:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.subscription:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.subscription:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.subscription:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.subscription:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.subscription:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.subscription:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.notifications:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.notifications:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.notifications:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.notifications:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.notifications:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.notifications:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.notifications:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.notifications:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.audit:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.audit:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.audit:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.audit:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.audit:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.audit:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.audit:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.audit:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.audit:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.audit:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.loyalty:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.loyalty:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.loyalty:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.loyalty:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.loyalty:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.loyalty:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.loyalty:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.loyalty:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.reporting:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:create"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.reporting:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:update"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.reporting:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.reporting:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.reporting:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.reporting:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.reporting:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.analytics:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:create"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.analytics:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:update"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.analytics:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "accountant",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "inventory_manager",
+      "permissionId": "api.analytics:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.analytics:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.analytics:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.analytics:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "dentist",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "nurse",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.workflow:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.workflow:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.workflow:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:delete"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.workflow:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.workflow:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.workflow:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:view"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.ai:view"
+    },
+    {
+      "roleKey": "doctor",
+      "permissionId": "api.ai:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:create"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.ai:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:update"
+    },
+    {
+      "roleKey": "specialist",
+      "permissionId": "api.ai:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.ai:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.ai:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.ai:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.patient_portal:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.patient_portal:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "assistant",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "patient",
+      "permissionId": "api.patient_portal:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:delete"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:delete"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:delete"
+    },
+    {
+      "roleKey": "receptionist",
+      "permissionId": "api.patient_portal:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:approve"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:export"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.patient_portal:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.patient_portal:manage"
+    },
+    {
+      "roleKey": "general_manager",
+      "permissionId": "api.patient_portal:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.platform_admin:manage"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:view"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:view"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:create"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:create"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:update"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:update"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:delete"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:approve"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:approve"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:export"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:export"
+    },
+    {
+      "roleKey": "super_admin",
+      "permissionId": "api.tenant:manage"
+    },
+    {
+      "roleKey": "owner",
+      "permissionId": "api.tenant:manage"
+    }
+  ]
+}

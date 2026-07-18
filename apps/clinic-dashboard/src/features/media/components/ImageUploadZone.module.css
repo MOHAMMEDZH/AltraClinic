@@ -1,0 +1,22 @@
+.zone {
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.zone:hover:not(.disabled), .dragOver {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+}
+.disabled { opacity: 0.55; cursor: not-allowed; }
+.icon { color: var(--color-accent); }
+.title { margin: 0; font-weight: 600; font-size: var(--text-sm); }
+.hint { margin: 0; font-size: var(--text-xs); color: var(--color-text-secondary); max-width: 36ch; }
+.progress { margin: 0; font-size: var(--text-xs); color: var(--color-accent); font-weight: 600; }
+.hiddenInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

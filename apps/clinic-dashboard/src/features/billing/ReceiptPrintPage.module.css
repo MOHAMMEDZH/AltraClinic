@@ -1,0 +1,51 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+@media print {
+  .toolbar {
+    display: none;
+  }
+
+  .page {
+    padding: 0;
+  }
+}
+
+.receipt {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  background: white;
+  color: #111;
+}
+
+.header h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #ddd;
+  padding: var(--space-2);
+  text-align: start;
+}
+
+.footer {
+  margin-top: var(--space-4);
+  font-weight: 700;
+}

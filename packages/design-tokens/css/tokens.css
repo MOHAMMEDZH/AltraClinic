@@ -1,0 +1,144 @@
+/**
+ * Design tokens as CSS custom properties.
+ * Source: docs/design-tokens.json + DESIGN_SYSTEM_BLUEPRINT.md
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-primary-50: #f0f9f6;
+  --color-primary-100: #d4efe7;
+  --color-primary-200: #a8ded0;
+  --color-primary-300: #7dceb8;
+  --color-primary-400: #51bda1;
+  --color-primary-500: #26ad89;
+  --color-primary-600: #1e8a6f;
+  --color-primary-700: #166755;
+  --color-primary-800: #0e443b;
+  --color-primary-900: #062221;
+
+  --color-secondary-500: #265fb2;
+  --color-secondary-600: #1e4a8e;
+
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --color-info: #2563eb;
+
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-border: #e5e5e5;
+  --color-text-primary: #262626;
+  --color-text-secondary: #525252;
+  --color-text-tertiary: #737373;
+  --color-focus-ring: #26ad89;
+
+  /* Semantic aliases used across feature modules */
+  --color-primary: var(--color-primary-500);
+  --color-danger: var(--color-error);
+  --color-border-subtle: #ededed;
+  --color-surface-elevated: var(--color-surface-raised);
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 1rem;
+  --text-body-sm: 0.8125rem;
+  --shadow-sm: var(--shadow-1);
+
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 56px;
+  --content-max-width: 1440px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-2: 0 4px 6px rgba(0, 0, 0, 0.08);
+  --shadow-3: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  --font-arabic: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', system-ui, sans-serif;
+  --font-latin: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  --text-page-title: 2rem;
+  --text-section-title: 1.5rem;
+  --text-body: 0.875rem;
+  --text-label: 0.875rem;
+  --text-caption: 0.6875rem;
+
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --z-header: 40;
+  --z-sidebar: 30;
+  --z-overlay: 100;
+  --z-modal: 110;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+
+  --color-bg: #121212;
+  --color-surface: #1e1e1e;
+  --color-surface-raised: #2a2a2a;
+  --color-border: #404040;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #d4d4d4;
+  --color-text-tertiary: #a3a3a3;
+  --color-focus-ring: #51bda1;
+  --color-border-subtle: #333333;
+
+  --shadow-1: 0 0 0 1px var(--color-border);
+  --shadow-2: 0 0 0 1px var(--color-border);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    color-scheme: dark;
+    --color-bg: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-raised: #2a2a2a;
+    --color-border: #404040;
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #d4d4d4;
+    --color-text-tertiary: #a3a3a3;
+    --color-focus-ring: #51bda1;
+    --color-border-subtle: #333333;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] {
+    color-scheme: light;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

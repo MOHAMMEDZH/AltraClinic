@@ -1,0 +1,76 @@
+.page,
+.workspace {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.breadcrumb {
+  height: 16px;
+  width: 180px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.titleLine {
+  height: 32px;
+  width: min(280px, 60%);
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-border), var(--color-surface-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.subtitleLine {
+  height: 16px;
+  width: min(480px, 90%);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  height: 32px;
+  width: 72px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+}
+
+.upload {
+  height: 140px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.compact .gallery {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+.card {
+  height: 200px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-border), var(--color-surface-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

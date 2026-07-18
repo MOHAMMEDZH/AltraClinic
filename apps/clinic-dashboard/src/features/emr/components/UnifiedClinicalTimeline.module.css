@@ -1,0 +1,34 @@
+.panel {
+  padding: var(--space-1) 0;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.filterBtn,
+.filterActive {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.filterActive {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.compact {
+  padding: 0;
+}
+
+.compact :global(.timeline) {
+  font-size: var(--text-xs);
+}

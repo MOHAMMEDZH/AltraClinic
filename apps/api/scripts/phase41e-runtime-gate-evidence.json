@@ -1,0 +1,108 @@
+{
+  "startedAt": "2026-07-17T21:04:12.511Z",
+  "auth": {
+    "loginStatus": 200,
+    "loginHasAccessToken": true,
+    "loginHasUserId": false,
+    "meStatus": 200,
+    "userId": "a1000000-0000-4000-8000-000000000002"
+  },
+  "happyPath": {
+    "createStatus": 201,
+    "notificationId": "c53fcdd5-a5d8-4d0f-baeb-d2b05fc1a60f",
+    "intentId": "4dc0857a-80d7-43cd-bff6-a8f8b315da21",
+    "historyFound": true,
+    "jobId": "83d845ab-11f3-4de5-aab7-6efa45c27987",
+    "historyStatus": "pending",
+    "processStatusHttp": 201,
+    "processResult": {
+      "status": "skipped_leased"
+    },
+    "detailStatus": 200,
+    "receipt": {
+      "status": "DELIVERED",
+      "externalId": "c53fcdd5-a5d8-4d0f-baeb-d2b05fc1a60f",
+      "occurredAt": "2026-07-17T21:04:21.381Z"
+    },
+    "attempts": [
+      {
+        "success": true,
+        "providerKey": "in-app-inbox",
+        "error": null,
+        "attemptedAt": "2026-07-17T21:04:21.339Z"
+      }
+    ],
+    "finalJobStatus": "completed"
+  },
+  "retryDeadLetter": {
+    "attempt1": {
+      "http": 201,
+      "result": {
+        "status": "retryable"
+      },
+      "jobStatus": "pending",
+      "attemptCount": 1,
+      "scheduledAt": "2026-07-17T21:04:25.915Z",
+      "failureReason": "deliveryGateForceFail"
+    },
+    "attempt2": {
+      "http": 201,
+      "result": {
+        "status": "dead_letter"
+      },
+      "jobStatus": "dead_letter",
+      "attemptCount": 2,
+      "deadLetteredAt": "2026-07-17T21:04:24.064Z",
+      "failureReason": "deliveryGateForceFail"
+    },
+    "receipt": {
+      "id": "cd519d6d-3e9e-4582-8566-ca17e4ee7d1d",
+      "tenantId": "a1000000-0000-4000-8000-000000000001",
+      "jobId": "032f299a-a035-41cc-8324-bb37dbad062b",
+      "channel": "in-app",
+      "status": "FAILED",
+      "externalId": null,
+      "raw": null,
+      "occurredAt": "2026-07-17T21:04:23.994Z",
+      "updatedAt": "2026-07-17T21:04:24.002Z"
+    },
+    "attempts": [
+      {
+        "success": false,
+        "error": "deliveryGateForceFail",
+        "providerKey": "in-app-inbox",
+        "attemptedAt": "2026-07-17T21:04:23.751Z"
+      },
+      {
+        "success": false,
+        "error": "deliveryGateForceFail",
+        "providerKey": "in-app-inbox",
+        "attemptedAt": "2026-07-17T21:04:23.975Z"
+      }
+    ]
+  },
+  "activity": {
+    "happyPathAttempts": 1,
+    "happyPathReceipt": "DELIVERED",
+    "retryStatuses": [
+      "retryable",
+      "dead_letter"
+    ]
+  },
+  "audit": {
+    "searchHttp": 403,
+    "searchBody": {
+      "message": "User does not have permission to access audit logs.",
+      "error": "Forbidden",
+      "statusCode": 403
+    },
+    "note": "Delivery lifecycle observability is DeliveryActivityEmitterService (kind=notification.delivery.activity). Enterprise AuditEntry is primarily for config mutations."
+  },
+  "errors": [],
+  "completedAt": "2026-07-17T21:04:24.314Z",
+  "verdict": {
+    "happyPathDelivered": true,
+    "retryScheduled": true,
+    "deadLetter": true
+  }
+}

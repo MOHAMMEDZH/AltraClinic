@@ -1,0 +1,48 @@
+{
+  "name": "@booking/clinic-dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:load:notifications": "vitest run src/features/notifications/lib/virtual-list-range.load.spec.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "test:e2e:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@booking/dashboard-export": "*",
+    "@booking/design-tokens": "*",
+    "@booking/i18n": "*",
+    "@booking/permissions": "*",
+    "@booking/module-registry": "*",
+    "@tanstack/react-query": "^5.56.2",
+    "dicom-parser": "^1.8.21",
+    "lucide-react": "^0.441.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "react-window": "^1.8.10",
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1",
+    "@testing-library/react": "^16.0.0",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-window": "^1.8.8",
+    "@vitejs/plugin-react": "^4.3.1",
+    "jsdom": "^24.1.0",
+    "otplib": "^13.4.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3",
+    "vitest": "^1.6.0"
+  }
+}
