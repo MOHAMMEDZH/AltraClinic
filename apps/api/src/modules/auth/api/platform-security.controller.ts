@@ -9,21 +9,21 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { PlatformAuthRoute } from '../decorators/platform-auth-route.decorator';
-import { CurrentUser } from '../decorators/current-user.decorator';
-import { JwtClaimsVO } from '../../domain/value-objects/jwt-claims.vo';
+import { PlatformAuthRoute } from './decorators/platform-auth-route.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtClaimsVO } from '../domain/value-objects/jwt-claims.vo';
 import { PlatformMfaReplaceConfirmDto, PlatformStepUpVerifyDto } from './dto/platform-auth.dto';
-import { PlatformMfaStatusHandler } from '../../application/handlers/platform-mfa-status.handler';
-import { PlatformMfaRegenerateRecoveryCodesHandler } from '../../application/handlers/platform-mfa-regenerate-recovery-codes.handler';
-import { PlatformMfaBeginReplaceHandler } from '../../application/handlers/platform-mfa-begin-replace.handler';
-import { PlatformMfaConfirmReplaceHandler } from '../../application/handlers/platform-mfa-confirm-replace.handler';
-import { PlatformListSessionsHandler } from '../../application/handlers/platform-list-sessions.handler';
-import { PlatformRevokeSessionHandler } from '../../application/handlers/platform-revoke-session.handler';
-import { PlatformRevokeOtherSessionsHandler } from '../../application/handlers/platform-revoke-other-sessions.handler';
-import { PlatformRevokeAllSessionsHandler } from '../../application/handlers/platform-revoke-all-sessions.handler';
-import { PlatformStepUpVerifyHandler } from '../../application/handlers/platform-step-up-verify.handler';
-import { PlatformStepUpStatusHandler } from '../../application/handlers/platform-step-up-status.handler';
-import { PlatformActivityHandler } from '../../application/handlers/platform-activity.handler';
+import { PlatformMfaStatusHandler } from '../application/handlers/platform-mfa-status.handler';
+import { PlatformMfaRegenerateRecoveryCodesHandler } from '../application/handlers/platform-mfa-regenerate-recovery-codes.handler';
+import { PlatformMfaBeginReplaceHandler } from '../application/handlers/platform-mfa-begin-replace.handler';
+import { PlatformMfaConfirmReplaceHandler } from '../application/handlers/platform-mfa-confirm-replace.handler';
+import { PlatformListSessionsHandler } from '../application/handlers/platform-list-sessions.handler';
+import { PlatformRevokeSessionHandler } from '../application/handlers/platform-revoke-session.handler';
+import { PlatformRevokeOtherSessionsHandler } from '../application/handlers/platform-revoke-other-sessions.handler';
+import { PlatformRevokeAllSessionsHandler } from '../application/handlers/platform-revoke-all-sessions.handler';
+import { PlatformStepUpVerifyHandler } from '../application/handlers/platform-step-up-verify.handler';
+import { PlatformStepUpStatusHandler } from '../application/handlers/platform-step-up-status.handler';
+import { PlatformActivityHandler } from '../application/handlers/platform-activity.handler';
 import { clearPlatformCsrfCookie, clearPlatformRefreshCookie } from './platform-auth-cookies';
 
 /**

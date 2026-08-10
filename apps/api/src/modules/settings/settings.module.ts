@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard';
 
@@ -16,7 +16,7 @@ import { SettingsWebhookService } from './application/services/settings-webhook.
 
 @Module({
 
-  imports: [SubscriptionModule],
+  imports: [forwardRef(() => SubscriptionModule)],
 
   controllers: [SettingsController],
 

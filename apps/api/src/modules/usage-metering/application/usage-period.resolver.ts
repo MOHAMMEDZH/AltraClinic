@@ -10,7 +10,11 @@ export type UsageClock = () => Date;
 
 @Injectable()
 export class UsagePeriodResolver {
-  constructor(private readonly clock: UsageClock = () => new Date()) {}
+  private readonly clock: UsageClock;
+
+  constructor() {
+    this.clock = () => new Date();
+  }
 
   now(): Date {
     return this.clock();

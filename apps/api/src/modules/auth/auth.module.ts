@@ -194,7 +194,7 @@ function buildJwtConfig(): JwtConfig {
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),   // JwtTokenService handles signing config directly
-    IdentityModule,           // exports USER_REPOSITORY
+    forwardRef(() => IdentityModule),           // exports USER_REPOSITORY
     forwardRef(() => SettingsModule),
     RedisModule,
   ],

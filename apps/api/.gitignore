@@ -1,4 +1,5 @@
-storage/
+# Runtime local media blobs only (do not ignore TypeScript under infrastructure/storage/)
+/storage/
 
 # Local U01 / gate evidence (never commit)
 .step18-*

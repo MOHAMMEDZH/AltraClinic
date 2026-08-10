@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationModule } from '../notifications/notifications.module';
 import { MediaModule } from '../media/media.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 import { IdentityController } from './controllers/identity.controller';
 import { PrismaUserRepository } from './infrastructure/prisma-user.repository';
 import { AuditTrailIdentityAuditLog } from './infrastructure/audit-trail-identity-audit-log';
@@ -50,7 +51,6 @@ import {
   EMAIL_VERIFICATION_TOKEN_REPOSITORY,
 } from '../../infrastructure/provider.tokens';
 import { IDENTITY_AUDIT_LOG } from './application/ports/identity-audit-log.port';
-import { SubscriptionModule } from '../subscription/subscription.module';
 import { PrismaLoginAttemptRepository } from '../auth/infrastructure/repositories/prisma-login-attempt.repository';
 import { PrismaRefreshTokenRepository } from '../auth/infrastructure/repositories/prisma-refresh-token.repository';
 import { PrismaPasswordResetTokenRepository } from '../auth/infrastructure/repositories/prisma-password-reset-token.repository';
@@ -86,7 +86,12 @@ import { IdentityNotificationService } from './application/services/identity-not
 import { IdentityFieldPolicyService } from './application/services/identity-field-policy.service';
 
 @Module({
-  imports: [SubscriptionModule, AuditModule, NotificationModule, MediaModule],
+  imports: [
+    forwardRef(() => SubscriptionModule),
+    AuditModule,
+    forwardRef(() => NotificationModule),
+    forwardRef(() => MediaModule),
+  ],
   controllers: [IdentityController],
   providers: [
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },

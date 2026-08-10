@@ -22,7 +22,7 @@ import { SubscriptionModule } from '../subscription/subscription.module';
   controllers: [MediaController],
   providers: [
     { provide: MEDIA_ASSET_REPOSITORY, useClass: PrismaMediaAssetRepository },
-    { provide: MEDIA_STORAGE, useClass: LocalMediaStorageService },
+    { provide: MEDIA_STORAGE, useFactory: () => new LocalMediaStorageService() },
     { provide: VIRUS_SCANNER, useClass: NoOpVirusScannerService },
     SharpMediaProcessorService,
     MediaProcessingPipeline,
