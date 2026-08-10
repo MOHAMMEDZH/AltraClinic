@@ -72,6 +72,8 @@ export type SuperAdminRouteId =
   | 'operations'
   | 'audit'
   | 'sales'
+  | 'sales-representatives-new'
+  | 'sales-representatives-detail'
   | 'settings'
   | 'feature-flags-new'
   | 'feature-flags-detail'
@@ -759,19 +761,33 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
     navLabelKey: 'nav.sales',
     navGroup: 'sales',
     icon: 'briefcase',
-    policy: {
-      type: 'anyOf',
-      permissions: [
-        'sales-lead.view',
-        'sales-customer.view',
-        'sales-report.view',
-        'sales-representative.view',
-      ],
-    },
+    policy: { type: 'permission', permission: 'sales-representative.view' },
     showInNav: true,
     layout: 'app',
     step: 23,
-    status: 'placeholder',
+    status: 'available',
+  },
+  {
+    id: 'sales-representatives-new',
+    path: '/sales/new',
+    titleKey: 'routes.salesRepresentativesNew.title',
+    policy: { type: 'permission', permission: 'sales-representative.manage' },
+    showInNav: false,
+    breadcrumbParentId: 'sales',
+    layout: 'app',
+    step: 23,
+    status: 'available',
+  },
+  {
+    id: 'sales-representatives-detail',
+    path: '/sales/:id',
+    titleKey: 'routes.salesRepresentativesDetail.title',
+    policy: { type: 'permission', permission: 'sales-representative.view' },
+    showInNav: false,
+    breadcrumbParentId: 'sales',
+    layout: 'app',
+    step: 23,
+    status: 'available',
   },
   {
     id: 'settings',

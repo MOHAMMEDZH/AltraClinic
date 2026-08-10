@@ -61,7 +61,11 @@
     "test:operations-console-db": "node scripts/run-operations-console-db.mjs",
     "test:operations-console-clean-migration": "node scripts/validate-operations-console-clean.mjs",
     "test:operations-console-upgrade-migration": "node scripts/validate-operations-console-upgrade.mjs",
-    "test:operations-console-final-onepass": "node scripts/run-step22-final-onepass.mjs"
+    "test:operations-console-final-onepass": "node scripts/run-step22-final-onepass.mjs",
+    "test:sales-representatives-db": "node scripts/run-sales-representatives-db.mjs",
+    "test:sales-representatives-clean-migration": "node scripts/validate-sales-representatives-clean.mjs",
+    "test:sales-representatives-upgrade-migration": "node scripts/validate-sales-representatives-upgrade.mjs",
+    "test:sales-representatives-final-onepass": "node scripts/run-step23-final-onepass.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

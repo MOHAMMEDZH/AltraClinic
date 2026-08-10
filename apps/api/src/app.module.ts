@@ -46,6 +46,7 @@ import { TenantLifecycleModule } from './modules/tenant-lifecycle/tenant-lifecyc
 import { FeatureFlagsSettingsModule } from './modules/feature-flags-settings/feature-flags-settings.module';
 import { PlatformAuditCenterModule } from './modules/platform-audit-center/platform-audit-center.module';
 import { PlatformOperationsConsoleModule } from './modules/platform-operations-console/platform-operations-console.module';
+import { PlatformSalesRepresentativesModule } from './modules/platform-sales-representatives/platform-sales-representatives.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -111,6 +112,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     FeatureFlagsSettingsModule,
     PlatformAuditCenterModule,
     PlatformOperationsConsoleModule,
+    PlatformSalesRepresentativesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },

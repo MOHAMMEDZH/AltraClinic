@@ -22,9 +22,10 @@
 | Flexible Steps **01–20** | **Complete** |
 | Flexible Step **20** — Feature Flags and Global Settings | **Accepted / Complete** — Model B hook containment + P01–P12; Case B one-pass green; see `FEATURE_FLAGS_AND_GLOBAL_SETTINGS.md` |
 | Flexible Step **21** — Audit Center | **Accepted / Complete** — Case C one-pass 2026-08-09 exit 0; A08 D11 audit delta = 1; evidence = 0; see `AUDIT_CENTER.md` |
-| Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test`; Step 23 unauthorized |
+| Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test` |
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
-| Flexible Steps **23–29** | **Not authorized** |
+| Flexible Step **23** — Sales Representative Management | **In Progress** (authorized). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md`. Migration + module + API + Super Admin UI implemented; matrices A/S/M/C/F/H green on `booking_test`; Step 24+ unauthorized |
+| Flexible Steps **24–29** | **Not authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -1474,20 +1475,23 @@ Ops adapters only — no engine rewrite. Step 23 unauthorized.
 
 ## 52. Step 23 — Sales Representative Management
 
+### Status
+**In Progress** (authorized). Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md).
+
 ### Objective
-Sales rep records; least privilege; D-19 start.
+Sales rep records linked 1:1 to Platform users; least privilege; D-19 commercial ownership start; suspension revokes sessions.
 
 ### Prerequisites
-08, 16–18 (commercial configs valid).
+08, 16–18 (commercial configs valid); Steps 17–22 accepted.
 
 ### Non-Goals
-Full CRM; payroll.
+Full CRM; payroll; Leads/Opportunities/Pipeline (Step 24); Trials (Step 25).
 
 ### Tests
-Peer isolation ST-33.
+Peer isolation ST-33; matrices A/S/M/C/F/H per Step 23 contract; suspension old-token gate.
 
 ### Rollback
-File/feature flag.
+File/feature flag; preserve accounts/audits; never restore revoked sessions.
 
 ### Blocks
 24–26.

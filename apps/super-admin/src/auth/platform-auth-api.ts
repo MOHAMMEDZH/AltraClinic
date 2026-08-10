@@ -330,6 +330,50 @@ function readCsrfCookie(): string | null {
   return decodeURIComponent(match.slice('sa_platform_csrf='.length));
 }
 
+/** Flexible Step 23 — Sales Representative Management. */
+export interface SalesRepresentative {
+  id: string;
+  platformUserId: string;
+  email: string;
+  displayName: string | null;
+  status: string;
+  managerRepresentativeId: string | null;
+  regionCode: string | null;
+  territoryCode: string | null;
+  targetAmount: string | null;
+  targetCurrency: string | null;
+  targetPeriod: string | null;
+  roleKeys: string[];
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesRepresentativesListResponse {
+  items: SalesRepresentative[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesCustomerOwnership {
+  id: string;
+  representativeId: string;
+  platformTenantId: string;
+  rowVersion: number;
+  assignedAt: string;
+  assignedById: string;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesCustomerOwnershipLookup {
+  platformTenantId: string;
+  representativeId: string | null;
+  rowVersion?: number;
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -2503,6 +2547,184 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         method: 'GET',
         accessToken,
       });
+    },
+
+    /** Flexible Step 23 — Sales Representative Management. */
+    listSalesRepresentatives(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesRepresentativesListResponse>(
+        `/platform/sales/representatives?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesRepresentative(accessToken: string, id: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesRepresentative(
+      accessToken: string,
+      body: {
+        email: string;
+        displayName?: string;
+        regionCode?: string;
+        territoryCode?: string;
+        targetAmount?: number;
+        targetCurrency?: string;
+        targetPeriod?: 'MONTH' | 'QUARTER' | 'YEAR';
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesRepresentative>('/platform/sales/representatives', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesRepresentativeProfile(
+      accessToken: string,
+      id: string,
+      body: {
+        regionCode?: string | null;
+        territoryCode?: string | null;
+        displayName?: string;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/profile`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateSalesRepresentativeTarget(
+      accessToken: string,
+      id: string,
+      body: {
+        targetAmount?: number | null;
+        targetCurrency?: string | null;
+        targetPeriod?: 'MONTH' | 'QUARTER' | 'YEAR' | null;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/target`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    assignSalesRepresentativeManager(
+      accessToken: string,
+      id: string,
+      body: { managerRepresentativeId: string | null; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/manager`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    activateSalesRepresentative(accessToken: string, id: string, reason?: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/activate`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    suspendSalesRepresentative(accessToken: string, id: string, reason: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/suspend`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    reactivateSalesRepresentative(accessToken: string, id: string, reason: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/reactivate`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    revokeSalesRepresentativeSessions(accessToken: string, id: string, reason: string) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/${encodeURIComponent(id)}/sessions/revoke-all`,
+        { method: 'POST', accessToken, body: JSON.stringify({ reason }) },
+      );
+    },
+
+    assignSalesRepresentativeRole(accessToken: string, id: string, roleKey: string, reason?: string) {
+      return request<{ ok: true }>(`/platform/sales/representatives/${encodeURIComponent(id)}/roles`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ roleKey, reason }),
+      });
+    },
+
+    removeSalesRepresentativeRole(accessToken: string, id: string, roleKey: string) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/${encodeURIComponent(id)}/roles/${encodeURIComponent(roleKey)}`,
+        { method: 'DELETE', accessToken },
+      );
+    },
+
+    getSalesCustomerOwnership(accessToken: string, platformTenantId: string) {
+      return request<SalesCustomerOwnershipLookup>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    assignSalesCustomerOwnership(
+      accessToken: string,
+      body: { representativeId: string; platformTenantId: string; reason?: string },
+    ) {
+      return request<SalesCustomerOwnership>('/platform/sales/representatives/customer-ownership', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    reassignSalesCustomerOwnership(
+      accessToken: string,
+      platformTenantId: string,
+      body: { representativeId: string; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesCustomerOwnership>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'PUT', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    removeSalesCustomerOwnership(
+      accessToken: string,
+      platformTenantId: string,
+      body: { expectedRowVersion: number; reason?: string },
+    ) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'DELETE', accessToken, body: JSON.stringify(body) },
+      );
     },
   };
 }

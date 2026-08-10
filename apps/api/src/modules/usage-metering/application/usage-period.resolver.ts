@@ -12,8 +12,9 @@ export type UsageClock = () => Date;
 export class UsagePeriodResolver {
   private readonly clock: UsageClock;
 
-  constructor() {
-    this.clock = () => new Date();
+  /** Optional clock is for tests only; Nest must construct via useFactory (no DI of Function). */
+  constructor(clock?: UsageClock) {
+    this.clock = clock ?? (() => new Date());
   }
 
   now(): Date {

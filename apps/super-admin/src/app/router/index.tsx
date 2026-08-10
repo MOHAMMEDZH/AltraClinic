@@ -6,7 +6,6 @@ import { MfaChallengePage } from '../../pages/MfaChallengePage';
 import { SecuritySessionsPage } from '../../pages/SecuritySessionsPage';
 import { UnauthorizedPage } from '../../pages/UnauthorizedPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
-import { PlaceholderPage } from '../../pages/PlaceholderPage';
 import {
   AuditCenterPage,
   AuditCorrelationPage,
@@ -78,6 +77,9 @@ import { PlatformUsersPage } from '../../pages/PlatformUsersPage';
 import { PlatformUserInvitePage } from '../../pages/PlatformUserInvitePage';
 import { PlatformUserDetailPage } from '../../pages/PlatformUserDetailPage';
 import { PlatformRolesPage } from '../../pages/PlatformRolesPage';
+import { SalesRepresentativesListPage } from '../../pages/sales/SalesRepresentativesListPage';
+import { SalesRepresentativeCreatePage } from '../../pages/sales/SalesRepresentativeCreatePage';
+import { SalesRepresentativeDetailPage } from '../../pages/sales/SalesRepresentativeDetailPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -637,7 +639,23 @@ export function AppRouter() {
           path={relativePath('sales')}
           element={
             <RequirePermissionPolicy policy={requireRoute('sales').policy}>
-              <PlaceholderPage routeId="sales" />
+              <SalesRepresentativesListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-representatives-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-representatives-new').policy}>
+              <SalesRepresentativeCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-representatives-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-representatives-detail').policy}>
+              <SalesRepresentativeDetailPage />
             </RequirePermissionPolicy>
           }
         />

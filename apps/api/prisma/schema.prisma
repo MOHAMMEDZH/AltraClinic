@@ -973,6 +973,7 @@ model PlatformUser {
   mfaResetRequestsAsTarget    PlatformMfaResetRequest[] @relation("MfaResetTarget")
   mfaResetRequestsAsRequester PlatformMfaResetRequest[] @relation("MfaResetRequester")
   mfaResetRequestsAsApprover  PlatformMfaResetRequest[] @relation("MfaResetApprover")
+  salesRepresentative         PlatformSalesRepresentative?
 
   @@index([isActive])
   @@index([status])
@@ -2970,6 +2971,7 @@ model PlatformTenant {
   /// Step 16 commercial configuration plane (runtime licensing does not read these).
   commercialConfigs     PlatformSubscriptionCommercialConfig[]
   lifecycleRequests     PlatformTenantLifecycleRequest[]
+  salesOwnership        PlatformSalesCustomerOwnership?
 
   @@index([status])
   @@index([plan])
@@ -5853,4 +5855,107 @@ model PlatformOperationsIdempotencyRecord {
   @@unique([actorId, operation, idempotencyKey])
   @@index([expiresAt])
   @@map("platform_operations_idempotency")
+}
+
+/// Flexible Step 23 — Sales Representative profile (Platform identity extension; no credentials).
+/// Contract: docs/SALES_REPRESENTATIVE_MANAGEMENT.md
+enum PlatformSalesRepresentativeStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  SUSPENDED
+  DISABLED
+
+  @@map("platform_sales_representative_status")
+}
+
+enum PlatformSalesTargetPeriod {
+  MONTH
+  QUARTER
+  YEAR
+
+  @@map("platform_sales_target_period")
+}
+
+model PlatformSalesRepresentative {
+  id                      String                            @id @default(uuid()) @db.Uuid
+  platformUserId          String                            @unique @db.Uuid
+  status                  PlatformSalesRepresentativeStatus @default(PENDING_ACTIVATION)
+  managerRepresentativeId String?                           @db.Uuid
+  regionCode              String?                           @db.VarChar(64)
+  territoryCode           String?                           @db.VarChar(64)
+  targetAmount            Decimal?                          @db.Decimal(18, 4)
+  targetCurrency          String?                           @db.VarChar(8)
+  targetPeriod            PlatformSalesTargetPeriod?
+  rowVersion              Int                               @default(1)
+  createdAt               DateTime                          @default(now())
+  updatedAt               DateTime                          @updatedAt
+
+  platformUser PlatformUser                 @relation(fields: [platformUserId], references: [id], onDelete: Restrict)
+  manager      PlatformSalesRepresentative? @relation("SalesRepManager", fields: [managerRepresentativeId], references: [id], onDelete: Restrict)
+  reports      PlatformSalesRepresentative[] @relation("SalesRepManager")
+  ownerships   PlatformSalesCustomerOwnership[]
+
+  @@index([status])
+  @@index([managerRepresentativeId])
+  @@index([regionCode])
+  @@index([territoryCode])
+  @@map("platform_sales_representatives")
+}
+
+/// Commercial relationship ownership only — never Clinic/PHI/entitlement/subscription authority.
+/// At most one current ownership row per PlatformTenant (unique platformTenantId).
+model PlatformSalesCustomerOwnership {
+  id                  String    @id @default(uuid()) @db.Uuid
+  representativeId    String    @db.Uuid
+  platformTenantId    String    @unique @db.Uuid
+  rowVersion          Int       @default(1)
+  assignedAt          DateTime  @default(now())
+  assignedById        String    @db.Uuid
+  reason              String?   @db.VarChar(500)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  representative PlatformSalesRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  platformTenant PlatformTenant              @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  history        PlatformSalesCustomerOwnershipHistory[]
+
+  @@index([representativeId])
+  @@map("platform_sales_customer_ownership")
+}
+
+model PlatformSalesCustomerOwnershipHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ownershipId         String?  @db.Uuid
+  representativeId    String?  @db.Uuid
+  platformTenantId    String   @db.Uuid
+  /// assigned | reassigned | removed
+  action              String   @db.VarChar(32)
+  actorPlatformUserId String   @db.Uuid
+  reason              String?  @db.VarChar(500)
+  createdAt           DateTime @default(now())
+
+  ownership PlatformSalesCustomerOwnership? @relation(fields: [ownershipId], references: [id], onDelete: SetNull)
+
+  @@index([platformTenantId, createdAt])
+  @@index([representativeId, createdAt])
+  @@index([ownershipId])
+  @@map("platform_sales_customer_ownership_history")
+}
+
+model PlatformSalesIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_sales_idempotency")
 }

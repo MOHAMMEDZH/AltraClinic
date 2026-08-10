@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Flexible Step 22 — isolated upgrade validator.
- * Step 22 adds no Prisma schema migration (flag/API/adapters only).
- * Proves: full migrate deploy is idempotent; Catalog 68/136/68/13 preserved;
- * no invented ops audits/jobs/cache invalidations; no billing/Step 24+ schema.
+ * Flexible Step 23 — Sales Representative Management upgrade validator.
+ * Proves: full migrate deploy chain is idempotent with Step 23 schema present;
+ * Catalog 68/136/68/13 preserved; no invented sales audits/records from migration;
+ * no billing/Step 24+ (Leads/Opportunities/Pipeline/Trials) schema.
  */
 import { spawnSync } from 'child_process';
 import crypto from 'crypto';
@@ -13,7 +13,7 @@ import { PrismaClient } from '@prisma/client';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
-const upgradeDb = `test_ops22_upgrade_${Date.now()}`;
+const upgradeDb = `test_sales23_upgrade_${Date.now()}`;
 
 const BILLING_FORBIDDEN = [
   'platform_billing_runtime',
@@ -23,7 +23,6 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-// Flexible Step 23 tables are now authorized (representatives/ownership/history/idempotency).
 const STEP23_ALLOWED = [
   'platform_sales_representatives',
   'platform_sales_customer_ownership',
@@ -109,14 +108,12 @@ async function snapshot(prisma) {
     aliases: await prisma.healthcareCatalogAlias.count(),
     rules: await prisma.healthcareCatalogCompatibilityRule.count(),
     audits: await prisma.auditEntry.count(),
-    opsAudits: await prisma.auditEntry.count({
-      where: { category: 'operations_console' },
-    }),
+    salesAudits: await prisma.auditEntry.count({ where: { category: 'sales_representative_management' } }),
     digest: await auditDigest(prisma),
-    provisioning: await prisma.platformTenantProvisioningRequest.count().catch(() => 0),
-    exports: await prisma.platformAuditExportRecord.count().catch(() => 0),
     salesReps: await prisma.platformSalesRepresentative.count().catch(() => 0),
     salesOwnership: await prisma.platformSalesCustomerOwnership.count().catch(() => 0),
+    salesOwnershipHistory: await prisma.platformSalesCustomerOwnershipHistory.count().catch(() => 0),
+    salesIdempotency: await prisma.platformSalesIdempotencyRecord.count().catch(() => 0),
   };
 }
 
@@ -126,9 +123,9 @@ async function main() {
     await admin.$executeRawUnsafe(`SET statement_timeout = 30000`);
     await admin.$executeRawUnsafe(`CREATE DATABASE ${upgradeDb}`);
   });
-  console.log(`Step 22 upgrade validator using db=${upgradeDb}`);
+  console.log(`Step 23 upgrade validator using db=${upgradeDb}`);
 
-  console.log('Step 22 upgrade: migrate deploy (full chain)...');
+  console.log('Step 23 upgrade: migrate deploy (full chain)...');
   run('npx', ['prisma', 'migrate', 'deploy'], { DATABASE_URL: upgradeUrl });
 
   const prisma = new PrismaClient({ datasources: { db: { url: upgradeUrl } } });
@@ -142,7 +139,7 @@ async function main() {
     const before = await snapshot(prisma);
     console.log('Before idempotent re-deploy', before);
 
-    console.log('Step 22 upgrade: migrate deploy again (idempotent; no Step 22 schema)...');
+    console.log('Step 23 upgrade: migrate deploy again (idempotent; no new schema)...');
     run('npx', ['prisma', 'migrate', 'deploy'], { DATABASE_URL: upgradeUrl });
 
     const after = await snapshot(prisma);
@@ -158,13 +155,17 @@ async function main() {
     expect('Catalog Aliases', after.aliases, 68);
     expect('Catalog Compatibility rules', after.rules, 13);
     expect('audit count preserved', after.audits, before.audits);
-    expect('ops console audits (no invent)', after.opsAudits, 0);
-    expect('ops console audits preserved', after.opsAudits, before.opsAudits);
+    expect('sales representative management audits (no invent)', after.salesAudits, 0);
+    expect('sales representative management audits preserved', after.salesAudits, before.salesAudits);
     expect('audit digest preserved', after.digest, before.digest);
-    expect('provisioning count preserved', after.provisioning, before.provisioning);
-    expect('export records (no auto invent)', after.exports, 0);
     expect('sales representatives preserved (no auto invent)', after.salesReps, before.salesReps);
     expect('sales customer ownership preserved (no auto invent)', after.salesOwnership, before.salesOwnership);
+    expect(
+      'sales customer ownership history preserved (no auto invent)',
+      after.salesOwnershipHistory,
+      before.salesOwnershipHistory,
+    );
+    expect('sales idempotency records preserved (no auto invent)', after.salesIdempotency, before.salesIdempotency);
 
     for (const table of [...BILLING_FORBIDDEN, ...STEP24_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(
@@ -181,15 +182,8 @@ async function main() {
     }
 
     console.log('OK no billing/Step 24+ schema');
-    console.log('OK Step 23 sales representative schema present');
-    const opsIdem = await prisma.$queryRawUnsafe(
-      `SELECT to_regclass('public.platform_operations_idempotency') IS NOT NULL AS present`,
-    );
-    if (!opsIdem[0]?.present) {
-      throw new Error('Missing platform_operations_idempotency after upgrade');
-    }
-    console.log('OK platform_operations_idempotency present');
-    console.log('Step 22 upgrade migration validator passed.');
+    console.log('OK Step 23 sales representative schema present and stable across re-deploy');
+    console.log('Step 23 upgrade migration validator passed.');
   } finally {
     await prisma.$disconnect();
   }
