@@ -9,7 +9,7 @@ interface BranchHoursSettingsSectionProps {
 
 export function BranchHoursSettingsSection({ branches }: BranchHoursSettingsSectionProps) {
   const mapped = useMemo<DashboardBranch[]>(
-    () => branches.filter((b) => b.isActive).map((b) => ({ id: b.id, name: b.name })),
+    () => branches.filter((b) => b.isActive).map((b) => ({ id: b.id, name: b.name, nameAr: null })),
     [branches],
   );
 

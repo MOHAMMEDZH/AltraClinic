@@ -11,3 +11,21 @@ coverage/
 .next/
 out/
 *.tsbuildinfo
+
+# Local Step 17/19 gate evidence dumps under API only (never commit).
+# Path-scoped; *.txt / known one-pass basenames cannot hide .ts/.md/.sql/package files.
+/apps/api/step17-*.txt
+/apps/api/sa-*.txt
+/apps/api/clinic-*.txt
+/apps/api/step17-final-onepass.jsonl
+/apps/api/step19-final-onepass*
+/apps/api/br-step19-*
+/apps/api/step20-final-onepass*
+/apps/api/br-step20-*
+/apps/api/step20-*.txt
+/apps/api/step20-hook-containment*
+/apps/api/step19-*.txt
+/apps/api/step21-final-onepass*
+/apps/api/br-step21-*
+/apps/api/step21-*.txt
+/apps/api/step21-audit-export*

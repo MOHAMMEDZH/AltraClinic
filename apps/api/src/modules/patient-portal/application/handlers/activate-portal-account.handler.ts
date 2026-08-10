@@ -44,6 +44,7 @@ export class ActivatePortalAccountHandler {
     }
 
     account.activate(command.userId);
+    account.recordEnrollmentConsent();
     await this.repository.save(account);
 
     await this.eventPublisher.publish(

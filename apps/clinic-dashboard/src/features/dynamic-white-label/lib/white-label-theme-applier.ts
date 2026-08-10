@@ -14,7 +14,7 @@ export function applyThemeSnapshot(theme: ThemeSnapshot): void {
 
   const root = document.documentElement;
 
-  for (const [key, value] of Object.entries(lastAppliedVars)) {
+  for (const key of Object.keys(lastAppliedVars)) {
     if (!(key in theme.cssVariables)) {
       root.style.removeProperty(key);
     }

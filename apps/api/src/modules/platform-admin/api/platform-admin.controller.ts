@@ -32,11 +32,15 @@ import { RequestPrivilegedAccessHandler } from '../application/handlers/request-
 import { ApprovePrivilegedAccessHandler } from '../application/handlers/approve-privileged-access.handler';
 import { RejectPrivilegedAccessHandler } from '../application/handlers/reject-privileged-access.handler';
 import { RevokePrivilegedAccessHandler } from '../application/handlers/revoke-privileged-access.handler';
-import { GetPlatformTenantHandler } from '../application/handlers/get-platform-tenant.handler';
 import { ListPlatformTenantsHandler } from '../application/handlers/list-platform-tenants.handler';
-import { isPlatformTenantStatus, PlatformTenantStatus } from '../domain/value-objects/platform-tenant-status';
-import { isPlatformRegion, PlatformRegion } from '../domain/value-objects/platform-region';
-import { isEntitlementPlan, EntitlementPlan } from '../domain/value-objects/entitlement-plan';
+import { GetPlatformTenantHandler } from '../application/handlers/get-platform-tenant.handler';
+import {
+  GetPlatformTenantQuery,
+  ListPlatformTenantsQuery,
+} from '../application/queries/platform-admin.queries';
+import { isPlatformTenantStatus } from '../domain/value-objects/platform-tenant-status';
+import { isPlatformRegion } from '../domain/value-objects/platform-region';
+import { normalizeEntitlementPlan } from '../domain/value-objects/entitlement-plan';
 
 interface AuthenticatedRequest {
   user?: { id: string; roles: string[] };
@@ -64,8 +68,8 @@ export class PlatformAdminController {
     private readonly approveAccessHandler: ApprovePrivilegedAccessHandler,
     private readonly rejectAccessHandler: RejectPrivilegedAccessHandler,
     private readonly revokeAccessHandler: RevokePrivilegedAccessHandler,
-    private readonly getHandler: GetPlatformTenantHandler,
     private readonly listHandler: ListPlatformTenantsHandler,
+    private readonly getHandler: GetPlatformTenantHandler,
   ) {}
 
   private actor(request: AuthenticatedRequest): { id: string; roles: string[] } {
@@ -250,17 +254,6 @@ export class PlatformAdminController {
     return { status: 'ok' };
   }
 
-  @Get(':platformTenantId')
-  @RequirePermission('api.platform_admin', 'view')
-  async get(@Param('platformTenantId') platformTenantId: string, @Req() request: AuthenticatedRequest) {
-    const actor = this.actor(request);
-    return this.getHandler.execute({
-      platformTenantId,
-      actorId: actor.id,
-      actorRoles: actor.roles,
-    });
-  }
-
   @Get()
   @RequirePermission('api.platform_admin', 'view')
   async list(
@@ -273,20 +266,29 @@ export class PlatformAdminController {
     @Query('offset') offset?: string,
   ) {
     const actor = this.actor(request);
-    const normalizedStatus: PlatformTenantStatus | null =
-      status && isPlatformTenantStatus(status) ? status : null;
-    const normalizedRegion: PlatformRegion | null = region && isPlatformRegion(region) ? region : null;
-    const normalizedPlan: EntitlementPlan | null = plan && isEntitlementPlan(plan) ? plan : null;
+    return this.listHandler.execute(
+      new ListPlatformTenantsQuery(
+        actor.id,
+        actor.roles,
+        status && isPlatformTenantStatus(status) ? status : null,
+        region && isPlatformRegion(region) ? region : null,
+        normalizeEntitlementPlan(plan),
+        search?.trim() || null,
+        limit ? Number(limit) : ListPlatformTenantsHandler.DEFAULT_LIMIT,
+        offset ? Number(offset) : 0,
+      ),
+    );
+  }
 
-    return this.listHandler.execute({
-      actorId: actor.id,
-      actorRoles: actor.roles,
-      status: normalizedStatus,
-      region: normalizedRegion,
-      plan: normalizedPlan,
-      search: search?.trim() || null,
-      limit: limit ? Number(limit) : Number.NaN,
-      offset: offset ? Number(offset) : 0,
-    });
+  @Get(':platformTenantId')
+  @RequirePermission('api.platform_admin', 'view')
+  async get(
+    @Param('platformTenantId') platformTenantId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const actor = this.actor(request);
+    return this.getHandler.execute(
+      new GetPlatformTenantQuery(platformTenantId, actor.id, actor.roles),
+    );
   }
 }

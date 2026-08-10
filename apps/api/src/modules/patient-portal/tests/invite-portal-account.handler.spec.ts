@@ -49,13 +49,19 @@ describe('InvitePortalAccountHandler', () => {
     });
 
     expect(result).toHaveProperty('portalAccountId');
+    expect(result).toHaveProperty('enrollmentToken');
+    expect(result.enrollmentToken.length).toBeGreaterThan(10);
     const stored = await repository.findById(result.portalAccountId, 'tenant-1');
     expect(stored?.status.value).toBe('invited');
+    expect(stored?.enrollmentTokenHash).toBeTruthy();
     // Falls back to tenant locale when none supplied.
     expect(stored?.preferences.locale).toBe('ar');
     expect(publish).toHaveBeenCalledTimes(1);
-    expect(audit.records).toHaveLength(1);
-    expect(audit.records[0].action).toBe('patient_portal.account.invited');
+    expect(audit.records.length).toBeGreaterThanOrEqual(2);
+    expect(audit.records.some((r) => r.action === 'patient_portal.account.invited')).toBe(true);
+    expect(audit.records.some((r) => r.action === 'patient_portal.enrollment.token_issued')).toBe(
+      true,
+    );
   });
 
   it('uses the explicit locale when provided', async () => {

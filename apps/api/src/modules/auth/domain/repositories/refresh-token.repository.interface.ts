@@ -8,5 +8,7 @@ export interface RefreshTokenRepository {
   findActiveByUserId(userId: string, tenantId: string): Promise<RefreshToken[]>;
   revokeBySessionId(sessionId: string): Promise<void>;
   revokeAllByUserId(userId: string): Promise<void>;
+  /** Flexible Step 19 — revoke all active clinic sessions for a tenant on suspend/archive. */
+  revokeAllByTenantId(tenantId: string): Promise<number>;
   deleteExpired(): Promise<void>;
 }

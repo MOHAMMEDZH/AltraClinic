@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import {
   AUDIT_BUILTIN_PROVIDER_KEY,
@@ -27,7 +28,7 @@ import type {
 
 export interface BuildAuditSnapshotOptions {
   roles: string[];
-  catalog: AuditCatalogEntry[];
+  catalog: readonly AuditCatalogEntry[];
   modules: EffectiveModuleView[];
   source: AuditCatalogSource;
   registryStatus: AuditRegistryStatus;
@@ -52,7 +53,7 @@ function toTypeSnapshot(entry: AuditCatalogEntry): AuditEventTypeSnapshot | null
   return {
     kind: 'type',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     auditEventTypeId: entry.auditEventTypeId,
     categoryId: entry.categoryId,
     severity: entry.severity,
@@ -83,7 +84,7 @@ function toFeedSnapshot(entry: AuditCatalogEntry): AuditFeedSnapshot | null {
   return {
     kind: 'feed',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     feedId: entry.feedId,
     labelKey: entry.labelKey,
     descriptionKey: entry.descriptionKey ?? entry.labelKey,
@@ -106,7 +107,7 @@ function toSurfaceSnapshot(entry: AuditCatalogEntry): AuditSurfaceSnapshot | nul
   return {
     kind: 'surface',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     surfaceId: entry.surfaceId,
     labelKey: entry.labelKey,
     descriptionKey: entry.descriptionKey ?? entry.labelKey,
@@ -186,12 +187,12 @@ function isStaticEntryPermitted(entry: AuditCatalogEntry, roles: string[]): bool
   );
 }
 
-function filterStaticEntries(catalog: AuditCatalogEntry[], roles: string[]): AuditCatalogEntry[] {
+function filterStaticEntries(catalog: readonly AuditCatalogEntry[], roles: string[]): AuditCatalogEntry[] {
   return catalog.filter((entry) => isStaticEntryPermitted(entry, roles));
 }
 
 function filterRegistryEntries(
-  catalog: AuditCatalogEntry[],
+  catalog: readonly AuditCatalogEntry[],
   modules: EffectiveModuleView[],
   contributions: ReturnType<typeof extractAuditContributions>,
 ): AuditCatalogEntry[] {
@@ -333,7 +334,7 @@ export function buildAuditSnapshot(options: BuildAuditSnapshotOptions): AuditSna
 
 export function buildRegistryAuditSnapshot(
   roles: string[],
-  catalog: AuditCatalogEntry[],
+  catalog: readonly AuditCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -355,7 +356,7 @@ export function buildRegistryAuditSnapshot(
 
 export function buildStaticAuditSnapshot(
   roles: string[],
-  catalog: AuditCatalogEntry[],
+  catalog: readonly AuditCatalogEntry[],
   identity: AuditSnapshotIdentity,
   source: Extract<AuditCatalogSource, 'static-fallback' | 'static-only'> = 'static-only',
 ): AuditSnapshot {

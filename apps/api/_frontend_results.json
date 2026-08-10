@@ -1,0 +1,32 @@
+[
+    {
+        "command":  "super-admin test",
+        "status":  "PASS",
+        "exitCode":  0,
+        "seconds":  102.9
+    },
+    {
+        "command":  "super-admin typecheck",
+        "status":  "PASS",
+        "exitCode":  0,
+        "seconds":  12.6
+    },
+    {
+        "command":  "super-admin build",
+        "status":  "PASS",
+        "exitCode":  0,
+        "seconds":  17.7
+    },
+    {
+        "command":  "clinic subscription tests",
+        "status":  "PASS",
+        "exitCode":  0,
+        "seconds":  6.4
+    },
+    {
+        "command":  "clinic tsc -b",
+        "status":  "PASS",
+        "exitCode":  0,
+        "seconds":  53.1
+    }
+]

@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { SearchCatalogEntry, SearchContributionView } from './search-types';
 
 interface SearchExtensionPayload {
@@ -40,7 +40,7 @@ export function extractSearchContributions(modules: EffectiveModuleView[]): Sear
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         entityType: payload.entityType,
         labelKey: payload.labelKey ?? extension.labelKey,
         resourceIds: normalizeResourceIds(payload),
@@ -97,7 +97,7 @@ export function isCatalogSearchEntryIncluded(
 }
 
 export function getCatalogEntryForContribution(
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   contribution: SearchContributionView,
 ): SearchCatalogEntry | undefined {
   return catalog.find((entry) => entry.extensionId === contribution.extensionId);

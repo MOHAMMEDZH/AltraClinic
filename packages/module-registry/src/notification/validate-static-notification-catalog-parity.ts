@@ -41,7 +41,7 @@ function compareOptionalField(errors: string[], id: string, field: string, actua
 }
 
 /** Fail-closed field-by-field parity between STATIC_NOTIFICATION_CATALOG and canonical vocabulary. */
-export function validateStaticNotificationCatalogParity(entries: StaticNotificationCatalogEntryLike[]): string[] {
+export function validateStaticNotificationCatalogParity(entries: readonly StaticNotificationCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
 

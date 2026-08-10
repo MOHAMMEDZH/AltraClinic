@@ -4,12 +4,12 @@ import { listRegisteredComponentKeys } from './route-component-registry';
 import type { RouteCatalogEntry } from './route-types';
 import { flattenCatalogPaths } from './static-route-catalog';
 
-export function validateRouteCatalog(catalog: RouteCatalogEntry[]): string[] {
+export function validateRouteCatalog(catalog: readonly RouteCatalogEntry[]): string[] {
   const errors: string[] = [];
   const registered = new Set(listRegisteredComponentKeys());
   const seenIds = new Set<string>();
 
-  function walk(entries: RouteCatalogEntry[], parentPath = '') {
+  function walk(entries: readonly RouteCatalogEntry[], parentPath = '') {
     for (const entry of entries) {
       if (seenIds.has(entry.id)) {
         errors.push(`Duplicate route id: ${entry.id}`);
@@ -43,7 +43,7 @@ export function validateRouteCatalog(catalog: RouteCatalogEntry[]): string[] {
 }
 
 export function verifyRouteParity(
-  expectedCatalog: RouteCatalogEntry[],
+  expectedCatalog: readonly RouteCatalogEntry[],
   actualSnapshot: RouteSnapshot,
 ): RouteParityMismatch[] {
   const expectedPaths = flattenCatalogPaths(expectedCatalog).sort();
@@ -75,7 +75,7 @@ export function verifyRouteParity(
   return mismatches;
 }
 
-export function assertRouteCatalogValid(catalog: RouteCatalogEntry[]): void {
+export function assertRouteCatalogValid(catalog: readonly RouteCatalogEntry[]): void {
   const errors = validateRouteCatalog(catalog);
   if (errors.length > 0) {
     throw new Error(`Route catalog validation failed:\n${errors.join('\n')}`);

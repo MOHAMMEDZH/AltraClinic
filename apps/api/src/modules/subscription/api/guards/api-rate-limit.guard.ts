@@ -31,7 +31,7 @@ export class ApiRateLimitGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (isPublic && !path.startsWith('/auth')) {
+    if (isPublic && !path.startsWith('/auth') && !path.startsWith('/platform/auth')) {
       return true;
     }
 

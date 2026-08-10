@@ -4,12 +4,16 @@ import { Tenant } from '../domain/tenant.entity';
 import { TenantRepository } from '../domain/tenant.repository.interface';
 import { TenantSettingsVO } from '../domain/tenant-settings.vo';
 import { TenantDomainVO } from '../domain/tenant-domain.vo';
+import {
+  assertNotPlatformAuditSentinelTenantId,
+} from '../../platform-tenants/platform-tenants.tokens';
 
 @Injectable()
 export class PrismaTenantRepository implements TenantRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async save(tenant: Tenant): Promise<void> {
+    assertNotPlatformAuditSentinelTenantId(tenant.id, 'PrismaTenantRepository.save');
     await this.prisma.tenant.upsert({
       where: { id: tenant.id },
       create: {

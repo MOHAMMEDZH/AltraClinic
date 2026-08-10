@@ -21,4 +21,11 @@ describe('TenantPolicyService', () => {
     });
     expect(await service.isMaintenanceMode('tenant-1')).toBe(true);
   });
+
+  it('defaults allowPatientPortal OFF', async () => {
+    prisma.tenant.findUnique.mockResolvedValue({ features: { advancedSettings: {} } });
+    const policy = await service.getAdvancedPolicy('tenant-1');
+    expect(policy.allowPatientPortal).toBe(false);
+    expect(policy.allowObservability).toBe(false);
+  });
 });

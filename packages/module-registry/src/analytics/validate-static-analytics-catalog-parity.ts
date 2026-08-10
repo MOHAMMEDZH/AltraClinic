@@ -77,7 +77,7 @@ function compareStringArrayField(
 }
 
 /** Fail-closed field-by-field parity between STATIC_ANALYTICS_CATALOG and canonical vocabulary. */
-export function validateStaticAnalyticsCatalogParity(entries: StaticAnalyticsCatalogEntryLike[]): string[] {
+export function validateStaticAnalyticsCatalogParity(entries: readonly StaticAnalyticsCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
   const seenAnalyticsIds = new Set<string>();

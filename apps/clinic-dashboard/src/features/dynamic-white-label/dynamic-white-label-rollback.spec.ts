@@ -70,7 +70,7 @@ const EMPTY_REGISTRY = {
   isError: false,
   error: null,
   snapshot: {
-    schemaVersion: '1.0',
+    schemaVersion: '1.0' as const,
     platformVersion: '1.0.0',
     generatedAt: '2026-07-14T00:00:00.000Z',
     catalogGeneration: 1,
@@ -102,7 +102,7 @@ describe('dynamic white label rollback', () => {
       locale: 'en-US',
       setLocale: vi.fn(),
       t: (key: string) => key,
-    } as ReturnType<typeof useI18n>);
+    } as unknown as ReturnType<typeof useI18n>);
     vi.mocked(useTenantSettings).mockReturnValue({
       data: {
         name: 'Demo Clinic',
@@ -114,11 +114,11 @@ describe('dynamic white label rollback', () => {
         localizationSettings: {},
       },
       isLoading: false,
-    } as ReturnType<typeof useTenantSettings>);
+    } as unknown as ReturnType<typeof useTenantSettings>);
     vi.mocked(useIdentityFeatures).mockReturnValue({
       data: { customBranding: true, whiteLabel: true },
       isLoading: false,
-    } as ReturnType<typeof useIdentityFeatures>);
+    } as unknown as ReturnType<typeof useIdentityFeatures>);
   });
 
   afterEach(() => {
@@ -131,7 +131,7 @@ describe('dynamic white label rollback', () => {
   });
 
   it('enables registry white label by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_WHITE_LABEL_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_WHITE_LABEL_ONLY', '');
     expect(isRegistryWhiteLabelEnabled()).toBe(true);
   });
 

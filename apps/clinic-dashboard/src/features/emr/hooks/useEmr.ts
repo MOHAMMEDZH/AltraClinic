@@ -35,7 +35,6 @@ import {
   fetchEncounterBilling,
   updateStructuredNotes,
   recordMedicationRefill,
-  checkDrugInteractions,
   coSignEncounter,
   createTreatmentPlan,
   updateTreatmentPlanItemStatus,

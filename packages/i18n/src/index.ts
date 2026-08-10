@@ -10,22 +10,49 @@ export interface I18nConfig {
   messages: Record<Locale, I18nMessages>;
 }
 
+/** Default localStorage key used when a caller does not provide its own. */
 const LOCALE_STORAGE_KEY = 'booking.locale';
 const DEFAULT_LOCALE: Locale = 'en-US';
+
+function isSupportedLocale(value: unknown): value is Locale {
+  return value === 'ar-SY' || value === 'en-US';
+}
 
 export function getDirection(locale: Locale): Direction {
   return locale === 'ar-SY' ? 'rtl' : 'ltr';
 }
 
-export function loadStoredLocale(): Locale {
+/**
+ * Reads a persisted locale preference from `localStorage`.
+ *
+ * `storageKey` defaults to the package-wide `LOCALE_STORAGE_KEY`
+ * (`'booking.locale'`) for backward compatibility with existing callers
+ * (e.g. clinic-dashboard). Callers that need an isolated preference — e.g.
+ * Super Admin, which must never read or write the shared clinic key — should
+ * pass their own dedicated key. Invalid, unsupported, or missing values
+ * always fall back to `DEFAULT_LOCALE`.
+ */
+export function loadStoredLocale(storageKey: string = LOCALE_STORAGE_KEY): Locale {
   if (typeof window === 'undefined') return DEFAULT_LOCALE;
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored === 'ar-SY' || stored === 'en-US') return stored;
-  return DEFAULT_LOCALE;
+  try {
+    const stored = localStorage.getItem(storageKey);
+    return isSupportedLocale(stored) ? stored : DEFAULT_LOCALE;
+  } catch {
+    return DEFAULT_LOCALE;
+  }
 }
 
-export function persistLocale(locale: Locale): void {
-  localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+/**
+ * Persists a locale preference to `localStorage` under `storageKey`
+ * (defaults to `LOCALE_STORAGE_KEY` for backward compatibility).
+ */
+export function persistLocale(locale: Locale, storageKey: string = LOCALE_STORAGE_KEY): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(storageKey, locale);
+  } catch {
+    /* storage may be unavailable (private browsing, quota) — locale still applies in-memory */
+  }
 }
 
 function resolve(messages: I18nMessages, key: string): string | undefined {
@@ -38,12 +65,27 @@ function resolve(messages: I18nMessages, key: string): string | undefined {
   return typeof current === 'string' ? current : undefined;
 }
 
-export function createTranslator(messages: Record<Locale, I18nMessages>, locale: Locale) {
+export interface CreateTranslatorOptions {
+  /**
+   * Used instead of the raw key when both the active locale and the
+   * `en-US` fallback locale are missing a translation, and the caller did
+   * not pass an explicit `fallback` to `t()`. Leave unset to preserve the
+   * original behavior of falling back to the raw key.
+   */
+  missingFallback?: string;
+}
+
+export function createTranslator(
+  messages: Record<Locale, I18nMessages>,
+  locale: Locale,
+  options?: CreateTranslatorOptions,
+) {
   return (key: string, fallback?: string): string => {
     return (
       resolve(messages[locale], key) ??
       resolve(messages['en-US'], key) ??
       fallback ??
+      options?.missingFallback ??
       key
     );
   };

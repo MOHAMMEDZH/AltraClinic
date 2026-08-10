@@ -6,6 +6,23 @@ services:
       POSTGRES_USER: booking
       POSTGRES_PASSWORD: booking_test
       POSTGRES_DB: booking_test
+    # Disposable test DB: prefer availability under concurrent migrate/suite load.
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - synchronous_commit=off
+      - -c
+      - fsync=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - max_wal_size=2GB
+      - -c
+      - checkpoint_timeout=30min
     ports:
       - "5433:5432"
     volumes:
@@ -15,7 +32,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U booking -d booking_test"]
       interval: 3s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 10s
 
   redis-test:
     image: redis:7-alpine

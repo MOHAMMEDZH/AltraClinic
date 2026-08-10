@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type {
   WhiteLabelCapabilities,
   WhiteLabelContributionView,
@@ -7,6 +7,8 @@ import type {
 import type { WhiteLabelCatalogEntry } from './static-white-label-catalog';
 
 interface WhiteLabelExtensionPayload {
+  sortOrder?: number;
+  descriptionKey?: string;
   surfaceId?: string;
   localId?: string;
   moduleId?: string;
@@ -43,7 +45,7 @@ export function extractWhiteLabelContributions(
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         surfaceId: payload.surfaceId,
         localId: payload.localId ?? payload.surfaceId,
         surface: payload.surface,
@@ -61,7 +63,7 @@ export function extractWhiteLabelContributions(
         defaultEnabled: payload.defaultEnabled ?? true,
         rollbackBehavior: payload.rollbackBehavior ?? 'tenant-json',
         labelKey: extension.labelKey,
-        descriptionKey: extension.descriptionKey ?? extension.labelKey,
+        descriptionKey: payload.descriptionKey ?? extension.labelKey,
         providerKey: payload.providerKey ?? 'whitelabel.builtin',
         sortOrder: payload.sortOrder ?? extension.sortOrder,
         userVisible: extension.userVisible,
@@ -154,15 +156,15 @@ export function resolveWhiteLabelCapabilitiesFromSnapshot(snapshot: {
 
 export function collectEnabledFeatures(accessibleSurfaces: WhiteLabelSurfaceSnapshot[]): string[] {
   const features = new Set<string>();
-  for (const surface of accessibleSurfaces) {
-    features.add(surface.requiredFeature);
+  for (const _surface of accessibleSurfaces) {
+    features.add(_surface.requiredFeature);
   }
   return [...features].sort();
 }
 
 export function collectProviderKeys(accessibleSurfaces: WhiteLabelSurfaceSnapshot[]): string[] {
   const keys = new Set<string>();
-  for (const surface of accessibleSurfaces) {
+  for (const _surface of accessibleSurfaces) {
     keys.add('whitelabel.builtin');
   }
   return [...keys].sort();

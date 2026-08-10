@@ -11,7 +11,7 @@ import {
 
 function compareManifestToStaticCatalog(
   contributions: NotificationCenterContribution[],
-  entries: StaticNotificationCatalogEntryLike[],
+  entries: readonly StaticNotificationCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -54,7 +54,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateNotificationLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticNotificationCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticNotificationCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

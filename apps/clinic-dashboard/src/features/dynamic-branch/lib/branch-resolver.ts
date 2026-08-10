@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { BranchCatalogEntry } from './static-branch-catalog';
 import type {
   BranchCapabilityFlags,
@@ -44,7 +44,7 @@ export function extractBranchContributions(modules: EffectiveModuleView[]): Bran
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         surfaceId: payload.surfaceId,
         localId: payload.localId ?? payload.surfaceId,
         surface: payload.surface,
@@ -59,7 +59,7 @@ export function extractBranchContributions(modules: EffectiveModuleView[]): Bran
         deepLinkTemplate: payload.deepLinkTemplate ?? payload.settingsPath ?? '',
         requiredFeature: payload.requiredFeature,
         labelKey: extension.labelKey,
-        descriptionKey: payload.descriptionKey ?? extension.descriptionKey ?? extension.labelKey,
+        descriptionKey: payload.descriptionKey ?? extension.labelKey,
         providerKey: payload.providerKey ?? 'branch.builtin',
         sortOrder: payload.sortOrder ?? extension.sortOrder,
         userVisible: extension.userVisible,

@@ -26,5 +26,7 @@ export interface PortalAccountRepository {
   save(account: PortalAccount): Promise<void>;
   findById(portalAccountId: string, tenantId: string): Promise<PortalAccount | null>;
   findByPatientId(patientId: string, tenantId: string): Promise<PortalAccount | null>;
+  findByUserId(userId: string, tenantId: string): Promise<PortalAccount | null>;
+  findByEnrollmentTokenHash(tokenHash: string, tenantId: string): Promise<PortalAccount | null>;
   list(filter: PortalAccountFilter): Promise<PortalAccountPage>;
 }

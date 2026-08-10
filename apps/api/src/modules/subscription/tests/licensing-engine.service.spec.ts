@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { LicensingEngineService } from '../application/services/licensing-engine.service';
 import { LicensingAuditService } from '../application/services/licensing-audit.service';
 import { LicensingLifecycleStateService } from '../application/services/licensing-lifecycle-state.service';
@@ -187,5 +188,89 @@ describe('LicensingEngineService', () => {
     const license = await svc.resolveLicense(TENANT);
     expect(license.effectiveLimits.maxUsers).toBe(UNLIMITED);
     expect(license.features.whiteLabel).toBe('enabled');
+  });
+});
+
+
+describe('USAGE_METERING_ENFORCEMENT_ENABLED flag', () => {
+  const prev = process.env.USAGE_METERING_ENFORCEMENT_ENABLED;
+
+  afterEach(() => {
+    if (prev === undefined) delete process.env.USAGE_METERING_ENFORCEMENT_ENABLED;
+    else process.env.USAGE_METERING_ENFORCEMENT_ENABLED = prev;
+  });
+
+  function makeEngineWithUsage(
+    prisma: ReturnType<typeof makePrisma>,
+    tenantSub: ReturnType<typeof makeTenantSubscriptionService>,
+    usageEnforcement: { assertResourceAllowed: jest.Mock },
+  ) {
+    const { audit, lifecycleState } = makeAuditDeps();
+    return new LicensingEngineService(
+      prisma as never,
+      tenantSub as never,
+      audit,
+      lifecycleState,
+      undefined,
+      usageEnforcement as never,
+    );
+  }
+
+  it('flag-off uses legacy getUsage path and denies at limit', async () => {
+    process.env.USAGE_METERING_ENFORCEMENT_ENABLED = 'false';
+    const prisma = makePrisma(makePlatformTenant('LITE'));
+    const tenantSub = makeTenantSubscriptionService(prisma);
+    tenantSub.getUsage.mockResolvedValue({
+      users: 10,
+      branches: 0,
+      patients: 0,
+      appointmentsThisMonth: 0,
+      reportsThisMonth: 0,
+      apiCallsToday: 0,
+      storageGb: 0,
+      smsThisMonth: 0,
+      whatsappThisMonth: 0,
+      emailThisMonth: 0,
+    });
+    const usageEnforcement = {
+      assertResourceAllowed: jest.fn().mockResolvedValue({ allowed: true }),
+    };
+    const svc = makeEngineWithUsage(prisma, tenantSub, usageEnforcement);
+
+    await expect(svc.enforceUserLimit(TENANT)).rejects.toThrow(PlanLimitExceededException);
+    expect(usageEnforcement.assertResourceAllowed).not.toHaveBeenCalled();
+    expect(tenantSub.getUsage).toHaveBeenCalled();
+  });
+
+  it('flag-on denies via UsageEnforcementService at limit (legacy skipped)', async () => {
+    process.env.USAGE_METERING_ENFORCEMENT_ENABLED = 'true';
+    const prisma = makePrisma(makePlatformTenant('LITE'));
+    const tenantSub = makeTenantSubscriptionService(prisma);
+    const usageEnforcement = {
+      assertResourceAllowed: jest.fn().mockRejectedValue(
+        new ForbiddenException({ code: 'limit_exceeded', message: 'limit_exceeded' }),
+      ),
+    };
+    const svc = makeEngineWithUsage(prisma, tenantSub, usageEnforcement);
+
+    await expect(svc.enforceUserLimit(TENANT)).rejects.toThrow(ForbiddenException);
+    expect(usageEnforcement.assertResourceAllowed).toHaveBeenCalledWith(TENANT, 'users', '1');
+    expect(tenantSub.getUsage).not.toHaveBeenCalled();
+  });
+
+  it('flag-on routes branch and patient limits through UsageEnforcementService', async () => {
+    process.env.USAGE_METERING_ENFORCEMENT_ENABLED = 'true';
+    const prisma = makePrisma(makePlatformTenant('LITE'));
+    const tenantSub = makeTenantSubscriptionService(prisma);
+    const usageEnforcement = {
+      assertResourceAllowed: jest.fn().mockResolvedValue({ allowed: true }),
+    };
+    const svc = makeEngineWithUsage(prisma, tenantSub, usageEnforcement);
+
+    await svc.enforceBranchLimit(TENANT);
+    await svc.enforcePatientLimit(TENANT);
+    expect(usageEnforcement.assertResourceAllowed).toHaveBeenCalledWith(TENANT, 'branches', '1');
+    expect(usageEnforcement.assertResourceAllowed).toHaveBeenCalledWith(TENANT, 'patients', '1');
+    expect(tenantSub.getUsage).not.toHaveBeenCalled();
   });
 });

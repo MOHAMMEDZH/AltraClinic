@@ -41,7 +41,7 @@ export class LoginAttempt {
 
   static recordSuccess(input: {
     email: string;
-    tenantId: string;
+    tenantId: string | null;
     ipAddress: string;
     userAgent: string | null;
   }): LoginAttempt {

@@ -103,6 +103,7 @@ import { NotificationModule } from '../notifications/notifications.module';
     APPOINTMENT_REPOSITORY,
     CreateAppointmentHandler,
     UpdateAppointmentHandler,
+    GetAppointmentHandler,
     GetAvailabilityHandler,
     ListProvidersHandler,
   ],

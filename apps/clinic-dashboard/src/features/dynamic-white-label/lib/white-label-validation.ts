@@ -6,13 +6,13 @@ import type { WhiteLabelSnapshot } from './white-label-types';
 import { STATIC_WHITE_LABEL_CATALOG } from './static-white-label-catalog';
 import { resolveWhiteLabelCapabilitiesFromSnapshot } from './white-label-resolver';
 
-export function assertWhiteLabelCatalogValid(entries: WhiteLabelCatalogEntry[] = STATIC_WHITE_LABEL_CATALOG): string[] {
+export function assertWhiteLabelCatalogValid(entries: readonly WhiteLabelCatalogEntry[] = STATIC_WHITE_LABEL_CATALOG): string[] {
   return validateStaticWhiteLabelCatalogParity(entries);
 }
 
 export function verifyWhiteLabelCatalogParity(
   contributions: WhiteLabelContribution[],
-  entries: WhiteLabelCatalogEntry[],
+  entries: readonly WhiteLabelCatalogEntry[],
 ): string[] {
   const errors = validateStaticWhiteLabelCatalogParity(entries);
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));

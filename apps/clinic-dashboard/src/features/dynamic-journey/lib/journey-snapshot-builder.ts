@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import {
   JOURNEY_BUILTIN_PROVIDER_KEY,
@@ -107,7 +108,7 @@ function toStageSnapshot(entry: JourneyCatalogEntry): JourneyStageSnapshot {
   return {
     kind: 'stage',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     stageId: entry.stageId ?? entry.localId,
     categoryId: entry.categoryId ?? 'unknown',
@@ -131,7 +132,7 @@ function toDefinitionSnapshot(entry: JourneyCatalogEntry): JourneyDefinitionSnap
   return {
     kind: 'definition',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     definitionId: entry.definitionId ?? entry.localId,
     categoryId: entry.categoryId ?? 'unknown',
@@ -151,7 +152,7 @@ function toSurfaceSnapshot(entry: JourneyCatalogEntry): JourneySurfaceSnapshot {
   return {
     kind: 'surface',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     surfaceId: entry.surfaceId ?? entry.localId,
     route: entry.route,
@@ -170,7 +171,7 @@ function toPackSnapshot(entry: JourneyCatalogEntry): JourneyPackSnapshot {
   return {
     kind: 'pack',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     packId: entry.packId ?? entry.localId,
     definitionId: entry.definitionId ?? 'unknown',
@@ -191,7 +192,7 @@ function toTransitionSnapshot(entry: JourneyCatalogEntry): JourneyTransitionSnap
   return {
     kind: 'transition',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     transitionId: entry.transitionId ?? entry.localId,
     fromStageId: entry.fromStageId ?? 'unknown',
@@ -295,7 +296,7 @@ function toAutomationSnapshot(entry: JourneyCatalogEntry): JourneyAutomationSnap
     extensionId: entry.extensionId,
     automationRuleId: entry.automationRuleId ?? entry.localId,
     ownerModuleId: entry.ownerModuleId ?? 'workflow',
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     triggerType: entry.triggerType ?? canonical?.triggerType ?? 'domain-event',
     actionType: entry.actionType ?? canonical?.actionType ?? 'external',
     targetModuleId: entry.targetModuleId ?? canonical?.targetModuleId ?? 'workflow',
@@ -394,7 +395,7 @@ export interface BuildJourneySnapshotOptions {
 }
 
 export function buildRegistryJourneySnapshot(
-  roles: string[],
+  _roles: string[],
   catalog: readonly JourneyCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
@@ -613,7 +614,7 @@ export function buildStaticJourneySnapshot(
   const escalations = [...escalationIds]
     .map((id) => toEscalationSnapshot(id))
     .filter((e): e is JourneyEscalationSnapshot => Boolean(e))
-    .filter((e) => hasPermission(roles, e.permissionResource, e.permissionAction))
+    .filter((e) => hasPermission(roles, e.permissionResource, e.permissionAction as Parameters<typeof hasPermission>[2]))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const journeyConfigurationVersion = buildJourneyConfigurationVersion({

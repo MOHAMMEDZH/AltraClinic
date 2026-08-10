@@ -1,5 +1,5 @@
-export type WorkflowStepType = (typeof STEP_TYPES)[number];
-
+import type { WorkflowStepType } from './workflow-config';
+export type { WorkflowStepType };
 export interface WorkflowStepDef {
   id?: string;
   type: WorkflowStepType;

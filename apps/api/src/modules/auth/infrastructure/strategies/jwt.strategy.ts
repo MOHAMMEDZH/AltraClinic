@@ -1,73 +1,104 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtClaimsVO } from '../../domain/value-objects/jwt-claims.vo';
-import { UserRole } from '../../../identity/domain/user.entity';
+import { Request } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { JwtClaimsVO, PLATFORM_TOKEN_AUDIENCE } from '../../domain/value-objects/jwt-claims.vo';
 import { SessionCacheService } from '../../../../infrastructure/redis/services/session-cache.service';
+import type { JwtConfig } from '../services/jwt-token.service';
+import { JwtTokenService } from '../services/jwt-token.service';
+import { PrismaService } from '../../../../infrastructure/prisma.service';
 
 /**
  * Access-token JWT Passport strategy.
- *
- * PHASE 2 UPGRADE — Redis session cache integration:
- *
- *   Before:  Every request → decode JWT → trust claims blindly
- *   After:   Every request → decode JWT → check Redis session validity
- *             → if missing from Redis → still valid (cache miss, not revoked)
- *             → if JTI is in blacklist  → reject immediately
- *
- *   Redis check flow (fast path):
- *     1. Verify JWT signature + expiry (passport-jwt)
- *     2. Check JTI blacklist → reject if blacklisted
- *     3. Return claims for authorization
- *
- *   Session cache provides fast-path revocation without DB reads.
- *   A cache miss (key expired or Redis down) falls back to JWT validity only —
- *   graceful degradation that preserves availability.
- *
- * COMPETING ARCHITECT:
- *   Challenger: "Validate every access token against the DB for immediate revocation."
- *   Decision: DB check on every request = 100+ DB reads/sec at moderate traffic.
- *   Redis JTI blacklist achieves the same revocation guarantee at O(1) cost.
- *   Access tokens are short-lived (15 min), limiting the damage window.
- *   On logout: refresh token is revoked in DB + access token JTI is blacklisted
- *   in Redis with a TTL equal to the remaining access token lifetime.
+ * Supports clinic/patient secrets and dedicated platform secrets (audience-selected).
+ * Flexible Step 19 — Clinic principals re-read PlatformTenant.status on every request
+ * so an already-issued access token cannot outlive suspension/archive.
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
-    accessSecret: string,
+    private readonly jwtConfig: JwtConfig,
     private readonly sessionCache: SessionCacheService,
+    private readonly jwtTokenService: JwtTokenService,
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: accessSecret,
+      passReqToCallback: false,
+      secretOrKeyProvider: (
+        _request: Request,
+        rawJwtToken: string,
+        done: (err: Error | null, secret?: string) => void,
+      ) => {
+        try {
+          const decoded = this.jwtService.decode(rawJwtToken) as Record<string, unknown> | null;
+          if (
+            decoded &&
+            (decoded['aud'] === PLATFORM_TOKEN_AUDIENCE || decoded['sessionClass'] === 'platform')
+          ) {
+            done(null, this.jwtConfig.platformAccessSecret);
+            return;
+          }
+          done(null, this.jwtConfig.accessSecret);
+        } catch (err) {
+          done(err as Error);
+        }
+      },
     });
   }
 
-  /**
-   * Called after passport-jwt verifies the token signature and expiry.
-   * Return value is attached to request.user.
-   */
   async validate(payload: Record<string, unknown>): Promise<JwtClaimsVO> {
     if (payload['type'] !== 'access') {
       throw new UnauthorizedException('Invalid token type.');
     }
 
-    const jti = payload['jti'] as string | undefined;
+    const claims = this.jwtTokenService.claimsFromPayload(payload);
+    if (!claims) {
+      throw new UnauthorizedException('Invalid token claims.');
+    }
 
-    // Fast-path JTI blacklist check (Redis O(1) lookup)
-    if (jti && await this.sessionCache.isJtiBlacklisted(jti)) {
+    if (claims.isPlatformSession()) {
+      if (claims.aud !== PLATFORM_TOKEN_AUDIENCE) {
+        throw new UnauthorizedException('Invalid platform token audience.');
+      }
+      if (claims.iss !== this.jwtConfig.platformIssuer) {
+        throw new UnauthorizedException('Invalid platform token issuer.');
+      }
+      if (claims.tenantId != null) {
+        throw new UnauthorizedException('Platform tokens must not carry tenant context.');
+      }
+    } else if (claims.aud === PLATFORM_TOKEN_AUDIENCE || claims.sessionClass === 'platform') {
+      throw new UnauthorizedException('Invalid token principal boundary.');
+    }
+
+    const jti = claims.jti;
+
+    if (jti && (await this.sessionCache.isJtiBlacklisted(jti))) {
       throw new UnauthorizedException('Token has been revoked.');
     }
 
-    return new JwtClaimsVO({
-      sub: payload['sub'] as string,
-      tenantId: payload['tenantId'] as string,
-      branchId: (payload['branchId'] as string | null) ?? null,
-      roles: (payload['roles'] as UserRole[]) ?? [],
-      sessionId: payload['sessionId'] as string,
-      jti,
-    });
+    // Clinic/staff/patient access — fail closed on PlatformTenant lifecycle
+    if (!claims.isPlatformSession() && claims.tenantId) {
+      const platformTenant = await this.prisma.platformTenant.findUnique({
+        where: { tenantId: claims.tenantId },
+        select: { status: true },
+      });
+      if (
+        platformTenant &&
+        (platformTenant.status === 'PROVISIONING' ||
+          platformTenant.status === 'SUSPENDED' ||
+          platformTenant.status === 'ARCHIVED')
+      ) {
+        throw new UnauthorizedException({
+          code: 'tenant_lifecycle_denied',
+          message: 'Tenant is not accessible.',
+        });
+      }
+    }
+
+    return claims;
   }
 }

@@ -541,6 +541,15 @@ model Tenant {
   importExportJobs       ImportExportJob[]
   importExportDeadLetters ImportExportDeadLetter[]
   importExportArtifacts  ImportExportArtifact[]
+  integrationServiceAccounts IntegrationServiceAccount[]
+  integrationApiCredentials  IntegrationApiCredential[]
+  integrationWebhookSubscriptions IntegrationWebhookSubscription[]
+  integrationWebhookSecrets       IntegrationWebhookSecret[]
+  integrationWebhookDeliveries    IntegrationWebhookDelivery[]
+  integrationWebhookAttempts      IntegrationWebhookAttempt[]
+  integrationQuotaPolicies        IntegrationQuotaPolicy[]
+  integrationUsageCounters        IntegrationUsageCounter[]
+  integrationGatewayStats         IntegrationGatewayStat[]
 
   @@index([slug])
   @@index([status])
@@ -916,6 +925,186 @@ model LoginAttempt {
   @@index([ipAddress, attemptedAt])
   @@index([tenantId, attemptedAt])
   @@map("login_attempts")
+}
+
+/// Phase 47 Step 06 — platform control-plane identity (no tenantId).
+/// Distinct from User (tenant staff) and PortalAccount (patients).
+/// Step 07 MFA; Step 08 RBAC lifecycle fields.
+model PlatformUser {
+  id               String    @id @default(uuid()) @db.Uuid
+  /// Globally unique normalized email (lowercase)
+  email            String    @unique @db.VarChar(255)
+  passwordHash     String    @db.VarChar(255)
+  displayName      String?   @db.VarChar(200)
+  isActive         Boolean   @default(true)
+  /// invited | pending_activation | active | suspended | disabled | invitation_expired
+  status           String    @default("active") @db.VarChar(32)
+  lockedUntil      DateTime?
+  failedLoginCount Int       @default(0)
+  passwordChangedAt DateTime  @default(now())
+  lastLoginAt      DateTime?
+  lastLoginIp      String?   @db.VarChar(45)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  /// Phase 47 Step 07 — platform MFA is mandatory before session tokens are issued.
+  mfaEnabled                Boolean   @default(false)
+  /// AES-256-GCM envelope (PLATFORM_MFA_ENCRYPTION_KEY) — plaintext TOTP secret is never persisted.
+  mfaSecretEncrypted        String?   @db.Text
+  mfaKeyVersion             String?   @db.VarChar(16) @default("1")
+  /// Pending enrollment/replace secret, cleared on confirm or expiry.
+  mfaPendingSecretEncrypted String?   @db.Text
+  mfaPendingExpiresAt       DateTime?
+  mfaConfirmedAt            DateTime?
+  /// Last consumed TOTP step (replay protection) — opaque, not a timestamp of business value.
+  lastTotpStep              String?   @db.VarChar(32)
+  failedMfaCount            Int       @default(0)
+
+  /// Phase 47 Step 08 — lifecycle / authz revision
+  suspendedAt       DateTime?
+  suspendedReason   String?   @db.VarChar(500)
+  suspendedById     String?   @db.Uuid
+  authzRevision     Int       @default(0)
+
+  refreshTokens   PlatformRefreshToken[]
+  recoveryCodes   PlatformMfaRecoveryCode[]
+  roleAssignments PlatformUserRole[]
+  invitations     PlatformUserInvitation[]
+  mfaResetRequestsAsTarget    PlatformMfaResetRequest[] @relation("MfaResetTarget")
+  mfaResetRequestsAsRequester PlatformMfaResetRequest[] @relation("MfaResetRequester")
+  mfaResetRequestsAsApprover  PlatformMfaResetRequest[] @relation("MfaResetApprover")
+
+  @@index([isActive])
+  @@index([status])
+  @@index([lockedUntil])
+  @@map("platform_users")
+}
+
+/// Phase 47 Step 08 — many-to-many Platform User ↔ built-in role (role keys are code-governed).
+model PlatformUserRole {
+  id             String    @id @default(uuid()) @db.Uuid
+  platformUserId String    @db.Uuid
+  /// Stable built-in role key (e.g. security_administrator)
+  roleKey        String    @db.VarChar(64)
+  assignedAt     DateTime  @default(now())
+  assignedById   String?   @db.Uuid
+  reason         String?   @db.VarChar(500)
+  revokedAt      DateTime?
+  revokedById    String?   @db.Uuid
+  revokeReason   String?   @db.VarChar(500)
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@unique([platformUserId, roleKey])
+  @@index([platformUserId])
+  @@index([roleKey])
+  @@index([revokedAt])
+  @@map("platform_user_roles")
+}
+
+/// Phase 47 Step 08 — hashed single-use invitation tokens (raw never stored).
+model PlatformUserInvitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  platformUserId String    @db.Uuid
+  email          String    @db.VarChar(255)
+  tokenHash      String    @unique @db.VarChar(64)
+  /// pending | accepted | expired | cancelled | superseded
+  status         String    @default("pending") @db.VarChar(32)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  invitedById    String    @db.Uuid
+  /// JSON array of role keys requested at invite time
+  roleKeysJson   String    @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@index([platformUserId])
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("platform_user_invitations")
+}
+
+/// Phase 47 Step 08 — administrator-assisted MFA reset (SoD: requester ≠ approver ≠ target).
+model PlatformMfaResetRequest {
+  id             String    @id @default(uuid()) @db.Uuid
+  targetUserId   String    @db.Uuid
+  requesterId    String    @db.Uuid
+  approverId     String?   @db.Uuid
+  /// pending | approved | rejected | expired | cancelled | superseded
+  status         String    @default("pending") @db.VarChar(32)
+  reason         String    @db.VarChar(1000)
+  externalRef    String?   @db.VarChar(200)
+  riskClass      String    @default("high") @db.VarChar(32)
+  expiresAt      DateTime
+  decidedAt      DateTime?
+  decisionReason String?   @db.VarChar(1000)
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  targetUser PlatformUser  @relation("MfaResetTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  requester  PlatformUser  @relation("MfaResetRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  approver   PlatformUser? @relation("MfaResetApprover", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, status])
+  @@index([requesterId])
+  @@index([status, expiresAt])
+  @@map("platform_mfa_reset_requests")
+}
+
+/// Platform refresh sessions — tenant-less; SHA-256 hash only (raw never stored).
+model PlatformRefreshToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  platformUserId String    @db.Uuid
+  tokenHash      String    @db.VarChar(64)
+  sessionId      String    @unique @db.Uuid
+  /// Rotation family for reuse detection (revoke all on replay)
+  familyId       String    @db.Uuid
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  ipAddress      String?   @db.VarChar(45)
+  userAgent      String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  /// Phase 47 Step 07 — idle/absolute session lifetime + MFA/step-up assurance tracking.
+  lastActivityAt    DateTime  @default(now())
+  absoluteExpiresAt DateTime
+  mfaCompletedAt    DateTime?
+  /// mfa | step_up
+  assuranceLevel    String    @default("mfa") @db.VarChar(32)
+  stepUpVerifiedAt  DateTime?
+  deviceLabel       String?   @db.VarChar(120)
+  /// totp | recovery
+  authMethod        String?   @db.VarChar(32)
+  revocationReason  String?   @db.VarChar(64)
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@index([platformUserId])
+  @@index([tokenHash])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@index([absoluteExpiresAt])
+  @@map("platform_refresh_tokens")
+}
+
+/// Phase 47 Step 07 — one-time platform MFA recovery codes (SHA-256 hash only).
+model PlatformMfaRecoveryCode {
+  id             String    @id @default(uuid()) @db.Uuid
+  platformUserId String    @db.Uuid
+  codeHash       String    @db.VarChar(64)
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@unique([platformUserId, codeHash])
+  @@index([platformUserId])
+  @@index([usedAt])
+  @@map("platform_mfa_recovery_codes")
 }
 
 /// Short-lived tokens for password reset flow. One-time use.
@@ -2770,12 +2959,17 @@ model PlatformTenant {
   contractStartDate     DateTime?
   /// Primary dunning engine trigger date (T-90, T-30, T-7, T-1, T-0)
   contractEndDate       DateTime?
+  /// Flexible Step 19 — optimistic concurrency for lifecycle mutations
+  rowVersion            Int                  @default(1)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
 
   tenant                Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   privilegedGrants      PrivilegedAccessGrant[]
   platformSubscriptions PlatformSubscription[]
+  /// Step 16 commercial configuration plane (runtime licensing does not read these).
+  commercialConfigs     PlatformSubscriptionCommercialConfig[]
+  lifecycleRequests     PlatformTenantLifecycleRequest[]
 
   @@index([status])
   @@index([plan])
@@ -2843,6 +3037,8 @@ model PlatformSubscription {
   updatedAt          DateTime           @updatedAt
 
   platformTenant     PlatformTenant     @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  /// Optional correlation links from Step 16 commercial configs (never written by licensing).
+  commercialConfigs  PlatformSubscriptionCommercialConfig[]
 
   @@index([platformTenantId])
   @@index([status])
@@ -2866,6 +3062,11 @@ model PortalAccount {
   notifySms        Boolean             @default(false)
   notifyPush       Boolean             @default(false)
   invitedBy        String              @db.Uuid
+  /// SHA-256 of one-time enrollment activation token (raw token never stored)
+  enrollmentTokenHash String?          @db.VarChar(64)
+  enrollmentTokenExpiresAt DateTime?
+  /// Timestamp when enrollment consent was captured (Phase 46b)
+  enrollmentConsentAt DateTime?
   activatedAt      DateTime?
   suspendedAt      DateTime?
   suspensionReason String?             @db.Text
@@ -2879,6 +3080,8 @@ model PortalAccount {
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, userId])
+  @@unique([enrollmentTokenHash])
   @@map("portal_accounts")
 }
 
@@ -2895,6 +3098,13 @@ model CaregiverAccessGrant {
   expiresAt        DateTime?
   revokedAt        DateTime?
   revokedReason    String?       @db.Text
+  /// Phase 46d lifecycle: invited | active | declined | revoked
+  status           String        @default("active") @db.VarChar(32)
+  invitationTokenHash String?    @db.VarChar(64)
+  invitationExpiresAt DateTime?
+  acceptedAt       DateTime?
+  declinedAt       DateTime?
+  caregiverUserId  String?       @db.Uuid
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -2902,6 +3112,8 @@ model CaregiverAccessGrant {
 
   @@index([portalAccountId])
   @@index([expiresAt])
+  @@index([invitationTokenHash])
+  @@index([caregiverUserId])
   @@map("caregiver_access_grants")
 }
 
@@ -4125,4 +4337,1520 @@ model ImportExportArtifact {
   @@index([tenantId, status])
   @@index([status, expiresAt])
   @@map("import_export_artifacts")
+}
+
+// =============================================================================
+// Phase 44b — API Keys & Integrations Credential Engine
+// Hash-only persistence; raw credentials never stored.
+// =============================================================================
+
+model IntegrationServiceAccount {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  displayName  String    @db.VarChar(200)
+  status       String    @default("active") @db.VarChar(40)
+  roleBindings Json      @default("[]")
+  createdBy    String    @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  disabledAt   DateTime?
+
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  credentials IntegrationApiCredential[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("integration_service_accounts")
+}
+
+model IntegrationApiCredential {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @db.Uuid
+  branchId             String?   @db.Uuid
+  name                 String    @db.VarChar(200)
+  /// Public hint only (first 12 chars of raw key)
+  prefix               String    @db.VarChar(16)
+  /// SHA-256(pepper || raw) hex — never return via APIs
+  keyHash              String    @db.VarChar(64)
+  hashAlgorithm        String    @default("sha256_pepper_v1") @db.VarChar(40)
+  status               String    @default("active") @db.VarChar(40)
+  scopes               Json      @default("[]")
+  ownerType            String    @db.VarChar(40)
+  ownerId              String    @db.Uuid
+  serviceAccountId     String?   @db.Uuid
+  expiresAt            DateTime?
+  lastUsedAt           DateTime?
+  createdBy            String    @db.Uuid
+  rotatedFromId        String?   @db.Uuid
+  rotationGraceEndsAt  DateTime?
+  revokedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tenant         Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  serviceAccount IntegrationServiceAccount? @relation(fields: [serviceAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, keyHash])
+  @@unique([keyHash])
+  @@index([tenantId, status])
+  @@index([tenantId, prefix])
+  @@index([tenantId, ownerType, ownerId])
+  @@index([tenantId, createdAt])
+  @@index([status, rotationGraceEndsAt])
+  @@index([status, expiresAt])
+  @@map("integration_api_credentials")
+}
+
+model IntegrationProviderRecord {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @db.Uuid
+  providerKey String    @db.VarChar(120)
+  displayName String    @db.VarChar(200)
+  direction   String    @db.VarChar(20)
+  status      String    @default("active") @db.VarChar(40)
+  adapterKind String    @db.VarChar(40)
+  version     String    @db.VarChar(40)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([providerKey])
+  @@map("integration_providers")
+}
+
+model IntegrationWebhookSubscription {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  name           String    @db.VarChar(200)
+  targetUrl      String    @db.VarChar(2000)
+  providerKey    String    @db.VarChar(120)
+  status         String    @default("active") @db.VarChar(40)
+  eventFilters   Json      @default("[]")
+  secretId       String    @db.Uuid
+  secretVersion  Int       @default(1)
+  maxAttempts    Int       @default(8)
+  timeoutMs      Int       @default(10000)
+  customHeaders  Json      @default("{}")
+  createdBy      String    @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  disabledAt     DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@map("integration_webhook_subscriptions")
+}
+
+model IntegrationWebhookSecret {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @db.Uuid
+  subscriptionId     String    @db.Uuid
+  version            Int
+  ciphertextEnvelope String
+  status             String    @default("active") @db.VarChar(40)
+  createdAt          DateTime  @default(now())
+  retiredAt          DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, subscriptionId])
+  @@map("integration_webhook_secrets")
+}
+
+model IntegrationWebhookDelivery {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  subscriptionId String    @db.Uuid
+  eventType      String    @db.VarChar(120)
+  eventId        String    @db.Uuid
+  correlationId  String    @db.VarChar(100)
+  causationId    String?   @db.VarChar(100)
+  payloadJson    String
+  status         String    @default("pending") @db.VarChar(40)
+  attemptCount   Int       @default(0)
+  maxAttempts    Int       @default(8)
+  nextAttemptAt  DateTime?
+  lastError      String?   @db.VarChar(1000)
+  responseCode   Int?
+  deadLetteredAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
+
+  tenant   Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  attempts IntegrationWebhookAttempt[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, subscriptionId])
+  @@map("integration_webhook_deliveries")
+}
+
+model IntegrationWebhookAttempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  deliveryId    String   @db.Uuid
+  attemptNumber Int
+  outcome       String   @db.VarChar(40)
+  responseCode  Int?
+  latencyMs     Int?
+  errorMessage  String?  @db.VarChar(1000)
+  nonce         String?  @db.VarChar(100)
+  createdAt     DateTime @default(now())
+
+  tenant   Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  delivery IntegrationWebhookDelivery   @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, deliveryId])
+  @@map("integration_webhook_attempts")
+}
+
+/// Phase 44d — quota policy definitions (tenant-scoped or global defaults).
+model IntegrationQuotaPolicy {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @db.Uuid
+  name          String   @db.VarChar(200)
+  scopeKind     String   @db.VarChar(40)
+  limitCount    Int
+  windowSeconds Int
+  burstLimit    Int      @default(50)
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, scopeKind])
+  @@index([enabled])
+  @@map("integration_quota_policies")
+}
+
+/// Phase 44d — durable usage counters (optional persistence; runtime may use in-memory).
+model IntegrationUsageCounter {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @db.Uuid
+  credentialId       String?  @db.Uuid
+  serviceAccountId   String?  @db.Uuid
+  endpoint           String   @db.VarChar(200)
+  successCount       Int      @default(0)
+  authFailureCount   Int      @default(0)
+  authzFailureCount  Int      @default(0)
+  quotaFailureCount  Int      @default(0)
+  deniedCount        Int      @default(0)
+  windowStart        DateTime
+  windowSeconds      Int
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, credentialId, endpoint, windowStart])
+  @@index([tenantId, windowStart])
+  @@index([tenantId, credentialId])
+  @@map("integration_usage_counters")
+}
+
+/// Phase 44d — gateway aggregate statistics snapshots.
+model IntegrationGatewayStat {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  periodStart           DateTime
+  periodEnd             DateTime
+  authSuccessCount      Int      @default(0)
+  authRejectedCount     Int      @default(0)
+  quotaExceededCount    Int      @default(0)
+  avgAuthLatencyMs      Int?
+  avgQuotaLatencyMs     Int?
+  createdAt             DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, periodStart])
+  @@map("integration_gateway_stats")
+}
+
+// =============================================================================
+// ── DOMAIN · PHASE 47 STEP 12 — HEALTHCARE CATALOG (METADATA SoR) ────────────
+// Catalog identity, localization, lifecycle, aliases, and compatibility rules.
+// Does NOT grant runtime entitlements (LicensingEngineService remains authority).
+// No Plan / Plan Version / Add-on / Override / tenant-assignment tables.
+// =============================================================================
+
+enum HealthcareCatalogKind {
+  FACILITY_TYPE
+  SPECIALTY
+  MODULE
+  FEATURE
+  LIMIT
+}
+
+enum HealthcareCatalogLifecycle {
+  DRAFT
+  ACTIVE
+  DEPRECATED
+  RETIRED
+}
+
+enum HealthcareCatalogRuleType {
+  REQUIRES
+  REQUIRES_ANY_OF
+  INCOMPATIBLE_WITH
+  ALLOWED_FOR
+  NOT_ALLOWED_FOR
+}
+
+enum HealthcareCatalogLimitValueType {
+  INTEGER
+  DECIMAL
+  DURATION
+  BYTES
+  COUNT
+}
+
+/// Authoritative healthcare catalog entry. Canonical keys are immutable.
+model HealthcareCatalogItem {
+  id                       String                         @id @default(uuid()) @db.Uuid
+  canonicalKey             String                         @unique @db.VarChar(128)
+  kind                     HealthcareCatalogKind
+  lifecycle                HealthcareCatalogLifecycle     @default(DRAFT)
+  sortOrder                Int                            @default(0)
+  iconKey                  String?                        @db.VarChar(64)
+  parentItemId             String?                        @db.Uuid
+  owningModuleItemId       String?                        @db.Uuid
+  systemSeeded             Boolean                        @default(false)
+  version                  Int                            @default(1)
+  replacementCanonicalKey  String?                        @db.VarChar(128)
+  limitValueType           HealthcareCatalogLimitValueType?
+  limitUnit                String?                        @db.VarChar(64)
+  limitMin                 Decimal?                       @db.Decimal(18, 4)
+  limitMax                 Decimal?                       @db.Decimal(18, 4)
+  limitZeroValid           Boolean?
+  limitUnlimitedSupported  Boolean?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+
+  parent                   HealthcareCatalogItem?         @relation("CatalogItemParent", fields: [parentItemId], references: [id], onDelete: Restrict)
+  children                 HealthcareCatalogItem[]        @relation("CatalogItemParent")
+  owningModule             HealthcareCatalogItem?         @relation("CatalogItemOwningModule", fields: [owningModuleItemId], references: [id], onDelete: Restrict)
+  ownedCapabilities        HealthcareCatalogItem[]        @relation("CatalogItemOwningModule")
+  translations             HealthcareCatalogTranslation[]
+  aliases                  HealthcareCatalogAlias[]
+  rulesAsSubject           HealthcareCatalogCompatibilityRule[] @relation("CatalogRuleSubject")
+  rulesAsTarget            HealthcareCatalogCompatibilityRule[] @relation("CatalogRuleTarget")
+  planVersionEntitlements  PlatformPlanVersionEntitlement[]
+  planVersionLimits        PlatformPlanVersionLimit[]
+  addOnVersionEntitlements PlatformAddOnVersionEntitlement[]
+  addOnVersionLimitEffects PlatformAddOnVersionLimitEffect[]
+  commercialOverrideEffects PlatformCommercialOverrideEffect[]
+
+  @@index([kind, lifecycle])
+  @@index([sortOrder])
+  @@map("healthcare_catalog_items")
+}
+
+model HealthcareCatalogTranslation {
+  id               String                @id @default(uuid()) @db.Uuid
+  itemId           String                @db.Uuid
+  locale           String                @db.VarChar(10)
+  displayName      String                @db.VarChar(200)
+  shortDescription String                @db.VarChar(500)
+  longDescription  String?               @db.Text
+  helpText         String?               @db.VarChar(500)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  item HealthcareCatalogItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([itemId, locale])
+  @@index([locale, displayName])
+  @@map("healthcare_catalog_translations")
+}
+
+model HealthcareCatalogAlias {
+  id              String                     @id @default(uuid()) @db.Uuid
+  itemId          String                     @db.Uuid
+  aliasValue      String                     @db.VarChar(128)
+  sourceNamespace String                     @db.VarChar(64)
+  lifecycle       HealthcareCatalogLifecycle @default(ACTIVE)
+  reason          String?                    @db.VarChar(500)
+  createdAt       DateTime                   @default(now())
+  retiredAt       DateTime?
+
+  item HealthcareCatalogItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceNamespace, aliasValue])
+  @@index([itemId])
+  @@map("healthcare_catalog_aliases")
+}
+
+model HealthcareCatalogCompatibilityRule {
+  id              String                     @id @default(uuid()) @db.Uuid
+  ruleType        HealthcareCatalogRuleType
+  subjectItemId   String                     @db.Uuid
+  targetItemId    String                     @db.Uuid
+  anyOfGroupKey   String                     @default("") @db.VarChar(64)
+  lifecycle       HealthcareCatalogLifecycle @default(DRAFT)
+  explanationEn   String                     @db.VarChar(500)
+  explanationAr   String                     @db.VarChar(500)
+  systemSeeded    Boolean                    @default(false)
+  version         Int                        @default(1)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  subject HealthcareCatalogItem @relation("CatalogRuleSubject", fields: [subjectItemId], references: [id], onDelete: Restrict)
+  target  HealthcareCatalogItem @relation("CatalogRuleTarget", fields: [targetItemId], references: [id], onDelete: Restrict)
+
+  @@unique([ruleType, subjectItemId, targetItemId, anyOfGroupKey])
+  @@index([lifecycle, ruleType])
+  @@map("healthcare_catalog_compatibility_rules")
+}
+
+/// Durable Catalog mutation idempotency (create item / create rule).
+/// Stores request hash + result identity only — never raw bodies, tokens, or translations.
+model HealthcareCatalogIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("healthcare_catalog_idempotency")
+}
+
+// ─── Phase 47 Step 13 — Platform Plans & Plan Versions ─────────────────────
+// Commercial metadata SoR only. No entitlements, limits, add-ons, overrides,
+// or subscription Plan Version FKs. Does not alter LicensingEngineService.
+
+enum PlatformPlanLifecycle {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PlatformPlanVersionLifecycle {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+/// Step 14 — commercial definition ownership for seed/import safety.
+/// UNINITIALIZED: seed may populate once.
+/// SEED_INITIALIZED: seed already populated; never re-seed.
+/// ADMINISTRATOR_OWNED: operator saved (including intentional empty); never re-seed.
+enum PlatformPlanCommercialDefinitionOwnership {
+  UNINITIALIZED
+  SEED_INITIALIZED
+  ADMINISTRATOR_OWNED
+}
+
+enum PlatformPlanAliasLifecycle {
+  ACTIVE
+  RETIRED
+}
+
+/// Stable commercial product family. Canonical key immutable.
+model PlatformPlan {
+  id           String               @id @default(uuid()) @db.Uuid
+  canonicalKey String               @unique @db.VarChar(128)
+  lifecycle    PlatformPlanLifecycle @default(DRAFT)
+  sortOrder    Int                  @default(0)
+  systemSeeded Boolean              @default(false)
+  version      Int                  @default(1)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  translations PlatformPlanTranslation[]
+  aliases      PlatformPlanAlias[]
+  versions     PlatformPlanVersion[]
+
+  @@index([lifecycle, sortOrder])
+  @@map("platform_plans")
+}
+
+model PlatformPlanTranslation {
+  id               String   @id @default(uuid()) @db.Uuid
+  planId           String   @db.Uuid
+  locale           String   @db.VarChar(10)
+  displayName      String   @db.VarChar(200)
+  shortDescription String   @db.VarChar(500)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  plan PlatformPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, locale])
+  @@index([locale, displayName])
+  @@map("platform_plan_translations")
+}
+
+/// Controlled legacy identifier mapping. No automatic subscription migration.
+model PlatformPlanAlias {
+  id               String                     @id @default(uuid()) @db.Uuid
+  planId           String                     @db.Uuid
+  sourceNamespace  String                     @db.VarChar(64)
+  aliasValue       String                     @db.VarChar(128)
+  normalizedValue  String                     @db.VarChar(128)
+  lifecycle        PlatformPlanAliasLifecycle @default(ACTIVE)
+  migrationNote    String?                    @db.VarChar(500)
+  version          Int                        @default(1)
+  createdAt        DateTime                   @default(now())
+  retiredAt        DateTime?
+
+  plan PlatformPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceNamespace, aliasValue])
+  @@index([planId, lifecycle])
+  @@index([sourceNamespace, normalizedValue])
+  @@map("platform_plan_aliases")
+}
+
+/// Versioned commercial metadata snapshot. Published rows are immutable.
+model PlatformPlanVersion {
+  id                      String                        @id @default(uuid()) @db.Uuid
+  planId                  String                        @db.Uuid
+  versionNumber           Int
+  lifecycle               PlatformPlanVersionLifecycle  @default(DRAFT)
+  /// Optimistic concurrency token (independent of commercial versionNumber).
+  rowVersion              Int                           @default(1)
+  effectiveFrom           DateTime?
+  retireAt                DateTime?
+  trialDefaultEnabled     Boolean?
+  trialDefaultDays        Int?
+  /// Pricing intentionally nullable — Step 13 marks unavailable when null.
+  priceAmountMinor        Int?
+  priceCurrency           String?                       @db.VarChar(3)
+  billingInterval         String?                       @db.VarChar(16)
+  billingIntervalCount    Int?
+  internalReleaseNotes    String?                       @db.VarChar(2000)
+  publishedAt             DateTime?
+  publishedByPlatformUserId String?                     @db.Uuid
+  publicationFingerprint  String?                       @db.VarChar(64)
+  publicationReason       String?                       @db.VarChar(500)
+  sourceVersionId         String?                       @db.Uuid
+  systemSeeded            Boolean                       @default(false)
+  /// Step 14 seed ownership — never infer from child-row count alone.
+  commercialDefinitionOwnership PlatformPlanCommercialDefinitionOwnership @default(UNINITIALIZED)
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+
+  plan         PlatformPlan                   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  sourceVersion PlatformPlanVersion?          @relation("PlanVersionCloneSource", fields: [sourceVersionId], references: [id], onDelete: Restrict)
+  clones       PlatformPlanVersion[]          @relation("PlanVersionCloneSource")
+  translations PlatformPlanVersionTranslation[]
+  entitlements PlatformPlanVersionEntitlement[]
+  limits       PlatformPlanVersionLimit[]
+  /// Step 16 commercial Plan Version assignments (definition remains immutable).
+  commercialConfigs PlatformSubscriptionCommercialConfig[]
+
+  @@unique([planId, versionNumber])
+  @@index([planId, lifecycle])
+  @@index([lifecycle, publishedAt])
+  @@map("platform_plan_versions")
+}
+
+/// Step 14 — explicit Plan Version capability entitlement (commercial definition only).
+model PlatformPlanVersionEntitlement {
+  id            String   @id @default(uuid()) @db.Uuid
+  planVersionId String   @db.Uuid
+  catalogItemId String   @db.Uuid
+  createdAt     DateTime @default(now())
+
+  planVersion PlatformPlanVersion  @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  catalogItem HealthcareCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([planVersionId, catalogItemId])
+  @@index([planVersionId])
+  @@index([catalogItemId])
+  @@map("platform_plan_version_entitlements")
+}
+
+/// Step 14 — typed Plan Version Limit assignment (commercial definition only).
+/// Missing row = Unconfigured. unlimited=true XOR valueText set.
+model PlatformPlanVersionLimit {
+  id            String   @id @default(uuid()) @db.Uuid
+  planVersionId String   @db.Uuid
+  catalogItemId String   @db.Uuid
+  unlimited     Boolean  @default(false)
+  /// Exact typed value as text (INTEGER/COUNT whole numbers; DECIMAL exact digits).
+  valueText     String?  @db.VarChar(64)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  planVersion PlatformPlanVersion  @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  catalogItem HealthcareCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([planVersionId, catalogItemId])
+  @@index([planVersionId])
+  @@index([catalogItemId])
+  @@map("platform_plan_version_limits")
+}
+
+model PlatformPlanVersionTranslation {
+  id               String   @id @default(uuid()) @db.Uuid
+  planVersionId    String   @db.Uuid
+  locale           String   @db.VarChar(10)
+  releaseLabel     String   @db.VarChar(200)
+  shortDescription String   @db.VarChar(500)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  planVersion PlatformPlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([planVersionId, locale])
+  @@index([locale, releaseLabel])
+  @@map("platform_plan_version_translations")
+}
+
+/// Durable Plans mutation idempotency (separate bounded context from Catalog).
+model PlatformPlanIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_plan_idempotency")
+}
+
+// ─── Phase 47 Step 15 — Platform Add-ons & Commercial Overrides ────────────
+// Commercial definition SoR only. No tenantId/subscriptionId assignment FKs.
+// Publish/approve do not call LicensingEngineService or change runtime.
+// Empty Add-on catalog is valid (no invented addon.* seed products).
+
+enum PlatformAddOnLifecycle {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PlatformAddOnVersionLifecycle {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum PlatformAddOnLimitEffectType {
+  SET_ABSOLUTE
+  INCREASE_BY
+  SET_UNLIMITED
+}
+
+enum PlatformCommercialOverrideLifecycle {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  REVOKED
+  EXPIRED
+}
+
+enum PlatformCommercialOverrideEffectKind {
+  ENTITLEMENT_GRANT
+  ENTITLEMENT_SUPPRESS
+  LIMIT_SET_ABSOLUTE
+  LIMIT_INCREASE_BY
+  LIMIT_SET_UNLIMITED
+}
+
+enum PlatformCommercialOverrideReasonCode {
+  SALES_CONCESSION
+  CONTRACTUAL_EXCEPTION
+  SUPPORT_WAIVER
+  TRIAL_EXTENSION
+  OTHER
+}
+
+/// Canonical reusable Add-on product family. Key immutable (addon.*).
+model PlatformAddOn {
+  id           String                @id @default(uuid()) @db.Uuid
+  canonicalKey String                @unique @db.VarChar(128)
+  lifecycle    PlatformAddOnLifecycle @default(DRAFT)
+  rowVersion   Int                   @default(1)
+  systemSeeded Boolean               @default(false)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  translations PlatformAddOnTranslation[]
+  versions     PlatformAddOnVersion[]
+
+  @@index([lifecycle])
+  @@map("platform_addons")
+}
+
+model PlatformAddOnTranslation {
+  id               String   @id @default(uuid()) @db.Uuid
+  addOnId          String   @db.Uuid
+  locale           String   @db.VarChar(10)
+  displayName      String   @db.VarChar(200)
+  shortDescription String   @db.VarChar(500)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  addOn PlatformAddOn @relation(fields: [addOnId], references: [id], onDelete: Restrict)
+
+  @@unique([addOnId, locale])
+  @@index([locale, displayName])
+  @@map("platform_addon_translations")
+}
+
+/// Versioned Add-on commercial snapshot. Published rows are immutable.
+model PlatformAddOnVersion {
+  id                        String                       @id @default(uuid()) @db.Uuid
+  addOnId                   String                       @db.Uuid
+  versionNumber             Int
+  lifecycle                 PlatformAddOnVersionLifecycle @default(DRAFT)
+  rowVersion                Int                          @default(1)
+  publishedAt               DateTime?
+  publishedByPlatformUserId String?                      @db.Uuid
+  publicationFingerprint    String?                      @db.VarChar(64)
+  publicationReason         String?                      @db.VarChar(500)
+  sourceVersionId           String?                      @db.Uuid
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime                     @updatedAt
+
+  addOn          PlatformAddOn                        @relation(fields: [addOnId], references: [id], onDelete: Restrict)
+  sourceVersion  PlatformAddOnVersion?                @relation("AddOnVersionCloneSource", fields: [sourceVersionId], references: [id], onDelete: Restrict)
+  clones         PlatformAddOnVersion[]               @relation("AddOnVersionCloneSource")
+  translations   PlatformAddOnVersionTranslation[]
+  entitlements   PlatformAddOnVersionEntitlement[]
+  limitEffects   PlatformAddOnVersionLimitEffect[]
+  applicability  PlatformAddOnVersionApplicability[]
+  /// Step 16 commercial Add-on Version assignments.
+  commercialAssignments PlatformSubscriptionAddOnAssignment[]
+
+  @@unique([addOnId, versionNumber])
+  @@index([addOnId, lifecycle])
+  @@index([lifecycle, publishedAt])
+  @@map("platform_addon_versions")
+}
+
+model PlatformAddOnVersionTranslation {
+  id               String   @id @default(uuid()) @db.Uuid
+  addOnVersionId   String   @db.Uuid
+  locale           String   @db.VarChar(10)
+  releaseLabel     String   @db.VarChar(200)
+  shortDescription String   @db.VarChar(500)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  addOnVersion PlatformAddOnVersion @relation(fields: [addOnVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([addOnVersionId, locale])
+  @@index([locale, releaseLabel])
+  @@map("platform_addon_version_translations")
+}
+
+/// Explicit MODULE/FEATURE grant on an Add-on Version (enforced in service).
+model PlatformAddOnVersionEntitlement {
+  id             String   @id @default(uuid()) @db.Uuid
+  addOnVersionId String   @db.Uuid
+  catalogItemId  String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  addOnVersion PlatformAddOnVersion   @relation(fields: [addOnVersionId], references: [id], onDelete: Restrict)
+  catalogItem  HealthcareCatalogItem  @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([addOnVersionId, catalogItemId])
+  @@index([addOnVersionId])
+  @@index([catalogItemId])
+  @@map("platform_addon_version_entitlements")
+}
+
+/// Typed Limit effect on an Add-on Version (LIMIT kind enforced in service).
+model PlatformAddOnVersionLimitEffect {
+  id             String                       @id @default(uuid()) @db.Uuid
+  addOnVersionId String                       @db.Uuid
+  catalogItemId  String                       @db.Uuid
+  effectType     PlatformAddOnLimitEffectType
+  unlimited      Boolean                      @default(false)
+  valueText      String?                      @db.VarChar(64)
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  addOnVersion PlatformAddOnVersion  @relation(fields: [addOnVersionId], references: [id], onDelete: Restrict)
+  catalogItem  HealthcareCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([addOnVersionId, catalogItemId])
+  @@index([addOnVersionId])
+  @@index([catalogItemId])
+  @@map("platform_addon_version_limit_effects")
+}
+
+/// Plan applicability by canonical plan key string (not FK — validated in service).
+model PlatformAddOnVersionApplicability {
+  id               String   @id @default(uuid()) @db.Uuid
+  addOnVersionId   String   @db.Uuid
+  planCanonicalKey String   @db.VarChar(128)
+  createdAt        DateTime @default(now())
+
+  addOnVersion PlatformAddOnVersion @relation(fields: [addOnVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([addOnVersionId, planCanonicalKey])
+  @@index([addOnVersionId])
+  @@index([planCanonicalKey])
+  @@map("platform_addon_version_applicability")
+}
+
+/// Governed commercial override definition. No tenantId — assignment is Step 16+.
+model PlatformCommercialOverride {
+  id                         String                               @id @default(uuid()) @db.Uuid
+  lifecycle                  PlatformCommercialOverrideLifecycle  @default(DRAFT)
+  rowVersion                 Int                                  @default(1)
+  reasonCode                 PlatformCommercialOverrideReasonCode
+  reasonNote                 String                               @db.VarChar(500)
+  effectiveFrom              DateTime?
+  expiresAt                  DateTime?
+  createdByPlatformUserId    String                               @db.Uuid
+  submittedByPlatformUserId  String?                              @db.Uuid
+  approvedByPlatformUserId   String?                              @db.Uuid
+  rejectedByPlatformUserId   String?                              @db.Uuid
+  revokedByPlatformUserId    String?                              @db.Uuid
+  submittedAt                DateTime?
+  approvedAt                 DateTime?
+  rejectedAt                 DateTime?
+  revokedAt                  DateTime?
+  rejectionReason            String?                              @db.VarChar(500)
+  revocationReason           String?                              @db.VarChar(500)
+  predecessorId              String?                              @db.Uuid
+  compositionFingerprint     String?                              @db.VarChar(64)
+  createdAt                  DateTime                             @default(now())
+  updatedAt                  DateTime                             @updatedAt
+
+  predecessor PlatformCommercialOverride?  @relation("OverrideSupersede", fields: [predecessorId], references: [id], onDelete: Restrict)
+  successors  PlatformCommercialOverride[] @relation("OverrideSupersede")
+  effects     PlatformCommercialOverrideEffect[]
+  /// Step 16 commercial Override assignments.
+  commercialAssignments PlatformSubscriptionOverrideAssignment[]
+
+  @@index([lifecycle])
+  @@index([createdByPlatformUserId])
+  @@index([predecessorId])
+  @@map("platform_commercial_overrides")
+}
+
+model PlatformCommercialOverrideEffect {
+  id            String                               @id @default(uuid()) @db.Uuid
+  overrideId    String                               @db.Uuid
+  effectKind    PlatformCommercialOverrideEffectKind
+  catalogItemId String                               @db.Uuid
+  unlimited     Boolean                              @default(false)
+  valueText     String?                              @db.VarChar(64)
+  createdAt     DateTime                             @default(now())
+
+  override    PlatformCommercialOverride @relation(fields: [overrideId], references: [id], onDelete: Restrict)
+  catalogItem HealthcareCatalogItem      @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([overrideId, catalogItemId, effectKind])
+  @@index([overrideId])
+  @@index([catalogItemId])
+  @@map("platform_commercial_override_effects")
+}
+
+/// Durable Add-on/Override mutation idempotency (separate from Plans/Catalog).
+model PlatformCommercialIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_commercial_idempotency")
+}
+
+// ─── Phase 47 Step 16 — Subscription Commercial Assignment ─────────────────
+// Commercial configuration SoR only. Does NOT replace PlatformSubscription runtime
+// billing fields. LicensingEngineService MUST NOT read these tables in Step 16.
+
+enum PlatformSubscriptionCommercialLifecycle {
+  DRAFT
+  SCHEDULED
+  ACTIVE_COMMERCIAL
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+  SUPERSEDED
+
+  @@map("platform_subscription_commercial_lifecycle")
+}
+
+/// Step 16 commercial subscription configuration (identity for /platform/subscriptions/:id).
+model PlatformSubscriptionCommercialConfig {
+  id                         String                                   @id @default(uuid()) @db.Uuid
+  platformTenantId           String                                   @db.Uuid
+  /// Optional correlation to existing billing/runtime subscription row — never mutated by Step 16.
+  platformSubscriptionId     String?                                  @db.Uuid
+  lifecycle                  PlatformSubscriptionCommercialLifecycle  @default(DRAFT)
+  /// At most one current config per tenant (partial unique index in migration SQL).
+  isCurrent                  Boolean                                  @default(true)
+  rowVersion                 Int                                      @default(1)
+  planVersionId              String?                                  @db.Uuid
+  commercialStart            DateTime?
+  commercialEnd              DateTime?
+  scheduledActivationAt      DateTime?
+  cancelledAt                DateTime?
+  cancellationEffectiveAt    DateTime?
+  reasonCode                 String?                                  @db.VarChar(64)
+  reasonNote                 String?                                  @db.VarChar(500)
+  commercialFingerprint      String?                                  @db.VarChar(64)
+  fingerprintSchemaVersion   String?                                  @db.VarChar(64)
+  predecessorId              String?                                  @db.Uuid
+  createdByPlatformUserId    String                                   @db.Uuid
+  activatedByPlatformUserId  String?                                  @db.Uuid
+  activatedAt                DateTime?
+  createdAt                  DateTime                                 @default(now())
+  updatedAt                  DateTime                                 @updatedAt
+
+  platformTenant       PlatformTenant                          @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  platformSubscription PlatformSubscription?                   @relation(fields: [platformSubscriptionId], references: [id], onDelete: Restrict)
+  planVersion          PlatformPlanVersion?                    @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  predecessor          PlatformSubscriptionCommercialConfig?   @relation("SubscriptionCommercialSupersede", fields: [predecessorId], references: [id], onDelete: Restrict)
+  successors           PlatformSubscriptionCommercialConfig[]  @relation("SubscriptionCommercialSupersede")
+  addOnAssignments     PlatformSubscriptionAddOnAssignment[]
+  overrideAssignments  PlatformSubscriptionOverrideAssignment[]
+  snapshots            PlatformSubscriptionCommercialSnapshot[]
+  changes              PlatformSubscriptionCommercialChange[]
+
+  @@index([platformTenantId, lifecycle])
+  @@index([platformTenantId, isCurrent])
+  @@index([lifecycle])
+  @@index([planVersionId])
+  @@index([predecessorId])
+  @@index([commercialStart, commercialEnd])
+  @@map("platform_subscription_commercial_configs")
+}
+
+model PlatformSubscriptionAddOnAssignment {
+  id             String   @id @default(uuid()) @db.Uuid
+  configId       String   @db.Uuid
+  addOnVersionId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  config       PlatformSubscriptionCommercialConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+  addOnVersion PlatformAddOnVersion                 @relation(fields: [addOnVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([configId, addOnVersionId])
+  @@index([configId])
+  @@index([addOnVersionId])
+  @@map("platform_subscription_addon_assignments")
+}
+
+model PlatformSubscriptionOverrideAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  configId   String   @db.Uuid
+  overrideId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  config   PlatformSubscriptionCommercialConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+  override PlatformCommercialOverride           @relation(fields: [overrideId], references: [id], onDelete: Restrict)
+
+  @@unique([configId, overrideId])
+  @@index([configId])
+  @@index([overrideId])
+  @@map("platform_subscription_override_assignments")
+}
+
+/// Immutable commercial snapshot created on activate/finalize. No cascade delete.
+model PlatformSubscriptionCommercialSnapshot {
+  id                       String   @id @default(uuid()) @db.Uuid
+  configId                 String   @db.Uuid
+  fingerprint              String   @db.VarChar(64)
+  fingerprintSchemaVersion String   @db.VarChar(64)
+  /// Bounded JSON of commercial content only (no tokens, PHI, billing secrets).
+  snapshotPayload          Json
+  createdAt                DateTime @default(now())
+
+  config PlatformSubscriptionCommercialConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+
+  @@unique([configId])
+  @@index([fingerprint])
+  @@map("platform_subscription_commercial_snapshots")
+}
+
+/// Append-only commercial change history.
+model PlatformSubscriptionCommercialChange {
+  id             String   @id @default(uuid()) @db.Uuid
+  configId       String   @db.Uuid
+  action         String   @db.VarChar(64)
+  actorId        String   @db.Uuid
+  beforeLifecycle String? @db.VarChar(32)
+  afterLifecycle  String? @db.VarChar(32)
+  /// Allowlisted bounded metadata only.
+  metadataJson   Json?
+  createdAt      DateTime @default(now())
+
+  config PlatformSubscriptionCommercialConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+
+  @@index([configId, createdAt])
+  @@index([action])
+  @@map("platform_subscription_commercial_changes")
+}
+
+/// Durable Step 16 mutation idempotency (unique claim + completed replay).
+model PlatformSubscriptionCommercialIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_subscription_commercial_idempotency")
+}
+
+// ─── Supplemental Capability U01 — Usage Metering & Limit Enforcement ───────
+// Consumption SoR only. Does not define entitlement Limits (Flexible Step 17/EER) or billing (Step 19).
+// Empty meter-definition seed only — zero observations / nonzero counters.
+
+model PlatformUsageMeterDefinition {
+  id                 String   @id @default(uuid()) @db.Uuid
+  meterKey           String   @unique @db.VarChar(64)
+  limitKey           String   @db.VarChar(64)
+  valueType          String   @db.VarChar(16)
+  aggregation        String   @db.VarChar(32)
+  periodType         String   @db.VarChar(32)
+  enforcementMode    String   @db.VarChar(32)
+  sourceOwner        String   @db.VarChar(64)
+  reconciliationMode String   @db.VarChar(32)
+  retentionClass     String   @db.VarChar(32)
+  privacyClass       String   @db.VarChar(64)
+  schemaVersion      String   @default("usage-meter/v1") @db.VarChar(64)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([limitKey])
+  @@map("platform_usage_meter_definitions")
+}
+
+/// Append-only meter observation. Completed-only idempotency on (tenantId, source, sourceEventId).
+model PlatformUsageObservation {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @db.Uuid
+  meterKey           String   @db.VarChar(64)
+  operation          String   @db.VarChar(32)
+  value              String   @db.VarChar(64)
+  occurredAt         DateTime
+  source             String   @db.VarChar(128)
+  sourceEventId      String   @db.VarChar(128)
+  schemaVersion      String   @db.VarChar(64)
+  correlationId      String?  @db.VarChar(128)
+  requestFingerprint String   @db.VarChar(64)
+  createdAt          DateTime @default(now())
+
+  @@unique([tenantId, source, sourceEventId])
+  @@index([tenantId, meterKey, occurredAt])
+  @@map("platform_usage_observations")
+}
+
+/// Deterministic tenant-period counter (non-PHI aggregates only).
+model PlatformUsageCounter {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @db.Uuid
+  meterKey          String    @db.VarChar(64)
+  periodType        String    @db.VarChar(32)
+  periodStart       DateTime
+  periodEnd         DateTime
+  schemaVersion     String    @db.VarChar(64)
+  currentValue      String    @db.VarChar(64)
+  reservedValue     String    @default("0") @db.VarChar(64)
+  lastObservationAt DateTime?
+  lastReconciledAt  DateTime?
+  rowVersion        Int       @default(1)
+  staleClass        String    @default("FRESH") @db.VarChar(32)
+  sourceClass       String    @default("OBSERVATION") @db.VarChar(32)
+  valueDigest       String?   @db.VarChar(64)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([tenantId, meterKey, periodType, periodStart, schemaVersion])
+  @@index([tenantId, meterKey])
+  @@map("platform_usage_counters")
+}
+
+model PlatformUsageReconciliationCheckpoint {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @db.Uuid
+  meterKey         String   @db.VarChar(64)
+  periodType       String   @db.VarChar(32)
+  periodStart      DateTime
+  periodEnd        DateTime
+  expectedValue    String   @db.VarChar(64)
+  counterValue     String   @db.VarChar(64)
+  driftClass       String   @db.VarChar(32)
+  driftAbsolute    String?  @db.VarChar(64)
+  lastReconciledAt DateTime
+  sourceOwner      String   @db.VarChar(64)
+  schemaVersion    String   @db.VarChar(64)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tenantId, meterKey, periodType, periodStart, schemaVersion])
+  @@index([tenantId, meterKey])
+  @@map("platform_usage_reconciliation_checkpoints")
+}
+
+/// Durable U01 mutation idempotency (completed-only).
+model PlatformUsageIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([tenantId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_usage_idempotency")
+}
+
+// ─── Flexible Step 17 — Tenant Creation and Provisioning ─────────────────────
+
+enum PlatformTenantProvisioningStatus {
+  REQUESTED
+  VALIDATING
+  READY
+  PROVISIONING
+  AWAITING_ACTIVATION
+  COMPLETED
+  FAILED_RETRYABLE
+  FAILED_TERMINAL
+  COMPENSATING
+  COMPENSATED
+  CANCELLED_BEFORE_ACTIVATION
+
+  @@map("platform_tenant_provisioning_status")
+}
+
+/// Durable onboarding workflow (not general tenant lifecycle — Step 19).
+model PlatformTenantProvisioningRequest {
+  id                         String                            @id @default(uuid()) @db.Uuid
+  status                     PlatformTenantProvisioningStatus  @default(REQUESTED)
+  rowVersion                 Int                               @default(1)
+  organizationName           String                            @db.VarChar(255)
+  requestedSlug              String?                           @db.VarChar(100)
+  reservedSlug               String?                           @db.VarChar(100)
+  region                     String?                           @db.VarChar(64)
+  timezone                   String?                           @db.VarChar(50)
+  facilityTypeKey            String                            @db.VarChar(128)
+  specialtyKeys              Json
+  publishedPlanVersionId     String                            @db.Uuid
+  addOnSelections            Json                              @default("[]")
+  adminEmail                 String                            @db.VarChar(320)
+  adminDisplayName           String?                           @db.VarChar(255)
+  adminLocale                String?                           @db.VarChar(16)
+  onboardingType             String                            @db.VarChar(32)
+  requestedStartAt           DateTime?
+  salesAttributionId         String?                           @db.VarChar(128)
+  externalRequestId          String?                           @db.VarChar(128)
+  previewFingerprint         String?                           @db.VarChar(64)
+  compatibilityFingerprint   String?                           @db.VarChar(64)
+  tenantId                   String?                           @db.Uuid
+  platformTenantId           String?                           @db.Uuid
+  commercialConfigId         String?                           @db.Uuid
+  invitationId               String?                           @db.Uuid
+  lastErrorCode              String?                           @db.VarChar(64)
+  correlationId              String                            @db.Uuid
+  createdByPlatformUserId    String                            @db.Uuid
+  invitationPreparedAt       DateTime?
+  invitationDispatchedAt     DateTime?
+  activatedAt                DateTime?
+  completedAt                DateTime?
+  createdAt                  DateTime                          @default(now())
+  updatedAt                  DateTime                          @updatedAt
+
+  checkpoints    PlatformTenantProvisioningCheckpoint[]
+  ownedResources PlatformTenantProvisioningOwnedResource[]
+
+  @@unique([externalRequestId])
+  @@index([status])
+  @@index([createdByPlatformUserId])
+  @@index([reservedSlug])
+  @@index([tenantId])
+  @@index([platformTenantId])
+  @@index([commercialConfigId])
+  @@map("platform_tenant_provisioning_requests")
+}
+
+model PlatformTenantProvisioningCheckpoint {
+  id           String    @id @default(uuid()) @db.Uuid
+  requestId    String    @db.Uuid
+  checkpointKey String   @db.VarChar(64)
+  status       String    @db.VarChar(16)
+  completedAt  DateTime?
+  evidenceJson Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  request PlatformTenantProvisioningRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@unique([requestId, checkpointKey])
+  @@index([requestId, status])
+  @@map("platform_tenant_provisioning_checkpoints")
+}
+
+model PlatformTenantProvisioningOwnedResource {
+  id               String   @id @default(uuid()) @db.Uuid
+  requestId        String   @db.Uuid
+  resourceType     String   @db.VarChar(64)
+  resourceId       String   @db.Uuid
+  provenance       String   @db.VarChar(32)
+  safeToCompensate Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  request PlatformTenantProvisioningRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@unique([requestId, resourceType, resourceId])
+  @@index([requestId])
+  @@map("platform_tenant_provisioning_owned_resources")
+}
+
+model PlatformTenantProvisioningIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_tenant_provisioning_idempotency")
+}
+
+/// Flexible Step 19 — governed archival / deletion requests (not physical delete).
+enum PlatformTenantLifecycleRequestType {
+  ARCHIVE
+  DELETE
+
+  @@map("platform_tenant_lifecycle_request_type")
+}
+
+enum PlatformTenantLifecycleRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  APPROVED_HANDOFF
+  EXECUTED
+
+  @@map("platform_tenant_lifecycle_request_status")
+}
+
+model PlatformTenantLifecycleRequest {
+  id                       String                               @id @default(uuid()) @db.Uuid
+  tenantId                 String                               @db.Uuid
+  platformTenantId         String                               @db.Uuid
+  type                     PlatformTenantLifecycleRequestType
+  status                   PlatformTenantLifecycleRequestStatus @default(PENDING)
+  reason                   String                               @db.VarChar(2000)
+  impactFingerprint        String                               @db.VarChar(64)
+  impactSummaryJson        Json?
+  expectedRowVersionAtCreate Int
+  typedConfirmation        String?                              @db.VarChar(255)
+  requesterPlatformUserId  String                               @db.Uuid
+  approverPlatformUserId   String?                              @db.Uuid
+  decidedAt                DateTime?
+  decisionReason           String?                              @db.VarChar(2000)
+  correlationId            String                               @db.Uuid
+  createdAt                DateTime                             @default(now())
+  updatedAt                DateTime                             @updatedAt
+
+  platformTenant PlatformTenant @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@index([platformTenantId, status])
+  @@index([requesterPlatformUserId])
+  @@index([type, status])
+  @@map("platform_tenant_lifecycle_requests")
+}
+
+model PlatformTenantLifecycleIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_tenant_lifecycle_idempotency")
+}
+
+/// Flexible Step 20 — operational feature flags (never commercial entitlement SoR).
+/// Boundary freeze: docs/FEATURE_FLAGS_AND_GLOBAL_SETTINGS.md
+enum PlatformFeatureFlagEffect {
+  KILL_SWITCH_DENY
+  ROLLOUT_ALLOW_FOR_ENTITLED
+  INTERNAL_IMPLEMENTATION_SELECTION
+  OPERATIONAL_ENABLEMENT
+
+  @@map("platform_feature_flag_effect")
+}
+
+enum PlatformFeatureFlagStatus {
+  DRAFT
+  ACTIVE
+  DEPRECATED
+  RETIRED
+
+  @@map("platform_feature_flag_status")
+}
+
+enum PlatformFeatureFlagTargetType {
+  GLOBAL
+  TENANT_ALLOWLIST
+  TENANT_DENYLIST
+  PERCENTAGE
+
+  @@map("platform_feature_flag_target_type")
+}
+
+enum PlatformGlobalSettingValueKind {
+  BOOLEAN
+  STRING
+  INTEGER
+  REFERENCE
+  JSON_BOUNDED
+
+  @@map("platform_global_setting_value_kind")
+}
+
+model PlatformFeatureFlag {
+  id                      String                        @id @default(uuid()) @db.Uuid
+  canonicalKey            String                        @unique @db.VarChar(128)
+  displayName             String                        @db.VarChar(255)
+  description             String                        @db.VarChar(2000)
+  ownerTeam               String                        @db.VarChar(128)
+  category                String                        @db.VarChar(64)
+  effect                  PlatformFeatureFlagEffect
+  status                  PlatformFeatureFlagStatus     @default(DRAFT)
+  killSwitchActive        Boolean                       @default(false)
+  targetType              PlatformFeatureFlagTargetType @default(GLOBAL)
+  rolloutPercentage       Int                           @default(100)
+  defaultDenyWhenUnknown  Boolean                       @default(true)
+  rowVersion              Int                           @default(1)
+  createdByPlatformUserId String                        @db.Uuid
+  updatedByPlatformUserId String                        @db.Uuid
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  deprecatedAt            DateTime?
+
+  targets PlatformFeatureFlagTarget[]
+  history PlatformFeatureFlagHistory[]
+
+  @@index([status, effect])
+  @@index([canonicalKey])
+  @@map("platform_feature_flags")
+}
+
+model PlatformFeatureFlagTarget {
+  id        String   @id @default(uuid()) @db.Uuid
+  flagId    String   @db.Uuid
+  tenantId  String   @db.Uuid
+  mode      String   @db.VarChar(16)
+  createdAt DateTime @default(now())
+
+  flag PlatformFeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@unique([flagId, tenantId, mode])
+  @@index([tenantId])
+  @@map("platform_feature_flag_targets")
+}
+
+model PlatformFeatureFlagHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  flagId              String   @db.Uuid
+  actorPlatformUserId String   @db.Uuid
+  operation           String   @db.VarChar(64)
+  reason              String   @db.VarChar(2000)
+  beforeSummaryJson   Json?
+  afterSummaryJson    Json?
+  correlationId       String   @db.Uuid
+  createdAt           DateTime @default(now())
+
+  flag PlatformFeatureFlag @relation(fields: [flagId], references: [id], onDelete: Restrict)
+
+  @@index([flagId, createdAt])
+  @@map("platform_feature_flag_history")
+}
+
+model PlatformFeatureFlagIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_feature_flag_idempotency")
+}
+
+model PlatformGlobalSetting {
+  id                        String                         @id @default(uuid()) @db.Uuid
+  canonicalKey              String                         @unique @db.VarChar(128)
+  displayName               String                         @db.VarChar(255)
+  description               String                         @db.VarChar(2000)
+  ownerTeam                 String                         @db.VarChar(128)
+  valueKind                 PlatformGlobalSettingValueKind
+  safeValueJson             Json?
+  referenceConfigured       Boolean                        @default(false)
+  referenceProviderType     String?                        @db.VarChar(64)
+  referenceId               String?                        @db.VarChar(128)
+  referenceHealthCategory   String?                        @db.VarChar(32)
+  referenceRotationRequired Boolean                        @default(false)
+  referenceLastVerifiedAt   DateTime?
+  highImpact                Boolean                        @default(false)
+  rowVersion                Int                            @default(1)
+  createdByPlatformUserId   String                         @db.Uuid
+  updatedByPlatformUserId   String                         @db.Uuid
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
+
+  history PlatformGlobalSettingHistory[]
+
+  @@index([canonicalKey])
+  @@map("platform_global_settings")
+}
+
+model PlatformGlobalSettingHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  settingId           String   @db.Uuid
+  actorPlatformUserId String   @db.Uuid
+  operation           String   @db.VarChar(64)
+  reason              String   @db.VarChar(2000)
+  beforeSummaryJson   Json?
+  afterSummaryJson    Json?
+  correlationId       String   @db.Uuid
+  createdAt           DateTime @default(now())
+
+  setting PlatformGlobalSetting @relation(fields: [settingId], references: [id], onDelete: Restrict)
+
+  @@index([settingId, createdAt])
+  @@map("platform_global_setting_history")
+}
+
+model PlatformGlobalSettingIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_global_setting_idempotency")
+}
+
+/// Flexible Step 21 — Platform Audit Center export metadata (no raw CSV persistence in DB).
+model PlatformAuditExportRecord {
+  id                     String    @id @default(uuid()) @db.Uuid
+  actorPlatformUserId    String    @db.Uuid
+  status                 String    @db.VarChar(32)
+  filterJson              Json
+  filterFingerprint       String    @db.VarChar(64)
+  rowCount               Int       @default(0)
+  reason                 String    @db.VarChar(2000)
+  fileName               String    @db.VarChar(255)
+  contentSha256          String?   @db.VarChar(64)
+  downloadTokenHash      String?   @db.VarChar(64)
+  expiresAt              DateTime?
+  correlationId          String    @db.Uuid
+  rowVersion             Int       @default(1)
+  createdAt              DateTime  @default(now())
+  completedAt            DateTime?
+
+  @@index([actorPlatformUserId, createdAt])
+  @@index([expiresAt])
+  @@map("platform_audit_export_records")
+}
+
+model PlatformAuditExportIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_audit_export_idempotency")
+}
+
+/// Flexible Step 22 — durable Operations Console action claims (Model D-B).
+/// Process-local Map is non-authoritative optimization only.
+model PlatformOperationsIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  resultResourceType String   @db.VarChar(32)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_operations_idempotency")
 }

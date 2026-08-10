@@ -1,1 +1,20 @@
 storage/
+
+# Local U01 / gate evidence (never commit)
+.step18-*
+.tsc-step18-*
+# Local U01/gate command logs
+step18-logs/
+.u01-*
+
+.step18-logs/
+
+# Local Step 17/19 gate evidence dumps in apps/api cwd only (never commit).
+# Patterns are *.txt / known one-pass basenames — they cannot hide .ts/.md/.sql/package files.
+/step17-*.txt
+/sa-*.txt
+/clinic-*.txt
+/step17-final-onepass.jsonl
+/step19-final-onepass*
+/br-step19-*
+/step19-*.txt

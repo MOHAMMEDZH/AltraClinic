@@ -8,7 +8,7 @@ import {
 
 function compareManifestToStaticCatalog(
   contributions: WhiteLabelContribution[],
-  entries: StaticWhiteLabelCatalogEntryLike[],
+  entries: readonly StaticWhiteLabelCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -66,7 +66,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateWhiteLabelLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticWhiteLabelCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticWhiteLabelCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

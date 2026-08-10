@@ -37,7 +37,7 @@ export function useWorkflowOverview(enabled = true) {
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fetchWorkflowOverview(token, user.tenantId, user.id);
+      return fetchWorkflowOverview(token, user.tenantId, user.userId);
     },
     enabled: Boolean(user?.tenantId) && enabled,
     staleTime: 30_000,

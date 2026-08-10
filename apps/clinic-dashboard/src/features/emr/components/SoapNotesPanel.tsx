@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 
 import { useI18n } from '@booking/i18n/react';
 
-import { AuthFormField } from '@/features/auth/components/AuthFormField';
-
 import type { SoapNotes } from '../types/emr.types';
 
 import { CLINICAL_NOTE_TEMPLATES } from '../config/emr-config';

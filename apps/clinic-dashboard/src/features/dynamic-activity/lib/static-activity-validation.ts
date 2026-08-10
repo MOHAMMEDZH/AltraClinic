@@ -23,7 +23,7 @@ export function assertActivityCatalogValid(
 
 export function verifyActivityCatalogParity(
   contributions: ActivityContribution[],
-  entries: ActivityCatalogEntry[],
+  entries: readonly ActivityCatalogEntry[],
 ): string[] {
   const errors: string[] = [];
   const staticById = new Map(entries.map((entry) => [entry.extensionId, entry]));

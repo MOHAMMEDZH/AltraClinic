@@ -1,18 +1,38 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseFilters, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
 import { PatientPortalPermissionGuard } from './patient-portal-permission.guard';
+import { PatientPortalCenterEnabledGuard } from './patient-portal-center.guard';
+import { PatientPortalEnrollmentCompleteGuard } from './patient-portal-enrollment.guard';
+import { PatientPortalAppointmentsEnabledGuard } from './patient-portal-appointments.guard';
 import { PortalDomainExceptionFilter } from './patient-portal-domain-exception.filter';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
+import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
+import { requireAuthenticatedPrincipal } from '../../../common/authenticated-principal.util';
 import {
   BookMyAppointmentHandler,
+  GetMyAppointmentHandler,
   GetMyAvailabilityHandler,
   ListMyAppointmentsHandler,
   ListMyProvidersHandler,
+  PortalSchedulingActor,
   UpdateMyAppointmentHandler,
 } from '../application/handlers/portal-scheduling.handlers';
 
 interface AuthenticatedRequest {
-  user?: { id: string; roles: string[] };
+  user?: JwtClaimsVO | { id?: string; sub?: string; roles?: string[] };
+  headers?: Record<string, string | string[] | undefined>;
 }
 
 class BookMyAppointmentDto {
@@ -31,20 +51,51 @@ class UpdateMyAppointmentDto {
 }
 
 @Controller('patient-portal/me')
-@UseGuards(PatientPortalPermissionGuard)
+@UseGuards(
+  PatientPortalCenterEnabledGuard,
+  PatientPortalAppointmentsEnabledGuard,
+  PatientPortalEnrollmentCompleteGuard,
+  PatientPortalPermissionGuard,
+)
 @UseFilters(PortalDomainExceptionFilter)
 @RequireLicensedModule('patientPortal')
 export class PortalSchedulingController {
   constructor(
     private readonly listAppointments: ListMyAppointmentsHandler,
+    private readonly getAppointment: GetMyAppointmentHandler,
     private readonly bookAppointment: BookMyAppointmentHandler,
     private readonly updateAppointment: UpdateMyAppointmentHandler,
     private readonly listProviders: ListMyProvidersHandler,
     private readonly availability: GetMyAvailabilityHandler,
   ) {}
 
-  private userId(request: AuthenticatedRequest): string {
-    return request.user?.id ?? '';
+  private actor(
+    request: AuthenticatedRequest,
+    idempotencyKey?: string | null,
+  ): PortalSchedulingActor {
+    const { id, roles } = requireAuthenticatedPrincipal(request);
+    const correlationHeader = request.headers?.['x-correlation-id'];
+    const correlationId = Array.isArray(correlationHeader)
+      ? correlationHeader[0]
+      : correlationHeader;
+    const actingHeader = request.headers?.['x-portal-acting-context'];
+    const subjectHeader = request.headers?.['x-portal-subject-patient-id'];
+    return {
+      userId: id,
+      roles,
+      correlationId: typeof correlationId === 'string' ? correlationId : null,
+      idempotencyKey: idempotencyKey ?? null,
+      actingContextHeader: Array.isArray(actingHeader)
+        ? actingHeader[0]
+        : typeof actingHeader === 'string'
+          ? actingHeader
+          : null,
+      subjectPatientIdHeader: Array.isArray(subjectHeader)
+        ? subjectHeader[0]
+        : typeof subjectHeader === 'string'
+          ? subjectHeader
+          : null,
+    };
   }
 
   @Get('appointments')
@@ -55,19 +106,43 @@ export class PortalSchedulingController {
     @Query('to') to?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Query('branchId') branchId?: string,
+    @Query('scope') scope?: 'upcoming' | 'past' | 'all',
   ) {
-    return this.listAppointments.execute(this.userId(request), {
+    const actor = this.actor(request);
+    return this.listAppointments.execute(actor, {
       from,
       to,
       limit: Number(limit),
       offset: Number(offset),
+      branchId,
+      scope,
+      actingContextHeader: actor.actingContextHeader,
+      subjectPatientIdHeader: actor.subjectPatientIdHeader,
+    });
+  }
+
+  @Get('appointments/:appointmentId')
+  @RequirePermission('api.patient_portal', 'view')
+  async detail(
+    @Req() request: AuthenticatedRequest,
+    @Param('appointmentId') appointmentId: string,
+  ) {
+    const actor = this.actor(request);
+    return this.getAppointment.execute(actor, appointmentId, {
+      actingContextHeader: actor.actingContextHeader,
+      subjectPatientIdHeader: actor.subjectPatientIdHeader,
     });
   }
 
   @Post('appointments')
   @RequirePermission('api.patient_portal', 'create')
-  async book(@Req() request: AuthenticatedRequest, @Body() body: BookMyAppointmentDto) {
-    return this.bookAppointment.execute(this.userId(request), body);
+  async book(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: BookMyAppointmentDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.bookAppointment.execute(this.actor(request, idempotencyKey), body);
   }
 
   @Patch('appointments/:appointmentId')
@@ -76,14 +151,22 @@ export class PortalSchedulingController {
     @Req() request: AuthenticatedRequest,
     @Param('appointmentId') appointmentId: string,
     @Body() body: UpdateMyAppointmentDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.updateAppointment.execute(this.userId(request), appointmentId, body);
+    return this.updateAppointment.execute(
+      this.actor(request, idempotencyKey),
+      appointmentId,
+      body,
+    );
   }
 
   @Get('providers')
   @RequirePermission('api.patient_portal', 'view')
-  async providers(@Req() request: AuthenticatedRequest) {
-    return this.listProviders.execute(this.userId(request));
+  async providers(
+    @Req() request: AuthenticatedRequest,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.listProviders.execute(this.actor(request), branchId);
   }
 
   @Get('availability')
@@ -94,7 +177,7 @@ export class PortalSchedulingController {
     @Query('date') date: string,
     @Query('durationMin') durationMin?: string,
   ) {
-    return this.availability.execute(this.userId(request), {
+    return this.availability.execute(this.actor(request), {
       providerId,
       date,
       durationMin: durationMin ? Number(durationMin) : undefined,

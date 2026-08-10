@@ -41,7 +41,7 @@ export class ApiRateLimitService {
   resolvePolicy(request: Request): ApiRateLimitPolicy {
     const path = normalizePath(request.path ?? request.url ?? '');
 
-    if (path.startsWith('/auth')) {
+    if (path.startsWith('/auth') || path.startsWith('/platform/auth')) {
       return { scope: 'public_ip', limit: 60, windowSeconds: 60, algorithm: 'sliding' };
     }
 

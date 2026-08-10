@@ -4,7 +4,7 @@ import type { DashboardCatalogEntry, DashboardParityMismatch, DashboardSnapshot 
 import { assertCanonicalWidgetParity, listRegisteredWidgetIds } from './dashboard-widget-registry';
 import { STATIC_DASHBOARD_CATALOG } from './static-dashboard-catalog';
 
-export function validateDashboardCatalog(catalog: DashboardCatalogEntry[]): string[] {
+export function validateDashboardCatalog(catalog: readonly DashboardCatalogEntry[]): string[] {
   const errors: string[] = [];
   const registered = new Set(listRegisteredWidgetIds());
   const seenIds = new Set<string>();
@@ -66,7 +66,7 @@ export function buildStaticParityWidgetIds(roles: string[]): string[] {
   );
 }
 
-export function assertDashboardCatalogValid(catalog: DashboardCatalogEntry[] = STATIC_DASHBOARD_CATALOG): void {
+export function assertDashboardCatalogValid(catalog: readonly DashboardCatalogEntry[] = STATIC_DASHBOARD_CATALOG): void {
   assertCanonicalWidgetParity();
   const errors = validateDashboardCatalog(catalog);
   if (errors.length > 0) {

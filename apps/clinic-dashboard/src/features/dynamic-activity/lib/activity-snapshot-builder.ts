@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import {
   CANONICAL_ACTIVITY_CATEGORIES,
@@ -22,7 +23,7 @@ import type {
 
 export interface BuildActivitySnapshotOptions {
   roles: string[];
-  catalog: ActivityCatalogEntry[];
+  catalog: readonly ActivityCatalogEntry[];
   modules: EffectiveModuleView[];
   source: ActivityCatalogSource;
   catalogGeneration: number | null;
@@ -39,7 +40,7 @@ function toTypeSnapshot(entry: ActivityCatalogEntry): ActivityTypeSnapshot | nul
   return {
     kind: 'type',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     activityTypeId: entry.activityTypeId,
     eventTypeId: entry.eventTypeId ?? entry.activityTypeId,
     categoryId: entry.categoryId,
@@ -61,7 +62,7 @@ function toFeedSnapshot(entry: ActivityCatalogEntry): ActivityFeedSnapshot | nul
   return {
     kind: 'feed',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     feedId: entry.feedId,
     labelKey: entry.labelKey,
     descriptionKey: entry.descriptionKey ?? entry.labelKey,
@@ -80,7 +81,7 @@ function toHubSnapshot(entry: ActivityCatalogEntry): ActivityHubSnapshot | null 
   return {
     kind: 'hub',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     hubId: entry.hubId,
     labelKey: entry.labelKey,
     descriptionKey: entry.descriptionKey ?? entry.labelKey,
@@ -122,12 +123,12 @@ function isStaticEntryPermitted(entry: ActivityCatalogEntry, roles: string[]): b
   return hasPermission(roles, entry.resourceId as never, action as never);
 }
 
-function filterStaticEntries(catalog: ActivityCatalogEntry[], roles: string[]): ActivityCatalogEntry[] {
+function filterStaticEntries(catalog: readonly ActivityCatalogEntry[], roles: string[]): ActivityCatalogEntry[] {
   return catalog.filter((entry) => isStaticEntryPermitted(entry, roles));
 }
 
 function filterRegistryEntries(
-  catalog: ActivityCatalogEntry[],
+  catalog: readonly ActivityCatalogEntry[],
   modules: EffectiveModuleView[],
   contributions: ReturnType<typeof extractActivityContributions>,
 ): ActivityCatalogEntry[] {
@@ -258,7 +259,7 @@ export function buildActivitySnapshot(options: BuildActivitySnapshotOptions): Ac
 
 export function buildRegistryActivitySnapshot(
   roles: string[],
-  catalog: ActivityCatalogEntry[],
+  catalog: readonly ActivityCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -278,7 +279,7 @@ export function buildRegistryActivitySnapshot(
 
 export function buildStaticActivitySnapshot(
   roles: string[],
-  catalog: ActivityCatalogEntry[],
+  catalog: readonly ActivityCatalogEntry[],
   identity: ActivitySnapshotIdentity,
   source: Extract<ActivityCatalogSource, 'static-fallback' | 'static-only'> = 'static-only',
 ): ActivitySnapshot {

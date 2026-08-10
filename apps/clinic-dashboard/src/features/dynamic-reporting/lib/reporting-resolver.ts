@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type {
   ReportCatalogEntry,
   ReportingCapabilities,
@@ -50,7 +50,7 @@ export function extractReportingContributions(modules: EffectiveModuleView[]): R
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         reportId: payload.reportId,
         categoryKey: payload.categoryKey,
         dataDomain: payload.dataDomain ?? payload.reportId,

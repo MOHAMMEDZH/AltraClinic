@@ -87,7 +87,7 @@ function compareCanonicalToStaticEntry(
 }
 
 /** Fail-closed field-by-field parity between STATIC_BRANCH_CATALOG and canonical vocabulary. */
-export function validateStaticBranchCatalogParity(entries: StaticBranchCatalogEntryLike[]): string[] {
+export function validateStaticBranchCatalogParity(entries: readonly StaticBranchCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
   const seenSurfaceIds = new Set<string>();

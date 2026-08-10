@@ -12,7 +12,7 @@ function collectManifestAnalyticsContributions(manifests: ModuleManifest[]): Ana
 
 function compareManifestToStaticCatalog(
   contributions: AnalyticsContribution[],
-  entries: StaticAnalyticsCatalogEntryLike[],
+  entries: readonly StaticAnalyticsCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -70,7 +70,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateAnalyticsLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticAnalyticsCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticAnalyticsCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

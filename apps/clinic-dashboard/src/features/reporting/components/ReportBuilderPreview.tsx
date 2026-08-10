@@ -56,7 +56,7 @@ export function ReportBuilderPreview({ filters, visualization }: ReportBuilderPr
   }, [overview, t, locale]);
 
   const filteredTrend = useMemo(() => {
-    if (!overview) return { revenue: overview?.revenueTrend ?? [], appointments: overview?.appointmentTrend ?? [], patients: overview?.patientGrowthTrend ?? [] };
+    if (!overview) return { revenue: [], appointments: [], patients: [] };
     if (activeMetric === 'revenue') {
       return { revenue: overview.revenueTrend, appointments: [], patients: [] };
     }

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+﻿import { ForbiddenException, Injectable, Logger, NotFoundException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { getPlanLimits, PlanLimits, UNLIMITED } from '../../domain/config/plan-limits.config';
 import {
@@ -25,6 +25,7 @@ import {
   UiSubscriptionPlan,
 } from '../../domain/config/plan-name.mapper';
 import { PlanLimitExceededException, FeatureName, LimitedResource } from '../../domain/exceptions/plan-limit-exceeded.exception';
+import { isPlatformAuditSentinelTenantId } from '../../../platform-tenants/platform-tenants.tokens';
 import {
   PlanChangePreview,
   TenantEntitlementsPayload,
@@ -37,6 +38,19 @@ import { TenantSubscriptionService } from './tenant-subscription.service';
 import type { TenantSubscriptionOverview } from './tenant-subscription.service';
 import { LicensingAuditService } from './licensing-audit.service';
 import { LicensingLifecycleStateService } from './licensing-lifecycle-state.service';
+import { EffectiveEntitlementRuntimeService } from '../../../effective-entitlement-runtime/application/effective-entitlement-runtime.service';
+import { isEffectiveEntitlementRuntimeEnabled } from '../../../effective-entitlement-runtime/effective-entitlement-runtime.module';
+import { UsageEnforcementService } from '../../../usage-metering/application/usage-enforcement.service';
+import { isUsageMeteringEnforcementEnabled } from '../../../usage-metering/usage-metering.constants';
+import { RESOURCE_TO_METER } from '../../../usage-metering/catalog/static-usage-meter.catalog';
+import {
+  isSnapshotDenyCode,
+  planCanonicalToBackendPlan,
+  planCanonicalToUiPlan,
+  projectFeaturesFromBundle,
+  projectModulesFromBundle,
+  projectPlanLimitsFromBundle,
+} from '../../../effective-entitlement-runtime/application/license-projection';
 
 interface ResolvedTenantContext {
   tenantId: string;
@@ -86,27 +100,131 @@ export class LicensingEngineService {
     private readonly tenantSubscriptionService: TenantSubscriptionService,
     private readonly audit: LicensingAuditService,
     private readonly lifecycleState: LicensingLifecycleStateService,
+    @Optional()
+    private readonly effectiveEntitlements?: EffectiveEntitlementRuntimeService,
+    @Optional()
+    private readonly usageEnforcement?: UsageEnforcementService,
   ) {}
 
   /** Invalidate cached license after plan/grant changes. */
   invalidateCache(tenantId: string): void {
     this.licenseCache.delete(tenantId);
+    this.effectiveEntitlements?.invalidateTenant(tenantId);
   }
 
   async resolveLicense(tenantId: string): Promise<TenantLicense> {
+    // Governed production invariant: Platform audit sentinel is not a licensable tenant.
+    // Fail closed before cache lookup / tenant lookup / license computation.
+    // Authoritative id: PLATFORM_AUDIT_SENTINEL_TENANT_ID (platform-tenants.tokens).
+    if (isPlatformAuditSentinelTenantId(tenantId)) {
+      this.logger.warn('platform_audit_sentinel_license_rejected');
+      throw new NotFoundException('Tenant not found');
+    }
+
     const cached = this.licenseCache.get(tenantId);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.license;
     }
 
     const ctx = await this.loadTenantContext(tenantId);
-    const license = this.buildLicense(ctx);
+    let license = this.buildLicense(ctx);
+
+    // Step 17 coexistence: SNAPSHOT replaces legacy entitlements; LEGACY leaves buildLicense untouched.
+    // Never merge SNAPSHOT and LEGACY sources into one decision set.
+    if (
+      isEffectiveEntitlementRuntimeEnabled() &&
+      this.effectiveEntitlements &&
+      ctx.platformTenant
+    ) {
+      try {
+        const bundle = await this.effectiveEntitlements.resolveEffectiveEntitlements(tenantId);
+        if (bundle.source === 'SNAPSHOT') {
+          license = this.applySnapshotBundle(license, bundle);
+        }
+      } catch (err) {
+        this.logger.warn('effective_entitlement_runtime_resolve_failed');
+        // Unexpected resolver failure with Step 17 enabled: fail closed (deny writes / modules).
+        license = {
+          ...license,
+          status: 'suspended',
+          readOnly: true,
+          modules: Object.fromEntries(
+            Object.keys(license.modules).map((k) => [k, 'disabled']),
+          ) as TenantLicense['modules'],
+          features: Object.fromEntries(
+            Object.keys(license.features).map((k) => [k, 'disabled']),
+          ) as TenantLicense['features'],
+        };
+        void err;
+      }
+    }
+
     await this.lifecycleState.syncFromResolvedLicense(tenantId, license);
     this.licenseCache.set(tenantId, {
       license,
       expiresAt: Date.now() + LicensingEngineService.CACHE_TTL_MS,
     });
     return license;
+  }
+
+  private applySnapshotBundle(
+    base: TenantLicense,
+    bundle: import('../../../effective-entitlement-runtime/domain/effective-entitlement.types').EffectiveEntitlementBundle,
+  ): TenantLicense {
+    if (isSnapshotDenyCode(bundle.code)) {
+      const status: TenantLicense['status'] =
+        bundle.code === 'runtime_cancelled' || bundle.code === 'runtime_terminal'
+          ? 'cancelled'
+          : bundle.code === 'runtime_expired'
+            ? 'expired'
+            : 'suspended';
+      return {
+        ...base,
+        status,
+        readOnly: true,
+        modules: Object.fromEntries(
+          Object.keys(base.modules).map((k) => [k, 'disabled' as const]),
+        ) as TenantLicense['modules'],
+        features: Object.fromEntries(
+          Object.keys(base.features).map((k) => [k, 'disabled' as const]),
+        ) as TenantLicense['features'],
+      };
+    }
+
+    const backendPlan = planCanonicalToBackendPlan(bundle.planCanonicalKey);
+    const uiPlan = planCanonicalToUiPlan(bundle.planCanonicalKey);
+    const modules = projectModulesFromBundle(bundle);
+    const features = projectFeaturesFromBundle(bundle);
+    const effectiveLimits = projectPlanLimitsFromBundle(
+      bundle,
+      backendPlan,
+      base.effectiveLimits.features,
+    );
+    // Feature flags from Catalog FEATURE grants only (no legacy matrix mix).
+    const backendFeatures = { ...base.backendFeatures };
+    for (const row of Object.keys(backendFeatures) as Array<keyof typeof backendFeatures>) {
+      backendFeatures[row] = false;
+    }
+    if (features.workflow === 'enabled') backendFeatures.customWorkflows = true;
+    if (features.analytics === 'enabled') backendFeatures.advancedAnalytics = true;
+    if (features.auditLogs === 'enabled') backendFeatures.auditExport = true;
+    if (features.multiProviderAi === 'enabled') backendFeatures.aiModels = true;
+
+    return {
+      ...base,
+      uiPlan,
+      backendPlan,
+      platformPlan: bundle.planCanonicalKey ?? base.platformPlan,
+      status: 'active',
+      readOnly: false,
+      modules,
+      features,
+      limits: effectiveLimits,
+      effectiveLimits: { ...effectiveLimits, features: backendFeatures },
+      backendFeatures,
+      licenseId: bundle.snapshotId ?? base.licenseId,
+      version: base.version + 1,
+    };
   }
 
   async getEntitlements(tenantId: string): Promise<TenantEntitlementsPayload> {
@@ -238,6 +356,18 @@ export class LicensingEngineService {
 
   async enforceResourceLimit(tenantId: string, resource: LimitedResource): Promise<void> {
     await this.enforceLicenseWritable(tenantId);
+
+    // U01: when enabled and meter maps to resource, enforce via UsageEnforcementService
+    // while preserving Step 17 limit projection (getLimit inside enforcement). Flag off = legacy.
+    if (
+      isUsageMeteringEnforcementEnabled() &&
+      this.usageEnforcement &&
+      RESOURCE_TO_METER[resource]
+    ) {
+      await this.usageEnforcement.assertResourceAllowed(tenantId, resource, '1');
+      return;
+    }
+
     const limits = await this.getActivePlanLimits(tenantId);
     const usage = await this.tenantSubscriptionService.getUsage(tenantId);
 

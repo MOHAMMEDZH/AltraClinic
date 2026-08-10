@@ -11,6 +11,9 @@ import {
   PrivilegedAccessGrant,
   PrivilegedAccessGrantPrimitives,
 } from './privileged-access-grant.entity';
+import {
+  assertNotPlatformAuditSentinelTenantId,
+} from '../../../platform-tenants/platform-tenants.tokens';
 
 export interface PlatformTenantProps {
   platformTenantId: string;
@@ -94,6 +97,13 @@ export class PlatformTenant {
   }): PlatformTenant {
     if (!params.tenantId?.trim()) {
       throw new PlatformAdminValidationError('Tenant identifier is required to provision a platform tenant');
+    }
+    try {
+      assertNotPlatformAuditSentinelTenantId(params.tenantId.trim(), 'PlatformTenant.provision');
+    } catch {
+      throw new PlatformAdminValidationError(
+        'Reserved platform audit-sentinel identity cannot be provisioned as a tenant',
+      );
     }
     if (!params.displayName?.trim()) {
       throw new PlatformAdminValidationError('Display name is required to provision a platform tenant');

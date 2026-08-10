@@ -910,6 +910,44 @@
       "operations": [
         { "method": "GET", "path": "/import-export/health", "action": "view" }
       ]
+    },
+
+    {
+      "id": "api.backupRestore",
+      "kind": "api",
+      "name": "Backup / Restore Center API",
+      "description": "Phase 43a foundation permissions. Logical: policy/job read→view, job.run→create, policy.write/verify→update, artifact.download→export, restore.approve→approve, restore.execute/manage→manage. No backup/restore execution in 43a.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/backup-restore/health", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.integrations",
+      "kind": "api",
+      "name": "API Keys / Integrations Center API",
+      "description": "Phase 44a foundation permissions. Hub UI/admin APIs: view keys/subscriptions/health, create credentials/subscriptions, update rotate/filters, delete revoke, approve high-risk scopes, manage quotas/inbound. No credential issuance, auth middleware, or webhook workers in 44a.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/integrations/health", "action": "view" }
+      ]
     }
   ]
 }

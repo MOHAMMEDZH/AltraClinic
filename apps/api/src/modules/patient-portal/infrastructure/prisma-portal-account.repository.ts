@@ -53,6 +53,9 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
           notifySms: prefs.channels.sms,
           notifyPush: prefs.channels.push,
           invitedBy: account.invitedBy,
+          enrollmentTokenHash: account.enrollmentTokenHash,
+          enrollmentTokenExpiresAt: account.enrollmentTokenExpiresAt,
+          enrollmentConsentAt: account.enrollmentConsentAt,
           activatedAt: account.activatedAt,
           suspendedAt: account.suspendedAt,
           suspensionReason: account.suspensionReason,
@@ -66,6 +69,9 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
           notifyEmail: prefs.channels.email,
           notifySms: prefs.channels.sms,
           notifyPush: prefs.channels.push,
+          enrollmentTokenHash: account.enrollmentTokenHash,
+          enrollmentTokenExpiresAt: account.enrollmentTokenExpiresAt,
+          enrollmentConsentAt: account.enrollmentConsentAt,
           activatedAt: account.activatedAt,
           suspendedAt: account.suspendedAt,
           suspensionReason: account.suspensionReason,
@@ -89,10 +95,23 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
             expiresAt: p.expiresAt ? new Date(p.expiresAt) : null,
             revokedAt: p.revokedAt ? new Date(p.revokedAt) : null,
             revokedReason: p.revokedReason ?? null,
+            status: p.status,
+            invitationTokenHash: p.invitationTokenHash,
+            invitationExpiresAt: p.invitationExpiresAt ? new Date(p.invitationExpiresAt) : null,
+            acceptedAt: p.acceptedAt ? new Date(p.acceptedAt) : null,
+            declinedAt: p.declinedAt ? new Date(p.declinedAt) : null,
+            caregiverUserId: p.caregiverUserId,
           },
           update: {
             revokedAt: p.revokedAt ? new Date(p.revokedAt) : null,
             revokedReason: p.revokedReason ?? null,
+            status: p.status,
+            invitationTokenHash: p.invitationTokenHash,
+            invitationExpiresAt: p.invitationExpiresAt ? new Date(p.invitationExpiresAt) : null,
+            acceptedAt: p.acceptedAt ? new Date(p.acceptedAt) : null,
+            declinedAt: p.declinedAt ? new Date(p.declinedAt) : null,
+            caregiverUserId: p.caregiverUserId,
+            scopes: grant.scopes,
           },
         });
       }
@@ -110,6 +129,25 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
   async findByPatientId(patientId: string, tenantId: string): Promise<PortalAccount | null> {
     const row = await this.prisma.portalAccount.findFirst({
       where: { patientId, tenantId },
+      include: { caregiverGrants: true },
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
+  async findByUserId(userId: string, tenantId: string): Promise<PortalAccount | null> {
+    const row = await this.prisma.portalAccount.findFirst({
+      where: { userId, tenantId },
+      include: { caregiverGrants: true },
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
+  async findByEnrollmentTokenHash(
+    tokenHash: string,
+    tenantId: string,
+  ): Promise<PortalAccount | null> {
+    const row = await this.prisma.portalAccount.findFirst({
+      where: { enrollmentTokenHash: tokenHash, tenantId },
       include: { caregiverGrants: true },
     });
     return row ? this.toDomain(row) : null;
@@ -156,6 +194,13 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
         expiresAt: g.expiresAt,
         revokedAt: g.revokedAt,
         revokedReason: g.revokedReason,
+        status: ((g as { status?: string }).status as 'invited' | 'active' | 'declined' | 'revoked') ??
+          (g.revokedAt ? 'revoked' : 'active'),
+        invitationTokenHash: (g as { invitationTokenHash?: string | null }).invitationTokenHash ?? null,
+        invitationExpiresAt: (g as { invitationExpiresAt?: Date | null }).invitationExpiresAt ?? null,
+        acceptedAt: (g as { acceptedAt?: Date | null }).acceptedAt ?? null,
+        declinedAt: (g as { declinedAt?: Date | null }).declinedAt ?? null,
+        caregiverUserId: (g as { caregiverUserId?: string | null }).caregiverUserId ?? null,
       }),
     );
 
@@ -181,6 +226,9 @@ export class PrismaPortalAccountRepository implements PortalAccountRepository {
       suspendedAt: row.suspendedAt,
       suspensionReason: row.suspensionReason,
       deactivatedAt: row.deactivatedAt,
+      enrollmentTokenHash: row.enrollmentTokenHash ?? null,
+      enrollmentTokenExpiresAt: row.enrollmentTokenExpiresAt ?? null,
+      enrollmentConsentAt: row.enrollmentConsentAt ?? null,
     });
   }
 }

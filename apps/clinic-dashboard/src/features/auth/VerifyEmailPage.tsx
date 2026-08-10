@@ -11,7 +11,7 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import shared from './auth-shared.module.css';
 
 const verifyEmailOnce = (() => {
-  const inflight = new Map<string, Promise<void>>();
+  const inflight = new Map<string, Promise<{ message: string }>>();
   return (token: string, tenantId: string) => {
     const key = `${tenantId}:${token}`;
     const existing = inflight.get(key);

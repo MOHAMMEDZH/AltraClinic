@@ -255,5 +255,18 @@ describe('PortalAccount aggregate', () => {
     expect(primitives.preferences.locale).toBe('ar');
     expect(primitives.caregiverGrants).toHaveLength(1);
     expect(primitives.caregiverGrants[0].active).toBe(true);
+    expect(primitives.hasEnrollmentToken).toBe(false);
+  });
+
+  it('issues and consumes enrollment tokens with consent', () => {
+    const account = PortalAccount.invite(baseInvite);
+    const raw = account.issueEnrollmentToken();
+    expect(account.enrollmentTokenHash).toBeTruthy();
+    account.assertEnrollmentTokenValid(raw);
+    account.completeEnrollment({ userId: 'user-patient-1' });
+    expect(account.status.value).toBe('active');
+    expect(account.isEnrollmentComplete).toBe(true);
+    expect(account.enrollmentTokenHash).toBeNull();
+    expect(account.enrollmentConsentAt).toBeTruthy();
   });
 });

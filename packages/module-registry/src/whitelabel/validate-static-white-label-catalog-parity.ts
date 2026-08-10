@@ -14,7 +14,7 @@ export interface StaticWhiteLabelCatalogEntryLike {
   schemaVersion: number;
 }
 
-export function validateStaticWhiteLabelCatalogParity(entries: StaticWhiteLabelCatalogEntryLike[]): string[] {
+export function validateStaticWhiteLabelCatalogParity(entries: readonly StaticWhiteLabelCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
   const seenSurfaceIds = new Set<string>();

@@ -1,38 +1,14 @@
 import { CANONICAL_REPORT_HUBS, CANONICAL_REPORT_TEMPLATES } from '@booking/module-registry/reporting';
 
-export interface ReportCatalogEntry {
-  extensionId: string;
-  moduleId: string;
-  localId: string;
-  reportId: string;
-  categoryKey: string;
-  dataDomain: string;
-  titleKey: string;
-  descriptionKey: string;
-  delivery: 'view' | 'generate' | 'export';
-  route?: string;
-  deepLinkTemplate: string;
-  permissionAction: 'view' | 'create' | 'export';
-  permissionResource: string;
-  permissionResources?: string[];
-  featureId?: string;
-  analyticsType?: string;
-  operationalType?: string;
-  defaultFormat?: string;
-  supportedFormats?: string[];
-  exportFormats?: string[];
-  scheduleAllowed?: boolean;
-  providerKey: string;
-  sortOrder: number;
-  icon?: string;
-  featured?: boolean;
-  tags?: string[];
-}
+import type { ReportCatalogEntry } from './reporting-types';
+import type { LicensedModuleId } from '@booking/module-registry';
+
+export type { ReportCatalogEntry };
 
 function toEntry(t: (typeof CANONICAL_REPORT_TEMPLATES)[number]): ReportCatalogEntry {
   return {
     extensionId: `${t.moduleId}/reporting/${t.reportId}`,
-    moduleId: t.moduleId,
+    moduleId: t.moduleId as LicensedModuleId,
     localId: t.reportId,
     reportId: t.reportId,
     categoryKey: t.categoryKey,
@@ -68,4 +44,3 @@ export const STATIC_REPORT_CATALOG: ReportCatalogEntry[] = [
   ...CANONICAL_REPORT_TEMPLATES.map(toEntry),
   ...CANONICAL_REPORT_HUBS.map((hub) => toEntry(hub)),
 ];
-

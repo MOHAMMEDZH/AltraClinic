@@ -1,3 +1,6 @@
 playwright-report/
 test-results/
 blob-report/
+
+# Local Step 17 / Clinic gate diagnostic evidence (never commit)
+.clinic-*

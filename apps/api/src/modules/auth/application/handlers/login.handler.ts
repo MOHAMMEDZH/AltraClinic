@@ -24,6 +24,7 @@ import {
 } from '../../../../infrastructure/provider.tokens';
 import { LoginCompletionService } from '../services/login-completion.service';
 import { TenantPolicyService } from '../../../settings/application/services/tenant-policy.service';
+import { PrismaService } from '../../../../infrastructure/prisma.service';
 
 const RATE_LIMIT_WINDOW_MINUTES = 15;
 const IP_RATE_LIMIT = 30;
@@ -41,6 +42,7 @@ export class LoginHandler {
     private readonly jwtTokenService: JwtTokenService,
     private readonly loginCompletion: LoginCompletionService,
     private readonly tenantPolicy: TenantPolicyService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<LoginResult> {
@@ -100,6 +102,22 @@ export class LoginHandler {
     }
 
     if (!user.isActive) {
+      await recordFailure('account_inactive');
+      throw new AccountInactiveException();
+    }
+
+    // Flexible Step 17 — fail closed while PlatformTenant is still PROVISIONING
+    // (onboarding activation barrier). Flexible Step 19 — also deny SUSPENDED/ARCHIVED.
+    const platformTenant = await this.prisma.platformTenant.findUnique({
+      where: { tenantId: user.tenantId },
+      select: { status: true },
+    });
+    if (
+      platformTenant &&
+      (platformTenant.status === 'PROVISIONING' ||
+        platformTenant.status === 'SUSPENDED' ||
+        platformTenant.status === 'ARCHIVED')
+    ) {
       await recordFailure('account_inactive');
       throw new AccountInactiveException();
     }

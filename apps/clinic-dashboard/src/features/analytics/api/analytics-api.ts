@@ -232,6 +232,8 @@ export interface AnalyticsReportSummary {
   completedAt: string | null;
   rowCount: number;
   isScheduled: boolean;
+  scheduleFrequency?: string | null;
+  recipientEmails?: string[];
 }
 
 export async function fetchAnalyticsOverview(

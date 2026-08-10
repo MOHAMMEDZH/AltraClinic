@@ -3,7 +3,6 @@ import { formatMessage } from '@/i18n/messages';
 import type { AppointmentListItem } from '../types/scheduling.types';
 import { formatTimeRange, formatServiceTypeLabel } from '../config/scheduling-config';
 import { StatusBadge } from './StatusBadge';
-import { AppointmentBranchLabel } from './AppointmentBranchLabel';
 import styles from './AppointmentListTable.module.css';
 
 interface AppointmentListTableProps {

@@ -90,11 +90,11 @@ export function ReportSavedDefinitionDialog({
       dataset: current.dataset,
       dimensions: current.dimensions,
       measures: current.measures,
-      filters: { ...current.filters },
+      filters: { ...current.filters } as Record<string, unknown>,
       isScheduled: current.isScheduled,
       scheduleFrequency: current.scheduleFrequency,
       recipientEmails: current.recipientEmails,
-    }).then(() => setName(''));
+    } as Omit<ReportCustomDefinitionRecord, 'createdAt' | 'updatedAt'> & { id?: string }).then(() => setName(''));
   }
 
   return (

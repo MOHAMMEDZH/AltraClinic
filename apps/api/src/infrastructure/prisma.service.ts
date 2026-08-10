@@ -51,6 +51,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         process.env.NODE_ENV === 'development'
           ? [{ emit: 'stdout', level: 'query' }, { emit: 'stdout', level: 'warn' }, { emit: 'stdout', level: 'error' }]
           : [{ emit: 'stdout', level: 'error' }],
+      ...(process.env.NODE_ENV === 'test'
+        ? {
+            transactionOptions: {
+              maxWait: 20_000,
+              timeout: 60_000,
+            },
+          }
+        : {}),
     });
 
     PrismaService.installSoftDeleteMiddleware(this);
@@ -142,11 +150,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async withPlatformBypass<T>(fn: (client: PrismaClient) => Promise<T>): Promise<T> {
+    // Test hosts under load can exceed Prisma's 5s default interactive timeout.
+    const txOpts =
+      process.env.NODE_ENV === 'test' ? { maxWait: 20_000, timeout: 60_000 } : undefined;
     return this.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT set_config('app.platform_rls_bypass', 'true', true)`;
       await tx.$executeRaw`SELECT set_config('app.current_tenant_id', '', true)`;
       return fn(tx as unknown as PrismaClient);
-    });
+    }, txOpts);
   }
 
   async withResolvedTenantContext<T>(

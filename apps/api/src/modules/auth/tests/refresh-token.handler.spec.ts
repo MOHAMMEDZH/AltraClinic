@@ -6,8 +6,8 @@ import { JwtTokenService } from '../infrastructure/services/jwt-token.service';
 import { TokenPairVO } from '../domain/value-objects/token-pair.vo';
 import { RefreshTokenClaimsVO } from '../domain/value-objects/jwt-claims.vo';
 import { TokenInvalidException, AccountInactiveException } from '../domain/exceptions/auth.exceptions';
-import { User } from '../../identity/domain/user.entity';
 import { makeTestUser, mockUserRepository } from '../../../test-support/user-test.factory';
+import type { PrismaService } from '../../../infrastructure/prisma.service';
 
 const makeUser = () => makeTestUser({ id: 'u1', email: 'a@b.com', tenantId: 't1', firstName: 'A', lastName: 'B' });
 
@@ -23,8 +23,17 @@ describe('RefreshTokenHandler', () => {
   let userRepo: jest.Mocked<UserRepository>;
   let refreshRepo: jest.Mocked<RefreshTokenRepository>;
   let jwtService: jest.Mocked<JwtTokenService>;
+  let prisma: { platformTenant: { findUnique: jest.Mock } };
 
-  const validClaims: RefreshTokenClaimsVO = { sub: 'u1', sessionId: 'session-1', type: 'refresh' };
+  const validClaims: RefreshTokenClaimsVO = {
+    sub: 'u1',
+    sessionId: 'session-1',
+    type: 'refresh',
+    sessionClass: 'staff',
+    principalType: 'staff',
+    aud: 'clinic',
+    iss: null,
+  };
 
   beforeEach(() => {
     userRepo = mockUserRepository();
@@ -32,6 +41,7 @@ describe('RefreshTokenHandler', () => {
       save: jest.fn(), findByTokenHash: jest.fn(), findBySessionId: jest.fn(),
       findActiveByUserId: jest.fn(), revokeBySessionId: jest.fn(),
       revokeAllByUserId: jest.fn(), deleteExpired: jest.fn(),
+      revokeAllByTenantId: jest.fn(),
     };
     jwtService = {
       verifyRefreshToken: jest.fn().mockReturnValue(validClaims),
@@ -42,8 +52,18 @@ describe('RefreshTokenHandler', () => {
       getRefreshExpiresAt: jest.fn().mockReturnValue(new Date(Date.now() + 86400000)),
       verifyAccessToken: jest.fn(),
     } as unknown as jest.Mocked<JwtTokenService>;
+    prisma = {
+      platformTenant: {
+        findUnique: jest.fn().mockResolvedValue({ status: 'ACTIVE' }),
+      },
+    };
 
-    handler = new RefreshTokenHandler(userRepo, refreshRepo, jwtService);
+    handler = new RefreshTokenHandler(
+      userRepo,
+      refreshRepo,
+      jwtService,
+      prisma as unknown as PrismaService,
+    );
   });
 
   it('rotates refresh token and returns new pair', async () => {
@@ -80,6 +100,22 @@ describe('RefreshTokenHandler', () => {
     const token = makeToken();
     refreshRepo.findByTokenHash.mockResolvedValue(token);
     userRepo.findById.mockResolvedValue(null);
+    await expect(handler.execute('raw_token', '1.1.1.1', 'ua')).rejects.toThrow(AccountInactiveException);
+  });
+
+  it('throws AccountInactive when PlatformTenant is SUSPENDED', async () => {
+    const token = makeToken();
+    refreshRepo.findByTokenHash.mockResolvedValue(token);
+    userRepo.findById.mockResolvedValue(makeUser());
+    prisma.platformTenant.findUnique.mockResolvedValue({ status: 'SUSPENDED' });
+    await expect(handler.execute('raw_token', '1.1.1.1', 'ua')).rejects.toThrow(AccountInactiveException);
+  });
+
+  it('throws AccountInactive when PlatformTenant is ARCHIVED', async () => {
+    const token = makeToken();
+    refreshRepo.findByTokenHash.mockResolvedValue(token);
+    userRepo.findById.mockResolvedValue(makeUser());
+    prisma.platformTenant.findUnique.mockResolvedValue({ status: 'ARCHIVED' });
     await expect(handler.execute('raw_token', '1.1.1.1', 'ua')).rejects.toThrow(AccountInactiveException);
   });
 });

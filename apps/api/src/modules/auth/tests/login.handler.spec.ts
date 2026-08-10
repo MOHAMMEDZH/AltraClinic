@@ -81,6 +81,12 @@ describe('LoginHandler', () => {
       isMaintenanceMode: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<TenantPolicyService>;
 
+    const prisma = {
+      platformTenant: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+
     handler = new LoginHandler(
       userRepo,
       attemptRepo,
@@ -89,6 +95,7 @@ describe('LoginHandler', () => {
       jwtService,
       loginCompletion,
       tenantPolicy,
+      prisma as never,
     );
   });
 

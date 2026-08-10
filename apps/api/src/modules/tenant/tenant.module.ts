@@ -14,6 +14,6 @@ import { TENANT_REPOSITORY } from '../../infrastructure/provider.tokens';
     GetTenantHandler,
     TenantScopedAccessGuard,
   ],
-  exports: [],
+  exports: [CreateTenantHandler],
 })
 export class TenantModule {}

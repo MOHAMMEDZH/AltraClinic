@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { RouteContributionView } from './route-types';
 
 interface RoutingPayload {
@@ -23,7 +23,7 @@ export function extractRoutingContributions(modules: EffectiveModuleView[]): Rou
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         path: payload.path,
         componentKey: payload.componentKey,
         layoutKey: payload.layoutKey,

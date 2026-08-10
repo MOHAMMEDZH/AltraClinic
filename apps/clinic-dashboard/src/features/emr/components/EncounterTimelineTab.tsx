@@ -47,7 +47,7 @@ export function EncounterTimelineTab({ encounter }: EncounterTimelineTabProps) {
             <div className={styles.dot} aria-hidden />
             <div>
               <p className={styles.label}>
-                {t(entry.labelKey as never, { defaultValue: entry.labelKey.split('.').pop() })}
+                {t(entry.labelKey as never, entry.labelKey.split('.').pop() ?? entry.labelKey)}
               </p>
               <p className={styles.time}>{formatEncounterDate(entry.at, locale)}</p>
             </div>

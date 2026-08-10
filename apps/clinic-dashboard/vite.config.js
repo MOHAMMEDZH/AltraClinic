@@ -13,6 +13,7 @@ export default defineConfig({
             '@booking/dashboard-export/word': "".concat(dashboardExportRoot, "/word.ts"),
             '@booking/dashboard-export/patient-word': "".concat(dashboardExportRoot, "/patient-word.ts"),
             '@booking/dashboard-export': "".concat(dashboardExportRoot, "/index.ts"),
+            // Subpath exports must be listed before the package root alias.
             '@booking/module-registry/builtin': "".concat(moduleRegistryRoot, "/builtin/builtin-manifests.ts"),
             '@booking/module-registry/dashboard': "".concat(moduleRegistryRoot, "/dashboard/index.ts"),
             '@booking/module-registry/search': "".concat(moduleRegistryRoot, "/search/index.ts"),

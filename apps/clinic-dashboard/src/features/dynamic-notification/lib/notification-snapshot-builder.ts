@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import {
   NOTIFICATION_BUILTIN_PROVIDER_KEY,
@@ -96,7 +97,7 @@ function toChannelSnapshot(entry: NotificationCatalogEntry): NotificationChannel
   return {
     kind: 'channel',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     channelId: entry.channelId ?? entry.localId,
     labelKey: entry.labelKey,
@@ -117,7 +118,7 @@ function toTypeSnapshot(entry: NotificationCatalogEntry): NotificationTypeSnapsh
   return {
     kind: 'type',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     typeId: entry.typeId ?? entry.localId,
     categoryId: entry.categoryId ?? 'unknown',
@@ -142,7 +143,7 @@ function toTemplateSnapshot(entry: NotificationCatalogEntry): NotificationTempla
   return {
     kind: 'template',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     templateId: entry.templateId ?? entry.localId,
     typeId: entry.typeId ?? 'unknown',
@@ -165,7 +166,7 @@ function toProviderSnapshot(entry: NotificationCatalogEntry): NotificationProvid
   return {
     kind: 'provider',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     providerId: entry.providerId ?? entry.localId,
     channelId: entry.channelId ?? 'unknown',
@@ -186,7 +187,7 @@ function toSurfaceSnapshot(entry: NotificationCatalogEntry): NotificationSurface
   return {
     kind: 'surface',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     surfaceId: entry.surfaceId ?? entry.localId,
     route: entry.route,
@@ -205,7 +206,7 @@ function toPackSnapshot(entry: NotificationCatalogEntry): NotificationPackSnapsh
   return {
     kind: 'pack',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     ownerModuleId: entry.ownerModuleId ?? entry.moduleId,
     packId: entry.packId ?? entry.localId,
     includedTypeIds: entry.includedTypeIds ?? [],

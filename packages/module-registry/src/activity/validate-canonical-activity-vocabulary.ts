@@ -1,7 +1,7 @@
 import { CANONICAL_ACTIVITY_CATEGORIES, CANONICAL_ACTIVITY_CATEGORY_IDS } from './canonical-activity-categories';
 import { CANONICAL_ACTIVITY_SEVERITIES, CANONICAL_ACTIVITY_SEVERITY_IDS } from './canonical-activity-severities';
 import { CANONICAL_ACTIVITY_FEEDS, CANONICAL_ACTIVITY_FEED_IDS } from './canonical-activity-feeds';
-import { CANONICAL_ACTIVITY_HUBS, CANONICAL_ACTIVITY_HUB_IDS } from './canonical-activity-hubs';
+import { CANONICAL_ACTIVITY_HUBS } from './canonical-activity-hubs';
 import { CANONICAL_ACTIVITY_TYPES } from './canonical-activity-types';
 import { CANONICAL_CROSS_MODULE_ACTIVITY } from './canonical-cross-module-activity';
 import {
@@ -14,7 +14,6 @@ import { CANONICAL_ACTIVITY_ENTRY_COUNT, CANONICAL_ALL_ACTIVITY_TYPES } from './
 const CATEGORY_IDS = new Set(CANONICAL_ACTIVITY_CATEGORY_IDS);
 const SEVERITY_IDS = new Set(CANONICAL_ACTIVITY_SEVERITY_IDS);
 const FEED_IDS = new Set(CANONICAL_ACTIVITY_FEED_IDS);
-const HUB_IDS = new Set(CANONICAL_ACTIVITY_HUB_IDS);
 const VALID_FEATURE_IDS = new Set<string>(CANONICAL_ACTIVITY_FEATURE_IDS);
 const PROVIDER_KEY_PATTERN = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)+$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;

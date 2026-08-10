@@ -38,8 +38,6 @@ import {
 
   buildRegistryCacheKey,
 
-  buildRolesHash,
-
 } from '../lib/registry-cache-identity';
 
 import {
@@ -97,8 +95,6 @@ export function ModuleRegistryProvider({ children }: { children: ReactNode }) {
   const userId = user?.userId ?? null;
 
   const roles = user?.roles ?? [];
-
-  const rolesHash = buildRolesHash(roles);
 
   const partialIdentity =
 

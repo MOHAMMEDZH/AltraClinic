@@ -25,7 +25,7 @@ export function WorkflowTasksPage() {
   const tab = params.get('overdue') === 'true' ? 'overdue' : params.get('tab') === 'team' ? 'team' : 'my';
   const perm = useMemo(() => buildWorkflowPermCheck(user?.roles ?? []), [user?.roles]);
   const listQuery = useWorkflowTasks(
-    { assigneeId: tab === 'my' ? user?.id : undefined, overdueOnly: tab === 'overdue' },
+    { assigneeId: tab === 'my' ? user?.userId : undefined, overdueOnly: tab === 'overdue' },
     canViewWorkflows(perm),
   );
   const updateTask = useUpdateTask();

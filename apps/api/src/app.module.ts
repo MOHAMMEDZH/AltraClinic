@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { IdentityModule } from './modules/identity/identity.module';
 import { PatientsModule } from './modules/patients/patients.module';
@@ -30,6 +30,22 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { ModuleRegistryModule } from './modules/module-registry/module-registry.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
+import { BackupRestoreModule } from './modules/backup-restore/backup-restore.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { ObservabilityModule } from './modules/observability/observability.module';
+import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
+import { PlatformTenantsModule } from './modules/platform-tenants/platform-tenants.module';
+import { PlatformHealthcareCatalogModule } from './modules/platform-healthcare-catalog/platform-healthcare-catalog.module';
+import { PlatformPlansModule } from './modules/platform-plans/platform-plans.module';
+import { PlatformAddonsModule } from './modules/platform-addons/platform-addons.module';
+import { PlatformSubscriptionsModule } from './modules/platform-subscriptions/platform-subscriptions.module';
+import { EffectiveEntitlementRuntimeModule } from './modules/effective-entitlement-runtime/effective-entitlement-runtime.module';
+import { UsageMeteringModule } from './modules/usage-metering/usage-metering.module';
+import { TenantProvisioningModule } from './modules/tenant-provisioning/tenant-provisioning.module';
+import { TenantLifecycleModule } from './modules/tenant-lifecycle/tenant-lifecycle.module';
+import { FeatureFlagsSettingsModule } from './modules/feature-flags-settings/feature-flags-settings.module';
+import { PlatformAuditCenterModule } from './modules/platform-audit-center/platform-audit-center.module';
+import { PlatformOperationsConsoleModule } from './modules/platform-operations-console/platform-operations-console.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -38,17 +54,13 @@ import { MaintenanceModeGuard } from './common/maintenance-mode.guard';
 import { TenantDbInterceptor } from './common/interceptors/tenant-db.interceptor';
 import { LicensedModuleGuard } from './modules/subscription/api/guards/licensed-module.guard';
 import { ApiRateLimitGuard } from './modules/subscription/api/guards/api-rate-limit.guard';
+import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/integrations-api-key-auth.guard';
 
 /**
  * JwtAuthGuard is registered globally here.
+ * IntegrationsApiKeyAuthGuard runs first (OD-AUTHN) for bk_/bki_ Bearer and X-Api-Key.
  * All routes require authentication unless decorated with @Public().
- * RolesGuard runs after JWT validation.
- *
- * COMPETING ARCHITECT:
- *   Challenger: "Global guard registration couples AppModule to AuthModule."
- *   Decision: This is intentional. Security-by-default is the correct posture.
- *   Opt-out (@Public()) is safer than opt-in (@UseGuards()). The coupling is
- *   one-directional and acceptable.
+ * RolesGuard runs after JWT / API-key validation.
  */
 @Module({
   imports: [
@@ -83,8 +95,25 @@ import { ApiRateLimitGuard } from './modules/subscription/api/guards/api-rate-li
     SettingsModule,
     ModuleRegistryModule,
     ImportExportModule,
+    BackupRestoreModule,
+    IntegrationsModule,
+    ObservabilityModule,
+    PlatformDashboardModule,
+    PlatformTenantsModule,
+    PlatformHealthcareCatalogModule,
+    PlatformPlansModule,
+    PlatformAddonsModule,
+    PlatformSubscriptionsModule,
+    EffectiveEntitlementRuntimeModule,
+    UsageMeteringModule,
+    TenantProvisioningModule,
+    TenantLifecycleModule,
+    FeatureFlagsSettingsModule,
+    PlatformAuditCenterModule,
+    PlatformOperationsConsoleModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ApiRateLimitGuard },
     { provide: APP_GUARD, useClass: MaintenanceModeGuard },

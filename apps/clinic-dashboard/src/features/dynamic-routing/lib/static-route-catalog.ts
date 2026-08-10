@@ -433,6 +433,52 @@ export const STATIC_ROUTE_CATALOG: RouteCatalogEntry[] = [
         ],
       },
       {
+        id: 'settings-backup-restore',
+        path: 'backup-restore',
+        moduleId: 'settings',
+        componentKey: 'layout.backupRestore',
+        layoutKey: 'backupRestore',
+        children: [
+          { id: 'br-home', index: true, moduleId: 'settings', componentKey: 'page.backupRestoreHome' },
+          { id: 'br-jobs', path: 'jobs', moduleId: 'settings', componentKey: 'page.backupRestoreJobs' },
+          { id: 'br-job-detail', path: 'jobs/:jobId', moduleId: 'settings', componentKey: 'page.backupRestoreJobDetail' },
+          { id: 'br-backups', path: 'backups', moduleId: 'settings', componentKey: 'page.backupRestoreBackups' },
+          { id: 'br-backup-new', path: 'backups/new', moduleId: 'settings', componentKey: 'page.backupRestoreBackupRequest' },
+          { id: 'br-restores', path: 'restores', moduleId: 'settings', componentKey: 'page.backupRestoreRestores' },
+          { id: 'br-restore-new', path: 'restores/new', moduleId: 'settings', componentKey: 'page.backupRestoreRestoreRequest' },
+          { id: 'br-snapshots', path: 'snapshots', moduleId: 'settings', componentKey: 'page.backupRestoreSnapshots' },
+          { id: 'br-verification', path: 'verification', moduleId: 'settings', componentKey: 'page.backupRestoreVerification' },
+          { id: 'br-retention', path: 'retention', moduleId: 'settings', componentKey: 'page.backupRestoreRetention' },
+          { id: 'br-recovery-points', path: 'recovery-points', moduleId: 'settings', componentKey: 'page.backupRestoreRecoveryPoints' },
+          { id: 'br-catalog', path: 'catalog', moduleId: 'settings', componentKey: 'page.backupRestoreCatalog' },
+          { id: 'br-health', path: 'health', moduleId: 'settings', componentKey: 'page.backupRestoreHealth' },
+        ],
+      },
+      {
+        id: 'settings-api-integrations',
+        path: 'api-integrations',
+        moduleId: 'settings',
+        componentKey: 'layout.apiIntegrations',
+        layoutKey: 'apiIntegrations',
+        children: [
+          { id: 'api-integrations-home', index: true, moduleId: 'settings', componentKey: 'page.apiIntegrationsHome' },
+          { id: 'api-integrations-credentials', path: 'credentials', moduleId: 'settings', componentKey: 'page.apiIntegrationsCredentials' },
+          { id: 'api-integrations-credentials-new', path: 'credentials/new', moduleId: 'settings', componentKey: 'page.apiIntegrationsCredentialCreate' },
+          { id: 'api-integrations-credentials-detail', path: 'credentials/:id', moduleId: 'settings', componentKey: 'page.apiIntegrationsCredentialDetail' },
+          { id: 'api-integrations-service-accounts', path: 'service-accounts', moduleId: 'settings', componentKey: 'page.apiIntegrationsServiceAccounts' },
+          { id: 'api-integrations-scopes', path: 'scopes', moduleId: 'settings', componentKey: 'page.apiIntegrationsScopes' },
+          { id: 'api-integrations-providers', path: 'providers', moduleId: 'settings', componentKey: 'page.apiIntegrationsProviders' },
+          { id: 'api-integrations-webhooks', path: 'webhooks', moduleId: 'settings', componentKey: 'page.apiIntegrationsWebhooks' },
+          { id: 'api-integrations-deliveries', path: 'deliveries', moduleId: 'settings', componentKey: 'page.apiIntegrationsDeliveries' },
+          { id: 'api-integrations-gateway', path: 'gateway', moduleId: 'settings', componentKey: 'page.apiIntegrationsGateway' },
+          { id: 'api-integrations-quotas', path: 'quotas', moduleId: 'settings', componentKey: 'page.apiIntegrationsQuotas' },
+          { id: 'api-integrations-metrics', path: 'metrics', moduleId: 'settings', componentKey: 'page.apiIntegrationsMetrics' },
+          { id: 'api-integrations-permissions', path: 'permissions', moduleId: 'settings', componentKey: 'page.apiIntegrationsPermissions' },
+          { id: 'api-integrations-configuration', path: 'configuration', moduleId: 'settings', componentKey: 'page.apiIntegrationsConfiguration' },
+          { id: 'api-integrations-health', path: 'health', moduleId: 'settings', componentKey: 'page.apiIntegrationsHealth' },
+        ],
+      },
+      {
         id: 'settings-subscription',
         path: 'subscription',
         moduleId: 'settings',
@@ -497,7 +543,7 @@ function normalizeCatalogPathLocal(path: string): string {
   return normalizeCatalogPath(path);
 }
 
-export function flattenCatalogPaths(entries: RouteCatalogEntry[], prefix = ''): string[] {
+export function flattenCatalogPaths(entries: readonly RouteCatalogEntry[], prefix = ''): string[] {
   const paths: string[] = [];
   for (const entry of entries) {
     if (entry.index) {

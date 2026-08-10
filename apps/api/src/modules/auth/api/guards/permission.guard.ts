@@ -48,6 +48,13 @@ export class PermissionGuard implements CanActivate {
     const user = context.switchToHttp().getRequest().user as JwtClaimsVO | undefined;
     if (!user) throw new ForbiddenException('Authentication required.');
 
+    // Platform principals never use the legacy super_admin permission bypass (Step 06/08).
+    if (user.isPlatformSession()) {
+      throw new ForbiddenException(
+        'Platform RBAC is not available on this route. Use platform-auth endpoints.',
+      );
+    }
+
     if (user.roles.includes('super_admin' as UserRole)) return true;
 
     const matrix = PermissionGuard.getMatrix();
@@ -64,7 +71,7 @@ export class PermissionGuard implements CanActivate {
     const allowedRoles: string[] = resource.permissions[required.action] ?? [];
     if (effectiveRoles.some((role) => allowedRoles.includes(role))) return true;
 
-    const customGrants = await this.loadCustomRoleGrants(user.sub, user.tenantId);
+    const customGrants = await this.loadCustomRoleGrants(user.sub, user.tenantId ?? '');
     const hasCustom = customGrants.some((grant) => (grant[required.resource] ?? []).includes(required.action));
     if (hasCustom) return true;
 

@@ -13,6 +13,11 @@ module.exports = {
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
+    // otplib's base32 plugin depends on @scure/base, which ships ESM-only (no CJS
+    // build). Node's native `require()` can load it synchronously, but Jest's module
+    // loader cannot, so it must be transpiled to CJS like our own TS sources.
+    '^.+\\.js$': ['ts-jest', { tsconfig: 'tsconfig.json', isolatedModules: true }],
   },
+  transformIgnorePatterns: ['/node_modules/(?!(@scure|@noble|otplib|@otplib)/)'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '\\.postgres\\.integration\\.spec\\.ts$'],
 };

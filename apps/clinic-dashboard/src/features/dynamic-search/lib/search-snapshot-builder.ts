@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import type { EffectiveModuleView } from '@booking/module-registry';
 import type { SearchCatalogEntry, SearchCatalogSource, SearchSnapshot, SearchSnapshotEntry } from './search-types';
@@ -9,7 +10,7 @@ import {
 
 export interface BuildSearchSnapshotOptions {
   roles: string[];
-  catalog: SearchCatalogEntry[];
+  catalog: readonly SearchCatalogEntry[];
   modules: EffectiveModuleView[];
   source: SearchCatalogSource;
   catalogGeneration: number | null;
@@ -21,7 +22,7 @@ export interface BuildSearchSnapshotOptions {
 function toSnapshotEntry(entry: SearchCatalogEntry): SearchSnapshotEntry {
   return {
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     entityType: entry.entityType,
     labelKey: entry.labelKey,
     resourceIds: [...entry.resourceIds],
@@ -54,7 +55,7 @@ function buildLookupMaps(executableEntries: SearchSnapshotEntry[]) {
 }
 
 function filterStaticExecutableEntries(
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   roles: string[],
 ): SearchCatalogEntry[] {
   return catalog.filter((entry) => {
@@ -65,7 +66,7 @@ function filterStaticExecutableEntries(
 }
 
 function filterStaticDiscoveryEntries(
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   roles: string[],
 ): SearchCatalogEntry[] {
   return catalog.filter((entry) => {
@@ -75,7 +76,7 @@ function filterStaticDiscoveryEntries(
 }
 
 function filterRegistryEntries(
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   modules: EffectiveModuleView[],
   contributions: ReturnType<typeof extractSearchContributions>,
 ): { executable: SearchCatalogEntry[]; discovery: SearchCatalogEntry[] } {
@@ -133,7 +134,7 @@ export function buildSearchSnapshot(options: BuildSearchSnapshotOptions): Search
 
 export function buildRegistrySearchSnapshot(
   roles: string[],
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -151,7 +152,7 @@ export function buildRegistrySearchSnapshot(
 
 export function buildStaticSearchSnapshot(
   roles: string[],
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
   source: Extract<SearchCatalogSource, 'static-fallback' | 'static-only'> = 'static-only',
 ): SearchSnapshot {
   return buildSearchSnapshot({

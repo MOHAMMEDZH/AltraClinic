@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { NavigationPlacement, NavigationResolveOptions, NavigationTreeItem } from './navigation-types';
 import { STATIC_NAV_ID_BY_PATH } from './static-nav-role-map';
 
@@ -27,7 +27,7 @@ function toTreeItem(
   extension: EffectiveModuleView['extensions'][number],
 ): NavigationTreeItem | null {
   if (extension.kind !== 'navigation') return null;
-  const payload = extension.payload as NavigationContributionPayload;
+  const payload = extension.payload as unknown as NavigationContributionPayload;
   if (!payload.path || !payload.placement) return null;
 
   const userAccessible =
@@ -38,7 +38,7 @@ function toTreeItem(
   return {
     id: STATIC_NAV_ID_BY_PATH[payload.path] ?? extension.extensionId,
     extensionId: extension.extensionId,
-    moduleId: module.moduleId,
+    moduleId: module.moduleId as LicensedModuleId,
     path: payload.path,
     labelKey: extension.labelKey,
     icon: payload.icon ?? 'Circle',

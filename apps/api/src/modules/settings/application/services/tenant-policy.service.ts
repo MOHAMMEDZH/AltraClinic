@@ -20,6 +20,14 @@ export interface TenantAdvancedPolicyConfig {
   maintenanceMode: boolean;
   allowDataExport: boolean;
   allowDataImport: boolean;
+  /** Phase 43a — Backup & Restore Center licensing gate (default OFF). */
+  allowBackupRestore: boolean;
+  /** Phase 44a — API Keys & Integrations Center licensing gate (default OFF). */
+  allowIntegrations: boolean;
+  /** Phase 45a — Observability Center licensing gate (default OFF). */
+  allowObservability: boolean;
+  /** Phase 46a — Patient Portal Center licensing gate (default OFF). */
+  allowPatientPortal: boolean;
 }
 
 const DEFAULT_SECURITY: TenantSecurityPolicyConfig = {
@@ -71,6 +79,10 @@ export class TenantPolicyService {
       maintenanceMode: Boolean(raw?.maintenanceMode ?? false),
       allowDataExport: Boolean(raw?.allowDataExport ?? true),
       allowDataImport: Boolean(raw?.allowDataImport ?? true),
+      allowBackupRestore: Boolean(raw?.allowBackupRestore ?? false),
+      allowIntegrations: Boolean(raw?.allowIntegrations ?? false),
+      allowObservability: Boolean(raw?.allowObservability ?? false),
+      allowPatientPortal: Boolean(raw?.allowPatientPortal ?? false),
     };
   }
 

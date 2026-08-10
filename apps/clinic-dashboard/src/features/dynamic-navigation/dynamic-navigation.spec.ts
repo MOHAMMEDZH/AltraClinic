@@ -57,7 +57,7 @@ describe('DynamicNavigationProvider', () => {
       isError: false,
       error: null,
       snapshot: {
-        schemaVersion: '1.0',
+        schemaVersion: '1.0' as const,
         platformVersion: '1.0.0',
         generatedAt: '2026-07-13T00:00:00.000Z',
         catalogGeneration: 1,

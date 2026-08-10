@@ -7,11 +7,9 @@ import {
   defaultTabForViewMode,
   checkDrugAllergies,
   checkDrugInteractions,
-  getVitalValue,
   isEncounterEditable,
   isPendingDocumentation,
   resolveEmrViewMode,
-  setVitalValue,
   statusLabelKey,
 } from './emr-config';
 

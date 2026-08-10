@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import type { EffectiveModuleView } from '@booking/module-registry';
 import type { ReportCategoryId } from '@/features/reporting/config/reporting-catalog';
@@ -21,7 +22,7 @@ import type {
 
 export interface BuildReportingSnapshotOptions {
   roles: string[];
-  catalog: ReportCatalogEntry[];
+  catalog: readonly ReportCatalogEntry[];
   modules: EffectiveModuleView[];
   source: ReportCatalogSource;
   catalogGeneration: number | null;
@@ -42,7 +43,7 @@ function toTemplateSnapshot(entry: ReportCatalogEntry): ReportTemplateSnapshot |
   return {
     kind: 'template',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     reportId: entry.reportId,
     categoryId,
     categoryKey: entry.categoryKey,
@@ -74,7 +75,7 @@ function toHubSnapshot(entry: ReportCatalogEntry): ReportHubSnapshot {
   return {
     kind: 'hub',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     reportId: entry.reportId,
     categoryKey: entry.categoryKey,
     dataDomain: entry.dataDomain,
@@ -148,14 +149,14 @@ function buildTemplatesByCategory(
   return grouped;
 }
 
-function filterStaticEntries(catalog: ReportCatalogEntry[], roles: string[]): ReportCatalogEntry[] {
+function filterStaticEntries(catalog: readonly ReportCatalogEntry[], roles: string[]): ReportCatalogEntry[] {
   return catalog.filter((entry) =>
     hasPermission(roles, entry.permissionResource as never, entry.permissionAction as never),
   );
 }
 
 function filterRegistryEntries(
-  catalog: ReportCatalogEntry[],
+  catalog: readonly ReportCatalogEntry[],
   modules: EffectiveModuleView[],
   contributions: ReturnType<typeof extractReportingContributions>,
 ): ReportCatalogEntry[] {
@@ -204,7 +205,7 @@ export function buildReportingSnapshot(options: BuildReportingSnapshotOptions): 
 
 export function buildRegistryReportingSnapshot(
   roles: string[],
-  catalog: ReportCatalogEntry[],
+  catalog: readonly ReportCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -224,7 +225,7 @@ export function buildRegistryReportingSnapshot(
 
 export function buildStaticReportingSnapshot(
   roles: string[],
-  catalog: ReportCatalogEntry[],
+  catalog: readonly ReportCatalogEntry[],
   identity: ReportSnapshotIdentity,
   source: Extract<ReportCatalogSource, 'static-fallback' | 'static-only'> = 'static-only',
 ): ReportSnapshot {

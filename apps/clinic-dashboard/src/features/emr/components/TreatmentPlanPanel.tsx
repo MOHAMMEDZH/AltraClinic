@@ -1,3 +1,4 @@
+import { formatMessage } from '@/i18n/messages';
 import { useState } from 'react';
 import { useI18n } from '@booking/i18n/react';
 import { AuthButton } from '@/features/auth/components/AuthButton';
@@ -70,7 +71,7 @@ export function TreatmentPlanPanel({ patientId, canEdit }: TreatmentPlanPanelPro
               <span className={styles.badge}>{plan.status}</span>
             </header>
             <p className={styles.progress}>
-              {t('emr.carePlan.progress', { completed: plan.completedItems, total: plan.totalItems })}
+              {formatMessage(t('emr.carePlan.progress'), { completed: plan.completedItems, total: plan.totalItems })}
             </p>
             {plan.phases.map((phase) => (
               <div key={phase.id} className={styles.phase}>

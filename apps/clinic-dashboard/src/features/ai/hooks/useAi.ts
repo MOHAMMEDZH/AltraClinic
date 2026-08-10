@@ -5,7 +5,6 @@ import {
   deployAiModel,
   fetchAiAdminOverview,
   fetchAiAdminUsage,
-  fetchAiAdminProviders,
   updateAiAdminProviders,
   fetchAiModel,
   fetchAiModels,

@@ -56,7 +56,7 @@ export async function downloadDashboardPdf(
   );
 
   triggerBrowserDownload(
-    new Blob([bytes], { type: 'application/pdf' }),
+    new Blob([bytes as BlobPart], { type: 'application/pdf' }),
     `${filenamePrefix}-${overview.generatedAt.slice(0, 10)}.pdf`,
   );
 }

@@ -1,4 +1,4 @@
-import { FixedSizeList, type ListChildComponentProps } from 'react-window';
+import { FixedSizeList } from 'react-window';
 import styles from '../../notifications/notifications-layout.module.css';
 
 const DEFAULT_ROW_HEIGHT = 52;

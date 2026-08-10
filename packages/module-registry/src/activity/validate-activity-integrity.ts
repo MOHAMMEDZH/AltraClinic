@@ -1,9 +1,7 @@
 import type { ActivityContribution, ModuleManifest } from '../types';
-import { CANONICAL_ACTIVITY_TYPES } from './canonical-activity-types';
 import { CANONICAL_ACTIVITY_FEEDS, CANONICAL_ACTIVITY_FEED_COUNT } from './canonical-activity-feeds';
 import { CANONICAL_ACTIVITY_HUBS, CANONICAL_ACTIVITY_HUB_COUNT } from './canonical-activity-hubs';
 import {
-  CANONICAL_CROSS_MODULE_ACTIVITY,
   CANONICAL_CROSS_MODULE_ACTIVITY_COUNT,
 } from './canonical-cross-module-activity';
 import { CANONICAL_ACTIVITY_ENTRY_COUNT, CANONICAL_ACTIVITY_SURFACES } from './canonical-activity-surfaces';

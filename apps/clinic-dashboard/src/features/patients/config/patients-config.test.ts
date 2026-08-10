@@ -4,7 +4,6 @@ import {
   canArchivePatient,
   DEFAULT_VISIBLE_COLUMNS,
   PATIENT_PAGE_SIZE,
-  resolvePatientTabs,
 } from '../config/patients-config';
 import { patientFullName, formatPatientAge, genderLabelKey } from '../lib/patient-format';
 

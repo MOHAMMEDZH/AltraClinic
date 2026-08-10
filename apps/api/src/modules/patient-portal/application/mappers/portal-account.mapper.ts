@@ -23,9 +23,20 @@ export function toPortalAccountDto(
 ): PortalAccountDto {
   const primitives = account.toPrimitives(options.at ?? new Date());
   const caregiverGrants: CaregiverAccessGrantDto[] = primitives.caregiverGrants.map((grant) => ({
-    ...grant,
+    grantId: grant.grantId,
     caregiverContact: options.viewerIsOwner ? grant.caregiverContact : null,
     caregiverName: options.viewerIsOwner ? grant.caregiverName : null,
+    scopes: grant.scopes,
+    grantedBy: grant.grantedBy,
+    grantedAt: grant.grantedAt,
+    expiresAt: grant.expiresAt,
+    revokedAt: grant.revokedAt,
+    revokedReason: grant.revokedReason,
+    status: grant.status,
+    acceptedAt: grant.acceptedAt,
+    declinedAt: grant.declinedAt,
+    caregiverUserId: grant.caregiverUserId,
+    active: grant.active,
   }));
 
   return {

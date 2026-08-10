@@ -6,7 +6,7 @@ import { getCatalogEntry, getProfileWidgetOrder } from './static-dashboard-catal
 
 export interface BuildDashboardSnapshotOptions {
   roles: string[];
-  catalog: DashboardCatalogEntry[];
+  catalog: readonly DashboardCatalogEntry[];
   modules: import('@booking/module-registry').EffectiveModuleView[];
   source: DashboardCatalogSource;
   catalogGeneration: number | null;
@@ -17,7 +17,7 @@ export interface BuildDashboardSnapshotOptions {
 
 function filterProfileWidgets(
   profileWidgetIds: DashboardWidgetId[],
-  catalog: DashboardCatalogEntry[],
+  catalog: readonly DashboardCatalogEntry[],
   modules: BuildDashboardSnapshotOptions['modules'],
   includeAll: boolean,
 ): DashboardWidgetId[] {
@@ -54,7 +54,7 @@ export function buildDashboardSnapshot(options: BuildDashboardSnapshotOptions): 
 
 export function buildRegistryDashboardSnapshot(
   roles: string[],
-  catalog: DashboardCatalogEntry[],
+  catalog: readonly DashboardCatalogEntry[],
   modules: BuildDashboardSnapshotOptions['modules'],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -72,7 +72,7 @@ export function buildRegistryDashboardSnapshot(
 
 export function buildStaticDashboardSnapshot(
   roles: string[],
-  catalog: DashboardCatalogEntry[],
+  catalog: readonly DashboardCatalogEntry[],
 ): DashboardSnapshot {
   return buildDashboardSnapshot({
     roles,

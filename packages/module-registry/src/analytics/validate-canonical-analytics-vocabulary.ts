@@ -191,7 +191,7 @@ export function validateCanonicalAnalyticsVocabulary(): string[] {
       }
     }
     for (const widgetId of domain.dashboardWidgetIds ?? []) {
-      if (!DASHBOARD_WIDGET_IDS.has(widgetId)) {
+      if (!(DASHBOARD_WIDGET_IDS as Set<string>).has(widgetId)) {
         errors.push(`Domain "${domain.domainId}" references unknown dashboardWidgetId "${widgetId}"`);
       }
     }

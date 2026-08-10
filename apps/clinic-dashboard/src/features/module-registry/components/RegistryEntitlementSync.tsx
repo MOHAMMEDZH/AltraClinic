@@ -10,13 +10,14 @@ export function RegistryEntitlementSync() {
   const lastFingerprintRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const license = entitlements.data?.license;
-    if (!license?.modules) return;
+    const data = entitlements.data;
+    const license = data?.license;
+    if (!data || !license?.modules) return;
 
     const fingerprint = buildEntitlementVersion({
       licenseStatus: license.status,
-      canWrite: entitlements.data.canWrite,
-      canMutate: entitlements.data.canMutate,
+      canWrite: data.canWrite,
+      canMutate: data.canMutate,
       licenseModules: license.modules,
     });
 

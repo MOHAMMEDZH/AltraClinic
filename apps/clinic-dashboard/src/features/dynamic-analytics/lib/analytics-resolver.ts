@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import { CANONICAL_REPORT_TEMPLATES } from '@booking/module-registry/reporting';
 import type {
   AnalyticsCapabilities,
@@ -8,6 +8,7 @@ import type {
 } from './analytics-types';
 
 interface AnalyticsExtensionPayload {
+  descriptionKey?: string;
   analyticsId?: string;
   analyticsKind?: 'domain' | 'widget' | 'hub';
   localId?: string;
@@ -67,14 +68,14 @@ export function extractAnalyticsContributions(
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         analyticsId: payload.analyticsId,
         analyticsKind: payload.analyticsKind,
         localId: payload.localId ?? payload.analyticsId,
         categoryId: payload.categoryId ?? 'platform',
         dataDomain: payload.dataDomain ?? payload.analyticsId,
         labelKey: extension.labelKey,
-        descriptionKey: extension.descriptionKey,
+        descriptionKey: payload.descriptionKey,
         iconKey: payload.iconKey,
         route: payload.route,
         deepLinkTemplate: payload.deepLinkTemplate,

@@ -14,6 +14,10 @@ export interface CaregiverAccessGrantDto {
   expiresAt: string | null;
   revokedAt: string | null;
   revokedReason: string | null;
+  status: string;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  caregiverUserId: string | null;
   active: boolean;
 }
 

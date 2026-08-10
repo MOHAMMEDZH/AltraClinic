@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import { hasPermission } from '@booking/permissions';
 import { CANONICAL_ANALYTICS_METRICS } from '@booking/module-registry/analytics';
 import type { EffectiveModuleView } from '@booking/module-registry';
@@ -29,7 +30,7 @@ import type {
 
 export interface BuildAnalyticsSnapshotOptions {
   roles: string[];
-  catalog: AnalyticsCatalogEntry[];
+  catalog: readonly AnalyticsCatalogEntry[];
   modules: EffectiveModuleView[];
   source: AnalyticsCatalogSource;
   catalogGeneration: number | null;
@@ -48,7 +49,7 @@ function toDomainSnapshot(entry: AnalyticsCatalogEntry): AnalyticsDomainSnapshot
   return {
     kind: 'domain',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     domainId: entry.localId as AnalyticsDomainId,
     analyticsId: entry.analyticsId,
     categoryId: entry.categoryId,
@@ -80,7 +81,7 @@ function toWidgetSnapshot(entry: AnalyticsCatalogEntry): AnalyticsWidgetSnapshot
   return {
     kind: 'widget',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     widgetCatalogId: entry.widgetCatalogId,
     analyticsId: entry.analyticsId,
     categoryId: entry.categoryId,
@@ -107,7 +108,7 @@ function toHubSnapshot(entry: AnalyticsCatalogEntry): AnalyticsHubSnapshot | nul
   return {
     kind: 'hub',
     extensionId: entry.extensionId,
-    moduleId: entry.moduleId,
+    moduleId: entry.moduleId as LicensedModuleId,
     hubId: entry.localId,
     analyticsId: entry.analyticsId,
     categoryId: entry.categoryId,
@@ -133,7 +134,7 @@ function toSnapshotEntry(
     return {
       analyticsId: entry.analyticsId,
       extensionId: entry.extensionId,
-      moduleId: entry.moduleId,
+      moduleId: entry.moduleId as LicensedModuleId,
       analyticsKind: entry.analyticsKind,
       labelKey: entry.labelKey,
       route: entry.route,
@@ -151,7 +152,7 @@ function toSnapshotEntry(
     return {
       analyticsId: entry.analyticsId,
       extensionId: entry.extensionId,
-      moduleId: entry.moduleId,
+      moduleId: entry.moduleId as LicensedModuleId,
       analyticsKind: entry.analyticsKind,
       labelKey: entry.labelKey,
       route: entry.route,
@@ -268,12 +269,12 @@ function isStaticEntryPermitted(entry: AnalyticsCatalogEntry, roles: string[]): 
   );
 }
 
-function filterStaticEntries(catalog: AnalyticsCatalogEntry[], roles: string[]): AnalyticsCatalogEntry[] {
+function filterStaticEntries(catalog: readonly AnalyticsCatalogEntry[], roles: string[]): AnalyticsCatalogEntry[] {
   return catalog.filter((entry) => isStaticEntryPermitted(entry, roles));
 }
 
 function filterRegistryEntries(
-  catalog: AnalyticsCatalogEntry[],
+  catalog: readonly AnalyticsCatalogEntry[],
   modules: EffectiveModuleView[],
   contributions: ReturnType<typeof extractAnalyticsContributions>,
 ): AnalyticsCatalogEntry[] {
@@ -352,7 +353,7 @@ export function buildAnalyticsSnapshot(options: BuildAnalyticsSnapshotOptions): 
 
 export function buildRegistryAnalyticsSnapshot(
   roles: string[],
-  catalog: AnalyticsCatalogEntry[],
+  catalog: readonly AnalyticsCatalogEntry[],
   modules: EffectiveModuleView[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
@@ -372,7 +373,7 @@ export function buildRegistryAnalyticsSnapshot(
 
 export function buildStaticAnalyticsSnapshot(
   roles: string[],
-  catalog: AnalyticsCatalogEntry[],
+  catalog: readonly AnalyticsCatalogEntry[],
   identity: AnalyticsSnapshotIdentity,
   source: Extract<AnalyticsCatalogSource, 'static-fallback' | 'static-only'> = 'static-only',
 ): AnalyticsSnapshot {

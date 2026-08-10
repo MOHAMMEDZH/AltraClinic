@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard';
 import { PlatformAdminModule } from '../platform-admin/platform-admin.module';
 import { InfrastructureModule } from '../../infrastructure/infrastructure.module';
+import { EffectiveEntitlementRuntimeModule } from '../effective-entitlement-runtime/effective-entitlement-runtime.module';
+import { UsageMeteringModule } from '../usage-metering/usage-metering.module';
 import { SubscriptionController } from './api/subscription.controller';
 import { TenantSubscriptionController } from './api/tenant-subscription.controller';
 import { SubscriptionPolicy } from './policies/subscription-policy.service';
@@ -38,7 +40,7 @@ import { LicensingCommercialAuditListener } from './application/listeners/licens
 import { SUBSCRIPTION_REPOSITORY } from '../../infrastructure/provider.tokens';
 
 @Module({
-  imports: [PlatformAdminModule, InfrastructureModule],
+  imports: [PlatformAdminModule, InfrastructureModule, EffectiveEntitlementRuntimeModule, UsageMeteringModule],
   controllers: [SubscriptionController, TenantSubscriptionController],
   providers: [
     TenantScopedAccessGuard,

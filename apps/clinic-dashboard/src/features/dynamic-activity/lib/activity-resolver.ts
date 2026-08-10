@@ -1,7 +1,8 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { ActivityCatalogEntry, ActivityContributionView } from './activity-types';
 
 interface ActivityExtensionPayload {
+  descriptionKey?: string;
   activityKind?: 'type' | 'feed' | 'hub';
   localId?: string;
   activityTypeId?: string;
@@ -40,7 +41,7 @@ export function extractActivityContributions(modules: EffectiveModuleView[]): Ac
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         localId: payload.localId ?? extension.extensionId.split('/').pop() ?? extension.extensionId,
         activityKind: payload.activityKind,
         activityTypeId: payload.activityTypeId,
@@ -50,10 +51,10 @@ export function extractActivityContributions(modules: EffectiveModuleView[]): Ac
         categoryId: payload.categoryId,
         defaultSeverity: payload.defaultSeverity,
         labelKey: extension.labelKey,
-        descriptionKey: extension.descriptionKey,
+        descriptionKey: payload.descriptionKey,
         deepLinkTemplate: payload.deepLinkTemplate,
         route: payload.route,
-        resourceId: payload.resourceId ?? extension.resourceId ?? '',
+        resourceId: payload.resourceId ?? '',
         actions: payload.actions ?? ['view'],
         providerKey: payload.providerKey ?? 'activity.builtin',
         feedIds: payload.feedIds,

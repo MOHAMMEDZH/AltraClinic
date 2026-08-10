@@ -46,6 +46,7 @@ export interface AnalyticsCatalogEntry {
   providerKey: string;
   classification: string;
   sortOrder: number;
+  schemaVersion: 1;
   chartType?: VisualizationType;
   size?: 'small' | 'medium' | 'large';
 }

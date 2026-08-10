@@ -1,5 +1,6 @@
 import { SubscriptionPlanType } from '../value-objects/subscription-plan.vo';
-import { UiSubscriptionPlan } from './plan-name.mapper';
+import type { UiSubscriptionPlan } from './plan-name.mapper';
+export type { UiSubscriptionPlan };
 import { PlanFeatures } from './plan-limits.config';
 
 export type BackendFeatureName = keyof PlanFeatures;

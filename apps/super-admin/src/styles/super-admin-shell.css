@@ -1,0 +1,1095 @@
+/**
+ * Step 09 — Super Admin design system shell styles.
+ * Semantic `--sa-*` custom properties map onto `@booking/design-tokens`,
+ * never hard-coded colors. Desktop sidebar breakpoint: 1024px.
+ */
+
+:root {
+  --sa-canvas: var(--color-bg);
+  --sa-surface: var(--color-surface);
+  --sa-elevated: var(--color-surface-elevated);
+  --sa-border: var(--color-border);
+  --sa-text: var(--color-text-primary);
+  --sa-text-secondary: var(--color-text-secondary);
+  --sa-text-muted: var(--color-text-tertiary);
+  --sa-interactive: var(--color-primary);
+  --sa-interactive-hover: var(--color-primary-600);
+  --sa-focus: var(--color-focus-ring);
+  --sa-success: var(--color-success);
+  --sa-warning: var(--color-warning);
+  --sa-danger: var(--color-error);
+  --sa-info: var(--color-info);
+  --sa-nav-active: var(--color-primary-100);
+  --sa-overlay: rgba(16, 24, 40, 0.45);
+
+  --sa-space-1: var(--space-1);
+  --sa-space-2: var(--space-2);
+  --sa-space-3: var(--space-3);
+  --sa-space-4: var(--space-4);
+  --sa-space-5: var(--space-5);
+  --sa-space-6: var(--space-6);
+  --sa-space-8: var(--space-8);
+
+  --sa-radius-sm: var(--radius-sm);
+  --sa-radius-md: var(--radius-md);
+  --sa-radius-lg: var(--radius-lg);
+
+  --sa-sidebar-width: 260px;
+  --sa-header-height: 56px;
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Skip link                                                              */
+/* ---------------------------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: var(--sa-space-3);
+  top: -3rem;
+  z-index: var(--z-modal, 110);
+  padding: var(--sa-space-2) var(--sa-space-4);
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  box-shadow: var(--shadow-2);
+  transition: top 0.15s ease-in-out;
+}
+
+.skip-link:focus {
+  top: var(--sa-space-3);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Layout shells                                                          */
+/* ---------------------------------------------------------------------- */
+
+.sa-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--sa-canvas);
+  color: var(--sa-text);
+}
+
+.sa-shell-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sa-space-3);
+  height: var(--sa-header-height);
+  padding: 0 var(--sa-space-4);
+  border-bottom: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 40);
+}
+
+.sa-shell-header-end {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sa-space-3);
+}
+
+.sa-shell-menu-toggle {
+  display: inline-flex;
+}
+
+.sa-shell-menu-icon {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  position: relative;
+}
+.sa-shell-menu-icon::before,
+.sa-shell-menu-icon::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+}
+.sa-shell-menu-icon::before {
+  top: -6px;
+}
+.sa-shell-menu-icon::after {
+  top: 6px;
+}
+
+.sa-brand-link {
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--sa-text);
+}
+
+.sa-brand-link:focus-visible,
+.sa-nav-link:focus-visible,
+.sa-button:focus-visible,
+.sa-icon-button:focus-visible,
+.sa-page a:focus-visible,
+.sa-menu-item:focus-visible,
+.sa-input:focus-visible,
+.sa-select:focus-visible {
+  outline: 2px solid var(--sa-focus);
+  outline-offset: 2px;
+}
+
+.sa-shell-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.sa-shell-nav {
+  display: none;
+  flex-direction: column;
+  width: var(--sa-sidebar-width);
+  flex-shrink: 0;
+  padding: var(--sa-space-4);
+  border-inline-end: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+  overflow-y: auto;
+}
+
+.sa-shell-main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sa-space-5) var(--sa-space-5) var(--sa-space-8);
+}
+
+@media (min-width: 1024px) {
+  .sa-shell-menu-toggle {
+    display: none;
+  }
+  .sa-shell-nav {
+    display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Navigation                                                             */
+/* ---------------------------------------------------------------------- */
+
+.sa-nav-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-5);
+}
+
+.sa-nav-group ul {
+  list-style: none;
+  margin: var(--sa-space-1) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-1);
+}
+
+.sa-nav-group-label {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sa-text-muted);
+}
+
+.sa-nav-link {
+  display: block;
+  padding: var(--sa-space-2) var(--sa-space-3);
+  border-radius: var(--sa-radius-md);
+  color: var(--sa-text-secondary);
+  font-size: var(--text-body);
+}
+
+.sa-nav-link:hover {
+  background: var(--sa-canvas);
+  color: var(--sa-text);
+}
+
+.sa-nav-link-active,
+.sa-nav-link[aria-current='page'] {
+  background: var(--sa-nav-active);
+  color: var(--sa-interactive);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Auth page frame (login, activate, MFA, unauthorized)                   */
+/* ---------------------------------------------------------------------- */
+
+.sa-auth-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--sa-canvas);
+  color: var(--sa-text);
+}
+
+.sa-auth-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sa-space-3);
+  padding: var(--sa-space-4) var(--sa-space-5);
+  border-bottom: 1px solid var(--sa-border);
+  background: var(--sa-surface);
+}
+
+.sa-auth-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: var(--sa-space-8) var(--sa-space-4);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Environment badge                                                      */
+/* ---------------------------------------------------------------------- */
+
+.sa-env-badge {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--sa-radius-sm);
+  background: var(--sa-canvas);
+  color: var(--sa-text-secondary);
+  border: 1px solid var(--sa-border);
+}
+
+.sa-env-badge-production {
+  background: color-mix(in srgb, var(--sa-danger) 12%, var(--sa-surface));
+  color: var(--sa-danger);
+  border-color: var(--sa-danger);
+}
+
+.sa-env-badge-test {
+  background: color-mix(in srgb, var(--sa-warning) 14%, var(--sa-surface));
+  color: var(--sa-warning);
+  border-color: var(--sa-warning);
+}
+
+/* ---------------------------------------------------------------------- */
+/* User menu                                                              */
+/* ---------------------------------------------------------------------- */
+
+.sa-user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sa-space-2);
+  padding: var(--sa-space-1) var(--sa-space-2);
+  border-radius: var(--sa-radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  color: var(--sa-text);
+}
+
+.sa-user-menu-trigger:hover {
+  border-color: var(--sa-border);
+}
+
+.sa-user-menu-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--sa-nav-active);
+  color: var(--sa-interactive);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.sa-user-menu-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--sa-space-2) var(--sa-space-3);
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-1);
+  font-size: var(--text-sm);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Menu (dropdown)                                                        */
+/* ---------------------------------------------------------------------- */
+
+.sa-menu-root {
+  position: relative;
+}
+
+.sa-menu {
+  position: absolute;
+  top: calc(100% + var(--sa-space-2));
+  min-width: 14rem;
+  background: var(--sa-elevated);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  box-shadow: var(--shadow-2);
+  padding: var(--sa-space-1);
+  z-index: var(--z-overlay, 100);
+}
+
+.sa-menu-align-end {
+  inset-inline-end: 0;
+}
+
+.sa-menu-align-start {
+  inset-inline-start: 0;
+}
+
+.sa-menu-item {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: var(--sa-space-2) var(--sa-space-3);
+  border-radius: var(--sa-radius-sm);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: var(--sa-text);
+}
+
+.sa-menu-item:hover {
+  background: var(--sa-canvas);
+}
+
+.sa-menu-item-danger {
+  color: var(--sa-danger);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Drawer (mobile navigation, modal panels)                               */
+/* ---------------------------------------------------------------------- */
+
+.sa-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--sa-overlay);
+  z-index: var(--z-overlay, 100);
+  display: flex;
+}
+
+.sa-drawer {
+  background: var(--sa-surface);
+  width: min(20rem, 85vw);
+  height: 100%;
+  padding: var(--sa-space-5) var(--sa-space-4);
+  overflow-y: auto;
+  box-shadow: var(--shadow-3);
+}
+
+.sa-drawer-start {
+  margin-inline-end: auto;
+}
+
+.sa-drawer-end {
+  margin-inline-start: auto;
+}
+
+@media (min-width: 1024px) {
+  .sa-drawer-overlay {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Page layout                                                            */
+/* ---------------------------------------------------------------------- */
+
+.sa-page {
+  max-width: 64rem;
+}
+
+.sa-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sa-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sa-space-5);
+}
+
+.sa-page-header h1 {
+  margin: 0 0 var(--sa-space-1);
+  font-size: var(--text-page-title);
+}
+
+.sa-page-header-description {
+  margin: 0;
+  max-width: 48rem;
+}
+
+.sa-page-header-actions {
+  display: flex;
+  gap: var(--sa-space-2);
+  flex-wrap: wrap;
+}
+
+.sa-breadcrumbs {
+  margin-bottom: var(--sa-space-4);
+}
+
+.sa-breadcrumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sa-space-1);
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+  color: var(--sa-text-muted);
+}
+
+.sa-breadcrumbs li + li::before {
+  content: '/';
+  margin-inline-end: var(--sa-space-1);
+}
+
+.sa-breadcrumbs li {
+  display: flex;
+  gap: var(--sa-space-1);
+}
+
+.sa-breadcrumbs a {
+  color: var(--sa-interactive);
+}
+
+.sa-breadcrumbs [aria-current='page'] {
+  color: var(--sa-text);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Typography helpers                                                     */
+/* ---------------------------------------------------------------------- */
+
+.sa-muted {
+  color: var(--sa-text-secondary);
+}
+
+.sa-loading,
+.sa-state {
+  padding: 2rem 1.25rem;
+  max-width: 40rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons                                                                */
+/* ---------------------------------------------------------------------- */
+
+.sa-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sa-space-2);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.sa-button:hover {
+  background: var(--sa-canvas);
+}
+
+.sa-button:disabled,
+.sa-button-pending {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.sa-button-primary {
+  background: var(--sa-interactive);
+  border-color: var(--sa-interactive);
+  color: #fff;
+}
+
+.sa-button-primary:hover {
+  background: var(--sa-interactive-hover);
+}
+
+.sa-button-secondary {
+  background: var(--sa-surface);
+  border-color: var(--sa-interactive);
+  color: var(--sa-interactive);
+}
+
+.sa-button-quiet {
+  margin-top: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  border-color: transparent;
+  background: transparent;
+}
+
+.sa-button-quiet:hover {
+  background: var(--sa-canvas);
+}
+
+.sa-button-danger {
+  border-color: var(--sa-danger);
+  color: var(--sa-danger);
+}
+
+.sa-button-danger:hover {
+  background: color-mix(in srgb, var(--sa-danger) 10%, var(--sa-surface));
+}
+
+.sa-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--sa-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--sa-text);
+  cursor: pointer;
+}
+
+.sa-icon-button:hover {
+  background: var(--sa-canvas);
+}
+
+.sa-icon-button-secondary {
+  border-color: var(--sa-border);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Forms                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.sa-login-form {
+  margin: 1.25rem 0;
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sa-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sa-field input,
+.sa-field select,
+.sa-input,
+.sa-select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  font: inherit;
+}
+
+.sa-field-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--sa-text-muted);
+}
+
+.sa-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.sa-error {
+  color: var(--sa-danger);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.sa-recovery-note {
+  font-size: 0.8125rem;
+  max-width: 36rem;
+}
+
+.sa-field textarea {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  resize: vertical;
+  max-width: 34rem;
+}
+
+.sa-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.sa-secret {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  background: var(--sa-canvas);
+  font-size: 0.875rem;
+  letter-spacing: 0.03em;
+  word-break: break-all;
+}
+
+.sa-checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  max-width: 30rem;
+}
+
+.sa-checkbox-field input {
+  margin-top: 0.2rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Recovery codes                                                         */
+/* ---------------------------------------------------------------------- */
+
+.sa-recovery-panel {
+  margin: 1.25rem 0;
+  max-width: 32rem;
+}
+
+.sa-recovery-panel h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem;
+}
+
+.sa-recovery-codes {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-lg);
+  background: var(--sa-canvas);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.sa-recovery-codes code {
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
+}
+
+.sa-recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Modal (step-up, confirmation dialogs)                                  */
+/* ---------------------------------------------------------------------- */
+
+.sa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--sa-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: var(--z-modal, 110);
+}
+
+.sa-modal {
+  background: var(--sa-surface);
+  border-radius: var(--sa-radius-lg);
+  box-shadow: var(--shadow-3);
+  padding: 1.5rem;
+  max-width: 26rem;
+  width: 100%;
+}
+
+.sa-modal h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+}
+
+.sa-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.sa-modal-actions .sa-button {
+  margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Tables                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.sa-table-wrap {
+  overflow-x: auto;
+  margin: 1.25rem 0;
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 36rem;
+}
+
+.sa-table th,
+.sa-table td {
+  text-align: start;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--sa-border);
+  vertical-align: top;
+}
+
+.sa-table th {
+  font-weight: 600;
+  color: var(--sa-text-secondary);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Badges                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.sa-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--sa-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sa-badge-neutral {
+  background: var(--sa-canvas);
+  color: var(--sa-text-secondary);
+  border: 1px solid var(--sa-border);
+}
+
+.sa-badge-primary {
+  background: var(--sa-nav-active);
+  color: var(--sa-interactive);
+}
+
+.sa-badge-success,
+.sa-badge-current {
+  background: color-mix(in srgb, var(--sa-success) 16%, var(--sa-surface));
+  color: var(--sa-success);
+}
+
+.sa-badge-warning {
+  background: color-mix(in srgb, var(--sa-warning) 16%, var(--sa-surface));
+  color: var(--sa-warning);
+}
+
+.sa-badge-danger {
+  background: color-mix(in srgb, var(--sa-danger) 12%, var(--sa-surface));
+  color: var(--sa-danger);
+}
+
+.sa-badge-info {
+  background: color-mix(in srgb, var(--sa-info) 14%, var(--sa-surface));
+  color: var(--sa-info);
+}
+
+.sa-session-bulk-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Alerts, empty/error/unauthorized/not-found states                     */
+/* ---------------------------------------------------------------------- */
+
+.sa-alert {
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  padding: var(--sa-space-3) var(--sa-space-4);
+  margin: var(--sa-space-3) 0;
+}
+
+.sa-alert-title {
+  margin: 0 0 var(--sa-space-1);
+  font-weight: 600;
+}
+
+.sa-alert-body {
+  margin: 0;
+}
+
+.sa-alert-info {
+  border-color: var(--sa-info);
+  background: color-mix(in srgb, var(--sa-info) 8%, var(--sa-surface));
+}
+
+.sa-alert-success {
+  border-color: var(--sa-success);
+  background: color-mix(in srgb, var(--sa-success) 8%, var(--sa-surface));
+}
+
+.sa-alert-warning {
+  border-color: var(--sa-warning);
+  background: color-mix(in srgb, var(--sa-warning) 8%, var(--sa-surface));
+}
+
+.sa-alert-danger {
+  border-color: var(--sa-danger);
+  background: color-mix(in srgb, var(--sa-danger) 8%, var(--sa-surface));
+}
+
+.sa-empty-state,
+.sa-error-state {
+  padding: var(--sa-space-6) var(--sa-space-4);
+  text-align: center;
+  border: 1px dashed var(--sa-border);
+  border-radius: var(--sa-radius-lg);
+  background: var(--sa-surface);
+}
+
+.sa-empty-state h2,
+.sa-error-state h2 {
+  margin: 0 0 var(--sa-space-2);
+  font-size: var(--text-section-title);
+}
+
+.sa-empty-state-action {
+  margin-top: var(--sa-space-3);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Feedback (toasts)                                                      */
+/* ---------------------------------------------------------------------- */
+
+.sa-feedback-region {
+  position: fixed;
+  bottom: var(--sa-space-4);
+  inset-inline-end: var(--sa-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-2);
+  z-index: var(--z-overlay, 100);
+  max-width: 22rem;
+}
+
+.sa-feedback-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sa-space-3);
+  padding: var(--sa-space-3) var(--sa-space-4);
+  border-radius: var(--sa-radius-md);
+  border: 1px solid var(--sa-border);
+  background: var(--sa-elevated);
+  box-shadow: var(--shadow-2);
+  font-size: var(--text-sm);
+}
+
+.sa-feedback-toast-danger {
+  border-color: var(--sa-danger);
+}
+.sa-feedback-toast-warning {
+  border-color: var(--sa-warning);
+}
+.sa-feedback-toast-success {
+  border-color: var(--sa-success);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Layout primitives (Stack, Inline, Divider, Surface)                    */
+/* ---------------------------------------------------------------------- */
+
+.sa-stack {
+  display: flex;
+  flex-direction: column;
+}
+.sa-stack-gap-xs {
+  gap: var(--sa-space-1);
+}
+.sa-stack-gap-sm {
+  gap: var(--sa-space-2);
+}
+.sa-stack-gap-md {
+  gap: var(--sa-space-3);
+}
+.sa-stack-gap-lg {
+  gap: var(--sa-space-4);
+}
+.sa-stack-gap-xl {
+  gap: var(--sa-space-6);
+}
+.sa-stack-align-start {
+  align-items: flex-start;
+}
+.sa-stack-align-center {
+  align-items: center;
+}
+.sa-stack-align-end {
+  align-items: flex-end;
+}
+.sa-stack-align-stretch {
+  align-items: stretch;
+}
+
+.sa-inline {
+  display: flex;
+}
+.sa-inline-wrap {
+  flex-wrap: wrap;
+}
+.sa-inline-gap-xs {
+  gap: var(--sa-space-1);
+}
+.sa-inline-gap-sm {
+  gap: var(--sa-space-2);
+}
+.sa-inline-gap-md {
+  gap: var(--sa-space-3);
+}
+.sa-inline-gap-lg {
+  gap: var(--sa-space-4);
+}
+.sa-inline-gap-xl {
+  gap: var(--sa-space-6);
+}
+.sa-inline-align-start {
+  align-items: flex-start;
+}
+.sa-inline-align-center {
+  align-items: center;
+}
+.sa-inline-align-end {
+  align-items: flex-end;
+}
+
+.sa-divider {
+  background: var(--sa-border);
+}
+.sa-divider-horizontal {
+  width: 100%;
+  height: 1px;
+  margin: var(--sa-space-3) 0;
+}
+.sa-divider-vertical {
+  width: 1px;
+  align-self: stretch;
+  margin: 0 var(--sa-space-3);
+}
+
+.sa-surface {
+  border-radius: var(--sa-radius-lg);
+  border: 1px solid var(--sa-border);
+}
+.sa-surface-base {
+  background: var(--sa-surface);
+}
+.sa-surface-raised {
+  background: var(--sa-elevated);
+  box-shadow: var(--shadow-1);
+}
+.sa-surface-elevated {
+  background: var(--sa-elevated);
+  box-shadow: var(--shadow-2);
+}
+.sa-surface-padding-none {
+  padding: 0;
+}
+.sa-surface-padding-sm {
+  padding: var(--sa-space-3);
+}
+.sa-surface-padding-md {
+  padding: var(--sa-space-4);
+}
+.sa-surface-padding-lg {
+  padding: var(--sa-space-6);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Spinner                                                                */
+/* ---------------------------------------------------------------------- */
+
+.sa-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--sa-border);
+  border-top-color: var(--sa-interactive);
+  animation: sa-spin 0.7s linear infinite;
+}
+
+.sa-spinner-sm {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+@keyframes sa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-spinner {
+    animation-duration: 1.4s;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Misc                                                                   */
+/* ---------------------------------------------------------------------- */
+
+.sa-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.sa-user-chip {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .sa-shell-main,
+  .sa-auth-main {
+    padding: 1rem;
+  }
+
+  .sa-recovery-codes {
+    grid-template-columns: 1fr;
+  }
+}

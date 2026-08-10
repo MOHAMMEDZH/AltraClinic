@@ -24,7 +24,7 @@ export function usePatientCopilot(patientId?: string, enabled = true) {
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fetchPatientCopilot(token, user.tenantId, patientId);
+      return fetchPatientCopilot(token, user.tenantId, patientId!);
     },
     enabled: Boolean(user?.tenantId && patientId) && enabled,
   });
@@ -57,7 +57,7 @@ export function useAiPrompts(category?: string, search?: string, favoritesOnly?:
   });
 }
 
-export function useAiPromptFavorites(enabled = true) {
+export function useAiPromptFavorites(_enabled = true) {
   return useAiPrompts(undefined, undefined, true);
 }
 

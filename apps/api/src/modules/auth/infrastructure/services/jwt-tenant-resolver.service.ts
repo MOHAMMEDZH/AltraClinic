@@ -20,9 +20,23 @@ import { TenantResolverInterface } from '../../../../infrastructure/tenant-resol
 export class JwtTenantResolver implements TenantResolverInterface {
   async resolve(context: unknown): Promise<TenantContextContract> {
     const request = context as {
-      user?: { tenantId?: string; branchId?: string | null };
+      user?: {
+        tenantId?: string | null;
+        branchId?: string | null;
+        sessionClass?: string;
+        principalType?: string;
+      };
       headers?: Record<string, unknown>;
     };
+
+    if (
+      request.user?.sessionClass === 'platform' ||
+      request.user?.principalType === 'platform'
+    ) {
+      throw new BadRequestException(
+        'Platform principals have no tenant context. Do not send x-tenant-id for platform authority.',
+      );
+    }
 
     // Prefer JWT claims (verified, tamper-proof)
     const jwtTenantId = request.user?.tenantId?.trim();

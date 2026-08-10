@@ -26,7 +26,6 @@ import {
   grantTenantTrial,
   previewTenantPlanChange,
 } from '../api/tenant-subscription-api';
-import type { SubscriptionPlanId } from '../config/subscription-config';
 
 export function useSubscriptionAccess() {
   const { user } = useAuth();

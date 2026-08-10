@@ -166,7 +166,7 @@ function buildLocalizationSnapshot(
 
   return {
     locale,
-    direction: getDirection(locale),
+    direction: getDirection(locale as Parameters<typeof getDirection>[0]),
     dateFormat: String(localizationSettings.dateFormat ?? ''),
     timeFormat: String(localizationSettings.timeFormat ?? ''),
     currency: String(readModel.clinicProfile.defaultCurrency ?? ''),

@@ -10,7 +10,13 @@
     "build:dashboard": "npm run build --workspace=@booking/clinic-dashboard",
     "test:dashboard": "npm run test --workspace=@booking/clinic-dashboard",
     "test:e2e:dashboard": "npm run test:e2e --workspace=@booking/clinic-dashboard",
-    "dev:api": "npm run dev --workspace=booking-system-api"
+    "dev:api": "npm run dev --workspace=booking-system-api",
+    "dev:patient-portal": "npm run dev --workspace=@booking/patient-portal",
+    "build:patient-portal": "npm run build --workspace=@booking/patient-portal",
+    "test:patient-portal": "npm run test --workspace=@booking/patient-portal",
+    "dev:super-admin": "npm run dev --workspace=@booking/super-admin",
+    "build:super-admin": "npm run build --workspace=@booking/super-admin",
+    "test:super-admin": "npm run test --workspace=@booking/super-admin"
   },
   "engines": {
     "node": ">=20"

@@ -677,7 +677,17 @@
         { "method": "GET",   "path": "/patient-portal/me/providers",                                    "action": "view"    },
         { "method": "GET",   "path": "/patient-portal/me/availability",                                 "action": "view"    },
         { "method": "POST",  "path": "/patient-portal/me/appointments",                                 "action": "create"  },
-        { "method": "PATCH", "path": "/patient-portal/me/appointments/:appointmentId",                  "action": "update"  }
+        { "method": "PATCH", "path": "/patient-portal/me/appointments/:appointmentId",                  "action": "update"  },
+        { "method": "GET",   "path": "/patient-portal/me/profile",                                      "action": "view"    },
+        { "method": "GET",   "path": "/patient-portal/me/preferences",                                  "action": "view"    },
+        { "method": "PATCH", "path": "/patient-portal/me/preferences",                                 "action": "update"  },
+        { "method": "GET",   "path": "/patient-portal/me/results/gate",                                 "action": "view"    },
+        { "method": "GET",   "path": "/patient-portal/me/caregivers",                                   "action": "view"    },
+        { "method": "POST",  "path": "/patient-portal/me/caregivers",                                   "action": "create"  },
+        { "method": "POST",  "path": "/patient-portal/me/caregivers/:grantId/revoke",                   "action": "update"  },
+        { "method": "POST",  "path": "/patient-portal/me/caregiver-invitations/accept",                 "action": "update"  },
+        { "method": "POST",  "path": "/patient-portal/me/caregiver-invitations/decline",                "action": "update"  },
+        { "method": "GET",   "path": "/patient-portal/me/delegated-patients",                           "action": "view"    }
       ]
     },
 
@@ -804,6 +814,69 @@
         "manage":  ["super_admin", "owner"]
       },
       "operations": []
+    },
+
+    {
+      "id": "api.backupRestore",
+      "kind": "api",
+      "name": "Backup / Restore Center API",
+      "description": "Phase 43a Backup & Restore Center foundation. No backup/restore execution.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/backup-restore/health", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.integrations",
+      "kind": "api",
+      "name": "API Keys / Integrations Center API",
+      "description": "Phase 44a foundation permissions. Hub UI/admin APIs: view keys/subscriptions/health, create credentials/subscriptions, update rotate/filters, delete revoke, approve high-risk scopes, manage quotas/inbound. No credential issuance, auth middleware, or webhook workers in 44a.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/integrations/health", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.observability",
+      "kind": "api",
+      "name": "Observability Center API",
+      "description": "Phase 45a Observability Center foundation. view=read, update=acknowledge, export=export, manage=rules/config, approve=cross_tenant. No metrics/tracing/alerting pipelines in 45a.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/observability/health", "action": "view" },
+        { "method": "GET", "path": "/observability/metrics/catalog", "action": "view" },
+        { "method": "GET", "path": "/observability/metrics/query", "action": "view" },
+        { "method": "GET", "path": "/observability/metrics/diagnostics", "action": "view" },
+        { "method": "GET", "path": "/observability/logs/query", "action": "view" },
+        { "method": "GET", "path": "/observability/logs/diagnostics", "action": "view" },
+        { "method": "GET", "path": "/metrics", "action": "view" }
+      ]
     }
   ]
 }

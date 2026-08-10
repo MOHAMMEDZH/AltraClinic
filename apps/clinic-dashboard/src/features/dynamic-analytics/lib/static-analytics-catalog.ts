@@ -12,40 +12,15 @@ import {
 
 export { STATIC_ANALYTICS_CATALOG_IS_RUNTIME_AUTHORITY, isStaticAnalyticsCatalogRuntimeAuthority };
 
-export interface AnalyticsCatalogEntry {
-  extensionId: string;
-  moduleId: string;
-  localId: string;
-  analyticsId: string;
-  analyticsKind: 'domain' | 'widget' | 'hub';
-  categoryId: string;
-  dataDomain: string;
-  labelKey: string;
-  descriptionKey?: string;
-  iconKey?: string;
-  route?: string;
-  deepLinkTemplate: string;
-  permissionAction: 'view' | 'create' | 'export';
-  permissionResource: string;
-  permissionResources?: string[];
-  featureId?: string;
-  metricIds?: string[];
-  primaryMetricId?: string;
-  widgetCatalogId?: string;
-  reportLinkIds?: string[];
-  dashboardWidgetIds?: string[];
-  exportFormats?: string[];
-  filterProfile?: string;
-  providerKey: string;
-  classification: string;
-  sortOrder: number;
-  schemaVersion: 1;
-}
+import type { AnalyticsCatalogEntry } from './analytics-types';
+import type { LicensedModuleId } from '@booking/module-registry';
+
+export type { AnalyticsCatalogEntry };
 
 function domainToEntry(domain: (typeof CANONICAL_ANALYTICS_DOMAINS)[number]): AnalyticsCatalogEntry {
   return {
     extensionId: `${domain.moduleId}/analytics/${domain.localId}`,
-    moduleId: domain.moduleId,
+    moduleId: domain.moduleId as LicensedModuleId,
     localId: domain.localId,
     analyticsId: domain.analyticsId,
     analyticsKind: domain.analyticsKind,
@@ -74,7 +49,7 @@ function domainToEntry(domain: (typeof CANONICAL_ANALYTICS_DOMAINS)[number]): An
 function widgetToEntry(widget: (typeof CANONICAL_ANALYTICS_WIDGETS)[number]): AnalyticsCatalogEntry {
   return {
     extensionId: `${widget.moduleId}/analytics/${widget.localId}`,
-    moduleId: widget.moduleId,
+    moduleId: widget.moduleId as LicensedModuleId,
     localId: widget.localId,
     analyticsId: widget.analyticsId,
     analyticsKind: widget.analyticsKind,
@@ -99,7 +74,7 @@ function widgetToEntry(widget: (typeof CANONICAL_ANALYTICS_WIDGETS)[number]): An
 function hubToEntry(hub: (typeof CANONICAL_ANALYTICS_HUBS)[number]): AnalyticsCatalogEntry {
   return {
     extensionId: `${hub.moduleId}/analytics/${hub.localId}`,
-    moduleId: hub.moduleId,
+    moduleId: hub.moduleId as LicensedModuleId,
     localId: hub.localId,
     analyticsId: hub.analyticsId,
     analyticsKind: hub.analyticsKind,

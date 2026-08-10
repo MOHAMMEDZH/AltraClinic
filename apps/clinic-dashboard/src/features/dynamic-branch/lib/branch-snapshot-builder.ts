@@ -252,7 +252,7 @@ export function buildStaticBranchSnapshot(
 
 export function buildRestrictedBranchSnapshot(
   identity: BranchSnapshotIdentity,
-  roles: string[],
+  _roles: string[],
   catalogGeneration: number | null,
   entitlementVersion: string | null,
 ): BranchSnapshot {

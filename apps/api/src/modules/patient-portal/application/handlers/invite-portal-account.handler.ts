@@ -25,7 +25,9 @@ export class InvitePortalAccountHandler {
     private readonly policy: PatientPortalPolicy,
   ) {}
 
-  async execute(command: InvitePortalAccountCommand): Promise<{ portalAccountId: string }> {
+  async execute(
+    command: InvitePortalAccountCommand,
+  ): Promise<{ portalAccountId: string; enrollmentToken: string }> {
     const tenant = (await this.tenantContext.resolve()) as TenantContextContract;
     if (!tenant?.tenantId) {
       throw new BadRequestException('Tenant context could not be resolved');
@@ -53,6 +55,8 @@ export class InvitePortalAccountHandler {
 
     await this.repository.save(account);
 
+    const enrollmentToken = await this.issueToken(account, command);
+
     await this.eventPublisher.publish(
       new PortalAccountInvitedEvent(
         account.tenantId,
@@ -76,6 +80,29 @@ export class InvitePortalAccountHandler {
       correlationId: command.correlationId,
     });
 
-    return { portalAccountId: account.id };
+    return { portalAccountId: account.id, enrollmentToken };
+  }
+
+  private async issueToken(
+    account: PortalAccount,
+    command: InvitePortalAccountCommand,
+  ): Promise<string> {
+    const raw = account.issueEnrollmentToken();
+    await this.repository.save(account);
+    await this.auditLog.record({
+      tenantId: account.tenantId,
+      branchId: account.branchId,
+      action: 'patient_portal.enrollment.token_issued',
+      resourceId: account.id,
+      actorId: command.invitedBy,
+      actorRoles: command.invitedByRoles,
+      locale: null,
+      reason: null,
+      details: {
+        expiresAt: account.enrollmentTokenExpiresAt?.toISOString() ?? '',
+      },
+      correlationId: command.correlationId,
+    });
+    return raw;
   }
 }

@@ -1,9 +1,12 @@
-import { randomUUID } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { PortalAccountStatusVO } from '../value-objects/portal-account-status.vo';
 import { PortalLocale, PortalPreferencesVO } from '../value-objects/portal-preferences.vo';
 import { CaregiverAccessScope } from '../value-objects/caregiver-access-scope';
 import { CaregiverAccessGrant, CaregiverAccessGrantPrimitives } from './caregiver-access-grant.entity';
 import { PortalStateError, PortalValidationError } from '../exceptions/portal-domain.exception';
+
+/** Default enrollment invitation TTL (7 days). */
+export const PORTAL_ENROLLMENT_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface PortalAccountProps {
   portalAccountId: string;
@@ -21,7 +24,11 @@ export interface PortalAccountProps {
   suspendedAt: Date | null;
   suspensionReason: string | null;
   deactivatedAt: Date | null;
+  enrollmentTokenHash: string | null;
+  enrollmentTokenExpiresAt: Date | null;
+  enrollmentConsentAt: Date | null;
 }
+
 
 export interface PortalAccountPrimitives {
   portalAccountId: string;
@@ -42,6 +49,9 @@ export interface PortalAccountPrimitives {
   suspendedAt: string | null;
   suspensionReason: string | null;
   deactivatedAt: string | null;
+  enrollmentConsentAt: string | null;
+  enrollmentTokenExpiresAt: string | null;
+  hasEnrollmentToken: boolean;
 }
 
 /**
@@ -99,6 +109,9 @@ export class PortalAccount {
       suspendedAt: null,
       suspensionReason: null,
       deactivatedAt: null,
+      enrollmentTokenHash: null,
+      enrollmentTokenExpiresAt: null,
+      enrollmentConsentAt: null,
     });
   }
 
@@ -164,6 +177,26 @@ export class PortalAccount {
     return this.props.deactivatedAt;
   }
 
+  get enrollmentTokenHash(): string | null {
+    return this.props.enrollmentTokenHash;
+  }
+
+  get enrollmentTokenExpiresAt(): Date | null {
+    return this.props.enrollmentTokenExpiresAt;
+  }
+
+  get enrollmentConsentAt(): Date | null {
+    return this.props.enrollmentConsentAt;
+  }
+
+  get isEnrollmentComplete(): boolean {
+    return (
+      this.props.status.value === 'active' &&
+      !!this.props.userId &&
+      !!this.props.enrollmentConsentAt
+    );
+  }
+
   /** Returns copies so callers cannot mutate aggregate-internal entities. */
   get caregiverGrants(): CaregiverAccessGrant[] {
     return [...this.props.caregiverGrants];
@@ -178,6 +211,68 @@ export class PortalAccount {
   }
 
   // --- Lifecycle behaviour --------------------------------------------------
+
+  static hashEnrollmentToken(rawToken: string): string {
+    return createHash('sha256').update(rawToken.trim()).digest('hex');
+  }
+
+  /**
+   * Issues a one-time enrollment activation token. Raw token is returned once;
+   * only the hash is retained on the aggregate.
+   */
+  issueEnrollmentToken(now: Date = new Date(), ttlMs = PORTAL_ENROLLMENT_TOKEN_TTL_MS): string {
+    if (this.props.status.value !== 'invited') {
+      throw new PortalStateError('Enrollment tokens can only be issued for invited portal accounts');
+    }
+    const rawToken = randomBytes(32).toString('base64url');
+    this.props.enrollmentTokenHash = PortalAccount.hashEnrollmentToken(rawToken);
+    this.props.enrollmentTokenExpiresAt = new Date(now.getTime() + ttlMs);
+    this.touch(now);
+    return rawToken;
+  }
+
+  assertEnrollmentTokenValid(rawToken: string, now: Date = new Date()): void {
+    if (this.props.status.value !== 'invited') {
+      throw new PortalStateError('Enrollment is not pending for this portal account');
+    }
+    if (!this.props.enrollmentTokenHash || !this.props.enrollmentTokenExpiresAt) {
+      throw new PortalStateError('Enrollment token is not active');
+    }
+    if (this.props.enrollmentTokenExpiresAt.getTime() <= now.getTime()) {
+      throw new PortalStateError('Enrollment token has expired');
+    }
+    const hash = PortalAccount.hashEnrollmentToken(rawToken);
+    if (hash !== this.props.enrollmentTokenHash) {
+      throw new PortalValidationError('Enrollment token is invalid');
+    }
+  }
+
+  /**
+   * Patient self-service enrollment completion: links user, records consent, activates.
+   */
+  completeEnrollment(params: {
+    userId: string;
+    consentAt?: Date;
+    now?: Date;
+  }): void {
+    const now = params.now ?? new Date();
+    if (this.props.status.value !== 'invited') {
+      throw new PortalStateError('Only invited portal accounts can complete enrollment');
+    }
+    this.activate(params.userId, now);
+    this.props.enrollmentConsentAt = params.consentAt ?? now;
+    this.props.enrollmentTokenHash = null;
+    this.props.enrollmentTokenExpiresAt = null;
+    this.touch(now);
+  }
+
+  recordEnrollmentConsent(now: Date = new Date()): void {
+    if (this.props.status.value === 'deactivated') {
+      throw new PortalStateError('A deactivated portal account cannot record consent');
+    }
+    this.props.enrollmentConsentAt = now;
+    this.touch(now);
+  }
 
   activate(userId: string, now: Date = new Date()): void {
     if (!userId?.trim()) {
@@ -196,6 +291,8 @@ export class PortalAccount {
     this.props.status = new PortalAccountStatusVO('active');
     this.props.userId = userId.trim();
     this.props.activatedAt = now;
+    this.props.enrollmentTokenHash = null;
+    this.props.enrollmentTokenExpiresAt = null;
     this.touch(now);
   }
 
@@ -263,6 +360,9 @@ export class PortalAccount {
     grantedBy: string;
     expiresAt: Date | null;
     now?: Date;
+    status?: 'invited' | 'active';
+    invitationTokenHash?: string | null;
+    invitationExpiresAt?: Date | null;
   }): CaregiverAccessGrant {
     const now = params.now ?? new Date();
     this.assertActive('grant caregiver access');
@@ -270,7 +370,9 @@ export class PortalAccount {
     const contact = params.caregiverContact?.trim().toLowerCase();
     if (contact) {
       const duplicate = this.props.caregiverGrants.some(
-        (grant) => grant.isActive(now) && grant.caregiverContact.toLowerCase() === contact,
+        (grant) =>
+          (grant.isActive(now) || grant.status === 'invited') &&
+          grant.caregiverContact.toLowerCase() === contact,
       );
       if (duplicate) {
         throw new PortalStateError('This caregiver already has an active access grant');
@@ -291,9 +393,36 @@ export class PortalAccount {
       grantedBy: params.grantedBy,
       expiresAt: params.expiresAt,
       now,
+      status: params.status ?? 'active',
+      invitationTokenHash: params.invitationTokenHash ?? null,
+      invitationExpiresAt: params.invitationExpiresAt ?? null,
     });
 
     this.props.caregiverGrants.push(grant);
+    this.touch(now);
+    return grant;
+  }
+
+  acceptCaregiverInvitation(
+    grantId: string,
+    caregiverUserId: string,
+    now: Date = new Date(),
+  ): CaregiverAccessGrant {
+    const grant = this.findGrant(grantId);
+    if (!grant) {
+      throw new PortalValidationError(`Caregiver access grant ${grantId} not found`);
+    }
+    grant.accept(caregiverUserId, now);
+    this.touch(now);
+    return grant;
+  }
+
+  declineCaregiverInvitation(grantId: string, now: Date = new Date()): CaregiverAccessGrant {
+    const grant = this.findGrant(grantId);
+    if (!grant) {
+      throw new PortalValidationError(`Caregiver access grant ${grantId} not found`);
+    }
+    grant.decline(now);
     this.touch(now);
     return grant;
   }
@@ -346,6 +475,9 @@ export class PortalAccount {
       suspendedAt: this.props.suspendedAt?.toISOString() ?? null,
       suspensionReason: this.props.suspensionReason,
       deactivatedAt: this.props.deactivatedAt?.toISOString() ?? null,
+      enrollmentConsentAt: this.props.enrollmentConsentAt?.toISOString() ?? null,
+      enrollmentTokenExpiresAt: this.props.enrollmentTokenExpiresAt?.toISOString() ?? null,
+      hasEnrollmentToken: !!this.props.enrollmentTokenHash,
     };
   }
 }

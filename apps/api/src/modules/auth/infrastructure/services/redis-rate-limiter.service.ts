@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RateLimiterService } from '../../../../infrastructure/redis/services/rate-limiter.service';
-import { RateLimiterPort } from '../rate-limiter.port';
+import { RateLimiterPort } from './rate-limiter.port';
 
 /**
  * Redis-backed rate limiter for auth flows (forgot password, verification, etc.).

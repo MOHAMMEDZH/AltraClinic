@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { DashboardCatalogEntry, DashboardContributionView } from './dashboard-types';
 
 interface ExtensionPayload {
@@ -27,7 +27,7 @@ export function extractDashboardContributions(
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         widgetId: payload.widgetId,
         componentKey: payload.componentKey,
         sortOrder: payload.sortOrder ?? 0,

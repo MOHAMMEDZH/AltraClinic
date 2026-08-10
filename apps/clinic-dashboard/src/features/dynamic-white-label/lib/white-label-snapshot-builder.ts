@@ -1,3 +1,4 @@
+import type { LicensedModuleId } from '@booking/module-registry';
 import type { EffectiveModuleView } from '@booking/module-registry';
 import type { ThemeMode } from '@/lib/theme';
 import {
@@ -26,7 +27,7 @@ import type {
 } from './white-label-types';
 
 export interface BuildWhiteLabelSnapshotOptions {
-  catalog: WhiteLabelCatalogEntry[];
+  catalog: readonly WhiteLabelCatalogEntry[];
   modules: EffectiveModuleView[];
   readModel: TenantBrandingSettingsReadModel;
   source: WhiteLabelResolutionSource;
@@ -56,7 +57,7 @@ function filterAccessibleSurfaces(options: BuildWhiteLabelSnapshotOptions): {
         contributionToSurfaceSnapshot(
           contribution ?? {
             extensionId: entry.extensionId,
-            moduleId: entry.moduleId,
+            moduleId: entry.moduleId as LicensedModuleId,
             surfaceId: entry.surfaceId,
             localId: entry.localId,
             surface: entry.surface,
@@ -163,7 +164,7 @@ export function buildWhiteLabelSnapshot(options: BuildWhiteLabelSnapshotOptions)
 }
 
 export function buildRegistryWhiteLabelSnapshot(
-  catalog: WhiteLabelCatalogEntry[],
+  catalog: readonly WhiteLabelCatalogEntry[],
   modules: EffectiveModuleView[],
   readModel: TenantBrandingSettingsReadModel,
   catalogGeneration: number | null,
@@ -185,7 +186,7 @@ export function buildRegistryWhiteLabelSnapshot(
 }
 
 export function buildStaticWhiteLabelSnapshot(
-  catalog: WhiteLabelCatalogEntry[],
+  catalog: readonly WhiteLabelCatalogEntry[],
   readModel: TenantBrandingSettingsReadModel,
   identity: WhiteLabelSnapshotIdentity,
   userThemeMode: ThemeMode,

@@ -42,7 +42,7 @@ const EMPTY_REGISTRY = {
   isError: false,
   error: null,
   snapshot: {
-    schemaVersion: '1.0',
+    schemaVersion: '1.0' as const,
     platformVersion: '1.0.0',
     generatedAt: '2026-07-16T00:00:00.000Z',
     catalogGeneration: 1,
@@ -81,7 +81,7 @@ describe('dynamic notification rollback', () => {
   });
 
   it('enables registry notification by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_NOTIFICATION_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_NOTIFICATION_ONLY', '');
     expect(isRegistryNotificationEnabled()).toBe(true);
   });
 

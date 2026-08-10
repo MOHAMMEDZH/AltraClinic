@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { User } from '../../../identity/domain/user.entity';
 import { UserRepository } from '../../../identity/domain/user.repository.interface';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository.interface';
@@ -17,6 +17,11 @@ import {
   LOGIN_ATTEMPT_REPOSITORY,
 } from '../../../../infrastructure/provider.tokens';
 
+/**
+ * Clinic / staff / patient login completion only.
+ * Platform MFA/session issuance uses PlatformSessionCompletionService — never this path.
+ * sessionClass=platform is rejected (not accepted).
+ */
 @Injectable()
 export class LoginCompletionService {
   constructor(
@@ -33,8 +38,13 @@ export class LoginCompletionService {
     tenantId: string;
     sessionId: string;
     device: DeviceInfoVO;
+    sessionClass?: 'staff' | 'patient';
   }): Promise<TokenPairVO> {
     const { user, email, tenantId, sessionId, device } = input;
+    const sessionClass = input.sessionClass ?? 'staff';
+    if (sessionClass !== 'staff' && sessionClass !== 'patient') {
+      throw new BadRequestException('Invalid session class for Clinic login completion.');
+    }
 
     const tokenPair = this.jwtTokenService.issueTokenPair({
       userId: user.id,
@@ -42,6 +52,7 @@ export class LoginCompletionService {
       branchId: user.branchId,
       roles: user.roles,
       sessionId,
+      sessionClass,
     });
 
     const refreshToken = RefreshToken.create({

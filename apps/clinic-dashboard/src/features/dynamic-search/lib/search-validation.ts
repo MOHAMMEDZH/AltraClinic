@@ -16,7 +16,7 @@ function normalizeResourceIds(values: string[]): string {
   return [...values].sort().join(',');
 }
 
-export function assertSearchCatalogValid(catalog: SearchCatalogEntry[] = STATIC_SEARCH_CATALOG): string[] {
+export function assertSearchCatalogValid(catalog: readonly SearchCatalogEntry[] = STATIC_SEARCH_CATALOG): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
   const seenExecutableTypes = new Set<string>();
@@ -146,7 +146,7 @@ export function assertSearchSnapshotValid(snapshot: SearchSnapshot): string[] {
 
 export function verifySearchCatalogParity(
   contributions: SearchContribution[],
-  catalog: SearchCatalogEntry[],
+  catalog: readonly SearchCatalogEntry[],
 ): SearchCatalogParityMismatch[] {
   const mismatches: SearchCatalogParityMismatch[] = [];
   const catalogById = new Map(catalog.map((entry) => [entry.extensionId, entry]));

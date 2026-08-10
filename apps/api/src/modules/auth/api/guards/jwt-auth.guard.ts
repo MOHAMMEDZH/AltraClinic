@@ -2,18 +2,18 @@ import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/com
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { IS_PLATFORM_AUTH_ROUTE_KEY } from '../decorators/platform-auth-route.decorator';
+import {
+  INTEGRATIONS_AUTHENTICATED_REQUEST_KEY,
+} from '../../../integrations/domain/gateway/gateway.types';
+import { parseApiKeyFromHeaders } from '../../../integrations/domain/gateway/api-key-header.parser';
+import { JwtClaimsVO } from '../../domain/value-objects/jwt-claims.vo';
 
 /**
  * Global JWT authentication guard.
  * - Skips routes decorated with @Public()
- * - For all other routes, validates the Bearer token via JwtStrategy
- *
- * COMPETING ARCHITECT:
- *   Challenger: "Applying globally with @UseGuards(JwtAuthGuard) at app level
- *   might interfere with WebSocket or health-check endpoints."
- *   Decision: Registered as a global APP_GUARD in AppModule. Health/metrics
- *   endpoints should use @Public(). This is simpler than opt-in per-controller
- *   and eliminates the risk of unguarded endpoints shipping to production.
+ * - Skips when Integrations API-key auth already succeeded (Phase 44d OD-AUTHN)
+ * - Enforces platform vs tenant/patient audience boundary (Phase 47 Step 06)
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -27,13 +27,54 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getClass(),
     ]);
     if (isPublic) return true;
+
+    const req = context.switchToHttp().getRequest<{
+      headers?: Record<string, string | string[] | undefined>;
+      [key: string]: unknown;
+    }>();
+
+    if (req[INTEGRATIONS_AUTHENTICATED_REQUEST_KEY] === true) {
+      return true;
+    }
+
+    const parsed = parseApiKeyFromHeaders({
+      authorization: req.headers?.authorization,
+      apiKey: req.headers?.['x-api-key'] ?? req.headers?.['X-Api-Key'],
+    });
+    if (parsed.kind === 'parsed' || parsed.kind === 'reject') {
+      throw new UnauthorizedException(
+        'API key authentication required. Provide a valid Integrations API key.',
+      );
+    }
+
     return super.canActivate(context);
   }
 
-  handleRequest<T>(err: Error, user: T): T {
+  handleRequest<T>(err: Error | null, user: T, _info: unknown, context: ExecutionContext): T {
     if (err || !user) {
-      throw new UnauthorizedException('Authentication required. Provide a valid Bearer token.');
+      throw err ?? new UnauthorizedException('Authentication required. Provide a valid Bearer token.');
     }
+
+    const claims = user as unknown as JwtClaimsVO;
+    const isPlatformRoute = this.reflector.getAllAndOverride<boolean>(IS_PLATFORM_AUTH_ROUTE_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (claims.isPlatformSession()) {
+      if (!isPlatformRoute) {
+        throw new UnauthorizedException({
+          code: 'PLATFORM_TOKEN_REJECTED_ON_TENANT_API',
+          message: 'Platform tokens cannot access tenant or patient APIs.',
+        });
+      }
+    } else if (isPlatformRoute) {
+      throw new UnauthorizedException({
+        code: 'PLATFORM_PRINCIPAL_REQUIRED',
+        message: 'Platform authentication required.',
+      });
+    }
+
     return user;
   }
 }

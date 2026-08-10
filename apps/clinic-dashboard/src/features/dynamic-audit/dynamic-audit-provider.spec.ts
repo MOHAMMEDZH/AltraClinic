@@ -37,7 +37,7 @@ const ALL_ENABLED = Object.fromEntries(
 );
 
 const REGISTRY_SNAPSHOT = {
-  schemaVersion: '1.0',
+  schemaVersion: '1.0' as const,
   platformVersion: '1.0.0',
   generatedAt: '2026-07-16T00:00:00.000Z',
   catalogGeneration: 1,

@@ -1,10 +1,10 @@
 /**
- * Least-privilege scopes a patient may delegate to a caregiver. Each scope maps
- * to a read-only area of the patient portal (see INFORMATION_ARCHITECTURE.md §7).
- * Caregiver access is always read-only and consent-based; there is intentionally
- * no scope that grants write/booking/payment capability to a caregiver.
+ * Least-privilege scopes a patient may delegate to a caregiver.
+ * Phase 46d product surfaces enforce profile + appointments only.
+ * Other scopes remain registered for future milestones and fail closed until enabled.
  */
 export const CAREGIVER_ACCESS_SCOPES = [
+  'profile',
   'appointments',
   'medical_records',
   'prescriptions',
@@ -12,8 +12,16 @@ export const CAREGIVER_ACCESS_SCOPES = [
   'messages',
 ] as const;
 
+/** Scopes authorized for Phase 46d patient-safe product surfaces. */
+export const CAREGIVER_MVP_SCOPES = ['profile', 'appointments'] as const;
+
 export type CaregiverAccessScope = (typeof CAREGIVER_ACCESS_SCOPES)[number];
+export type CaregiverMvpScope = (typeof CAREGIVER_MVP_SCOPES)[number];
 
 export function isCaregiverAccessScope(value: unknown): value is CaregiverAccessScope {
   return typeof value === 'string' && (CAREGIVER_ACCESS_SCOPES as readonly string[]).includes(value);
+}
+
+export function isCaregiverMvpScope(value: unknown): value is CaregiverMvpScope {
+  return typeof value === 'string' && (CAREGIVER_MVP_SCOPES as readonly string[]).includes(value);
 }

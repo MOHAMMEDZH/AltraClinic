@@ -40,7 +40,7 @@ function isLicenseBlocked(
 }
 
 function resolveRuntimeStatus(
-  manifest: ModuleManifest,
+  _manifest: ModuleManifest,
   blocked: boolean,
   tenantDisabled: boolean,
 ): TenantRuntimeStatus {

@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import { CANONICAL_JOURNEY_APPROVALS, CANONICAL_JOURNEY_GUARDS } from '@booking/module-registry/journey';
 import type {
   JourneyCatalogEntry,
@@ -70,7 +70,7 @@ export function extractJourneyContributions(modules: EffectiveModuleView[]): Jou
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         ownerModuleId: payload.ownerModuleId,
         journeyKind,
         userVisible: extension.userVisible,

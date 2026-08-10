@@ -127,17 +127,13 @@ export class VerifyMfaHandler {
 
 
     const pair = await this.loginCompletion.complete({
-
       user,
-
       email: user.email,
-
       tenantId: user.tenantId,
-
       sessionId: claims.sessionId,
-
       device,
-
+      // Clinic MFA path only — never forward platform session class.
+      sessionClass: claims.sessionClass === 'patient' ? 'patient' : 'staff',
     });
 
 

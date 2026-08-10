@@ -33,6 +33,27 @@ export class InMemoryPortalAccountRepository implements PortalAccountRepository 
     return null;
   }
 
+  async findByUserId(userId: string, tenantId: string): Promise<PortalAccount | null> {
+    for (const account of this.store.values()) {
+      if (account.tenantId === tenantId && account.userId === userId) {
+        return account;
+      }
+    }
+    return null;
+  }
+
+  async findByEnrollmentTokenHash(
+    tokenHash: string,
+    tenantId: string,
+  ): Promise<PortalAccount | null> {
+    for (const account of this.store.values()) {
+      if (account.tenantId === tenantId && account.enrollmentTokenHash === tokenHash) {
+        return account;
+      }
+    }
+    return null;
+  }
+
   async list(filter: PortalAccountFilter): Promise<PortalAccountPage> {
     const matches: PortalAccount[] = [];
 

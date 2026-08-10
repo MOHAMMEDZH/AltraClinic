@@ -32,7 +32,7 @@ export function WorkflowBuilderPage() {
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
   const [descriptionEn, setDescriptionEn] = useState('');
-  const [descriptionAr, setDescriptionAr] = useState('');
+  const [descriptionAr] = useState('');
   const [steps, setSteps] = useState<WorkflowStepDef[]>([
     { id: crypto.randomUUID(), type: 'task', labelEn: 'Review', labelAr: 'مراجعة' },
     { id: crypto.randomUUID(), type: 'approval', labelEn: 'Approve', labelAr: 'موافقة' },
@@ -167,7 +167,7 @@ export function WorkflowBuilderPage() {
       {validationErrors.length > 0 && (
         <ul className={wfStyles.builderValidationErrors}>
           {validationErrors.map((key) => (
-            <li key={key}>{t(`workflow.builder.validation.${key}`, { defaultValue: key })}</li>
+            <li key={key}>{t(`workflow.builder.validation.${key}`, key)}</li>
           ))}
         </ul>
       )}

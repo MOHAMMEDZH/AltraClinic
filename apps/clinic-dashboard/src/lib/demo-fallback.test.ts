@@ -9,7 +9,7 @@ import {
 describe('demo-fallback', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_ENABLE_DEMO_FALLBACK', '');
-    vi.stubEnv('PROD', '');
+    vi.stubEnv('PROD', false);
   });
 
   afterEach(() => {

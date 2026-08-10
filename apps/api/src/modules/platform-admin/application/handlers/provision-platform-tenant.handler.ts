@@ -13,6 +13,7 @@ import { EventPublisherInterface } from '../../../../infrastructure/event-publis
 import { PlatformAdminPolicy } from '../../policies/platform-admin-policy.service';
 import { PlatformTenantProvisionedEvent } from '../../domain/events/platform-tenant-provisioned.event';
 import { resolveOperatorLocale } from './resolve-operator-locale.util';
+import { assertNotPlatformAuditSentinelTenantId } from '../../../platform-tenants/platform-tenants.tokens';
 
 @Injectable()
 export class ProvisionPlatformTenantHandler {
@@ -27,6 +28,16 @@ export class ProvisionPlatformTenantHandler {
   async execute(command: ProvisionPlatformTenantCommand): Promise<{ platformTenantId: string }> {
     if (!command.tenantId?.trim()) {
       throw new BadRequestException('Tenant identifier is required');
+    }
+    try {
+      assertNotPlatformAuditSentinelTenantId(
+        command.tenantId.trim(),
+        'ProvisionPlatformTenantHandler.execute',
+      );
+    } catch {
+      throw new BadRequestException(
+        'Reserved platform audit-sentinel identity cannot be provisioned as a tenant',
+      );
     }
     if (!this.policy.canManageTenantLifecycle(command.actorRoles)) {
       throw new ForbiddenException('User does not have permission to provision platform tenants');

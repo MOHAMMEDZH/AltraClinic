@@ -59,15 +59,6 @@ function buildViews(roles: string[]) {
   });
 }
 
-const ROLE_PROFILES = [
-  'owner',
-  'general_manager',
-  'receptionist',
-  'doctor',
-  'dentist',
-  'accountant',
-  'inventory_manager',
-] as const;
 
 function buildStaticParityEntityTypes(roles: string[]): string[] {
   return buildStaticSearchSnapshot(roles, STATIC_SEARCH_CATALOG, 'static-fallback').entityTypes.sort();
@@ -378,7 +369,7 @@ describe('rollback flag', () => {
   });
 
   it('enables registry search by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_SEARCH_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_SEARCH_ONLY', '');
     expect(isRegistrySearchEnabled()).toBe(true);
   });
 });

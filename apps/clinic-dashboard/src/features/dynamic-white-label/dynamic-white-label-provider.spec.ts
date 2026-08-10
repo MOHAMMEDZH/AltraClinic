@@ -54,7 +54,7 @@ const ALL_ENABLED = Object.fromEntries(
 );
 
 const REGISTRY_SNAPSHOT = {
-  schemaVersion: '1.0',
+  schemaVersion: '1.0' as const,
   platformVersion: '1.0.0',
   generatedAt: '2026-07-14T00:00:00.000Z',
   catalogGeneration: 1,
@@ -115,7 +115,7 @@ describe('DynamicWhiteLabelProvider integration', () => {
       locale: 'en-US',
       setLocale: vi.fn(),
       t: (key: string) => key,
-    } as ReturnType<typeof useI18n>);
+    } as unknown as ReturnType<typeof useI18n>);
     vi.mocked(useTenantSettings).mockReturnValue({
       data: {
         name: 'Demo Clinic',
@@ -127,11 +127,11 @@ describe('DynamicWhiteLabelProvider integration', () => {
         localizationSettings: {},
       },
       isLoading: false,
-    } as ReturnType<typeof useTenantSettings>);
+    } as unknown as ReturnType<typeof useTenantSettings>);
     vi.mocked(useIdentityFeatures).mockReturnValue({
       data: { customBranding: true, whiteLabel: true },
       isLoading: false,
-    } as ReturnType<typeof useIdentityFeatures>);
+    } as unknown as ReturnType<typeof useIdentityFeatures>);
   });
 
   afterEach(() => {

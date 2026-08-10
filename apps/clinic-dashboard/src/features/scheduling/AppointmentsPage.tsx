@@ -448,10 +448,6 @@ export function AppointmentsPage() {
 
   }, [appointments, defaultProviderId, providersQuery.data?.items]);
 
-
-
-  const schedulingProviders = providersQuery.data?.items ?? [];
-
   const schedulingResources = resourcesQuery.data?.items ?? [];
 
   const isClinicalProvider = roles.some((role) => CLINICAL_PROVIDER_ROLES.has(role));

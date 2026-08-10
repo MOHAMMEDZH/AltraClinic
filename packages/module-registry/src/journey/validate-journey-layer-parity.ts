@@ -11,7 +11,7 @@ import {
 
 function compareManifestToStaticCatalog(
   contributions: JourneyContribution[],
-  entries: StaticJourneyCatalogEntryLike[],
+  entries: readonly StaticJourneyCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -54,7 +54,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateJourneyLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticJourneyCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticJourneyCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

@@ -34,7 +34,7 @@ const EMPTY_REGISTRY = {
   isError: false,
   error: null,
   snapshot: {
-    schemaVersion: '1.0',
+    schemaVersion: '1.0' as const,
     platformVersion: '1.0.0',
     generatedAt: '2026-07-16T00:00:00.000Z',
     catalogGeneration: 1,
@@ -68,7 +68,7 @@ describe('dynamic journey rollback', () => {
   });
 
   it('enables registry journey by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_JOURNEY_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_JOURNEY_ONLY', '');
     expect(isRegistryJourneyEnabled()).toBe(true);
   });
 

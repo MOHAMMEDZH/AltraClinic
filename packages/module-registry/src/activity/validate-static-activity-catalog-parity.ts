@@ -74,7 +74,7 @@ function compareStringArrayField(
 }
 
 /** Fail-closed field-by-field parity between STATIC_ACTIVITY_CATALOG and canonical vocabulary. */
-export function validateStaticActivityCatalogParity(entries: StaticActivityCatalogEntryLike[]): string[] {
+export function validateStaticActivityCatalogParity(entries: readonly StaticActivityCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
 

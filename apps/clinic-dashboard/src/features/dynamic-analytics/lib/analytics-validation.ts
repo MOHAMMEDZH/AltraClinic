@@ -1,10 +1,11 @@
+import type { StaticAnalyticsCatalogEntryLike } from '@booking/module-registry/analytics';
 import { BUILTIN_MODULE_MANIFESTS } from '@booking/module-registry';
 import { validateAnalyticsLayerParity } from '@booking/module-registry/analytics';
 import type { AnalyticsSnapshot } from './analytics-types';
 import { STATIC_ANALYTICS_CATALOG } from './static-analytics-catalog';
 
 export function assertAnalyticsCatalogValid(catalog = STATIC_ANALYTICS_CATALOG): string[] {
-  return validateAnalyticsLayerParity(BUILTIN_MODULE_MANIFESTS, catalog);
+  return validateAnalyticsLayerParity(BUILTIN_MODULE_MANIFESTS, catalog as readonly StaticAnalyticsCatalogEntryLike[]);
 }
 
 export function assertAnalyticsSnapshotValid(snapshot: AnalyticsSnapshot): string[] {

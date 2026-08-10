@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req,
+  Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req, UnauthorizedException,
 } from '@nestjs/common';
 import { LoginDto, LoginResponseDto } from '../application/dto/login.dto';
 import { RefreshTokenDto } from '../application/dto/refresh-token.dto';
@@ -186,12 +186,18 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@CurrentUser() user: JwtClaimsVO): Promise<void> {
+    if (!user.tenantId) {
+      throw new UnauthorizedException('Tenant session required.');
+    }
     await this.logoutHandler.execute(user.sessionId, user.sub, user.tenantId);
   }
 
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(@CurrentUser() user: JwtClaimsVO): Promise<{ revokedCount: number }> {
+    if (!user.tenantId) {
+      throw new UnauthorizedException('Tenant session required.');
+    }
     return this.logoutAllHandler.execute(user.sub, user.tenantId, user.sessionId);
   }
 

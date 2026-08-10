@@ -1,20 +1,12 @@
 import { BUILTIN_MODULE_MANIFESTS } from './builtin/builtin-manifests';
-import { createRegistryEvent, REGISTRY_EVENT_CATALOG } from './events/registry-events';
 import { resolveDependencyGraph } from './graph/dependency-resolver';
 import {
   bootstrapRegistry,
-  evaluateModuleHealth,
   loadManifests,
 } from './loader/registry-bootstrap';
 import {
-  findEffectiveModuleView,
   resolveEffectiveModuleViews,
 } from './resolver/effective-module-resolver';
-import { satisfiesMinVersion, satisfiesRange, compareSemver, parseSemver } from './semver';
-import {
-  validateManifest,
-  validateManifestCatalog,
-} from './validation/manifest-validator';
 
 export * from './types';
 export { BUILTIN_MODULE_MANIFESTS, getBuiltinManifest, validateBuiltinManifestCompleteness } from './builtin/builtin-manifests';

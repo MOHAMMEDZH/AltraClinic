@@ -11,7 +11,7 @@ import {
 
 function compareManifestToStaticCatalog(
   contributions: AuditContribution[],
-  entries: StaticAuditCatalogEntryLike[],
+  entries: readonly StaticAuditCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -66,7 +66,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateAuditLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticAuditCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticAuditCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

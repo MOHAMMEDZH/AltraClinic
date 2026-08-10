@@ -598,6 +598,44 @@
         "manage":  ["super_admin", "owner"]
       },
       "operations": []
+    },
+
+    {
+      "id": "api.backupRestore",
+      "kind": "api",
+      "name": "Backup / Restore Center API",
+      "description": "Phase 43a Backup & Restore Center foundation. No backup/restore execution.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/backup-restore/health", "action": "view" }
+      ]
+    },
+
+    {
+      "id": "api.integrations",
+      "kind": "api",
+      "name": "API Keys / Integrations Center API",
+      "description": "Phase 44a API Keys & Integrations Center foundation. No credential issuance, auth middleware, or webhook workers.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner"]
+      },
+      "operations": [
+        { "method": "GET", "path": "/integrations/health", "action": "view" }
+      ]
     }
   ]
 }

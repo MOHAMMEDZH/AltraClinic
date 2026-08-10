@@ -79,13 +79,13 @@ export function validateBuiltinBranchIntegrity(manifests: ModuleManifest[]): str
         );
       }
 
-      if (!contribution.categoryId || !CANONICAL_BRANCH_CATEGORY_ID_SET.has(contribution.categoryId)) {
+      if (!contribution.categoryId || !(CANONICAL_BRANCH_CATEGORY_ID_SET as Set<string>).has(contribution.categoryId)) {
         errors.push(`Branch contribution ${owner} has invalid categoryId "${String(contribution.categoryId)}"`);
       }
 
       if (
         !contribution.configurationCategory ||
-        !CANONICAL_BRANCH_CATEGORY_ID_SET.has(contribution.configurationCategory)
+        !(CANONICAL_BRANCH_CATEGORY_ID_SET as Set<string>).has(contribution.configurationCategory)
       ) {
         errors.push(
           `Branch contribution ${owner} has invalid configurationCategory "${String(contribution.configurationCategory)}"`,

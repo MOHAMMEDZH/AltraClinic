@@ -1,4 +1,4 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { NotificationCatalogEntry } from './static-notification-catalog';
 import type { NotificationSnapshotIdentity } from './notification-types';
 
@@ -56,7 +56,7 @@ export function extractNotificationContributions(modules: EffectiveModuleView[])
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         ownerModuleId: payload.ownerModuleId,
         notificationKind,
         userVisible: extension.userVisible,

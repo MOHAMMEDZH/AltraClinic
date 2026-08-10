@@ -36,7 +36,11 @@ export class TenantDbInterceptor implements NestInterceptor {
     }>();
 
     const path = String(request.path ?? request.url ?? '');
-    if (path.startsWith('/platform-admin') || path.startsWith('/auth')) {
+    if (
+      path.startsWith('/platform-admin') ||
+      path.startsWith('/platform/') ||
+      path.startsWith('/auth')
+    ) {
       return next.handle();
     }
 

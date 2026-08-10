@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PatientPortalPermissionGuard } from './patient-portal-permission.guard';
+import { PatientPortalCenterEnabledGuard } from './patient-portal-center.guard';
 import { PortalDomainExceptionFilter } from './patient-portal-domain-exception.filter';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
@@ -39,7 +40,7 @@ interface AuthenticatedRequest {
 }
 
 @Controller('patient-portal/accounts')
-@UseGuards(PatientPortalPermissionGuard)
+@UseGuards(PatientPortalCenterEnabledGuard, PatientPortalPermissionGuard)
 @UseFilters(PortalDomainExceptionFilter)
 @RequireLicensedModule('patientPortal')
 export class PatientPortalController {

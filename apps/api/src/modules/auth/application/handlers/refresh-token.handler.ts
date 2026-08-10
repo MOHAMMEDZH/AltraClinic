@@ -6,6 +6,7 @@ import { UserRepository } from '../../../identity/domain/user.repository.interfa
 import { TokenPairVO } from '../../domain/value-objects/token-pair.vo';
 import { TokenExpiredException, TokenInvalidException, AccountInactiveException } from '../../domain/exceptions/auth.exceptions';
 import { USER_REPOSITORY, REFRESH_TOKEN_REPOSITORY } from '../../../../infrastructure/provider.tokens';
+import { PrismaService } from '../../../../infrastructure/prisma.service';
 
 @Injectable()
 export class RefreshTokenHandler {
@@ -13,6 +14,7 @@ export class RefreshTokenHandler {
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
     @Inject(REFRESH_TOKEN_REPOSITORY) private readonly refreshRepo: RefreshTokenRepository,
     private readonly jwtTokenService: JwtTokenService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -31,6 +33,9 @@ export class RefreshTokenHandler {
     // Verify JWT integrity first (fast, no DB)
     const claims = this.jwtTokenService.verifyRefreshToken(rawRefreshToken);
     if (!claims) throw new TokenInvalidException('Refresh');
+    if (claims.sessionClass === 'platform' || claims.aud === 'platform') {
+      throw new TokenInvalidException('Refresh');
+    }
 
     // Look up stored hash
     const hash = RefreshToken.hash(rawRefreshToken);
@@ -56,6 +61,20 @@ export class RefreshTokenHandler {
     const user = await this.userRepo.findById(stored.userId, stored.tenantId);
     if (!user || !user.isActive) throw new AccountInactiveException();
 
+    // Flexible Step 19 — fail closed on suspended/archived (and Step 17 provisioning)
+    const platformTenant = await this.prisma.platformTenant.findUnique({
+      where: { tenantId: stored.tenantId },
+      select: { status: true },
+    });
+    if (
+      platformTenant &&
+      (platformTenant.status === 'PROVISIONING' ||
+        platformTenant.status === 'SUSPENDED' ||
+        platformTenant.status === 'ARCHIVED')
+    ) {
+      throw new AccountInactiveException();
+    }
+
     // Revoke the consumed token
     await this.refreshRepo.revokeBySessionId(stored.sessionId);
 
@@ -67,6 +86,7 @@ export class RefreshTokenHandler {
       branchId: user.branchId,
       roles: user.roles,
       sessionId: newSessionId,
+      sessionClass: claims.sessionClass ?? 'staff',
     });
 
     const newToken = RefreshToken.create({

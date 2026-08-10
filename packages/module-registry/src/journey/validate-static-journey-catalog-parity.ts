@@ -50,7 +50,7 @@ function compareOptionalField(
 }
 
 /** Fail-closed field-by-field parity between STATIC_JOURNEY_CATALOG and canonical vocabulary. */
-export function validateStaticJourneyCatalogParity(entries: StaticJourneyCatalogEntryLike[]): string[] {
+export function validateStaticJourneyCatalogParity(entries: readonly StaticJourneyCatalogEntryLike[]): string[] {
   const errors: string[] = [];
   const seenExtensionIds = new Set<string>();
 

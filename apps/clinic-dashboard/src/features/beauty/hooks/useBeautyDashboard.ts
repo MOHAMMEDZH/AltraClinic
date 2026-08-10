@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { fetchBeautyDashboard } from '../api/beauty-dashboard-api';
 

@@ -3,6 +3,10 @@ import {
   CaregiverAccessScope,
   isCaregiverAccessScope,
 } from '../value-objects/caregiver-access-scope';
+import {
+  CaregiverGrantStatus,
+  isCaregiverGrantStatus,
+} from '../value-objects/caregiver-grant-status';
 
 export interface CaregiverAccessGrantProps {
   grantId: string;
@@ -14,6 +18,12 @@ export interface CaregiverAccessGrantProps {
   expiresAt: Date | null;
   revokedAt: Date | null;
   revokedReason: string | null;
+  status: CaregiverGrantStatus;
+  invitationTokenHash: string | null;
+  invitationExpiresAt: Date | null;
+  acceptedAt: Date | null;
+  declinedAt: Date | null;
+  caregiverUserId: string | null;
 }
 
 export interface CaregiverAccessGrantPrimitives {
@@ -26,14 +36,18 @@ export interface CaregiverAccessGrantPrimitives {
   expiresAt: string | null;
   revokedAt: string | null;
   revokedReason: string | null;
+  status: CaregiverGrantStatus;
+  invitationTokenHash: string | null;
+  invitationExpiresAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  caregiverUserId: string | null;
   active: boolean;
 }
 
 /**
- * A consent-based, read-only delegation of portal access from a patient to a
- * caregiver (family member). It is an entity local to the {@link PortalAccount}
- * aggregate — it has identity and lifecycle but is never persisted or mutated
- * independently of its aggregate root.
+ * Consent-based, read-only delegation of portal access from a patient to a caregiver.
+ * Local to the PortalAccount aggregate (portal SoR for grants only).
  */
 export class CaregiverAccessGrant {
   private readonly props: CaregiverAccessGrantProps;
@@ -50,6 +64,9 @@ export class CaregiverAccessGrant {
     grantedBy: string;
     expiresAt: Date | null;
     now: Date;
+    status?: CaregiverGrantStatus;
+    invitationTokenHash?: string | null;
+    invitationExpiresAt?: Date | null;
   }): CaregiverAccessGrant {
     const contact = params.caregiverContact?.trim();
     if (!contact) {
@@ -75,6 +92,11 @@ export class CaregiverAccessGrant {
       throw new PortalValidationError('Caregiver access expiry must be in the future');
     }
 
+    const status = params.status ?? 'active';
+    if (!isCaregiverGrantStatus(status)) {
+      throw new PortalValidationError(`Invalid caregiver grant status: ${status}`);
+    }
+
     return new CaregiverAccessGrant({
       grantId: params.grantId,
       caregiverContact: contact,
@@ -85,11 +107,25 @@ export class CaregiverAccessGrant {
       expiresAt: params.expiresAt,
       revokedAt: null,
       revokedReason: null,
+      status,
+      invitationTokenHash: params.invitationTokenHash ?? null,
+      invitationExpiresAt: params.invitationExpiresAt ?? null,
+      acceptedAt: status === 'active' ? params.now : null,
+      declinedAt: null,
+      caregiverUserId: null,
     });
   }
 
   static restore(props: CaregiverAccessGrantProps): CaregiverAccessGrant {
-    return new CaregiverAccessGrant(props);
+    return new CaregiverAccessGrant({
+      ...props,
+      status: props.status ?? (props.revokedAt ? 'revoked' : 'active'),
+      invitationTokenHash: props.invitationTokenHash ?? null,
+      invitationExpiresAt: props.invitationExpiresAt ?? null,
+      acceptedAt: props.acceptedAt ?? null,
+      declinedAt: props.declinedAt ?? null,
+      caregiverUserId: props.caregiverUserId ?? null,
+    });
   }
 
   get grantId(): string {
@@ -120,11 +156,40 @@ export class CaregiverAccessGrant {
     return this.props.revokedAt;
   }
 
+  get status(): CaregiverGrantStatus {
+    return this.props.status;
+  }
+
+  get invitationTokenHash(): string | null {
+    return this.props.invitationTokenHash;
+  }
+
+  get invitationExpiresAt(): Date | null {
+    return this.props.invitationExpiresAt;
+  }
+
+  get caregiverUserId(): string | null {
+    return this.props.caregiverUserId;
+  }
+
+  isExpired(at: Date = new Date()): boolean {
+    return Boolean(this.props.expiresAt && this.props.expiresAt.getTime() <= at.getTime());
+  }
+
+  isInvitationExpired(at: Date = new Date()): boolean {
+    return Boolean(
+      this.props.invitationExpiresAt && this.props.invitationExpiresAt.getTime() <= at.getTime(),
+    );
+  }
+
   isActive(at: Date = new Date()): boolean {
+    if (this.props.status !== 'active') {
+      return false;
+    }
     if (this.props.revokedAt) {
       return false;
     }
-    if (this.props.expiresAt && this.props.expiresAt.getTime() <= at.getTime()) {
+    if (this.isExpired(at)) {
       return false;
     }
     return true;
@@ -134,12 +199,51 @@ export class CaregiverAccessGrant {
     return this.props.scopes.includes(scope);
   }
 
+  accept(caregiverUserId: string, at: Date = new Date()): void {
+    if (this.props.status === 'revoked' || this.props.revokedAt) {
+      throw new PortalStateError('Caregiver invitation has been revoked');
+    }
+    if (this.props.status === 'declined') {
+      throw new PortalStateError('Caregiver invitation was declined');
+    }
+    if (this.props.status === 'active') {
+      throw new PortalStateError('Caregiver grant is already active');
+    }
+    if (this.props.status !== 'invited') {
+      throw new PortalStateError('Caregiver invitation cannot be accepted in the current state');
+    }
+    if (this.isInvitationExpired(at)) {
+      throw new PortalStateError('Caregiver invitation has expired');
+    }
+    if (!caregiverUserId?.trim()) {
+      throw new PortalValidationError('Caregiver user id is required to accept invitation');
+    }
+    this.props.status = 'active';
+    this.props.acceptedAt = at;
+    this.props.caregiverUserId = caregiverUserId.trim();
+    this.props.invitationTokenHash = null;
+  }
+
+  decline(at: Date = new Date()): void {
+    if (this.props.status !== 'invited') {
+      throw new PortalStateError('Only invited caregiver grants can be declined');
+    }
+    if (this.isInvitationExpired(at)) {
+      throw new PortalStateError('Caregiver invitation has expired');
+    }
+    this.props.status = 'declined';
+    this.props.declinedAt = at;
+    this.props.invitationTokenHash = null;
+  }
+
   revoke(reason: string | null, at: Date = new Date()): void {
-    if (this.props.revokedAt) {
+    if (this.props.revokedAt || this.props.status === 'revoked') {
       throw new PortalStateError('Caregiver access has already been revoked');
     }
+    this.props.status = 'revoked';
     this.props.revokedAt = at;
     this.props.revokedReason = reason?.trim() || null;
+    this.props.invitationTokenHash = null;
   }
 
   toPrimitives(at: Date = new Date()): CaregiverAccessGrantPrimitives {
@@ -153,6 +257,12 @@ export class CaregiverAccessGrant {
       expiresAt: this.props.expiresAt?.toISOString() ?? null,
       revokedAt: this.props.revokedAt?.toISOString() ?? null,
       revokedReason: this.props.revokedReason,
+      status: this.props.status,
+      invitationTokenHash: this.props.invitationTokenHash,
+      invitationExpiresAt: this.props.invitationExpiresAt?.toISOString() ?? null,
+      acceptedAt: this.props.acceptedAt?.toISOString() ?? null,
+      declinedAt: this.props.declinedAt?.toISOString() ?? null,
+      caregiverUserId: this.props.caregiverUserId,
       active: this.isActive(at),
     };
   }

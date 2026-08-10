@@ -198,7 +198,7 @@ describe('rollback flag', () => {
   });
 
   it('enables registry dashboard by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_DASHBOARD_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_DASHBOARD_ONLY', '');
     expect(isRegistryDashboardEnabled()).toBe(true);
     vi.unstubAllEnvs();
   });

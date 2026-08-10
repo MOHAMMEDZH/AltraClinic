@@ -30,7 +30,7 @@ const EMPTY_REGISTRY = {
   isError: false,
   error: null,
   snapshot: {
-    schemaVersion: '1.0',
+    schemaVersion: '1.0' as const,
     platformVersion: '1.0.0',
     generatedAt: '2026-07-14T00:00:00.000Z',
     catalogGeneration: 1,
@@ -64,7 +64,7 @@ describe('dynamic reporting rollback', () => {
   });
 
   it('enables registry reporting by default', () => {
-    vi.stubEnv('VITE_USE_STATIC_REPORTING_ONLY', undefined);
+    vi.stubEnv('VITE_USE_STATIC_REPORTING_ONLY', '');
     expect(isRegistryReportingEnabled()).toBe(true);
   });
 

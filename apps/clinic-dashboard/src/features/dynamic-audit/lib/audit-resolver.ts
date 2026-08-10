@@ -1,8 +1,9 @@
-import type { EffectiveModuleView } from '@booking/module-registry';
+import type { EffectiveModuleView, LicensedModuleId } from '@booking/module-registry';
 import type { AuditCatalogEntry } from './static-audit-catalog';
 import type { AuditContributionView, AuditKind } from './audit-types';
 
 interface AuditExtensionPayload {
+  descriptionKey?: string;
   auditKind?: AuditKind;
   localId?: string;
   auditEventTypeId?: string;
@@ -47,11 +48,11 @@ export function extractAuditContributions(modules: EffectiveModuleView[]): Audit
       if (!payload.auditKind || !payload.deepLinkTemplate) continue;
 
       const permissionResource =
-        payload.permissionResource ?? payload.resourceId ?? extension.resourceId ?? '';
+        payload.permissionResource ?? payload.resourceId ?? '';
 
       contributions.push({
         extensionId: extension.extensionId,
-        moduleId: module.moduleId,
+        moduleId: module.moduleId as LicensedModuleId,
         localId: payload.localId ?? extension.extensionId.split('/').pop() ?? extension.extensionId,
         auditKind: payload.auditKind,
         auditEventTypeId: payload.auditEventTypeId,
@@ -62,7 +63,7 @@ export function extractAuditContributions(modules: EffectiveModuleView[]): Audit
         risk: payload.risk,
         action: payload.action,
         labelKey: extension.labelKey,
-        descriptionKey: extension.descriptionKey,
+        descriptionKey: payload.descriptionKey,
         deepLinkTemplate: payload.deepLinkTemplate,
         route: payload.route,
         permissionResource,

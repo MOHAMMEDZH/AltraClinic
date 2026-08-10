@@ -1,5 +1,5 @@
 import type { AuditContribution, ModuleManifest } from '../types';
-import { CANONICAL_AUDIT_EVENT_TYPES, CANONICAL_AUDIT_EVENT_TYPE_COUNT } from './canonical-audit-event-types';
+import { CANONICAL_AUDIT_EVENT_TYPE_COUNT } from './canonical-audit-event-types';
 import { CANONICAL_AUDIT_FEEDS, CANONICAL_AUDIT_FEED_COUNT } from './canonical-audit-feeds';
 import {
   CANONICAL_AUDIT_ENTRY_COUNT,

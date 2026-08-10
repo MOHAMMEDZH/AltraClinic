@@ -11,8 +11,6 @@ import {
   capabilitiesFromExtensions,
   moduleAiWorkspace,
   moduleNotificationEvent,
-  moduleReport,
-  moduleWhiteLabel,
   moduleWorkflowTrigger,
   rootRoute,
   settingsNav,

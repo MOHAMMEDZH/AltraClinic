@@ -1,8 +1,9 @@
 import type { AiRouteContext } from './ai-types';
 
-export function serializeAiRouteContext(context: AiRouteContext): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+export function serializeAiRouteContext(context: AiRouteContext): AiRouteContext {
+  const out: AiRouteContext = { path: context.path };
   for (const [key, value] of Object.entries(context)) {
+    if (key === 'path') continue;
     if (value === undefined || value === null || value === '') continue;
     out[key] = value;
   }

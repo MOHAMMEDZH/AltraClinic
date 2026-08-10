@@ -10,7 +10,9 @@ export type RouteLayoutKey =
   | 'users'
   | 'notifications'
   | 'subscription'
-  | 'importExport';
+  | 'importExport'
+  | 'backupRestore'
+  | 'apiIntegrations';
 
 /**
  * Static route catalog entry — parity baseline for Phase 30 migration.

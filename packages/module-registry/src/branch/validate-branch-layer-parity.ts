@@ -59,7 +59,7 @@ function compareCanonicalToManifestContribution(
 
 function compareManifestToStaticCatalog(
   contributions: BranchContribution[],
-  entries: StaticBranchCatalogEntryLike[],
+  entries: readonly StaticBranchCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
   const staticByExtensionId = new Map(entries.map((entry) => [entry.extensionId, entry]));
@@ -120,7 +120,7 @@ function compareManifestToStaticCatalog(
  */
 export function validateBranchLayerParity(
   manifests: ModuleManifest[],
-  staticCatalogEntries: StaticBranchCatalogEntryLike[],
+  staticCatalogEntries: readonly StaticBranchCatalogEntryLike[],
 ): string[] {
   const errors: string[] = [];
 

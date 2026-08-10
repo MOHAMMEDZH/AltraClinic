@@ -12,14 +12,15 @@ export class PrismaOutboxRepository implements OutboxRepository {
     const id = randomUUID();
     const now = new Date();
 
+    const asRecord = event as unknown as Record<string, unknown>;
     await this.prisma.outboxEvent.create({
       data: {
         id,
-        tenantId: (event as Record<string, unknown>).tenantId as string | null ?? null,
+        tenantId: (asRecord.tenantId as string | null | undefined) ?? null,
         eventType: event.constructor.name,
-        aggregateType: ((event as Record<string, unknown>).aggregateType as string | undefined) ?? 'Unknown',
-        aggregateId: ((event as Record<string, unknown>).aggregateId as string | undefined) ?? id,
-        payload: event as unknown as Record<string, unknown>,
+        aggregateType: (asRecord.aggregateType as string | undefined) ?? 'Unknown',
+        aggregateId: (asRecord.aggregateId as string | undefined) ?? id,
+        payload: asRecord as never,
         status: 'PENDING',
         attempts: 0,
         createdAt: now,

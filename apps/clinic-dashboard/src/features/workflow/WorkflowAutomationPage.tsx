@@ -22,7 +22,7 @@ export function WorkflowAutomationPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
-  const [eventType, setEventType] = useState(WORKFLOW_TRIGGERS[0]);
+  const [eventType, setEventType] = useState<(typeof WORKFLOW_TRIGGERS)[number]>(WORKFLOW_TRIGGERS[0]);
   const [actionType, setActionType] = useState('create_task');
   const [isActive, setIsActive] = useState(true);
 
@@ -73,7 +73,7 @@ export function WorkflowAutomationPage() {
               <input id="auto-name" className={e.input} value={name} onChange={(ev) => setName(ev.target.value)} required />
             </AuthFormField>
             <AuthFormField label={t('workflow.table.trigger')} id="auto-trigger">
-              <select id="auto-trigger" className={e.select} value={eventType} onChange={(ev) => setEventType(ev.target.value)}>
+              <select id="auto-trigger" className={e.select} value={eventType} onChange={(ev) => setEventType(ev.target.value as (typeof WORKFLOW_TRIGGERS)[number])}>
                 {WORKFLOW_TRIGGERS.map((tr) => (
                   <option key={tr} value={tr}>{tr}</option>
                 ))}

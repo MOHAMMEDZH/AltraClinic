@@ -42,6 +42,13 @@ describe('PlatformTenant aggregate', () => {
     expect(() => PlatformTenant.provision({ ...baseParams, provisionedBy: ' ' })).toThrow(PlatformAdminValidationError);
   });
 
+  it('rejects reserved platform audit-sentinel tenant identity', () => {
+    const { PLATFORM_AUDIT_SENTINEL_TENANT_ID } = require('../../platform-tenants/platform-tenants.tokens');
+    expect(() =>
+      PlatformTenant.provision({ ...baseParams, tenantId: PLATFORM_AUDIT_SENTINEL_TENANT_ID }),
+    ).toThrow(PlatformAdminValidationError);
+  });
+
   it('activates from provisioning and exposes plan limits', () => {
     const tenant = active();
     expect(tenant.status.value).toBe('active');

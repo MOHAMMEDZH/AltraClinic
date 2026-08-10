@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   BUILTIN_MODULE_MANIFESTS,
   resolveDependencyGraph,
