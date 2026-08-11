@@ -23,6 +23,7 @@ import {
 } from '../platform-sales-trials.constants';
 import {
   SalesTrialConflictError,
+  SalesTrialError,
   SalesTrialForbiddenError,
   SalesTrialValidationError,
 } from '../domain/sales-trial.errors';
@@ -82,13 +83,44 @@ export class TrialConversionService {
     }
     const trial = await this.admin.getById(claims, perms, trialId);
 
+    // PV/C gate — only an ACTIVE Trial converts; EXPIRED is not convertible by default.
+    // CONVERTED short-circuit still enforces durable same-key / different-payload conflict (I09).
     if (trial.status === 'CONVERTED') {
       const existing = await this.admin.getConversion(claims, perms, trialId);
       if (existing) {
+        const priorHash = await this.durable.findRequestHash({
+          actorId: claims.sub,
+          operation: SALES_TRIAL_OPERATIONS.convert,
+          idempotencyKey,
+        });
+        if (priorHash) {
+          const target = await resolvePublishedPlanVersion(
+            this.prisma,
+            input.targetPaidPlanVersionId,
+            'conversion',
+          );
+          const dispositions = this.resolveDispositions(
+            trial.trialOnlyGrants ?? [],
+            input.dispositions ?? [],
+          );
+          const requestHash = this.durable.fingerprint({
+            op: SALES_TRIAL_OPERATIONS.convert,
+            trialId,
+            targetPaidPlanVersionId: target.id,
+            dispositions,
+            expectedRowVersion: input.expectedRowVersion,
+          });
+          if (priorHash !== requestHash) {
+            throw new SalesTrialError(
+              'idempotency_conflict',
+              'Idempotency-Key conflicts with a prior claim',
+              409,
+            );
+          }
+        }
         return { trialId, status: 'CONVERTED', conversion: existing, replayed: true };
       }
     }
-    // PV/C gate — only an ACTIVE Trial converts; EXPIRED is not convertible by default.
     if (trial.status !== 'ACTIVE') {
       throw new SalesTrialConflictError(
         `Trials in status ${trial.status} cannot be converted.`,
@@ -270,6 +302,13 @@ export class TrialConversionService {
       }
       await this.durable.releasePendingClaim({ actorId: claims.sub, operation, idempotencyKey });
       throw err;
+    }
+
+    if (isSalesTrialsFailureInjectionActive('after_conversion_commit_before_response')) {
+      throw new SalesTrialValidationError(
+        'Injected after conversion commit before response',
+        'injected_failure',
+      );
     }
 
     const conversion = await this.admin.getConversion(claims, perms, trialId);

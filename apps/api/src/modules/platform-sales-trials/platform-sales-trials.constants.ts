@@ -87,6 +87,7 @@ export const SALES_TRIALS_FAILURE_INJECTION_POINTS = [
   'after_audit_staging_before_commit',
   'before_commit',
   'after_commit_before_response',
+  'after_conversion_commit_before_response',
   'occ_conflict',
   'extension_policy_validation',
   'extension_history_write',
@@ -97,6 +98,8 @@ export const SALES_TRIALS_FAILURE_INJECTION_POINTS = [
   'conversion_commercial_update',
   'conversion_outbox_write',
   'idempotency_claim_race',
+  'eer_invalidation',
+  'comparison_preview_dependency',
 ] as const;
 
 export type SalesTrialsFailureInjectionPoint =

@@ -63,6 +63,49 @@ export class TrialDurableIdempotencyService {
     return key;
   }
 
+  /** Returns the durable request hash for a claim, or null when none exists. */
+  async findRequestHash(input: {
+    actorId: string;
+    operation: string;
+    idempotencyKey: string;
+  }): Promise<string | null> {
+    const key = this.assertValidKey(input.idempotencyKey);
+    const existing = await this.prisma.withPlatformBypass((client) =>
+      client.platformSalesIdempotencyRecord.findUnique({
+        where: {
+          actorId_operation_idempotencyKey: {
+            actorId: input.actorId,
+            operation: input.operation,
+            idempotencyKey: key,
+          },
+        },
+        select: { requestHash: true },
+      }),
+    );
+    return existing?.requestHash ?? null;
+  }
+
+  /**
+   * When a prior durable claim exists for the same actor/operation/key, a different
+   * request hash must surface as idempotency_conflict (even if the business row is
+   * already terminal and the caller would otherwise short-circuit to a replay).
+   */
+  async rejectConflictingPayload(input: {
+    actorId: string;
+    operation: string;
+    idempotencyKey: string;
+    requestHash: string;
+  }): Promise<void> {
+    const priorHash = await this.findRequestHash(input);
+    if (priorHash && priorHash !== input.requestHash) {
+      throw new SalesTrialError(
+        'idempotency_conflict',
+        'Idempotency-Key conflicts with a prior claim',
+        409,
+      );
+    }
+  }
+
   async claimOrReplay(input: {
     actorId: string;
     operation: string;

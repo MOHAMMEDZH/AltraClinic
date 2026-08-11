@@ -5,8 +5,8 @@ import { EffectiveEntitlementRuntimeService } from '../../effective-entitlement-
 import type { EffectiveLimit } from '../../effective-entitlement-runtime/domain/effective-entitlement.types';
 import { resolvePublishedPlanVersion } from './trial-catalog-validation';
 import { TrialAdminService } from './trial-admin.service';
-import { SALES_TRIAL_PERMISSIONS } from '../platform-sales-trials.constants';
-import { SalesTrialForbiddenError } from '../domain/sales-trial.errors';
+import { SALES_TRIAL_PERMISSIONS, isSalesTrialsFailureInjectionActive } from '../platform-sales-trials.constants';
+import { SalesTrialForbiddenError, SalesTrialValidationError } from '../domain/sales-trial.errors';
 import type {
   TrialEntitlementPreviewDto,
   TrialLimitComparison,
@@ -47,6 +47,12 @@ export class TrialEntitlementPreviewService {
   ): Promise<TrialEntitlementPreviewDto> {
     if (!perms.has(SALES_TRIAL_PERMISSIONS.previewEntitlements)) {
       throw new SalesTrialForbiddenError(`Missing ${SALES_TRIAL_PERMISSIONS.previewEntitlements}`);
+    }
+    if (isSalesTrialsFailureInjectionActive('comparison_preview_dependency')) {
+      throw new SalesTrialValidationError(
+        'Injected comparison preview dependency failure',
+        'injected_failure',
+      );
     }
     const trial = await this.admin.getById(claims, perms, trialId);
     const target = await resolvePublishedPlanVersion(

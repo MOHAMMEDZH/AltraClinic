@@ -26,7 +26,7 @@
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
 | Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
 | Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md` |
-| Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T15:09:53.675Z`). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 unauthorized |
+| Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 unauthorized |
 | Flexible Steps **26–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
@@ -1540,19 +1540,19 @@ Leads/pipeline only. Steps 25–29 remain Not Authorized.
 Governed trials → paid subscription; attribution preserved; uses Step 16 subscription path.
 
 ### Status
-**Accepted / Complete.** Case C Attempt 2 authoritative on frozen `booking_test` (freeze `2026-08-11T15:09:53.675Z`; ~50.1 min; all counters 0). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 Not Authorized.
+**Accepted / Complete.** Narrow matrix evidence closure passed. Case C Attempt 3 authoritative on frozen `booking_test` (freeze `2026-08-11T19:27:21.900Z`; ~50.4 min; all counters 0). Attempt 2 invalidated (I09 durable conflict enforcement product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 Not Authorized.
 
 ### Prerequisites
 24, 16.
 
 ### Evidence
-Trial governance aggregate + provisioning/lifecycle/EER handoff; expiry job; conversion + entitlement comparison; matrices E/X/PV/RTE/U25/A/I/C/F/H/P/UI.
+Trial governance aggregate + provisioning/lifecycle/EER handoff; expiry job; conversion + entitlement comparison; matrices E/X/PV/RTE/U25/A/I/C/F/H/P/UI including explicit A11–A26, I09–I16, C06–C24, F09–F30, H25–H50, P01–P12, RTE01–RTE08.
 
 ### Tests
-Step 25 DB **160/160**; UI **62/62**; clean/upgrade validators; Case C one-pass.
+Step 25 DB **272/272**; UI **62/62**; clean/upgrade validators; Case C one-pass.
 
 ### Final Case C
-Attempt **1** INVALIDATED (ops/sales-rep validators forbade Step 25 tables). Attempt **2**: freeze `2026-08-11T15:09:53.675Z`; duration ~3007s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
+Attempt **1** INVALIDATED (ops/sales-rep validators forbade Step 25 tables). Attempt **2** INVALIDATED (I09 product fix during narrow closure). Attempt **3**: freeze `2026-08-11T19:27:21.900Z`; duration ~3027s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
 
 ### Rollback
 Disable routes/UI; pause expiry job; compensating cancel trial. No destructive DB reset.

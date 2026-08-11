@@ -348,6 +348,15 @@ export class TrialProvisioningAdapter {
 
   invalidateEer(tenantId: string | null | undefined): void {
     if (!tenantId || !this.eer) return;
+    // Model B: exact selector + NODE_ENV===test only. Throws (does not swallow) so
+    // callers cannot treat a failed refresh as authoritative success.
+    if (isSalesTrialsFailureInjectionActive('eer_invalidation')) {
+      throw new SalesTrialError(
+        'injected_failure',
+        'Injected EER invalidation failure',
+        500,
+      );
+    }
     try {
       this.eer.invalidateTenant(tenantId);
     } catch (err) {
