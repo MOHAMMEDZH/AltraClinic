@@ -152,8 +152,24 @@ export class SalesRepresentativeAdminService {
       }),
       this.prisma.platformSalesRepresentative.count({ where }),
     ]);
-    const items = await Promise.all(
-      rows.map(async (row) => toDto({ ...row, roleKeys: await this.withRoleKeys(this.prisma, row.platformUserId) })),
+    // Batch role keys for the page — avoids N+1 platform_user_roles lookups.
+    const platformUserIds = rows.map((row) => row.platformUserId);
+    const roleRows =
+      platformUserIds.length === 0
+        ? []
+        : await this.prisma.platformUserRole.findMany({
+            where: { platformUserId: { in: platformUserIds }, revokedAt: null },
+            select: { platformUserId: true, roleKey: true },
+            orderBy: [{ platformUserId: 'asc' }, { roleKey: 'asc' }],
+          });
+    const roleKeysByUser = new Map<string, string[]>();
+    for (const role of roleRows) {
+      const keys = roleKeysByUser.get(role.platformUserId) ?? [];
+      keys.push(role.roleKey);
+      roleKeysByUser.set(role.platformUserId, keys);
+    }
+    const items = rows.map((row) =>
+      toDto({ ...row, roleKeys: roleKeysByUser.get(row.platformUserId) ?? [] }),
     );
     return { items, total, page: input.page, pageSize: input.pageSize };
   }

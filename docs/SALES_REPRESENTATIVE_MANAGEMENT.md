@@ -1,14 +1,14 @@
 # Sales Representative Management (Flexible Step 23)
 
-**Status:** Accepted / Complete
+**Status:** Blocked pending new Case C (narrow evidence gate found and fixed list N+1)
 **Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 23
 **Authority:** Platform identity / auth / MFA / session / RBAC (Steps 06–08), Tenant Directory (customer SoR), Steps 17–22 preserved.
 
 Steps **01–22** + **U01**: Accepted/Complete.
-Step **23**: **Accepted and complete** (authoritative Case C attempt **5**, 2026-08-10).
+Step **23**: Implementation green; Attempt **5** Case C was green but is **invalidated** for final acceptance after an executable list-query fix (batched role keys). A new full Case C is required before acceptance.
 Steps **24–29**: Not Authorized (no Leads, Opportunities, Pipeline, Trials, commissions, payroll, billing, PHI).
 
-### Final Case C (authoritative)
+### Case C Attempt 5 (historical — invalidated for acceptance)
 
 | Field | Value |
 |-------|--------|
@@ -17,11 +17,47 @@ Steps **24–29**: Not Authorized (no Leads, Opportunities, Pipeline, Trials, co
 | Freeze | `2026-08-10T21:57:30.064Z` |
 | Window | `2026-08-10T21:57:29.688Z` → `2026-08-10T22:42:48.764Z` (~45.3 min) |
 | Runner | `npm run test:sales-representatives-final-onepass` |
-| Counters | `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0` |
+| Counters at time | `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0` |
 | Catalog | `68 / 136 / 68 / 13` |
-| Hygiene | remaining prohibited Step 23 artifacts = **0** |
+| Acceptance status | **Invalidated** — product code changed after Attempt 5 (list N+1 role batching) |
 
 **Harness notes (accepted as load-only):** Step 17 failure-injection `jest.setTimeout` 300s→900s (assertions/semantics unchanged); U01 optional clock + `useFactory` for Nest DI; Step 22 validators intentionally allow Step 23 sales tables while forbidding Step 24+/billing.
+
+### Appendix — Narrow evidence closure (2026-08-11)
+
+#### F19 / F20 timing (Step 17)
+
+Command (no `--forceExit`; with `--detectOpenHandles` + Jest JSON):
+
+`node jest … --testPathPattern tenant-provisioning-failure-injection… --testNamePattern "F19:|F20:" --verbose --json --detectOpenHandles`
+
+| Case | Duration | Timeout | Completed normally | Near-timeout risk |
+|------|----------|---------|--------------------|-------------------|
+| F19 | **44441 ms** | 900000 ms | YES | NO (~4.9% of limit) |
+| F20 | **44244 ms** | 900000 ms | YES | NO (~4.9% of limit) |
+
+Hidden retries: **NO**. Meaningful create/start/activate + injection work per test.
+
+#### Open handles (independent of `--forceExit`)
+
+| Check | Result |
+|-------|--------|
+| F19/F20 Jest exit without `--forceExit` | **0** (process exited cleanly; exitCode 0) |
+| `--detectOpenHandles` unexpected reports | **0** |
+| jest/node orphans after run | **0** |
+| postgres idle-in-transaction | **0** |
+| postgres blocking locks | **0** |
+
+#### Representative / ownership query–index
+
+| Path | Proof |
+|------|--------|
+| `SalesRepresentativeAdminService.list` | pageSize max **100** (controller); `orderBy createdAt desc`; status/email filters; manager id on row (**no N+1 manager**); roles batched `platformUserId IN (…)` after N+1 fix (**no N+1 roles**) |
+| Indexes | `status`, `managerRepresentativeId`, `regionCode`, `territoryCode`, unique `platformUserId`; roles via `platform_user_roles_platformUserId_idx` |
+| EXPLAIN (tiny fixture, 1 row) | Seq Scan + Sort for list — justified by tiny cardinality; supporting indexes exist for filtered/production access |
+| `SalesCustomerOwnershipService.getByTenant` | Unique `platformTenantId` lookup (no unbounded customer list API); index `platform_sales_customer_ownership_platformTenantId_key`; **no N+1** ownership/tenant |
+
+**Product change during this gate:** YES — batched role-key load in `list`. Attempt 5 **no longer** authoritative for acceptance. Full Case C rerun required. Step 24 remains unauthorized.
 
 ---
 
