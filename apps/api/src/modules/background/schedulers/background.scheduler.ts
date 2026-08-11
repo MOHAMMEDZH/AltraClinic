@@ -137,6 +137,22 @@ export class BackgroundScheduler {
     );
   }
 
+  /**
+   * Every 15 minutes — expire governed sales trials whose window has elapsed.
+   * Enforcement is never UI-only: the worker transitions the aggregate and hands the
+   * tenant to the Step 19 deny path.
+   */
+  @Cron('*/15 * * * *')
+  async scheduleSalesTrialExpiryScan(): Promise<void> {
+    if (!schedulersEnabled()) return;
+    await this.jobQueue.enqueue(
+      BACKGROUND_QUEUES.SALES_TRIAL_EXPIRY,
+      BACKGROUND_JOBS.SALES_TRIAL_EXPIRY_SCAN,
+      {},
+      { skipMetrics: true },
+    );
+  }
+
   /** Every 15 minutes — escalate overdue workflow tasks and flag approval SLA breaches. */
   @Cron('*/15 * * * *')
   async scheduleWorkflowEscalationScan(): Promise<void> {

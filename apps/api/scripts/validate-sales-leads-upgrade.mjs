@@ -37,10 +37,13 @@ const STEP24_ALLOWED = [
   'platform_sales_lead_notes',
 ];
 
-const STEP25_PLUS_FORBIDDEN = [
+/** Step 25 governance tables are allowed once the Step 25 migration ships. */
+const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
-  'platform_sales_trials',
+  'platform_sales_commissions',
+  'platform_sales_commission_snapshots',
+  'platform_sales_productivity_snapshots',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -124,6 +127,8 @@ async function snapshot(prisma) {
     leadOwnershipHistory: await prisma.platformSalesLeadOwnershipHistory.count().catch(() => 0),
     leadNotes: await prisma.platformSalesLeadNote.count().catch(() => 0),
     salesIdempotency: await prisma.platformSalesIdempotencyRecord.count().catch(() => 0),
+    // Step 25 tables may exist on this chain; a re-deploy must not invent trial rows.
+    salesTrials: await prisma.platformSalesTrial.count().catch(() => 0),
   };
 }
 
@@ -174,8 +179,10 @@ async function main() {
     expect('lead ownership history preserved', after.leadOwnershipHistory, before.leadOwnershipHistory);
     expect('lead notes preserved', after.leadNotes, before.leadNotes);
     expect('sales idempotency records preserved (no auto invent)', after.salesIdempotency, before.salesIdempotency);
+    expect('sales trials preserved (no auto invent)', after.salesTrials, before.salesTrials);
+    expect('sales trials empty on a migrate-only DB', after.salesTrials, 0);
 
-    for (const table of [...BILLING_FORBIDDEN, ...STEP25_PLUS_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );
@@ -189,7 +196,7 @@ async function main() {
       if (!rows[0]?.present) throw new Error(`Missing Step 23/24 table after upgrade: ${table}`);
     }
 
-    console.log('OK no billing/trials schema');
+    console.log('OK no billing/opportunities/commission schema');
     console.log('OK Step 24 sales lead schema present and stable across re-deploy');
     console.log('Step 24 upgrade migration validator passed.');
   } finally {

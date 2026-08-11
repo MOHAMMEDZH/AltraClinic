@@ -106,16 +106,18 @@ describeDb('Step 24 Sales Leads won/lost safety (PostgreSQL)', () => {
     expect(await prisma.platformTenantProvisioningRequest.count()).toBe(before);
   });
 
-  it('WON05: markWon does not invent trials table rows (table absent)', async () => {
+  it('WON05: markWon does not invent Trial rows (Step 25 table may exist; WON stays commercial-only)', async () => {
+    const before = await prisma.platformSalesTrial.count();
     const { claims, stack, lead } = await advanceToProposal();
     await stack.leads.markWon(claims, stack.perms, lead.id, {
       expectedRowVersion: lead.rowVersion,
       wonLostReason: 'ok',
     });
-    const trials = await prisma.$queryRawUnsafe<Array<{ present: boolean }>>(
-      `SELECT to_regclass('public.platform_sales_trials') IS NOT NULL AS present`,
+    expect(await prisma.platformSalesTrial.count()).toBe(before);
+    const opps = await prisma.$queryRawUnsafe<Array<{ present: boolean }>>(
+      `SELECT to_regclass('public.platform_sales_opportunities') IS NOT NULL AS present`,
     );
-    expect(trials[0]?.present).toBe(false);
+    expect(opps[0]?.present).toBe(false);
   });
 
   it('WON06: exact idempotent replay of won does not double-audit', async () => {

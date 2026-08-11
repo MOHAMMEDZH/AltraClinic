@@ -48,6 +48,7 @@ import { PlatformAuditCenterModule } from './modules/platform-audit-center/platf
 import { PlatformOperationsConsoleModule } from './modules/platform-operations-console/platform-operations-console.module';
 import { PlatformSalesRepresentativesModule } from './modules/platform-sales-representatives/platform-sales-representatives.module';
 import { PlatformSalesLeadsModule } from './modules/platform-sales-leads/platform-sales-leads.module';
+import { PlatformSalesTrialsModule } from './modules/platform-sales-trials/platform-sales-trials.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -115,6 +116,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     PlatformOperationsConsoleModule,
     PlatformSalesRepresentativesModule,
     PlatformSalesLeadsModule,
+    PlatformSalesTrialsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },

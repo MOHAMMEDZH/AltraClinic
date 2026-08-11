@@ -197,16 +197,14 @@ describeDb('Step 24 Sales Leads plan-fit safety (PostgreSQL)', () => {
     expect(typeof fit.valid).toBe('boolean');
   });
 
-  it('PF16: no platform_sales_trials / opportunities tables required for plan-fit', async () => {
-    const trials = await prisma.$queryRawUnsafe<Array<{ present: boolean }>>(
-      `SELECT to_regclass('public.platform_sales_trials') IS NOT NULL AS present`,
-    );
+  it('PF16: plan-fit does not invent Trial/opportunity rows (opportunities table remains absent)', async () => {
+    const beforeTrials = await prisma.platformSalesTrial.count();
     const opps = await prisma.$queryRawUnsafe<Array<{ present: boolean }>>(
       `SELECT to_regclass('public.platform_sales_opportunities') IS NOT NULL AS present`,
     );
-    expect(trials[0]?.present).toBe(false);
     expect(opps[0]?.present).toBe(false);
     const { claims, stack, lead } = await seed();
     await stack.leads.getPlanFit(claims, stack.perms, lead.id);
+    expect(await prisma.platformSalesTrial.count()).toBe(beforeTrials);
   });
 });

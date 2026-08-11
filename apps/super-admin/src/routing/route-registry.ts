@@ -77,6 +77,9 @@ export type SuperAdminRouteId =
   | 'sales-leads'
   | 'sales-leads-new'
   | 'sales-leads-detail'
+  | 'sales-trials'
+  | 'sales-trials-new'
+  | 'sales-trials-detail'
   | 'settings'
   | 'feature-flags-new'
   | 'feature-flags-detail'
@@ -826,6 +829,42 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
     breadcrumbParentId: 'sales-leads',
     layout: 'app',
     step: 24,
+    status: 'available',
+  },
+  {
+    id: 'sales-trials',
+    path: '/sales/trials',
+    titleKey: 'routes.salesTrials.title',
+    descriptionKey: 'routes.salesTrials.description',
+    navLabelKey: 'nav.salesTrials',
+    navGroup: 'sales',
+    icon: 'trial',
+    policy: { type: 'permission', permission: 'trial.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 25,
+    status: 'available',
+  },
+  {
+    id: 'sales-trials-new',
+    path: '/sales/trials/new',
+    titleKey: 'routes.salesTrialsNew.title',
+    policy: { type: 'permission', permission: 'trial.create' },
+    showInNav: false,
+    breadcrumbParentId: 'sales-trials',
+    layout: 'app',
+    step: 25,
+    status: 'available',
+  },
+  {
+    id: 'sales-trials-detail',
+    path: '/sales/trials/:id',
+    titleKey: 'routes.salesTrialsDetail.title',
+    policy: { type: 'permission', permission: 'trial.view' },
+    showInNav: false,
+    breadcrumbParentId: 'sales-trials',
+    layout: 'app',
+    step: 25,
     status: 'available',
   },
   {

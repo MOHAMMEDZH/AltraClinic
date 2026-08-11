@@ -83,6 +83,9 @@ import { SalesRepresentativeDetailPage } from '../../pages/sales/SalesRepresenta
 import { SalesLeadsListPage } from '../../pages/sales/leads/SalesLeadsListPage';
 import { SalesLeadCreatePage } from '../../pages/sales/leads/SalesLeadCreatePage';
 import { SalesLeadDetailPage } from '../../pages/sales/leads/SalesLeadDetailPage';
+import { SalesTrialsListPage } from '../../pages/sales/trials/SalesTrialsListPage';
+import { SalesTrialCreatePage } from '../../pages/sales/trials/SalesTrialCreatePage';
+import { SalesTrialDetailPage } from '../../pages/sales/trials/SalesTrialDetailPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -667,6 +670,30 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('sales-leads-detail').policy}>
               <SalesLeadDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials').policy}>
+              <SalesTrialsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials-new').policy}>
+              <SalesTrialCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials-detail').policy}>
+              <SalesTrialDetailPage />
             </RequirePermissionPolicy>
           }
         />

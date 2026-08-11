@@ -41,10 +41,22 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-const STEP25_PLUS_FORBIDDEN = [
+/**
+ * Step 25 governance tables are legitimately present once the Step 25 migration ships,
+ * so Step 24 only forbids the Step 26 surface (opportunities/pipeline/commission).
+ */
+const STEP25_ALLOWED = [
+  'platform_sales_trials',
+  'platform_sales_trial_extension_history',
+  'platform_sales_trial_conversions',
+];
+
+const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
-  'platform_sales_trials',
+  'platform_sales_commissions',
+  'platform_sales_commission_snapshots',
+  'platform_sales_productivity_snapshots',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -161,7 +173,7 @@ async function main() {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (!rows[0]?.present) throw new Error(`Missing Step 23/24 table: ${table}`);
     }
-    for (const table of [...BILLING_FORBIDDEN, ...STEP25_PLUS_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
@@ -221,7 +233,17 @@ async function main() {
     expect('sales lead ownership history (empty)', ownershipHistory, 0);
     expect('sales lead notes (empty)', notes, 0);
 
-    console.log('OK no billing/trials/opportunities schema tables');
+    // Step 25 tables may exist, but a migration must never invent trial rows.
+    const trialRows = await prisma.platformSalesTrial.count().catch(() => 0);
+    expect('sales trials (no auto-created trials)', trialRows, 0);
+    for (const table of STEP25_ALLOWED) {
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
+      );
+      console.log(`OK Step 25 table ${table} present=${Boolean(rows[0]?.present)} (allowed)`);
+    }
+
+    console.log('OK no billing/opportunities/commission schema tables');
     console.log('OK Step 24 sales lead schema present and empty');
     log(`Step 24 clean migration validator passed (db=${cleanDb}).`);
   } finally {

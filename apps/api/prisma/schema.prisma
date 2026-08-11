@@ -2974,6 +2974,8 @@ model PlatformTenant {
   salesOwnership        PlatformSalesCustomerOwnership?
   /// Flexible Step 24 — optional commercial lead links (never auto-created).
   salesLeads            PlatformSalesLead[]
+  /// Flexible Step 25 — governed Trial links (never auto-created).
+  salesTrials           PlatformSalesTrial[]
 
   @@index([status])
   @@index([plan])
@@ -4850,6 +4852,10 @@ model PlatformPlanVersion {
   limits       PlatformPlanVersionLimit[]
   /// Step 16 commercial Plan Version assignments (definition remains immutable).
   commercialConfigs PlatformSubscriptionCommercialConfig[]
+  /// Flexible Step 25 — Trial Plan Version selections (immutable at activation).
+  salesTrials       PlatformSalesTrial[]
+  /// Flexible Step 25 — conversion target paid Plan Versions.
+  trialConversionTargets PlatformSalesTrialConversion[] @relation("TrialConversionTargetPlanVersion")
 
   @@unique([planId, versionNumber])
   @@index([planId, lifecycle])
@@ -5898,6 +5904,8 @@ model PlatformSalesRepresentative {
   ownerships   PlatformSalesCustomerOwnership[]
   /// Flexible Step 24 — leads owned by this representative.
   ownedLeads   PlatformSalesLead[]
+  /// Flexible Step 25 — Trials owned by this representative.
+  ownedTrials  PlatformSalesTrial[]
 
   @@index([status])
   @@index([managerRepresentativeId])
@@ -6033,6 +6041,8 @@ model PlatformSalesLead {
   stageHistory        PlatformSalesLeadStageHistory[]
   ownershipHistory    PlatformSalesLeadOwnershipHistory[]
   notes               PlatformSalesLeadNote[]
+  /// Flexible Step 25 — Trials originating from this lead (optional).
+  originatedTrials    PlatformSalesTrial[]
 
   @@index([ownerRepresentativeId])
   @@index([stage])
@@ -6084,4 +6094,112 @@ model PlatformSalesLeadNote {
 
   @@index([leadId, createdAt])
   @@map("platform_sales_lead_notes")
+}
+
+/// Flexible Step 25 — Trial Creation and Customer Conversion.
+/// Contract: docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md
+/// Dedicated governance aggregate. Entitlements remain Step 16 snapshot + Step 18 EER only.
+/// No Step 26 commission/productivity tables. No billing invoice/payment tables.
+enum PlatformSalesTrialStatus {
+  DRAFT
+  PENDING_PROVISIONING
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELLED
+
+  @@map("platform_sales_trial_status")
+}
+
+model PlatformSalesTrial {
+  id                      String                   @id @default(uuid()) @db.Uuid
+  /// Null until Step 17 provisioning resolves/creates the tenant.
+  platformTenantId        String?                  @db.Uuid
+  originatingLeadId       String?                  @db.Uuid
+  ownerRepresentativeId   String?                  @db.Uuid
+  /// Immutable commercial attribution frozen at create (no Clinic/PHI authority).
+  attributionSnapshotJson Json                     @default("{}")
+  /// Immutable PUBLISHED Plan Version selected for the Trial.
+  trialPlanVersionId      String                   @db.Uuid
+  status                  PlatformSalesTrialStatus @default(DRAFT)
+  organizationName        String                   @db.VarChar(255)
+  facilityTypeKey         String                   @db.VarChar(128)
+  selectedSpecialtyKeys   Json                     @default("[]")
+  selectedModuleKeys      Json                     @default("[]")
+  startsAt                DateTime?
+  expiresAt               DateTime?
+  /// Bounded policy value; never 0 = unlimited.
+  maxExtensions           Int                      @default(2)
+  extensionCount          Int                      @default(0)
+  /// Step 16 commercial configuration link when established.
+  commercialConfigId      String?                  @db.Uuid
+  /// Step 17 provisioning correlation when established.
+  provisioningRequestId   String?                  @db.Uuid
+  /// Trial-only Add-on/Override grants requiring conversion disposition.
+  trialOnlyGrantsJson     Json                     @default("[]")
+  expiredAt               DateTime?
+  cancelledAt             DateTime?
+  cancellationReason      String?                  @db.VarChar(1000)
+  createdByPlatformUserId String                   @db.Uuid
+  rowVersion              Int                      @default(1)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  platformTenant      PlatformTenant?              @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  originatingLead     PlatformSalesLead?           @relation(fields: [originatingLeadId], references: [id], onDelete: Restrict)
+  ownerRepresentative PlatformSalesRepresentative? @relation(fields: [ownerRepresentativeId], references: [id], onDelete: Restrict)
+  trialPlanVersion    PlatformPlanVersion          @relation(fields: [trialPlanVersionId], references: [id], onDelete: Restrict)
+  extensionHistory    PlatformSalesTrialExtensionHistory[]
+  conversions         PlatformSalesTrialConversion[]
+
+  @@index([ownerRepresentativeId])
+  @@index([status])
+  /// Expiry job claim query: status = ACTIVE AND expiresAt <= now ORDER BY expiresAt, id
+  @@index([status, expiresAt, id])
+  @@index([expiresAt, id])
+  @@index([createdAt, id])
+  @@index([platformTenantId])
+  @@index([originatingLeadId])
+  @@index([trialPlanVersionId])
+  @@map("platform_sales_trials")
+}
+
+model PlatformSalesTrialExtensionHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  trialId             String   @db.Uuid
+  previousExpiresAt   DateTime
+  newExpiresAt        DateTime
+  extensionDays       Int
+  reason              String   @db.VarChar(1000)
+  exceptional         Boolean  @default(false)
+  actorPlatformUserId String   @db.Uuid
+  correlationId       String?  @db.VarChar(100)
+  createdAt           DateTime @default(now())
+
+  trial PlatformSalesTrial @relation(fields: [trialId], references: [id], onDelete: Restrict)
+
+  @@index([trialId, createdAt])
+  @@map("platform_sales_trial_extension_history")
+}
+
+model PlatformSalesTrialConversion {
+  id                     String   @id @default(uuid()) @db.Uuid
+  trialId                String   @db.Uuid
+  targetPaidPlanVersionId String  @db.Uuid
+  /// Explicit disposition per trial-only grant. Ambiguity fails conversion safely.
+  dispositionsJson       Json     @default("[]")
+  actorPlatformUserId    String   @db.Uuid
+  convertedAt            DateTime @default(now())
+  correlationId          String?  @db.VarChar(100)
+  outboxEventId          String?  @db.Uuid
+  commercialConfigId     String?  @db.Uuid
+  createdAt              DateTime @default(now())
+
+  trial                PlatformSalesTrial  @relation(fields: [trialId], references: [id], onDelete: Restrict)
+  targetPaidPlanVersion PlatformPlanVersion @relation("TrialConversionTargetPlanVersion", fields: [targetPaidPlanVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([trialId])
+  @@index([targetPaidPlanVersionId])
+  @@index([convertedAt, id])
+  @@map("platform_sales_trial_conversions")
 }

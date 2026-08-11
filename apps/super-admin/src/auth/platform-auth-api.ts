@@ -456,6 +456,159 @@ export interface SalesLeadOwnershipHistoryEntry {
   createdAt: string;
 }
 
+// ─── Flexible Step 25 — Trial Creation and Customer Conversion ───────────────
+
+export type SalesTrialStatus =
+  | 'DRAFT'
+  | 'PENDING_PROVISIONING'
+  | 'ACTIVE'
+  | 'EXPIRED'
+  | 'CONVERTED'
+  | 'CANCELLED';
+
+export type SalesTrialGrantDisposition =
+  | 'EXPIRE_ON_TRIAL_EXPIRY'
+  | 'EXPIRE_ON_CONVERSION'
+  | 'MIGRATE_TO_PAID_EQUIVALENT'
+  | 'RETAIN_NOT_TRIAL_ONLY';
+
+export interface SalesTrialOnlyGrant {
+  grantKey: string;
+  kind: 'ADD_ON' | 'OVERRIDE';
+  referenceId?: string | null;
+  trialOnly: boolean;
+}
+
+export interface SalesTrial {
+  id: string;
+  status: SalesTrialStatus;
+  organizationName: string;
+  platformTenantId: string | null;
+  originatingLeadId: string | null;
+  ownerRepresentativeId: string | null;
+  trialPlanVersionId: string;
+  facilityTypeKey: string;
+  selectedSpecialtyKeys: string[];
+  selectedModuleKeys: string[];
+  startsAt: string | null;
+  expiresAt: string | null;
+  maxExtensions: number;
+  extensionCount: number;
+  commercialConfigId: string | null;
+  provisioningRequestId: string | null;
+  trialOnlyGrants: SalesTrialOnlyGrant[];
+  attributionSnapshot: {
+    originatingLeadId: string | null;
+    ownerRepresentativeId: string | null;
+    salesAttributionId: string | null;
+    createdByPlatformUserId: string;
+    frozenAt: string;
+  } | null;
+  expiredAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesTrialsListResponse {
+  items: SalesTrial[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesTrialExtension {
+  id: string;
+  trialId: string;
+  previousExpiresAt: string;
+  newExpiresAt: string;
+  extensionDays: number;
+  reason: string;
+  exceptional: boolean;
+  actorPlatformUserId: string;
+  createdAt: string;
+}
+
+export interface SalesTrialGrantDispositionEntry {
+  grantKey: string;
+  disposition: SalesTrialGrantDisposition;
+  paidEquivalentKey?: string | null;
+  note?: string | null;
+}
+
+export interface SalesTrialConversion {
+  id: string;
+  trialId: string;
+  targetPaidPlanVersionId: string;
+  dispositions: SalesTrialGrantDispositionEntry[];
+  actorPlatformUserId: string;
+  convertedAt: string;
+  correlationId: string | null;
+  outboxEventId: string | null;
+  commercialConfigId: string | null;
+}
+
+export interface SalesTrialConversionResult {
+  trialId: string;
+  status: 'CONVERTED';
+  conversion: SalesTrialConversion;
+  replayed: boolean;
+}
+
+export type SalesTrialLimitState = 'CONFIGURED' | 'UNLIMITED' | 'UNCONFIGURED';
+
+export interface SalesTrialLimitComparison {
+  canonicalKey: string;
+  trialState: SalesTrialLimitState;
+  trialValue: string | null;
+  paidState: SalesTrialLimitState;
+  paidValue: string | null;
+  classification: 'RETAINED' | 'ADDED' | 'REMOVED' | 'CHANGED';
+}
+
+/** Read-only comparison: never an entitlement or runtime license decision. */
+export interface SalesTrialEntitlementPreview {
+  trialId: string;
+  trialPlanVersionId: string;
+  targetPaidPlanVersionId: string;
+  retainedEntitlements: string[];
+  addedEntitlements: string[];
+  removedEntitlements: string[];
+  limits: SalesTrialLimitComparison[];
+  trialOnlyExpiring: string[];
+  trialOnlyMigrating: string[];
+  incompatibilities: Array<{ reasonCode: string; message: string; subjectKey?: string }>;
+  unconfiguredVsUnlimited: Array<{
+    canonicalKey: string;
+    trialState: SalesTrialLimitState;
+    paidState: SalesTrialLimitState;
+  }>;
+  requiredDispositionGrantKeys: string[];
+  runtimeSource: 'STEP16_SNAPSHOT_STEP18_EER';
+  disclaimer: {
+    readOnly: true;
+    doesNotMutateProtectedSoR: true;
+    notEntitlementDecision: true;
+    notRuntimeLicenseDecision: true;
+  };
+}
+
+export interface SalesTrialHistory {
+  trialId: string;
+  audits: Array<{
+    id: string;
+    action: string;
+    actorId: string | null;
+    reason: string | null;
+    correlationId: string | null;
+    createdAt: string;
+  }>;
+  extensions: SalesTrialExtension[];
+  conversion: SalesTrialConversion | null;
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -2973,6 +3126,146 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
     getSalesLeadOwnershipHistory(accessToken: string, id: string) {
       return request<SalesLeadOwnershipHistoryEntry[]>(
         `/platform/sales/leads/${encodeURIComponent(id)}/ownership-history`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    /** Flexible Step 25 — Trial Creation and Customer Conversion. */
+    listSalesTrials(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesTrialsListResponse>(`/platform/sales/trials?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    getSalesTrial(accessToken: string, id: string) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesTrial(
+      accessToken: string,
+      body: {
+        organizationName: string;
+        facilityTypeKey: string;
+        trialPlanVersionId: string;
+        selectedSpecialtyKeys?: string[];
+        selectedModuleKeys?: string[];
+        originatingLeadId?: string | null;
+        ownerRepresentativeId?: string | null;
+        durationDays?: number | null;
+        maxExtensions?: number | null;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>('/platform/sales/trials', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesTrial(
+      accessToken: string,
+      id: string,
+      body: Record<string, unknown> & { expectedRowVersion: number },
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    extendSalesTrial(
+      accessToken: string,
+      id: string,
+      body: {
+        extensionDays: number;
+        reason: string;
+        expectedRowVersion: number;
+        exceptional?: boolean;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}/extend`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    cancelSalesTrial(
+      accessToken: string,
+      id: string,
+      body: { reason: string; expectedRowVersion: number },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}/cancel`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    /** Read-only: never mutates a protected SoR. */
+    getSalesTrialEntitlementPreview(
+      accessToken: string,
+      id: string,
+      targetPaidPlanVersionId: string,
+    ) {
+      const params = new URLSearchParams({ targetPaidPlanVersionId });
+      return request<SalesTrialEntitlementPreview>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/entitlement-preview?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    convertSalesTrial(
+      accessToken: string,
+      id: string,
+      body: {
+        targetPaidPlanVersionId: string;
+        expectedRowVersion: number;
+        dispositions?: SalesTrialGrantDispositionEntry[];
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrialConversionResult>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/convert`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    listSalesTrialExtensions(accessToken: string, id: string) {
+      return request<SalesTrialExtension[]>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/extensions`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesTrialHistory(accessToken: string, id: string) {
+      return request<SalesTrialHistory>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/history`,
         { method: 'GET', accessToken },
       );
     },

@@ -4,9 +4,9 @@
 **Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 24
 **Authority:** Steps 01–23 + U01 Accepted/Complete; Step 23 Sales Representatives; Catalog/Plans/Entitlements SoRs.
 
-Steps **01–23** + **U01**: Accepted/Complete.
-Step **24**: Accepted / Complete.
-Steps **25–29**: Not Authorized (no Trials, conversion, billing, commissions, payroll, PHI).
+Steps **01–24** + **U01**: Accepted/Complete.
+Step **25**: Accepted / Complete — see `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`.
+Steps **26–29**: Not Authorized (no commission/productivity, billing invoicing, PHI).
 
 ### Case C Attempt 2 (authoritative — narrow closure product fixes)
 

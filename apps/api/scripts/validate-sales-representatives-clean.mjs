@@ -44,10 +44,18 @@ const STEP24_LEAD_TABLES_ALLOWED = [
   'platform_sales_lead_notes',
 ];
 
-const STEP25_PLUS_FORBIDDEN = [
+const STEP25_TRIAL_TABLES_ALLOWED = [
+  'platform_sales_trials',
+  'platform_sales_trial_extension_history',
+  'platform_sales_trial_conversions',
+];
+
+const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
-  'platform_sales_trials',
+  'platform_sales_commissions',
+  'platform_sales_commission_snapshots',
+  'platform_sales_productivity_snapshots',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -164,7 +172,7 @@ async function main() {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (!rows[0]?.present) throw new Error(`Missing Step 23 table: ${table}`);
     }
-    for (const table of [...BILLING_FORBIDDEN, ...STEP25_PLUS_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
