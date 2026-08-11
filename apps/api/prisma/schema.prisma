@@ -2972,6 +2972,8 @@ model PlatformTenant {
   commercialConfigs     PlatformSubscriptionCommercialConfig[]
   lifecycleRequests     PlatformTenantLifecycleRequest[]
   salesOwnership        PlatformSalesCustomerOwnership?
+  /// Flexible Step 24 — optional commercial lead links (never auto-created).
+  salesLeads            PlatformSalesLead[]
 
   @@index([status])
   @@index([plan])
@@ -5894,6 +5896,8 @@ model PlatformSalesRepresentative {
   manager      PlatformSalesRepresentative? @relation("SalesRepManager", fields: [managerRepresentativeId], references: [id], onDelete: Restrict)
   reports      PlatformSalesRepresentative[] @relation("SalesRepManager")
   ownerships   PlatformSalesCustomerOwnership[]
+  /// Flexible Step 24 — leads owned by this representative.
+  ownedLeads   PlatformSalesLead[]
 
   @@index([status])
   @@index([managerRepresentativeId])
@@ -5958,4 +5962,126 @@ model PlatformSalesIdempotencyRecord {
   @@unique([actorId, operation, idempotencyKey])
   @@index([expiresAt])
   @@map("platform_sales_idempotency")
+}
+
+/// Flexible Step 24 — Leads and Sales Pipeline (Lead is the only CRM aggregate).
+/// Contract: docs/LEADS_AND_SALES_PIPELINE.md
+/// No opportunities table, no pipeline_stages table, no trials.
+enum PlatformSalesLeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DEMO_SCHEDULED
+  PROPOSAL
+  WON
+  LOST
+
+  @@map("platform_sales_lead_stage")
+}
+
+enum PlatformSalesLeadSource {
+  INBOUND
+  OUTBOUND
+  REFERRAL
+  PARTNER
+  EVENT
+  OTHER
+
+  @@map("platform_sales_lead_source")
+}
+
+enum PlatformSalesDemoStatus {
+  NONE
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+
+  @@map("platform_sales_demo_status")
+}
+
+model PlatformSalesLead {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  stage                  PlatformSalesLeadStage  @default(NEW)
+  source                 PlatformSalesLeadSource @default(OTHER)
+  ownerRepresentativeId  String?                 @db.Uuid
+  organizationName       String                  @db.VarChar(255)
+  contactName            String                  @db.VarChar(255)
+  contactEmail           String?                 @db.VarChar(320)
+  contactPhone           String?                 @db.VarChar(64)
+  contactJobTitle        String?                 @db.VarChar(160)
+  facilityTypeKey        String?                 @db.VarChar(128)
+  specialtyKeys          Json                    @default("[]")
+  desiredModuleKeys      Json                    @default("[]")
+  estimatedUsers         Int?
+  estimatedProviders     Int?
+  estimatedLocations     Int?
+  nextActionType         String?                 @db.VarChar(64)
+  nextActionDueAt        DateTime?
+  nextActionNote         String?                 @db.VarChar(500)
+  demoScheduledAt        DateTime?
+  demoTimezone           String?                 @db.VarChar(64)
+  demoStatus             PlatformSalesDemoStatus @default(NONE)
+  demoNote               String?                 @db.VarChar(500)
+  wonLostReason          String?                 @db.VarChar(1000)
+  linkedPlatformTenantId String?                 @db.Uuid
+  rowVersion             Int                     @default(1)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  ownerRepresentative PlatformSalesRepresentative? @relation(fields: [ownerRepresentativeId], references: [id], onDelete: Restrict)
+  linkedPlatformTenant PlatformTenant?             @relation(fields: [linkedPlatformTenantId], references: [id], onDelete: Restrict)
+  stageHistory        PlatformSalesLeadStageHistory[]
+  ownershipHistory    PlatformSalesLeadOwnershipHistory[]
+  notes               PlatformSalesLeadNote[]
+
+  @@index([ownerRepresentativeId])
+  @@index([stage])
+  @@index([createdAt])
+  @@index([createdAt, id])
+  @@index([source])
+  @@index([linkedPlatformTenantId])
+  @@map("platform_sales_leads")
+}
+
+model PlatformSalesLeadStageHistory {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  leadId              String                 @db.Uuid
+  fromStage           PlatformSalesLeadStage?
+  toStage             PlatformSalesLeadStage
+  actorPlatformUserId String                 @db.Uuid
+  reason              String?                @db.VarChar(1000)
+  createdAt           DateTime               @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_stage_history")
+}
+
+model PlatformSalesLeadOwnershipHistory {
+  id                        String   @id @default(uuid()) @db.Uuid
+  leadId                    String   @db.Uuid
+  fromOwnerRepresentativeId String?  @db.Uuid
+  toOwnerRepresentativeId   String?  @db.Uuid
+  actorPlatformUserId       String   @db.Uuid
+  reason                    String?  @db.VarChar(1000)
+  createdAt                 DateTime @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_ownership_history")
+}
+
+model PlatformSalesLeadNote {
+  id          String   @id @default(uuid()) @db.Uuid
+  leadId      String   @db.Uuid
+  body        String   @db.VarChar(2000)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_notes")
 }

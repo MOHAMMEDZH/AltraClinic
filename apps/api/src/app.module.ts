@@ -47,6 +47,7 @@ import { FeatureFlagsSettingsModule } from './modules/feature-flags-settings/fea
 import { PlatformAuditCenterModule } from './modules/platform-audit-center/platform-audit-center.module';
 import { PlatformOperationsConsoleModule } from './modules/platform-operations-console/platform-operations-console.module';
 import { PlatformSalesRepresentativesModule } from './modules/platform-sales-representatives/platform-sales-representatives.module';
+import { PlatformSalesLeadsModule } from './modules/platform-sales-leads/platform-sales-leads.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -113,6 +114,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     PlatformAuditCenterModule,
     PlatformOperationsConsoleModule,
     PlatformSalesRepresentativesModule,
+    PlatformSalesLeadsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },

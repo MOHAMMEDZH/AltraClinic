@@ -146,7 +146,8 @@ export class SalesRepresentativeAdminService {
       this.prisma.platformSalesRepresentative.findMany({
         where,
         include: { platformUser: { select: { email: true, displayName: true } } },
-        orderBy: { createdAt: 'desc' },
+        // Deterministic pagination: createdAt alone can collide; id is the immutable tie-breaker.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (input.page - 1) * input.pageSize,
         take: input.pageSize,
       }),

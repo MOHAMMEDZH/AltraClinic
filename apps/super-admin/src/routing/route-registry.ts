@@ -74,6 +74,9 @@ export type SuperAdminRouteId =
   | 'sales'
   | 'sales-representatives-new'
   | 'sales-representatives-detail'
+  | 'sales-leads'
+  | 'sales-leads-new'
+  | 'sales-leads-detail'
   | 'settings'
   | 'feature-flags-new'
   | 'feature-flags-detail'
@@ -787,6 +790,42 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
     breadcrumbParentId: 'sales',
     layout: 'app',
     step: 23,
+    status: 'available',
+  },
+  {
+    id: 'sales-leads',
+    path: '/sales/leads',
+    titleKey: 'routes.salesLeads.title',
+    descriptionKey: 'routes.salesLeads.description',
+    navLabelKey: 'nav.salesLeads',
+    navGroup: 'sales',
+    icon: 'pipeline',
+    policy: { type: 'permission', permission: 'sales-lead.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 24,
+    status: 'available',
+  },
+  {
+    id: 'sales-leads-new',
+    path: '/sales/leads/new',
+    titleKey: 'routes.salesLeadsNew.title',
+    policy: { type: 'permission', permission: 'sales-lead.manage' },
+    showInNav: false,
+    breadcrumbParentId: 'sales-leads',
+    layout: 'app',
+    step: 24,
+    status: 'available',
+  },
+  {
+    id: 'sales-leads-detail',
+    path: '/sales/leads/:id',
+    titleKey: 'routes.salesLeadsDetail.title',
+    policy: { type: 'permission', permission: 'sales-lead.view' },
+    showInNav: false,
+    breadcrumbParentId: 'sales-leads',
+    layout: 'app',
+    step: 24,
     status: 'available',
   },
   {

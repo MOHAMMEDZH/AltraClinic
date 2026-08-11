@@ -19,13 +19,14 @@
 
 | Identity | Status |
 |----------|--------|
-| Flexible Steps **01–20** | **Complete** |
+| Flexible Steps **01–23** | **Accepted / Complete** |
 | Flexible Step **20** — Feature Flags and Global Settings | **Accepted / Complete** — Model B hook containment + P01–P12; Case B one-pass green; see `FEATURE_FLAGS_AND_GLOBAL_SETTINGS.md` |
 | Flexible Step **21** — Audit Center | **Accepted / Complete** — Case C one-pass 2026-08-09 exit 0; A08 D11 audit delta = 1; evidence = 0; see `AUDIT_CENTER.md` |
 | Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test` |
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
-| Flexible Step **23** — Sales Representative Management | **Blocked pending new Case C** — Attempt 5 was green; narrow evidence gate (2026-08-11) fixed list N+1 role batching (executable change), invalidating Attempt 5 for acceptance. Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md`. Step 24+ unauthorized |
-| Flexible Steps **24–29** | **Not authorized** |
+| Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
+| Flexible Step **24** — Leads and Sales Pipeline | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **1** on frozen `booking_test` (`exitCode=0`; Step 24 suite 89/89). Contract: `docs/LEADS_AND_SALES_PIPELINE.md`. Step 25+ unauthorized |
+| Flexible Steps **25–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -1476,7 +1477,7 @@ Ops adapters only — no engine rewrite. Step 23 unauthorized.
 ## 52. Step 23 — Sales Representative Management
 
 ### Status
-**Blocked pending new Case C** (2026-08-11). Attempt 5 Case C was green but an executable list N+1 role-batching fix after Attempt 5 invalidates it for acceptance. Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md). Narrow evidence: F19=44441ms, F20=44244ms; open-handle orphans/locks=0 without `--forceExit`; query/index appendix recorded.
+**Accepted and complete** (2026-08-11). Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md).
 
 ### Objective
 Sales rep records linked 1:1 to Platform users; least privilege; D-19 commercial ownership start; suspension revokes sessions.
@@ -1488,10 +1489,10 @@ Sales rep records linked 1:1 to Platform users; least privilege; D-19 commercial
 Full CRM; payroll; Leads/Opportunities/Pipeline (Step 24); Trials (Step 25).
 
 ### Tests
-Peer isolation ST-33; matrices A/S/M/C/F/H per Step 23 contract; suspension old-token gate.
+Peer isolation ST-33; matrices A/S/M/C/F/H; ORD01–ORD05; EMAIL01–EMAIL08; QUERY01; suspension old-token gate.
 
 ### Final Case C
-Attempt **5** on frozen `booking_test` was green (`exitCode=0`, all counters 0) but is **invalidated for acceptance** after the 2026-08-11 narrow evidence gate fixed an executable list N+1 (batched `platformUserRole` load). New full Case C required. Narrow proofs retained: F19=44441ms, F20=44244ms; open-handle orphans/locks=0 without `--forceExit`.
+Attempt **6** on frozen `booking_test` (freeze `2026-08-11T07:30:56.215Z`); duration ~2730s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Attempts 1–5 historical/invalidated. List: `createdAt DESC, id DESC`; email SEARCH-A (`contains`/ILIKE); roles batched. Hygiene = 0.
 
 ### Rollback
 File/feature flag; preserve accounts/audits; never restore revoked sessions.
@@ -1507,22 +1508,28 @@ Sales reps only. Step 24 remains unauthorized.
 ## 53. Step 24 — Leads and Sales Pipeline
 
 ### Objective
-Leads, opportunities, pipeline stages; no marketing automation.
+Leads aggregate, stage progression, ownership, advisory Plan-fit; no marketing automation; no Trials.
+
+### Status
+**Accepted and complete** (2026-08-11). Authoritative Case C attempt **1** on frozen `booking_test` (`exitCode=0`, all counters 0; suite 89/89). Contract: `docs/LEADS_AND_SALES_PIPELINE.md`.
 
 ### Prerequisites
 23.
 
 ### Tests
-AuthZ; no PHI.
+V/R/PF/WON + concurrency + failure injection + HTTP; clean/upgrade validators.
+
+### Final Case C
+Attempt **1**: freeze `2026-08-11T09:04:05.060Z`; duration ~2792s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
 
 ### Rollback
-Feature flag.
+Feature flag / additive schema only.
 
 ### Blocks
 25.
 
 ### Commit Boundary
-Leads/pipeline only.
+Leads/pipeline only. Steps 25–29 remain Not Authorized.
 
 ---
 

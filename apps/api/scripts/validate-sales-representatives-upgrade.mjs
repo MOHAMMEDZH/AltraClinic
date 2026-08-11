@@ -3,7 +3,8 @@
  * Flexible Step 23 — Sales Representative Management upgrade validator.
  * Proves: full migrate deploy chain is idempotent with Step 23 schema present;
  * Catalog 68/136/68/13 preserved; no invented sales audits/records from migration;
- * no billing/Step 24+ (Leads/Opportunities/Pipeline/Trials) schema.
+ * no billing/Step 25+ (trials/opportunities/pipeline_stages) schema.
+ * Step 24 lead tables are allowed.
  */
 import { spawnSync } from 'child_process';
 import crypto from 'crypto';
@@ -30,8 +31,14 @@ const STEP23_ALLOWED = [
   'platform_sales_idempotency',
 ];
 
-const STEP24_PLUS_FORBIDDEN = [
+const STEP24_LEAD_TABLES_ALLOWED = [
   'platform_sales_leads',
+  'platform_sales_lead_stage_history',
+  'platform_sales_lead_ownership_history',
+  'platform_sales_lead_notes',
+];
+
+const STEP25_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_trials',
@@ -167,7 +174,7 @@ async function main() {
     );
     expect('sales idempotency records preserved (no auto invent)', after.salesIdempotency, before.salesIdempotency);
 
-    for (const table of [...BILLING_FORBIDDEN, ...STEP24_PLUS_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP25_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );

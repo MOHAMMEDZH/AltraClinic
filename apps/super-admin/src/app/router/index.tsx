@@ -80,6 +80,9 @@ import { PlatformRolesPage } from '../../pages/PlatformRolesPage';
 import { SalesRepresentativesListPage } from '../../pages/sales/SalesRepresentativesListPage';
 import { SalesRepresentativeCreatePage } from '../../pages/sales/SalesRepresentativeCreatePage';
 import { SalesRepresentativeDetailPage } from '../../pages/sales/SalesRepresentativeDetailPage';
+import { SalesLeadsListPage } from '../../pages/sales/leads/SalesLeadsListPage';
+import { SalesLeadCreatePage } from '../../pages/sales/leads/SalesLeadCreatePage';
+import { SalesLeadDetailPage } from '../../pages/sales/leads/SalesLeadDetailPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -640,6 +643,30 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('sales').policy}>
               <SalesRepresentativesListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads').policy}>
+              <SalesLeadsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads-new').policy}>
+              <SalesLeadCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads-detail').policy}>
+              <SalesLeadDetailPage />
             </RequirePermissionPolicy>
           }
         />

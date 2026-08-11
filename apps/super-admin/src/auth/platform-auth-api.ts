@@ -374,6 +374,68 @@ export interface SalesCustomerOwnershipLookup {
   rowVersion?: number;
 }
 
+/** Flexible Step 24 — Sales Lead. */
+export interface SalesLead {
+  id: string;
+  stage: string;
+  source: string;
+  ownerRepresentativeId: string | null;
+  organizationName: string;
+  contactName: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactJobTitle: string | null;
+  facilityTypeKey: string | null;
+  specialtyKeys: string[];
+  desiredModuleKeys: string[];
+  estimatedUsers: number | null;
+  estimatedProviders: number | null;
+  estimatedLocations: number | null;
+  nextActionType: string | null;
+  nextActionDueAt: string | null;
+  nextActionNote: string | null;
+  demoScheduledAt: string | null;
+  demoTimezone: string | null;
+  demoStatus: string;
+  demoNote: string | null;
+  wonLostReason: string | null;
+  linkedPlatformTenantId: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesLeadsListResponse {
+  items: SalesLead[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesLeadNote {
+  id: string;
+  leadId: string;
+  body: string;
+  createdById: string;
+  createdAt: string;
+}
+
+export interface SalesLeadPlanFit {
+  leadId: string;
+  valid: boolean;
+  violations: Array<{ reasonCode: string; message: string }>;
+  warnings: Array<{ reasonCode: string; message: string }>;
+  applicableRuleIds: string[];
+  candidatePublishedPlanVersions: Array<{ id: string; planKey: string; version: number }>;
+  disclaimer: {
+    advisoryOnly: true;
+    notEntitlementDecision: true;
+    notProvisioningDecision: true;
+    notRuntimeLicenseDecision: true;
+    doesNotMutateCommercialSoR: true;
+  };
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -2725,6 +2787,157 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
         { method: 'DELETE', accessToken, body: JSON.stringify(body) },
       );
+    },
+
+    /** Flexible Step 24 — Leads and Sales Pipeline. */
+    listSalesLeads(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; stage?: string; source?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesLeadsListResponse>(`/platform/sales/leads?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    getSalesLead(accessToken: string, id: string) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesLead(
+      accessToken: string,
+      body: {
+        organizationName: string;
+        contactName: string;
+        contactEmail?: string;
+        contactPhone?: string;
+        contactJobTitle?: string;
+        source?: string;
+        facilityTypeKey?: string;
+        specialtyKeys?: string[];
+        desiredModuleKeys?: string[];
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>('/platform/sales/leads', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesLead(
+      accessToken: string,
+      id: string,
+      body: Record<string, unknown> & { expectedRowVersion: number },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    changeSalesLeadStage(
+      accessToken: string,
+      id: string,
+      body: { stage: string; expectedRowVersion: number; reason?: string; wonLostReason?: string },
+      idempotencyKey?: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/stage`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+      });
+    },
+
+    assignSalesLeadOwner(
+      accessToken: string,
+      id: string,
+      body: { ownerRepresentativeId: string | null; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/owner`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    listSalesLeadNotes(accessToken: string, id: string) {
+      return request<SalesLeadNote[]>(`/platform/sales/leads/${encodeURIComponent(id)}/notes`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    addSalesLeadNote(accessToken: string, id: string, body: { body: string }) {
+      return request<SalesLeadNote>(`/platform/sales/leads/${encodeURIComponent(id)}/notes`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateSalesLeadDemo(
+      accessToken: string,
+      id: string,
+      body: {
+        demoStatus: string;
+        demoScheduledAt?: string | null;
+        demoTimezone?: string | null;
+        demoNote?: string | null;
+        expectedRowVersion: number;
+      },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/demo`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    markSalesLeadWon(
+      accessToken: string,
+      id: string,
+      body: { expectedRowVersion: number; wonLostReason: string },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/won`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    markSalesLeadLost(
+      accessToken: string,
+      id: string,
+      body: { expectedRowVersion: number; wonLostReason: string },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/lost`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    getSalesLeadPlanFit(accessToken: string, id: string) {
+      return request<SalesLeadPlanFit>(`/platform/sales/leads/${encodeURIComponent(id)}/plan-fit`, {
+        method: 'GET',
+        accessToken,
+      });
     },
   };
 }

@@ -2,7 +2,7 @@
 /**
  * Flexible Step 23 — Sales Representative Management clean migration validator.
  * Fresh DB: migrate deploy → Catalog 68/136/68/13 → Step 23 tables present & empty →
- * no billing → no Step 24+ (Leads/Opportunities/Pipeline/Trials) schema.
+ * no billing → Step 24 lead tables MAY exist (allowed); forbid trials/opportunities/pipeline_stages/Step 25+.
  *
  * Bounded completion: overall deadline + per-command timeouts + lock_timeout.
  * Unique database name per run so DROP DATABASE WITH (FORCE) is never required.
@@ -37,8 +37,14 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-const STEP24_PLUS_FORBIDDEN = [
+const STEP24_LEAD_TABLES_ALLOWED = [
   'platform_sales_leads',
+  'platform_sales_lead_stage_history',
+  'platform_sales_lead_ownership_history',
+  'platform_sales_lead_notes',
+];
+
+const STEP25_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_trials',
@@ -158,9 +164,13 @@ async function main() {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (!rows[0]?.present) throw new Error(`Missing Step 23 table: ${table}`);
     }
-    for (const table of [...BILLING_FORBIDDEN, ...STEP24_PLUS_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP25_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
+    }
+    // Step 24 lead tables are allowed when migration chain includes Step 24; presence is optional for Step 23 validator.
+    for (const table of STEP24_LEAD_TABLES_ALLOWED) {
+      await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
     }
 
     const catalogItems = await prisma.healthcareCatalogItem.count();
@@ -216,7 +226,7 @@ async function main() {
     expect('sales customer ownership history (no auto-created history)', ownershipHistory, 0);
     expect('sales idempotency records (no auto-created claims)', salesIdempotency, 0);
 
-    console.log('OK no billing/Step 24+ schema tables');
+    console.log('OK no billing/Step 25+ (trials/opportunities) schema tables');
     console.log('OK Step 23 sales representative schema present and empty');
     log(`Step 23 clean migration validator passed (db=${cleanDb}).`);
   } finally {

@@ -65,7 +65,11 @@
     "test:sales-representatives-db": "node scripts/run-sales-representatives-db.mjs",
     "test:sales-representatives-clean-migration": "node scripts/validate-sales-representatives-clean.mjs",
     "test:sales-representatives-upgrade-migration": "node scripts/validate-sales-representatives-upgrade.mjs",
-    "test:sales-representatives-final-onepass": "node scripts/run-step23-final-onepass.mjs"
+    "test:sales-representatives-final-onepass": "node scripts/run-step23-final-onepass.mjs",
+    "test:sales-leads-db": "node scripts/run-sales-leads-db.mjs",
+    "test:sales-leads-clean-migration": "node scripts/validate-sales-leads-clean.mjs",
+    "test:sales-leads-upgrade-migration": "node scripts/validate-sales-leads-upgrade.mjs",
+    "test:sales-leads-final-onepass": "node scripts/run-step24-final-onepass.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
