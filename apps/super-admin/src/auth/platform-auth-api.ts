@@ -436,6 +436,26 @@ export interface SalesLeadPlanFit {
   };
 }
 
+export interface SalesLeadStageHistoryEntry {
+  id: string;
+  leadId: string;
+  fromStage: string | null;
+  toStage: string;
+  actorPlatformUserId: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface SalesLeadOwnershipHistoryEntry {
+  id: string;
+  leadId: string;
+  fromOwnerRepresentativeId: string | null;
+  toOwnerRepresentativeId: string | null;
+  actorPlatformUserId: string;
+  reason: string | null;
+  createdAt: string;
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -2823,6 +2843,9 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         facilityTypeKey?: string;
         specialtyKeys?: string[];
         desiredModuleKeys?: string[];
+        estimatedUsers?: number;
+        estimatedProviders?: number;
+        estimatedLocations?: number;
       },
       idempotencyKey: string,
     ) {
@@ -2938,6 +2961,20 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         method: 'GET',
         accessToken,
       });
+    },
+
+    getSalesLeadStageHistory(accessToken: string, id: string) {
+      return request<SalesLeadStageHistoryEntry[]>(
+        `/platform/sales/leads/${encodeURIComponent(id)}/stage-history`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesLeadOwnershipHistory(accessToken: string, id: string) {
+      return request<SalesLeadOwnershipHistoryEntry[]>(
+        `/platform/sales/leads/${encodeURIComponent(id)}/ownership-history`,
+        { method: 'GET', accessToken },
+      );
     },
   };
 }

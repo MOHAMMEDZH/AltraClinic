@@ -25,7 +25,7 @@
 | Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test` |
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
 | Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
-| Flexible Step **24** — Leads and Sales Pipeline | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **1** on frozen `booking_test` (`exitCode=0`; Step 24 suite 89/89). Contract: `docs/LEADS_AND_SALES_PIPELINE.md`. Step 25+ unauthorized |
+| Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md`. Step 25+ unauthorized |
 | Flexible Steps **25–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
@@ -1511,16 +1511,16 @@ Sales reps only. Step 24 remains unauthorized.
 Leads aggregate, stage progression, ownership, advisory Plan-fit; no marketing automation; no Trials.
 
 ### Status
-**Accepted and complete** (2026-08-11). Authoritative Case C attempt **1** on frozen `booking_test` (`exitCode=0`, all counters 0; suite 89/89). Contract: `docs/LEADS_AND_SALES_PIPELINE.md`.
+**Accepted / Complete.** Narrow C11–C24 / F13–F30 / H19–H50 / UI01–UI55 / P01–P12 / query-index closure passed. Contract: `docs/LEADS_AND_SALES_PIPELINE.md`.
 
 ### Prerequisites
 23.
 
 ### Tests
-V/R/PF/WON + concurrency + failure injection + HTTP; clean/upgrade validators.
+V/R/PF/WON + C01–C24 + F01–F30 + H01–H50 + P01–P12 + query/index + UI01–UI55; clean/upgrade validators.
 
 ### Final Case C
-Attempt **1**: freeze `2026-08-11T09:04:05.060Z`; duration ~2792s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
+Attempt **1** INVALIDATED (product UI + Cache-Control during closure). Attempt **2** authoritative: freeze `2026-08-11T10:29:23.970Z`; duration ~2744s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Step 24 DB **174/174**. Hygiene = 0.
 
 ### Rollback
 Feature flag / additive schema only.

@@ -19,7 +19,7 @@ process.env.INTEGRATION_DATABASE_URL =
   'postgresql://booking:booking_test@localhost:5433/booking_test?schema=public';
 
 console.log(
-  'Step 24 runner: visibility + stage/ownership + plan-fit safety + won safety + HTTP + concurrency + failure injection',
+  'Step 24 runner: visibility + stage/ownership + plan-fit safety + won safety + HTTP (H01–H18 + H19–H50) + concurrency (C01–C10 + C11–C24) + failure injection (F01–F12 + F13–F30) + privacy P01–P12 + query/index',
 );
 
 const jestCandidates = [

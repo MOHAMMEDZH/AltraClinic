@@ -1,27 +1,31 @@
 # Leads and Sales Pipeline (Flexible Step 24)
 
-**Status:** Accepted / Complete  
-**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 24  
+**Status:** Accepted / Complete
+**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 24
 **Authority:** Steps 01–23 + U01 Accepted/Complete; Step 23 Sales Representatives; Catalog/Plans/Entitlements SoRs.
 
-Steps **01–23** + **U01**: Accepted/Complete.  
-Step **24**: **Accepted and complete** (authoritative Case C attempt **1**, 2026-08-11).  
+Steps **01–23** + **U01**: Accepted/Complete.
+Step **24**: Accepted / Complete.
 Steps **25–29**: Not Authorized (no Trials, conversion, billing, commissions, payroll, PHI).
 
-### Final Case C (authoritative Attempt 1)
+### Case C Attempt 2 (authoritative — narrow closure product fixes)
+
+Attempt 1 executable green was **INVALIDATED** when product UI + `Cache-Control` headers changed during narrow closure. Authoritative sequence is Attempt **2**.
 
 | Field | Value |
 |-------|--------|
-| Attempt | **1** |
+| Attempt | **2** |
 | Frozen DB | `booking_test` @ `localhost:5433` |
-| Freeze | `2026-08-11T09:04:05.060Z` |
-| Window | `2026-08-11T09:04:04.682Z` → `2026-08-11T09:50:36.384Z` (~46.5 min) |
+| Freeze | `2026-08-11T10:29:23.970Z` |
+| Window | `2026-08-11T10:29:23.579Z` → `2026-08-11T11:15:07.374Z` (~45.7 min) |
 | Runner | `npm run test:sales-leads-final-onepass` |
 | Counters | `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0` |
-| Step 24 DB suite | **89/89** |
-| Step 23 regression | **128/128** |
-| Catalog | `68 / 136 / 68 / 13` |
+| Step 23 DB | **128/128** |
+| Step 24 DB suite | **174/174** (includes C11–C24, F13–F30, H19–H50, P01–P12, query/index) |
+| UI01–UI55 | **55/55** (`sales-leads-ui.spec.tsx`) |
+| Catalog | Items **68** / Translations **136** / Aliases **68** / Rules **13** |
 | Hygiene | remaining prohibited Step 24 artifacts = **0** |
+| Acceptance | **Accepted** after narrow C/F/H/UI/P/query closure |
 
 ---
 

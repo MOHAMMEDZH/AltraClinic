@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Headers,
   HttpException,
   Param,
@@ -56,6 +57,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Get()
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   list(
     @CurrentUser() user: JwtClaimsVO,
@@ -75,6 +77,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Post()
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   create(
     @CurrentUser() user: JwtClaimsVO,
@@ -88,18 +91,21 @@ export class PlatformSalesLeadsController {
   }
 
   @Get(':id')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   detail(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     return this.wrap(async () => this.leads.getById(user, await this.perms(user), id));
   }
 
   @Patch(':id')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   update(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string, @Body() body: UpdateSalesLeadDto) {
     return this.wrap(async () => this.leads.update(user, await this.perms(user), id, body));
   }
 
   @Put(':id/owner')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.assign)
   assignOwner(
     @CurrentUser() user: JwtClaimsVO,
@@ -110,6 +116,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Post(':id/stage')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   changeStage(
     @CurrentUser() user: JwtClaimsVO,
@@ -123,30 +130,35 @@ export class PlatformSalesLeadsController {
   }
 
   @Get(':id/stage-history')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   stageHistory(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     return this.wrap(async () => this.leads.listStageHistory(user, await this.perms(user), id));
   }
 
   @Get(':id/ownership-history')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   ownershipHistory(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     return this.wrap(async () => this.leads.listOwnershipHistory(user, await this.perms(user), id));
   }
 
   @Post(':id/notes')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   addNote(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string, @Body() body: AddLeadNoteDto) {
     return this.wrap(async () => this.leads.addNote(user, await this.perms(user), id, body));
   }
 
   @Get(':id/notes')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   listNotes(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     return this.wrap(async () => this.leads.listNotes(user, await this.perms(user), id));
   }
 
   @Put(':id/demo')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   updateDemo(
     @CurrentUser() user: JwtClaimsVO,
@@ -157,6 +169,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Post(':id/won')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   markWon(
     @CurrentUser() user: JwtClaimsVO,
@@ -170,6 +183,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Post(':id/lost')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.manage)
   markLost(
     @CurrentUser() user: JwtClaimsVO,
@@ -183,6 +197,7 @@ export class PlatformSalesLeadsController {
   }
 
   @Get(':id/plan-fit')
+  @Header('Cache-Control', 'private, no-store')
   @RequirePlatformPermission(SALES_LEAD_PERMISSIONS.view)
   planFit(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     return this.wrap(async () => this.leads.getPlanFit(user, await this.perms(user), id));

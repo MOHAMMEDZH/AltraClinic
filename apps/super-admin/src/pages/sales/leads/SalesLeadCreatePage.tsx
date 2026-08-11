@@ -6,6 +6,20 @@ import { PlatformAuthApiError } from '../../../auth/platform-auth-api';
 import { PageLayout } from '../../../layout/PageLayout';
 import { Alert } from '../../../ui';
 
+function parseKeyList(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function parseOptionalInt(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? Math.trunc(n) : undefined;
+}
+
 /**
  * Flexible Step 24 — create sales lead.
  * No Trial / entitlement CTAs.
@@ -19,6 +33,11 @@ export function SalesLeadCreatePage() {
   const [contactEmail, setContactEmail] = useState('');
   const [source, setSource] = useState('INBOUND');
   const [facilityTypeKey, setFacilityTypeKey] = useState('');
+  const [specialtyKeysRaw, setSpecialtyKeysRaw] = useState('');
+  const [desiredModuleKeysRaw, setDesiredModuleKeysRaw] = useState('');
+  const [estimatedUsers, setEstimatedUsers] = useState('');
+  const [estimatedProviders, setEstimatedProviders] = useState('');
+  const [estimatedLocations, setEstimatedLocations] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -27,6 +46,11 @@ export function SalesLeadCreatePage() {
     setSending(true);
     setError(null);
     try {
+      const specialtyKeys = parseKeyList(specialtyKeysRaw);
+      const desiredModuleKeys = parseKeyList(desiredModuleKeysRaw);
+      const users = parseOptionalInt(estimatedUsers);
+      const providers = parseOptionalInt(estimatedProviders);
+      const locations = parseOptionalInt(estimatedLocations);
       const created = await withAccessToken((token) =>
         client.createSalesLead(
           token,
@@ -36,6 +60,11 @@ export function SalesLeadCreatePage() {
             contactEmail: contactEmail || undefined,
             source,
             facilityTypeKey: facilityTypeKey || undefined,
+            ...(specialtyKeys.length ? { specialtyKeys } : {}),
+            ...(desiredModuleKeys.length ? { desiredModuleKeys } : {}),
+            ...(users !== undefined ? { estimatedUsers: users } : {}),
+            ...(providers !== undefined ? { estimatedProviders: providers } : {}),
+            ...(locations !== undefined ? { estimatedLocations: locations } : {}),
           },
           crypto.randomUUID(),
         ),
@@ -87,6 +116,49 @@ export function SalesLeadCreatePage() {
         <label className="sa-field">
           {t('pages.salesLeads.facilityTypeLabel', 'Facility type key')}
           <input value={facilityTypeKey} onChange={(e) => setFacilityTypeKey(e.target.value)} />
+        </label>
+        <label className="sa-field">
+          {t('pages.salesLeads.specialtyKeysLabel', 'Specialty keys (comma-separated)')}
+          <input
+            value={specialtyKeysRaw}
+            onChange={(e) => setSpecialtyKeysRaw(e.target.value)}
+            placeholder="specialty.general, specialty.dental"
+          />
+        </label>
+        <label className="sa-field">
+          {t('pages.salesLeads.desiredModuleKeysLabel', 'Desired module keys (comma-separated)')}
+          <input
+            value={desiredModuleKeysRaw}
+            onChange={(e) => setDesiredModuleKeysRaw(e.target.value)}
+            placeholder="module.scheduling, module.billing"
+          />
+        </label>
+        <label className="sa-field">
+          {t('pages.salesLeads.estimatedUsersLabel', 'Estimated users')}
+          <input
+            type="number"
+            min={0}
+            value={estimatedUsers}
+            onChange={(e) => setEstimatedUsers(e.target.value)}
+          />
+        </label>
+        <label className="sa-field">
+          {t('pages.salesLeads.estimatedProvidersLabel', 'Estimated providers')}
+          <input
+            type="number"
+            min={0}
+            value={estimatedProviders}
+            onChange={(e) => setEstimatedProviders(e.target.value)}
+          />
+        </label>
+        <label className="sa-field">
+          {t('pages.salesLeads.estimatedLocationsLabel', 'Estimated locations')}
+          <input
+            type="number"
+            min={0}
+            value={estimatedLocations}
+            onChange={(e) => setEstimatedLocations(e.target.value)}
+          />
         </label>
         <div className="sa-form-actions">
           <button className="sa-button sa-button-primary" type="submit" disabled={sending}>
