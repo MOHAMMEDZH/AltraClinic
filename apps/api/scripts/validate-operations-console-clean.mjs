@@ -55,11 +55,12 @@ const STEP25_TRIAL_TABLES_ALLOWED = [
   'platform_sales_trial_conversions',
 ];
 
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
 const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_productivity_snapshots',
 ];
 
@@ -195,11 +196,15 @@ async function main() {
       if (!rows[0]?.present) throw new Error(`Missing Step 22 table: ${table}`);
     }
 
-    for (const table of STEP23_ALLOWED) {
+    for (const table of [
+      ...STEP23_ALLOWED,
+      ...STEP25_TRIAL_TABLES_ALLOWED,
+      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+    ]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );
-      if (!rows[0]?.present) throw new Error(`Missing Step 23 table: ${table}`);
+      if (!rows[0]?.present) throw new Error(`Missing Step 23/25/26 table: ${table}`);
     }
 
     for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {

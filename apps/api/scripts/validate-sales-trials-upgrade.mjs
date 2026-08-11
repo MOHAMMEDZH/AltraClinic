@@ -29,11 +29,12 @@ const STEP25_ALLOWED = [
   'platform_sales_trial_conversions',
 ];
 
-const STEP26_FORBIDDEN = [
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
+const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_commission_rules',
   'platform_sales_productivity_snapshots',
 ];
@@ -198,20 +199,20 @@ async function main() {
 
     for (const table of [
       ...BILLING_FORBIDDEN,
-      ...STEP26_FORBIDDEN,
+      ...STEP26_PLUS_FORBIDDEN,
       ...PARALLEL_ENGINE_FORBIDDEN,
     ]) {
       if (await tablePresent(prisma, table)) {
         throw new Error(`Forbidden table present: ${table}`);
       }
     }
-    for (const table of STEP25_ALLOWED) {
+    for (const table of [...STEP25_ALLOWED, ...STEP26_COMMISSION_SNAPSHOT_ALLOWED]) {
       if (!(await tablePresent(prisma, table))) {
-        throw new Error(`Missing Step 25 table after upgrade: ${table}`);
+        throw new Error(`Missing Step 25/26 table after upgrade: ${table}`);
       }
     }
 
-    console.log('OK no billing / Step 26 / parallel trial entitlement engine schema');
+    console.log('OK no billing / Step 26+ payroll-pipeline / parallel trial entitlement engine schema');
     console.log('OK Step 25 trial schema present and stable across re-deploy');
     console.log('Step 25 upgrade migration validator passed.');
   } finally {

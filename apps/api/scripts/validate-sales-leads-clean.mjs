@@ -51,11 +51,13 @@ const STEP25_ALLOWED = [
   'platform_sales_trial_conversions',
 ];
 
+/** Step 26 commission snapshot is allowed once that migration ships; still forbid invent surfaces. */
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
 const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_productivity_snapshots',
 ];
 
@@ -236,7 +238,7 @@ async function main() {
     // Step 25 tables may exist, but a migration must never invent trial rows.
     const trialRows = await prisma.platformSalesTrial.count().catch(() => 0);
     expect('sales trials (no auto-created trials)', trialRows, 0);
-    for (const table of STEP25_ALLOWED) {
+    for (const table of [...STEP25_ALLOWED, ...STEP26_COMMISSION_SNAPSHOT_ALLOWED]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );

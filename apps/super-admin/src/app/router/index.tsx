@@ -86,6 +86,10 @@ import { SalesLeadDetailPage } from '../../pages/sales/leads/SalesLeadDetailPage
 import { SalesTrialsListPage } from '../../pages/sales/trials/SalesTrialsListPage';
 import { SalesTrialCreatePage } from '../../pages/sales/trials/SalesTrialCreatePage';
 import { SalesTrialDetailPage } from '../../pages/sales/trials/SalesTrialDetailPage';
+import { SalesProductivitySelfPage } from '../../pages/sales/productivity/SalesProductivitySelfPage';
+import { SalesProductivityTeamPage } from '../../pages/sales/productivity/SalesProductivityTeamPage';
+import { SalesCommissionSnapshotsListPage } from '../../pages/sales/productivity/SalesCommissionSnapshotsListPage';
+import { SalesCommissionSnapshotDetailPage } from '../../pages/sales/productivity/SalesCommissionSnapshotDetailPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -694,6 +698,40 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('sales-trials-detail').policy}>
               <SalesTrialDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-productivity-team')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-productivity-team').policy}>
+              <SalesProductivityTeamPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-productivity')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-productivity').policy}>
+              <SalesProductivitySelfPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-commission-snapshots')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-commission-snapshots').policy}>
+              <SalesCommissionSnapshotsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-commission-snapshots-detail')}
+          element={
+            <RequirePermissionPolicy
+              policy={requireRoute('sales-commission-snapshots-detail').policy}
+            >
+              <SalesCommissionSnapshotDetailPage />
             </RequirePermissionPolicy>
           }
         />

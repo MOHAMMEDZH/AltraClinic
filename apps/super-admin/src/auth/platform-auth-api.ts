@@ -609,6 +609,144 @@ export interface SalesTrialHistory {
   conversion: SalesTrialConversion | null;
 }
 
+/** Flexible Step 26 — Sales Productivity + Commission Snapshot. */
+export type SalesMetricCompleteness =
+  | 'COMPLETE'
+  | 'PARTIAL'
+  | 'UNAVAILABLE'
+  | 'NOT_APPLICABLE';
+
+export type SalesMetricKey =
+  | 'leads_created'
+  | 'activities'
+  | 'demos_scheduled'
+  | 'demos_completed'
+  | 'trials_created'
+  | 'won'
+  | 'lost'
+  | 'paid_conversions'
+  | 'lead_to_won_rate'
+  | 'trial_to_paid_rate'
+  | 'time_to_convert_days'
+  | 'active_customers'
+  | 'cancellations'
+  | 'plan_version_mix'
+  | 'addon_sales'
+  | 'target_progress'
+  | 'converted_customers'
+  | 'cancellation_attribution'
+  | 'period_source_completeness'
+  | 'reporting_completeness';
+
+export interface SalesMetricValue {
+  id: string;
+  key: SalesMetricKey;
+  value: number | null;
+  completeness: SalesMetricCompleteness;
+  numerator?: number | null;
+  denominator?: number | null;
+  explanation?: string | null;
+  rankingEligible: boolean;
+}
+
+export interface SalesPlanVersionAttribution {
+  planVersionId: string;
+  count: number;
+}
+
+export interface SalesAddOnAttribution {
+  addOnVersionId: string;
+  count: number;
+  basis: 'assignment_created' | 'conversion_disposition_migrate' | 'conversion_disposition_retain';
+}
+
+export interface SalesCancellationAttribution {
+  count: number;
+  basis: 'ownership_at_cancel_history' | 'current_ownership_partial';
+  completeness: SalesMetricCompleteness;
+}
+
+export interface SalesCompletenessBundle {
+  metrics: Partial<Record<SalesMetricKey, SalesMetricCompleteness>>;
+  period_source_completeness: SalesMetricCompleteness;
+  reporting_completeness: SalesMetricCompleteness;
+  notes?: string[];
+}
+
+export interface SalesProductivityMetricsBundle {
+  representativeId: string;
+  periodKey: string;
+  periodTimezone: string;
+  periodStart: string;
+  periodEnd: string;
+  sourceCutoffAt: string;
+  metrics: SalesMetricValue[];
+  metricsByKey: Partial<Record<SalesMetricKey, SalesMetricValue>>;
+  planVersionAttribution: SalesPlanVersionAttribution[];
+  addOnAttribution: SalesAddOnAttribution[];
+  cancellationAttribution: SalesCancellationAttribution;
+  completeness: SalesCompletenessBundle;
+}
+
+export interface SalesProductivityTeamResponse {
+  items: SalesProductivityMetricsBundle[];
+  periodKey: string;
+}
+
+export interface SalesProductivityExportResult {
+  body: string;
+  filename: string;
+  contentType: string;
+}
+
+export type SalesCommissionSnapshotStatus = 'DRAFT' | 'FINALIZED' | 'SUPERSEDED';
+export type SalesCommissionReviewStatus = 'NONE' | 'IN_REVIEW' | 'REVIEWED' | 'REJECTED';
+export type SalesCommissionPaidStatus = 'UNPAID' | 'PAID';
+export type SalesCommissionCalculationStatus = 'UNCONFIGURED';
+
+export interface SalesCommissionSnapshot {
+  id: string;
+  representativeId: string;
+  periodKey: string;
+  periodTimezone: string;
+  periodStart: string;
+  periodEnd: string;
+  sourceCutoffAt: string;
+  formulaVersion: string;
+  calculationStatus: SalesCommissionCalculationStatus;
+  ruleReference: string | null;
+  computedAmount: string | null;
+  metrics: Record<string, unknown>;
+  planVersionAttribution: SalesPlanVersionAttribution[];
+  addOnAttribution: SalesAddOnAttribution[];
+  completeness: SalesCompletenessBundle;
+  reconciliation: Record<string, unknown> | null;
+  reviewStatus: SalesCommissionReviewStatus;
+  paidStatus: SalesCommissionPaidStatus;
+  paidReason: string | null;
+  paidReference: string | null;
+  paidAt: string | null;
+  paidByPlatformUserId: string | null;
+  status: SalesCommissionSnapshotStatus;
+  supersedesSnapshotId: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  finalizedAt: string | null;
+}
+
+export interface SalesCommissionSnapshotsListResponse {
+  items: SalesCommissionSnapshot[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesCommissionSnapshotMutationResult extends SalesCommissionSnapshot {
+  replayed: boolean;
+  correlationId: string;
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -670,6 +808,49 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
     }
 
     return data as T;
+  }
+
+  async function requestText(
+    path: string,
+    init: RequestInit & { accessToken?: string | null; csrf?: boolean } = {},
+  ): Promise<SalesProductivityExportResult> {
+    const headers = new Headers(init.headers);
+    headers.set('Accept', 'text/csv, text/plain, */*');
+    if (init.accessToken) {
+      headers.set('Authorization', `Bearer ${init.accessToken}`);
+    }
+    if (init.csrf) {
+      const csrf = readCsrfCookie();
+      if (csrf) headers.set('X-Platform-CSRF', csrf);
+    }
+
+    const response = await fetch(`${base}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include',
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+      let message = 'Request failed.';
+      let code: string | undefined;
+      try {
+        const payload = JSON.parse(text) as Record<string, unknown>;
+        if (typeof payload.message === 'string') message = payload.message;
+        if (typeof payload.code === 'string') code = payload.code;
+      } catch {
+        if (text) message = text;
+      }
+      throw new PlatformAuthApiError(message, response.status, code);
+    }
+
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const match = /filename="([^"]+)"/i.exec(disposition);
+    return {
+      body: text,
+      filename: match?.[1] ?? 'sales-productivity-export.csv',
+      contentType: response.headers.get('Content-Type') ?? 'text/csv; charset=utf-8',
+    };
   }
 
   return {
@@ -3267,6 +3448,134 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
       return request<SalesTrialHistory>(
         `/platform/sales/trials/${encodeURIComponent(id)}/history`,
         { method: 'GET', accessToken },
+      );
+    },
+
+    /** Flexible Step 26 — Sales Productivity + Commission Snapshot. */
+    getSalesProductivitySelf(accessToken: string, query: { periodKey: string }) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      return request<SalesProductivityMetricsBundle>(
+        `/platform/sales/productivity/self?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesProductivityTeam(
+      accessToken: string,
+      query: { periodKey: string; representativeId?: string },
+    ) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      if (query.representativeId) params.set('representativeId', query.representativeId);
+      return request<SalesProductivityTeamResponse>(
+        `/platform/sales/productivity/team?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    exportSalesProductivity(
+      accessToken: string,
+      query: { periodKey: string; representativeId?: string },
+    ) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      if (query.representativeId) params.set('representativeId', query.representativeId);
+      return requestText(`/platform/sales/productivity/export?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    listSalesCommissionSnapshots(
+      accessToken: string,
+      query: {
+        page?: number;
+        pageSize?: number;
+        periodKey?: string;
+        representativeId?: string;
+        status?: string;
+      } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesCommissionSnapshotsListResponse>(
+        `/platform/sales/commission-snapshots?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesCommissionSnapshot(accessToken: string, id: string) {
+      return request<SalesCommissionSnapshot>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    generateSalesCommissionSnapshot(
+      accessToken: string,
+      body: {
+        representativeId: string;
+        periodKey: string;
+        periodTimezone?: string;
+        finalize?: boolean;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        '/platform/sales/commission-snapshots/generate',
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    reviewSalesCommissionSnapshot(
+      accessToken: string,
+      id: string,
+      body: {
+        reviewStatus: SalesCommissionReviewStatus;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}/review`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    markSalesCommissionSnapshotPaid(
+      accessToken: string,
+      id: string,
+      body: {
+        paidStatus: SalesCommissionPaidStatus;
+        expectedRowVersion: number;
+        paidReason?: string;
+        paidReference?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}/mark-paid`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
       );
     },
   };

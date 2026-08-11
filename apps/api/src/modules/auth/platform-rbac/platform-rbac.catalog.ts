@@ -208,8 +208,13 @@ export const PLATFORM_PERMISSIONS: readonly PlatformPermissionDefinition[] = [
   p('trial.preview-entitlements', 'Preview trial vs paid entitlement comparison', 'low'),
   p('sales-customer.view', 'View sales customers', 'low'),
   p('sales-report.view', 'View sales reports', 'low'),
+  p('sales-report.export', 'Export sales productivity reports', 'low'),
   p('commission-snapshot.view', 'View commission snapshots', 'low'),
   p('commission-snapshot.review', 'Review commission snapshots', 'medium'),
+  p('commission-snapshot.generate', 'Generate commission snapshots', 'medium'),
+  p('commission-snapshot.mark-paid', 'Mark commission snapshots paid (administrative)', 'high', {
+    stepUpExpected: true,
+  }),
 ];
 
 const ALL_KEYS = PLATFORM_PERMISSIONS.map((x) => x.key);
@@ -258,10 +263,7 @@ export const PLATFORM_ROLES: readonly PlatformRoleDefinition[] = [
     highImpact: true,
     // Explicit grants — nearly all keys except none reserved-only gaps; still no "*".
     permissionKeys: ALL_KEYS.filter(
-      (k) =>
-        !k.startsWith('sales-') &&
-        k !== 'commission-snapshot.view' &&
-        k !== 'commission-snapshot.review',
+      (k) => !k.startsWith('sales-') && !k.startsWith('commission-snapshot.'),
     ),
   },
   {
@@ -393,8 +395,11 @@ export const PLATFORM_ROLES: readonly PlatformRoleDefinition[] = [
       'trial.preview-entitlements',
       'sales-customer.view',
       'sales-report.view',
+      'sales-report.export',
       'commission-snapshot.view',
       'commission-snapshot.review',
+      'commission-snapshot.generate',
+      'commission-snapshot.mark-paid',
       'tenant.view',
       'plan.view',
       'subscription.view',
@@ -420,6 +425,9 @@ export const PLATFORM_ROLES: readonly PlatformRoleDefinition[] = [
       'trial.preview-entitlements',
       'sales-customer.view',
       'sales-report.view',
+      'sales-report.export',
+      // Flexible Step 26 — own-scope productivity/snapshot read + export only.
+      'commission-snapshot.view',
       'plan.view',
       'tenant.view',
       'tenant.provision.view',

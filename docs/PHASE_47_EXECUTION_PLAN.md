@@ -26,8 +26,9 @@
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
 | Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
 | Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md` |
-| Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 unauthorized |
-| Flexible Steps **26–29** | **Not Authorized** |
+| Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md` |
+| Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 authoritative (`booking_test`, freeze `2026-08-11T21:07:48.684Z`; exit 0; Step 26 DB 267/267). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md`. Steps 27–29 unauthorized |
+| Flexible Steps **27–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -1567,26 +1568,32 @@ Trials/conversion only. Steps 26–29 remain Not Authorized.
 
 ## 55. Step 26 — Sales Productivity and Commission Snapshot
 
-### Objective
-Reviewable monthly commission **snapshots** (not payroll); D-20.
+### Status
+**Accepted / Complete.** Case C Attempt 1 authoritative on frozen `booking_test` (freeze `2026-08-11T21:07:48.684Z`; ~53.2 min; all counters 0). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md`. Steps 27–29 Not Authorized. Commission snapshots are review records, not payroll; paid status is administrative metadata only.
 
 ### Prerequisites
 25.
 
 ### Non-Goals
-Advanced commission engines; payroll.
+Advanced commission engines; payroll; payment ledgers; Step 27 notifications.
+
+### Evidence
+Metric dictionary M01–M20; period T01–T12; Plan/Add-on PA01–PA08; visibility V01–V16; reconciliation REC01–REC12; snapshot CS01–CS16; export EX01–EX12; audit/idempotency/concurrency/failure/HTTP/privacy/UI matrices; Case C one-pass.
 
 ### Tests
-Formula unit tests; SoD review.
+Step 26 DB **267/267**; UI **60/60**; clean/upgrade validators; Case C one-pass.
+
+### Final Case C
+Attempt **1**: freeze `2026-08-11T21:07:48.684Z`; duration ~3195s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
 
 ### Rollback
-Disable snapshot job.
+Disable snapshot routes/job; no destructive DB reset.
 
 ### Blocks
-27 optional.
+27.
 
 ### Commit Boundary
-Snapshots only.
+Snapshots/productivity reporting only. Steps 27–29 remain Not Authorized.
 
 ---
 

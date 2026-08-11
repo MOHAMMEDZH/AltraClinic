@@ -80,6 +80,10 @@ export type SuperAdminRouteId =
   | 'sales-trials'
   | 'sales-trials-new'
   | 'sales-trials-detail'
+  | 'sales-productivity'
+  | 'sales-productivity-team'
+  | 'sales-commission-snapshots'
+  | 'sales-commission-snapshots-detail'
   | 'settings'
   | 'feature-flags-new'
   | 'feature-flags-detail'
@@ -865,6 +869,59 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
     breadcrumbParentId: 'sales-trials',
     layout: 'app',
     step: 25,
+    status: 'available',
+  },
+  {
+    id: 'sales-productivity',
+    path: '/sales/productivity',
+    titleKey: 'routes.salesProductivity.title',
+    descriptionKey: 'routes.salesProductivity.description',
+    navLabelKey: 'nav.salesProductivity',
+    navGroup: 'sales',
+    icon: 'chart',
+    policy: { type: 'permission', permission: 'sales-report.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 26,
+    status: 'available',
+  },
+  {
+    id: 'sales-productivity-team',
+    path: '/sales/productivity/team',
+    titleKey: 'routes.salesProductivityTeam.title',
+    descriptionKey: 'routes.salesProductivityTeam.description',
+    navLabelKey: 'nav.salesProductivityTeam',
+    navGroup: 'sales',
+    icon: 'chart',
+    policy: { type: 'permission', permission: 'sales-report.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 26,
+    status: 'available',
+  },
+  {
+    id: 'sales-commission-snapshots',
+    path: '/sales/commission-snapshots',
+    titleKey: 'routes.salesCommissionSnapshots.title',
+    descriptionKey: 'routes.salesCommissionSnapshots.description',
+    navLabelKey: 'nav.salesCommissionSnapshots',
+    navGroup: 'sales',
+    icon: 'receipt',
+    policy: { type: 'permission', permission: 'commission-snapshot.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 26,
+    status: 'available',
+  },
+  {
+    id: 'sales-commission-snapshots-detail',
+    path: '/sales/commission-snapshots/:id',
+    titleKey: 'routes.salesCommissionSnapshotsDetail.title',
+    policy: { type: 'permission', permission: 'commission-snapshot.view' },
+    showInNav: false,
+    breadcrumbParentId: 'sales-commission-snapshots',
+    layout: 'app',
+    step: 26,
     status: 'available',
   },
   {

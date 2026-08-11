@@ -38,11 +38,12 @@ const STEP24_ALLOWED = [
 ];
 
 /** Step 25 governance tables are allowed once the Step 25 migration ships. */
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
 const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_productivity_snapshots',
 ];
 
@@ -189,7 +190,7 @@ async function main() {
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
 
-    for (const table of [...STEP23_ALLOWED, ...STEP24_ALLOWED]) {
+    for (const table of [...STEP23_ALLOWED, ...STEP24_ALLOWED, ...STEP26_COMMISSION_SNAPSHOT_ALLOWED]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );

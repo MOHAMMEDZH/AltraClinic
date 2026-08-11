@@ -44,11 +44,12 @@ const STEP25_TRIAL_TABLES_ALLOWED = [
   'platform_sales_trial_conversions',
 ];
 
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
 const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_productivity_snapshots',
 ];
 
@@ -189,14 +190,19 @@ async function main() {
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
 
-    for (const table of STEP23_ALLOWED) {
+    for (const table of [
+      ...STEP23_ALLOWED,
+      ...STEP24_LEAD_TABLES_ALLOWED,
+      ...STEP25_TRIAL_TABLES_ALLOWED,
+      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+    ]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );
-      if (!rows[0]?.present) throw new Error(`Missing Step 23 table after upgrade: ${table}`);
+      if (!rows[0]?.present) throw new Error(`Missing Step 23–26 table after upgrade: ${table}`);
     }
 
-    console.log('OK no billing/Step 24+ schema');
+    console.log('OK no billing/invented pipeline-payroll schema');
     console.log('OK Step 23 sales representative schema present and stable across re-deploy');
     console.log('Step 23 upgrade migration validator passed.');
   } finally {

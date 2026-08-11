@@ -50,11 +50,12 @@ const STEP25_TRIAL_TABLES_ALLOWED = [
   'platform_sales_trial_conversions',
 ];
 
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
 const STEP26_PLUS_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
-  'platform_sales_commission_snapshots',
   'platform_sales_productivity_snapshots',
 ];
 
@@ -176,8 +177,12 @@ async function main() {
       const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
-    // Step 24 lead tables are allowed when migration chain includes Step 24; presence is optional for Step 23 validator.
-    for (const table of STEP24_LEAD_TABLES_ALLOWED) {
+    // Step 24/25/26 tables are allowed when migration chain includes them.
+    for (const table of [
+      ...STEP24_LEAD_TABLES_ALLOWED,
+      ...STEP25_TRIAL_TABLES_ALLOWED,
+      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+    ]) {
       await prisma.$queryRawUnsafe(`SELECT to_regclass('public.${table}') IS NOT NULL AS present`);
     }
 

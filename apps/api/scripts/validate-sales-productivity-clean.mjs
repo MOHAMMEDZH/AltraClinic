@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Flexible Step 25 — Trial Creation and Customer Conversion clean migration validator.
- * Fresh DB: migrate deploy → Catalog 68/136/68/13 → Step 23/24/25 tables present & empty →
- * no auto-created trials → no Step 26 tables → no billing tables.
+ * Flexible Step 26 — Sales Productivity / Commission Snapshot clean migration validator.
+ * Fresh DB: migrate deploy → Catalog 68/136/68/13 → Step 23–26 tables present & empty →
+ * no auto-created snapshots → no Step 27 / payroll / billing tables.
  */
 import { spawnSync } from 'child_process';
 import path from 'path';
@@ -11,7 +11,7 @@ import { PrismaClient } from '@prisma/client';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
-const cleanDb = `test_sales25_clean_${Date.now()}`;
+const cleanDb = `test_sales26_clean_${Date.now()}`;
 
 const OVERALL_DEADLINE_MS = 10 * 60 * 1000;
 const MIGRATE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -39,6 +39,8 @@ const STEP25_TABLES = [
   'platform_sales_trial_conversions',
 ];
 
+const STEP26_TABLES = ['platform_sales_commission_snapshots'];
+
 const BILLING_FORBIDDEN = [
   'platform_billing_runtime',
   'platform_billing_invoices',
@@ -47,26 +49,16 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-/**
- * Step 26 commission snapshot table is legitimately present once Step 26 ships.
- * Still forbid invented payroll/pipeline/commission-rule surfaces.
- */
-const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
-
-const STEP26_PLUS_FORBIDDEN = [
+/** Step 27 / payroll / invented commission engines are explicitly NOT part of Step 26. */
+const STEP27_AND_PAYROLL_FORBIDDEN = [
   'platform_sales_opportunities',
   'platform_sales_pipeline_stages',
   'platform_sales_commissions',
   'platform_sales_commission_rules',
   'platform_sales_productivity_snapshots',
-];
-
-/** Trial entitlements stay Step 16/18 authority: no parallel trial entitlement engine. */
-const PARALLEL_ENGINE_FORBIDDEN = [
-  'platform_sales_trial_entitlements',
-  'platform_sales_trial_limits',
-  'platform_sales_trial_usage',
-  'platform_trial_entitlement_snapshots',
+  'platform_payroll_runs',
+  'platform_payslips',
+  'platform_sales_notification_templates',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -94,7 +86,7 @@ function assertWithinDeadline(step) {
 }
 
 function log(msg) {
-  console.log(`[sales25-clean-validator +${Date.now() - startedAt}ms] ${msg}`);
+  console.log(`[sales26-clean-validator +${Date.now() - startedAt}ms] ${msg}`);
 }
 
 function run(cmd, args, env = {}, timeoutMs = MIGRATE_TIMEOUT_MS) {
@@ -204,17 +196,13 @@ async function main() {
       ...STEP23_TABLES,
       ...STEP24_TABLES,
       ...STEP25_TABLES,
-      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+      ...STEP26_TABLES,
     ]) {
       if (!(await tablePresent(prisma, table))) {
         throw new Error(`Missing Step 23/24/25/26 table: ${table}`);
       }
     }
-    for (const table of [
-      ...BILLING_FORBIDDEN,
-      ...STEP26_PLUS_FORBIDDEN,
-      ...PARALLEL_ENGINE_FORBIDDEN,
-    ]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP27_AND_PAYROLL_FORBIDDEN]) {
       if (await tablePresent(prisma, table)) {
         throw new Error(`Forbidden table present: ${table}`);
       }
@@ -232,7 +220,7 @@ async function main() {
     let counts;
     let lastCountErr;
     for (let i = 0; i < 10; i++) {
-      assertWithinDeadline('catalog + trial counts');
+      assertWithinDeadline('catalog + commission counts');
       try {
         const [
           items,
@@ -242,10 +230,9 @@ async function main() {
           salesReps,
           leads,
           trials,
-          extensions,
-          conversions,
+          snapshots,
           idempotency,
-          trialAudits,
+          commissionAudits,
         ] = await Promise.all([
           prisma.healthcareCatalogItem.count(),
           prisma.healthcareCatalogTranslation.count(),
@@ -254,10 +241,9 @@ async function main() {
           prisma.platformSalesRepresentative.count(),
           prisma.platformSalesLead.count(),
           prisma.platformSalesTrial.count(),
-          prisma.platformSalesTrialExtensionHistory.count(),
-          prisma.platformSalesTrialConversion.count(),
+          prisma.platformSalesCommissionSnapshot.count(),
           prisma.platformSalesIdempotencyRecord.count(),
-          prisma.auditEntry.count({ where: { category: 'sales_trial_management' } }),
+          prisma.auditEntry.count({ where: { category: 'sales_commission_management' } }),
         ]);
         counts = {
           items,
@@ -267,10 +253,9 @@ async function main() {
           salesReps,
           leads,
           trials,
-          extensions,
-          conversions,
+          snapshots,
           idempotency,
-          trialAudits,
+          commissionAudits,
         };
         lastCountErr = undefined;
         break;
@@ -297,46 +282,33 @@ async function main() {
     expect('Catalog Compatibility rules', counts.rules, 13);
     expect('sales representatives (no auto invent)', counts.salesReps, 0);
     expect('sales leads (no auto invent)', counts.leads, 0);
-    expect('sales trials (no auto-created trials)', counts.trials, 0);
-    expect('trial extension history (empty)', counts.extensions, 0);
-    expect('trial conversions (empty)', counts.conversions, 0);
+    expect('sales trials (no auto invent)', counts.trials, 0);
+    expect('commission snapshots (no auto invent)', counts.snapshots, 0);
     expect('sales idempotency records (empty)', counts.idempotency, 0);
-    expect('trial audit entries (no invented audits)', counts.trialAudits, 0);
+    expect('commission audit entries (no invented audits)', counts.commissionAudits, 0);
 
-    // Governance queries the contract requires must be index-backed from migration time.
-    const trialIndexes = await indexDefs(prisma, 'platform_sales_trials');
-    for (const column of [
+    const snapshotIndexes = await indexDefs(prisma, 'platform_sales_commission_snapshots');
+    for (const fragment of [
+      'representativeId',
+      'periodKey',
       'status',
-      'expiresAt',
-      'ownerRepresentativeId',
-      'platformTenantId',
-      'originatingLeadId',
-      'trialPlanVersionId',
-      'createdAt',
+      'platform_sales_commission_snapshots_active_unique',
     ]) {
-      if (!trialIndexes.includes(column)) {
-        throw new Error(`platform_sales_trials missing an index covering ${column}`);
+      if (!snapshotIndexes.includes(fragment)) {
+        throw new Error(
+          `platform_sales_commission_snapshots missing expected index coverage: ${fragment}`,
+        );
       }
     }
-    console.log('OK platform_sales_trials indexes cover owner/status/expiry/tenant/lead/plan');
-
-    for (const table of [
-      'platform_sales_trial_extension_history',
-      'platform_sales_trial_conversions',
-    ]) {
-      const defs = await indexDefs(prisma, table);
-      if (!defs.includes('trialId')) throw new Error(`${table} missing a trialId index`);
+    if (!snapshotIndexes.includes('WHERE') && !snapshotIndexes.toLowerCase().includes('where')) {
+      // pg_indexes indexdef for partial unique includes WHERE status <> 'SUPERSEDED'
+      throw new Error('platform_sales_commission_snapshots missing partial unique (non-SUPERSEDED)');
     }
-    console.log('OK trial history/conversion tables indexed by trialId');
+    console.log('OK commission snapshot indexes + partial unique present');
 
-    const snapshotCount = await prisma.platformSalesCommissionSnapshot.count();
-    if (snapshotCount !== 0) {
-      throw new Error(`commission snapshots must be empty after migrate, got ${snapshotCount}`);
-    }
-    console.log('OK commission snapshots empty (no auto invent)');
-    console.log('OK no billing / Step 26+ payroll-pipeline / parallel trial entitlement engine tables');
-    console.log('OK Step 25 trial schema present and empty');
-    log(`Step 25 clean migration validator passed (db=${cleanDb}).`);
+    console.log('OK no billing / Step 27 / payroll tables');
+    console.log('OK Step 26 commission snapshot schema present and empty');
+    log(`Step 26 clean migration validator passed (db=${cleanDb}).`);
   } finally {
     try {
       await prisma.$disconnect();

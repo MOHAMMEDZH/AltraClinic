@@ -73,7 +73,12 @@
     "test:sales-trials-db": "node scripts/run-sales-trials-db.mjs",
     "test:sales-trials-clean-migration": "node scripts/validate-sales-trials-clean.mjs",
     "test:sales-trials-upgrade-migration": "node scripts/validate-sales-trials-upgrade.mjs",
-    "test:trials-conversion-final-onepass": "node scripts/run-step25-final-onepass.mjs"
+    "test:trials-conversion-final-onepass": "node scripts/run-step25-final-onepass.mjs",
+    "test:sales-productivity-db": "node scripts/run-sales-productivity-db.mjs",
+    "test:sales-productivity-db": "node scripts/run-sales-productivity-db.mjs",
+    "test:sales-productivity-clean-migration": "node scripts/validate-sales-productivity-clean.mjs",
+    "test:sales-productivity-upgrade-migration": "node scripts/validate-sales-productivity-upgrade.mjs",
+    "test:sales-productivity-commission-final-onepass": "node scripts/run-step26-final-onepass.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

@@ -5906,6 +5906,8 @@ model PlatformSalesRepresentative {
   ownedLeads   PlatformSalesLead[]
   /// Flexible Step 25 — Trials owned by this representative.
   ownedTrials  PlatformSalesTrial[]
+  /// Flexible Step 26 — commission snapshot review records for this representative.
+  commissionSnapshots PlatformSalesCommissionSnapshot[]
 
   @@index([status])
   @@index([managerRepresentativeId])
@@ -5960,7 +5962,8 @@ model PlatformSalesIdempotencyRecord {
   operation          String   @db.VarChar(64)
   idempotencyKey     String   @db.VarChar(128)
   requestHash        String   @db.VarChar(64)
-  resultResourceType String   @db.VarChar(32)
+  /// Widened in Step 26: resource types like platform_sales_commission_snapshot exceed 32.
+  resultResourceType String   @db.VarChar(64)
   resultResourceId   String   @db.Uuid
   status             String   @db.VarChar(16)
   resultPayload      Json?
@@ -6202,4 +6205,57 @@ model PlatformSalesTrialConversion {
   @@index([targetPaidPlanVersionId])
   @@index([convertedAt, id])
   @@map("platform_sales_trial_conversions")
+}
+
+/// Flexible Step 26 — Sales Productivity and Commission Snapshot (review records only).
+/// Contract: docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md
+/// Not payroll / not a money-movement ledger. calculationStatus stays UNCONFIGURED (no invented rates).
+/// Partial unique (non-SUPERSEDED) enforced in migration SQL — Prisma cannot express WHERE clauses.
+model PlatformSalesCommissionSnapshot {
+  id                         String    @id @default(uuid()) @db.Uuid
+  representativeId           String    @db.Uuid
+  /// Calendar month key YYYY-MM
+  periodKey                  String    @db.VarChar(16)
+  periodTimezone             String    @default("UTC") @db.VarChar(64)
+  periodStart                DateTime
+  /// Exclusive end bound (first instant of next period).
+  periodEnd                  DateTime
+  sourceCutoffAt             DateTime
+  formulaVersion             String    @db.VarChar(64)
+  /// Always UNCONFIGURED until a future authorized rate engine exists.
+  calculationStatus          String    @default("UNCONFIGURED") @db.VarChar(32)
+  ruleReference              String?   @db.VarChar(128)
+  computedAmount             Decimal?  @db.Decimal(18, 4)
+  metricsJson                Json
+  planVersionAttributionJson Json
+  addOnAttributionJson       Json
+  completenessJson           Json
+  reconciliationJson         Json?
+  /// NONE | IN_REVIEW | REVIEWED | REJECTED
+  reviewStatus               String    @default("NONE") @db.VarChar(32)
+  /// UNPAID | PAID — administrative metadata only; never moves money.
+  paidStatus                 String    @default("UNPAID") @db.VarChar(32)
+  paidReason                 String?   @db.VarChar(500)
+  paidReference              String?   @db.VarChar(200)
+  paidAt                     DateTime?
+  paidByPlatformUserId       String?   @db.Uuid
+  /// DRAFT | FINALIZED | SUPERSEDED
+  status                     String    @db.VarChar(32)
+  supersedesSnapshotId       String?   @db.Uuid
+  rowVersion                 Int       @default(1)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  finalizedAt                DateTime?
+
+  representative PlatformSalesRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  supersedes     PlatformSalesCommissionSnapshot?  @relation("CommissionSnapshotSupersede", fields: [supersedesSnapshotId], references: [id], onDelete: Restrict)
+  supersededBy   PlatformSalesCommissionSnapshot[] @relation("CommissionSnapshotSupersede")
+
+  @@index([representativeId, periodKey])
+  @@index([periodKey, periodTimezone])
+  @@index([status])
+  @@index([reviewStatus])
+  @@index([paidStatus])
+  @@index([createdAt, id])
+  @@map("platform_sales_commission_snapshots")
 }
