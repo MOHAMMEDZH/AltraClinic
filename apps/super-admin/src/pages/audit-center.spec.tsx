@@ -4,19 +4,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getRouteById } from '../routing/route-registry';
 
 const mockUsePlatformAuth = vi.fn();
+const mockUseI18n = vi.fn();
 
 vi.mock('../auth/PlatformAuthProvider', () => ({
   usePlatformAuth: () => mockUsePlatformAuth(),
 }));
 
 vi.mock('@booking/i18n/react', () => ({
-  useI18n: () => ({
-    t: (_key: string, fallback?: string) => fallback ?? _key,
-    locale: 'en-US',
-  }),
+  useI18n: () => mockUseI18n(),
 }));
 
 import { AuditCenterPage } from './AuditCenterPages';
+
+/** Stable identity — production I18nProvider memoizes `t`; unstable mocks re-trigger load effects. */
+const stableT = (_key: string, fallback?: string) => fallback ?? _key;
+const stableI18n = { t: stableT, locale: 'en-US' as const };
 
 describe('Audit Center UI', () => {
   afterEach(() => {
@@ -31,6 +33,7 @@ describe('Audit Center UI', () => {
   });
 
   it('renders AuditCenterPage with empty results from searchAuditEntries', async () => {
+    mockUseI18n.mockReturnValue(stableI18n);
     mockUsePlatformAuth.mockReturnValue({
       getAccessToken: () => 'tok',
       principal: { id: 'u1', permissions: ['audit.view', 'audit.export'] },
@@ -50,6 +53,7 @@ describe('Audit Center UI', () => {
   });
 
   it('shows unauthorized when audit.view is missing', () => {
+    mockUseI18n.mockReturnValue(stableI18n);
     mockUsePlatformAuth.mockReturnValue({
       getAccessToken: () => 'tok',
       principal: { id: 'u1', permissions: [] },

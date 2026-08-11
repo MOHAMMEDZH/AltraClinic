@@ -24,7 +24,7 @@
 | Flexible Step **21** — Audit Center | **Accepted / Complete** — Case C one-pass 2026-08-09 exit 0; A08 D11 audit delta = 1; evidence = 0; see `AUDIT_CENTER.md` |
 | Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test` |
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
-| Flexible Step **23** — Sales Representative Management | **In Progress** (authorized). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md`. Migration + module + API + Super Admin UI implemented; matrices A/S/M/C/F/H green on `booking_test`; Step 24+ unauthorized |
+| Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-10). Authoritative Case C attempt **5** on frozen `booking_test` (`exitCode=0`, all counters 0). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md`. Step 24+ unauthorized |
 | Flexible Steps **24–29** | **Not authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
@@ -1476,7 +1476,7 @@ Ops adapters only — no engine rewrite. Step 23 unauthorized.
 ## 52. Step 23 — Sales Representative Management
 
 ### Status
-**In Progress** (authorized). Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md).
+**Accepted and complete** (2026-08-10). Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md).
 
 ### Objective
 Sales rep records linked 1:1 to Platform users; least privilege; D-19 commercial ownership start; suspension revokes sessions.
@@ -1490,6 +1490,9 @@ Full CRM; payroll; Leads/Opportunities/Pipeline (Step 24); Trials (Step 25).
 ### Tests
 Peer isolation ST-33; matrices A/S/M/C/F/H per Step 23 contract; suspension old-token gate.
 
+### Final Case C
+Attempt **5** on frozen `booking_test` (freeze `2026-08-10T21:57:30.064Z`); duration ~2719s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Attempts 1–4 invalidated (U01 DI, Step 17 timeout, subscriptions load timeout, Super Admin audit i18n mock instability). Harness-only: Step 17 suite timeout 900s; U01 optional clock + Nest `useFactory`; Step 22 validators allow Step 23 tables only. Hygiene = 0.
+
 ### Rollback
 File/feature flag; preserve accounts/audits; never restore revoked sessions.
 
@@ -1497,7 +1500,7 @@ File/feature flag; preserve accounts/audits; never restore revoked sessions.
 24–26.
 
 ### Commit Boundary
-Sales reps only.
+Sales reps only. Step 24 remains unauthorized.
 
 ---
 

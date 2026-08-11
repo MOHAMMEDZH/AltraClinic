@@ -1,12 +1,27 @@
 # Sales Representative Management (Flexible Step 23)
 
-**Status:** In Progress  
-**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 23  
+**Status:** Accepted / Complete
+**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 23
 **Authority:** Platform identity / auth / MFA / session / RBAC (Steps 06–08), Tenant Directory (customer SoR), Steps 17–22 preserved.
 
-Steps **01–22** + **U01**: Accepted/Complete.  
-Step **23**: In Progress.  
+Steps **01–22** + **U01**: Accepted/Complete.
+Step **23**: **Accepted and complete** (authoritative Case C attempt **5**, 2026-08-10).
 Steps **24–29**: Not Authorized (no Leads, Opportunities, Pipeline, Trials, commissions, payroll, billing, PHI).
+
+### Final Case C (authoritative)
+
+| Field | Value |
+|-------|--------|
+| Attempt | **5** (attempts 1–4 invalidated; not combined) |
+| Frozen DB | `booking_test` @ `localhost:5433` |
+| Freeze | `2026-08-10T21:57:30.064Z` |
+| Window | `2026-08-10T21:57:29.688Z` → `2026-08-10T22:42:48.764Z` (~45.3 min) |
+| Runner | `npm run test:sales-representatives-final-onepass` |
+| Counters | `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0` |
+| Catalog | `68 / 136 / 68 / 13` |
+| Hygiene | remaining prohibited Step 23 artifacts = **0** |
+
+**Harness notes (accepted as load-only):** Step 17 failure-injection `jest.setTimeout` 300s→900s (assertions/semantics unchanged); U01 optional clock + `useFactory` for Nest DI; Step 22 validators intentionally allow Step 23 sales tables while forbidding Step 24+/billing.
 
 ---
 
