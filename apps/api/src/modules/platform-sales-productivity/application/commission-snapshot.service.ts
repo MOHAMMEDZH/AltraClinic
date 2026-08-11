@@ -275,6 +275,38 @@ export class CommissionSnapshotService {
         sourceCutoffAt,
       });
 
+      // F19 — reconciliation evaluation. Contained injector forces explicit UNAVAILABLE
+      // and never claims reconciled=true. When injector is inactive, keep null (Attempt 1 shape).
+      let reconciliationJson: Prisma.InputJsonValue | typeof Prisma.JsonNull = Prisma.JsonNull;
+      if (isSalesProductivityFailureInjectionActive('during_reconciliation')) {
+        reconciliationJson = {
+          reconciled: false,
+          status: 'UNAVAILABLE',
+          reason: 'injected_reconciliation_failure',
+          sourceCutoffAt: sourceCutoffAt.toISOString(),
+          formulaVersion: COMMISSION_FORMULA_VERSION,
+        };
+        if (input.finalize) {
+          await this.idempotency.releasePendingClaim({
+            actorId: user.sub,
+            operation: SALES_COMMISSION_OPERATIONS.generate,
+            idempotencyKey: claim.idempotencyKey,
+          });
+          throw new SalesProductivityValidationError(
+            'Reconciliation unavailable; cannot finalize snapshot.',
+            'reconciliation_unavailable',
+          );
+        }
+      } else if (bundle.completeness.reporting_completeness === 'UNAVAILABLE') {
+        reconciliationJson = {
+          reconciled: false,
+          status: 'UNAVAILABLE',
+          reason: 'reporting_completeness_unavailable',
+          sourceCutoffAt: sourceCutoffAt.toISOString(),
+          formulaVersion: COMMISSION_FORMULA_VERSION,
+        };
+      }
+
       const finalize = Boolean(input.finalize);
       const status: CommissionSnapshotStatus = finalize ? 'FINALIZED' : 'DRAFT';
       const snapshotId = provisionalId;
@@ -337,7 +369,7 @@ export class CommissionSnapshotService {
                 bundle.planVersionAttribution as unknown as Prisma.InputJsonValue,
               addOnAttributionJson: bundle.addOnAttribution as unknown as Prisma.InputJsonValue,
               completenessJson: bundle.completeness as unknown as Prisma.InputJsonValue,
-              reconciliationJson: Prisma.JsonNull,
+              reconciliationJson,
               reviewStatus: 'NONE',
               paidStatus: 'UNPAID',
               status,

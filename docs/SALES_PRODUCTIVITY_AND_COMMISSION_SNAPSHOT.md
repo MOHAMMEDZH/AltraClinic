@@ -1,11 +1,11 @@
 # Sales Productivity and Commission Snapshot (Flexible Step 26)
 
-**Status:** Accepted / Complete  
-**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 26  
+**Status:** Accepted / Complete
+**Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 26
 **Authority:** Steps 01–25 + U01 Accepted/Complete; Step 23 reps/targets; Step 24 leads; Step 25 trials/conversions; Step 16 commercial configs.
 
-Steps **01–25** + **U01**: Accepted/Complete.  
-Step **26**: Accepted / Complete.  
+Steps **01–25** + **U01**: Accepted/Complete.
+Step **26**: Accepted / Complete (narrow F02–F09 / F19 / F20 / H21 closure passed; Case C Attempt 1 remains authoritative).
 Steps **27–29**: Not Authorized.
 
 ```text
@@ -41,6 +41,19 @@ Paid status records an administrative state only and does not move money.
 | UI | **60/60** (`sales-productivity-ui.spec.tsx`) |
 | Catalog | Items **68** / Translations **136** / Aliases **68** / Rules **13** |
 | Hygiene | remaining prohibited Step 26 artifacts = **0** |
+
+### Narrow failure/session closure (F02–F09, F19, F20, H21)
+
+| Field | Value |
+|-------|--------|
+| Result | PASSED |
+| Attempt 1 remains authoritative | YES |
+| Product behavior changed (happy path) | NO — contained Model B selectors only; idle path unchanged |
+| Material one-pass harness changed | NO |
+| Full Case C rerun | Not required |
+| Selectors | `before_lead_source_query`, `before_trial_source_query`, `before_subscription_source_query`, `before_plan_version_source_query`, `before_addon_source_query`, `before_target_source_query`, `before_attribution_source_query`, `before_completeness_eval`, `during_reconciliation`, `during_export_serialize` |
+| Catalog | 68 / 136 / 68 / 13 |
+| Hygiene | 0 |
 
 ---
 

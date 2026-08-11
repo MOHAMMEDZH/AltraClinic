@@ -117,14 +117,254 @@ describeDb('Step 26 failure injection F01–F30 (PostgreSQL)', () => {
       .rejects.toBeInstanceOf(SalesProductivityValidationError);
   });
 
-    it('F02: N/A — no dedicated lead-source injection selector — covered by F01 metrics compute path', () => { expect(true).toBe(true); });
-    it('F03: N/A — no dedicated trial-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F04: N/A — no dedicated subscription-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F05: N/A — no dedicated plan-version-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F06: N/A — no dedicated add-on-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F07: N/A — no dedicated target-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F08: N/A — no dedicated attribution-source injection selector — covered by F01', () => { expect(true).toBe(true); });
-    it('F09: N/A — completeness evaluator is pure in-memory — no separate failure hook', () => { expect(true).toBe(true); });
+  it('F02: lead source failure via before_lead_source_query — unavailable≠zero, no fabricated lead metrics', async () => {
+    const { claims, rep, stack } = await managerActor();
+    await createLeadFixture(prisma, {
+      ownerRepresentativeId: rep.id,
+      createdAt: new Date('2026-03-05T00:00:00.000Z'),
+      stage: 'WON',
+    });
+    const beforeSnap = await prisma.platformSalesCommissionSnapshot.count();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    const auditsBefore = await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.GENERATED);
+
+    setSalesProductivityFailureInjection('before_lead_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    for (const id of ['M01', 'M02', 'M03', 'M04', 'M06', 'M07', 'M09'] as const) {
+      const m = metricById(bundle, id);
+      expect(m.value).toBeNull();
+      expect(m.completeness).toBe('UNAVAILABLE');
+      expect(m.rankingEligible).toBe(false);
+    }
+    expect(bundle.completeness.reporting_completeness).toBe('UNAVAILABLE');
+    expect(bundle.completeness.period_source_completeness).toBe('UNAVAILABLE');
+
+    const snap = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(snap.completeness.reporting_completeness).toBe('UNAVAILABLE');
+    expect((snap.metrics as any).leads_created.value).toBeNull();
+    expect((snap.metrics as any).leads_created.completeness).toBe('UNAVAILABLE');
+    expect(snap.reconciliation).toMatchObject({ reconciled: false, status: 'UNAVAILABLE' });
+    expect(await prisma.platformSalesCommissionSnapshot.count()).toBe(beforeSnap + 1);
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      commercialConfigs: 0,
+      subscriptions: 0,
+      platformTenants: 0,
+      entitlements: 0,
+    });
+    expect(await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.GENERATED)).toBe(
+      auditsBefore + 1,
+    );
+  });
+
+  it('F03: Trial source failure via before_trial_source_query — no fabricated Trial metrics', async () => {
+    const { claims, rep, stack } = await managerActor();
+    setSalesProductivityFailureInjection('before_trial_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    for (const id of ['M05', 'M08', 'M10', 'M11', 'M14', 'M17'] as const) {
+      const m = metricById(bundle, id);
+      expect(m.value).toBeNull();
+      expect(m.completeness).toBe('UNAVAILABLE');
+      expect(m.rankingEligible).toBe(false);
+    }
+    expect(bundle.planVersionAttribution).toEqual([]);
+    const snap = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(snap.completeness.reporting_completeness).toBe('UNAVAILABLE');
+    expect(snap.reconciliation).toMatchObject({ reconciled: false });
+  });
+
+  it('F04: Subscription source failure via before_subscription_source_query — no false active/cancel', async () => {
+    const { claims, rep, stack } = await managerActor();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    setSalesProductivityFailureInjection('before_subscription_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    for (const id of ['M12', 'M13', 'M15', 'M18'] as const) {
+      const m = metricById(bundle, id);
+      expect(m.value).toBeNull();
+      expect(m.completeness).toBe('UNAVAILABLE');
+      expect(m.rankingEligible).toBe(false);
+    }
+    await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      commercialConfigs: 0,
+      subscriptions: 0,
+      platformTenants: 0,
+    });
+  });
+
+  it('F05: Plan Version source failure via before_plan_version_source_query — no name/latest fallback', async () => {
+    const { claims, rep, stack } = await managerActor();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    setSalesProductivityFailureInjection('before_plan_version_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    const m14 = metricById(bundle, 'M14');
+    expect(m14.value).toBeNull();
+    expect(m14.completeness).toBe('UNAVAILABLE');
+    expect(m14.rankingEligible).toBe(false);
+    expect(bundle.planVersionAttribution).toEqual([]);
+    expect(JSON.stringify(bundle)).not.toMatch(/latest|displayName|planName/i);
+    await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      plans: 0,
+      planVersions: 0,
+    });
+  });
+
+  it('F06: Add-on source failure via before_addon_source_query — no fabricated Add-on sales', async () => {
+    const { claims, rep, stack } = await managerActor();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    setSalesProductivityFailureInjection('before_addon_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    const m15 = metricById(bundle, 'M15');
+    expect(m15.value).toBeNull();
+    expect(m15.completeness).toBe('UNAVAILABLE');
+    expect(m15.rankingEligible).toBe(false);
+    expect(bundle.addOnAttribution).toEqual([]);
+    await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      addonAssignments: 0,
+    });
+  });
+
+  it('F07: target source failure via before_target_source_query — unavailable≠zero target', async () => {
+    const roleKeys = [SALES_MANAGER_ROLE];
+    const user = await createPlatformUserFixture(prisma, {
+      email: `tgt-f07-${randomUUID()}@test.local`,
+      roleKeys,
+    });
+    const session = await createPlatformRefreshSession(prisma, user.id);
+    const claims = platformClaims(user.id, session.sessionId, roleKeys);
+    const rep = await createRepProfile(prisma, user.id, {
+      status: 'ACTIVE',
+      targetAmount: 10,
+      targetPeriod: 'MONTH',
+      targetCurrency: null,
+    });
+    const stack = createSalesProductivityStack(prisma);
+    setSalesProductivityFailureInjection('before_target_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    const m16 = metricById(bundle, 'M16');
+    expect(m16.value).toBeNull();
+    expect(m16.completeness).toBe('UNAVAILABLE');
+    expect(m16.rankingEligible).toBe(false);
+    expect(m16.explanation).toBe('target_source_unavailable');
+    expect(m16.value).not.toBe(0);
+    // Unrelated complete metrics remain coherent when lead source is healthy.
+    expect(metricById(bundle, 'M01').completeness).toBe('COMPLETE');
+    await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    const reloaded = await prisma.platformSalesRepresentative.findUniqueOrThrow({
+      where: { id: rep.id },
+    });
+    expect(Number(reloaded.targetAmount)).toBe(10);
+  });
+
+  it('F08: attribution source failure via before_attribution_source_query — no current-owner fallback', async () => {
+    const { claims, rep, stack } = await managerActor();
+    setSalesProductivityFailureInjection('before_attribution_source_query');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    for (const id of ['M08', 'M10', 'M11', 'M14', 'M15', 'M17'] as const) {
+      const m = metricById(bundle, id);
+      expect(m.value).toBeNull();
+      expect(m.completeness).toBe('UNAVAILABLE');
+      expect(m.rankingEligible).toBe(false);
+    }
+    expect(bundle.planVersionAttribution).toEqual([]);
+    expect(bundle.addOnAttribution).toEqual([]);
+    const snap = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(snap.reconciliation).toMatchObject({ reconciled: false, status: 'UNAVAILABLE' });
+    expect(snap.completeness.reporting_completeness).toBe('UNAVAILABLE');
+  });
+
+  it('F09: completeness evaluator failure via before_completeness_eval — fail closed never COMPLETE', async () => {
+    const { claims, rep, stack } = await managerActor();
+    setSalesProductivityFailureInjection('before_completeness_eval');
+    const bundle = await stack.metrics.computeForRepresentative({
+      representativeId: rep.id,
+      periodKey: PERIOD_KEY,
+    });
+    expect(bundle.completeness.reporting_completeness).toBe('UNAVAILABLE');
+    expect(bundle.completeness.period_source_completeness).toBe('UNAVAILABLE');
+    for (const m of bundle.metrics) {
+      expect(m.rankingEligible).toBe(false);
+      if (m.completeness !== 'NOT_APPLICABLE') {
+        expect(m.completeness).toBe('UNAVAILABLE');
+        expect(m.value).toBeNull();
+      }
+    }
+    const snap = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(snap.completeness.reporting_completeness).toBe('UNAVAILABLE');
+    expect(snap.reconciliation).toMatchObject({ reconciled: false });
+    const exported = await stack.export.exportCsv(claims, stack.perms, {
+      periodKey: PERIOD_KEY,
+      representativeId: rep.id,
+    });
+    expect(exported.body).toMatch(/UNAVAILABLE/);
+    expect(exported.body).toMatch(/completeness_evaluator_unavailable|reporting_unavailable|source_or_completeness_unavailable/);
+    expect(metricById(
+      await stack.metrics.computeForRepresentative({ representativeId: rep.id, periodKey: PERIOD_KEY }),
+      'M20',
+    ).completeness).toBe('UNAVAILABLE');
+  });
 
   it('F10: snapshot insert failure rolls back generate', async () => {
     const { claims, rep, stack } = await managerActor();
@@ -209,8 +449,116 @@ describeDb('Step 26 failure injection F01–F30 (PostgreSQL)', () => {
     expect(row.paidStatus).toBe('UNPAID');
   });
 
-    it('F19: N/A — no durable reconciliation job failure hook', () => { expect(true).toBe(true); });
-    it('F20: N/A — export serialization uses in-memory csvSafeCell — no injectable serializer hook', () => { expect(true).toBe(true); });
+  it('F19: reconciliation failure via during_reconciliation — never reconciled=true; finalize blocked', async () => {
+    const { claims, rep, stack } = await managerActor();
+    const beforeSnap = await prisma.platformSalesCommissionSnapshot.count();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    const auditsBefore = await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.GENERATED);
+    const auditsFinalBefore = await countCommissionAudits(
+      prisma,
+      SALES_COMMISSION_AUDIT_ACTIONS.FINALIZED,
+    );
+
+    setSalesProductivityFailureInjection('during_reconciliation');
+    await expect(
+      stack.snapshots.generate(
+        claims,
+        stack.perms,
+        { representativeId: rep.id, periodKey: PERIOD_KEY, finalize: true },
+        randomUUID(),
+      ),
+    ).rejects.toBeInstanceOf(SalesProductivityValidationError);
+    expect(await prisma.platformSalesCommissionSnapshot.count()).toBe(beforeSnap);
+    expect(await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.FINALIZED)).toBe(
+      auditsFinalBefore,
+    );
+
+    const draft = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY, finalize: false },
+      randomUUID(),
+    );
+    expect(draft.reconciliation).toMatchObject({
+      reconciled: false,
+      status: 'UNAVAILABLE',
+      reason: 'injected_reconciliation_failure',
+    });
+    expect((draft.reconciliation as any).reconciled).not.toBe(true);
+    expect(draft.status).toBe('DRAFT');
+    expect(await prisma.platformSalesCommissionSnapshot.count()).toBe(beforeSnap + 1);
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      commercialConfigs: 0,
+      subscriptions: 0,
+      platformTenants: 0,
+      entitlements: 0,
+      trials: 0,
+      conversions: 0,
+    });
+    expect(await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.GENERATED)).toBe(
+      auditsBefore + 1,
+    );
+
+    // Retry without injector succeeds and does not duplicate active identity incorrectly.
+    clearSalesProductivityFailureInjection();
+    const retry = await stack.snapshots.generate(
+      claims,
+      stack.perms,
+      { representativeId: rep.id, periodKey: PERIOD_KEY },
+      randomUUID(),
+    );
+    expect(retry.id).not.toBe(draft.id);
+    expect(retry.reconciliation).toBeNull();
+    expect(
+      await prisma.platformSalesCommissionSnapshot.count({
+        where: { status: { not: 'SUPERSEDED' } },
+      }),
+    ).toBe(1);
+  });
+
+  it('F20: export serialization failure via during_export_serialize — no partial body; retry CSV-safe', async () => {
+    const { claims, rep, stack } = await managerActor();
+    await createLeadFixture(prisma, {
+      ownerRepresentativeId: rep.id,
+      createdAt: new Date('2026-03-05T00:00:00.000Z'),
+    });
+    const beforeSnap = await prisma.platformSalesCommissionSnapshot.count();
+    const beforeSoR = await protectedProductivitySoR(prisma);
+    const auditsBefore = await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.EXPORTED);
+
+    setSalesProductivityFailureInjection('during_export_serialize');
+    await expect(
+      stack.export.exportCsv(claims, stack.perms, {
+        periodKey: PERIOD_KEY,
+        representativeId: rep.id,
+      }),
+    ).rejects.toMatchObject({ code: 'injected_failure' });
+    expect(await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.EXPORTED)).toBe(
+      auditsBefore,
+    );
+    expect(await prisma.platformSalesCommissionSnapshot.count()).toBe(beforeSnap);
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      commercialConfigs: 0,
+      subscriptions: 0,
+      platformTenants: 0,
+    });
+
+    clearSalesProductivityFailureInjection();
+    const ok = await stack.export.exportCsv(claims, stack.perms, {
+      periodKey: PERIOD_KEY,
+      representativeId: rep.id,
+    });
+    expect(ok.body).toMatch(/^"representativeId"/);
+    expect(ok.body).toContain(rep.id);
+    expect(ok.body).toMatch(/leads_created/);
+    const { csvSafeCell } = await import(
+      '../../platform-audit-center/application/audit-center-redaction'
+    );
+    expect(csvSafeCell('=CMD()')).toMatch(/^"'=/);
+    expect(await countCommissionAudits(prisma, SALES_COMMISSION_AUDIT_ACTIONS.EXPORTED)).toBe(
+      auditsBefore + 1,
+    );
+  });
 
   it('F21: export authorization failure when permissions missing', async () => {
     const { claims } = await managerActor();

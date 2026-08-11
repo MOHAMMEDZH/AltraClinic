@@ -38,6 +38,19 @@ function metric(
   };
 }
 
+function unavailableMetric(
+  id: MetricValue['id'],
+  key: MetricKey,
+  explanation: string,
+): MetricValue {
+  return metric(id, key, null, 'UNAVAILABLE', {
+    explanation,
+    rankingEligible: false,
+    numerator: null,
+    denominator: null,
+  });
+}
+
 function worstCompleteness(values: Completeness[]): Completeness {
   const rank: Record<Completeness, number> = {
     COMPLETE: 0,
@@ -75,6 +88,7 @@ function asAttributionId(snapshot: unknown): string | null {
 /**
  * Flexible Step 26 — compute M01–M20 for one representative + UTC month period.
  * Rates stay null when denominators are 0 (never coerced to 0%).
+ * Contained Model B source-failure selectors degrade to UNAVAILABLE (never fabricated zeros).
  */
 @Injectable()
 export class ProductivityMetricsService {
@@ -89,6 +103,9 @@ export class ProductivityMetricsService {
     const sourceCutoffAt = input.sourceCutoffAt ?? new Date();
 
     return this.prisma.withPlatformBypass(async (client) => {
+      const targetSourceFailed = isSalesProductivityFailureInjectionActive(
+        'before_target_source_query',
+      );
       const rep = await client.platformSalesRepresentative.findUnique({
         where: { id: input.representativeId },
         select: {
@@ -103,404 +120,585 @@ export class ProductivityMetricsService {
 
       const start = period.periodStart;
       const end = period.periodEnd;
-      // Late-arriving rows: include when event timestamp is in bound and observed by cutoff.
       const eventUpper = sourceCutoffAt < end ? sourceCutoffAt : end;
 
-      const leadsCreated = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          createdAt: { gte: start, lt: eventUpper },
-        },
-      });
-      const leadsCreatedNullOwnerGap = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: null,
-          createdAt: { gte: start, lt: eventUpper },
-        },
-      });
-
-      const notesCount = await client.platformSalesLeadNote.count({
-        where: {
-          createdAt: { gte: start, lt: eventUpper },
-          lead: { ownerRepresentativeId: rep.id },
-        },
-      });
-      const demoUpdates = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
-          updatedAt: { gte: start, lt: eventUpper },
-        },
-      });
-      const nextActionUpdates = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          nextActionType: { not: null },
-          updatedAt: { gte: start, lt: eventUpper },
-        },
-      });
-      const activities = notesCount + demoUpdates + nextActionUpdates;
-
-      const demosScheduled = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
-          demoScheduledAt: { gte: start, lt: eventUpper },
-        },
-      });
-      const demosScheduledMissingTz = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
-          demoScheduledAt: { gte: start, lt: eventUpper },
-          OR: [{ demoTimezone: null }, { demoTimezone: '' }],
-        },
-      });
-
-      const demosCompleted = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          demoStatus: 'COMPLETED',
-          updatedAt: { gte: start, lt: eventUpper },
-        },
-      });
-
-      const trialsCreated = await client.platformSalesTrial.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          createdAt: { gte: start, lt: eventUpper },
-        },
-      });
-
-      const wonHistory = await client.platformSalesLeadStageHistory.count({
-        where: {
-          toStage: 'WON',
-          createdAt: { gte: start, lt: eventUpper },
-          lead: { ownerRepresentativeId: rep.id },
-        },
-      });
-      const lostHistory = await client.platformSalesLeadStageHistory.count({
-        where: {
-          toStage: 'LOST',
-          createdAt: { gte: start, lt: eventUpper },
-          lead: { ownerRepresentativeId: rep.id },
-        },
-      });
-      const historyMissingWonFallback = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          stage: 'WON',
-          updatedAt: { gte: start, lt: eventUpper },
-          stageHistory: { none: { toStage: 'WON' } },
-        },
-      });
-      const historyMissingLostFallback = await client.platformSalesLead.count({
-        where: {
-          ownerRepresentativeId: rep.id,
-          stage: 'LOST',
-          updatedAt: { gte: start, lt: eventUpper },
-          stageHistory: { none: { toStage: 'LOST' } },
-        },
-      });
-      const won = wonHistory + historyMissingWonFallback;
-      const lost = lostHistory + historyMissingLostFallback;
-      const wonCompleteness: Completeness =
-        historyMissingWonFallback > 0 || historyMissingLostFallback > 0
-          ? 'PARTIAL'
-          : 'COMPLETE';
-
-      const conversions = await client.platformSalesTrialConversion.findMany({
-        where: { convertedAt: { gte: start, lt: eventUpper } },
-        select: {
-          id: true,
-          targetPaidPlanVersionId: true,
-          convertedAt: true,
-          dispositionsJson: true,
-          trial: {
-            select: {
-              id: true,
-              platformTenantId: true,
-              originatingLeadId: true,
-              ownerRepresentativeId: true,
-              attributionSnapshotJson: true,
-              createdAt: true,
-            },
-          },
-        },
-      });
-
-      const attributedConversions = conversions.filter((c) => {
-        const attr = asAttributionId(c.trial.attributionSnapshotJson) ?? c.trial.ownerRepresentativeId;
-        return attr === rep.id;
-      });
-      const paidConversions = attributedConversions.length;
-      const paidMissingAttr = attributedConversions.filter((c) => {
-        const snap = c.trial.attributionSnapshotJson;
-        return !asAttributionId(snap);
-      }).length;
-
-      const planMixMap = new Map<string, number>();
-      for (const c of attributedConversions) {
-        planMixMap.set(
-          c.targetPaidPlanVersionId,
-          (planMixMap.get(c.targetPaidPlanVersionId) ?? 0) + 1,
-        );
-      }
-      const planVersionAttribution: PlanVersionAttribution[] = [...planMixMap.entries()].map(
-        ([planVersionId, count]) => ({ planVersionId, count }),
+      const leadFailed = isSalesProductivityFailureInjectionActive('before_lead_source_query');
+      const trialFailed = isSalesProductivityFailureInjectionActive('before_trial_source_query');
+      const subscriptionFailed = isSalesProductivityFailureInjectionActive(
+        'before_subscription_source_query',
+      );
+      const planVersionFailed = isSalesProductivityFailureInjectionActive(
+        'before_plan_version_source_query',
+      );
+      const addonFailed = isSalesProductivityFailureInjectionActive('before_addon_source_query');
+      const attributionFailed = isSalesProductivityFailureInjectionActive(
+        'before_attribution_source_query',
+      );
+      const completenessFailed = isSalesProductivityFailureInjectionActive(
+        'before_completeness_eval',
       );
 
-      const convertDays: number[] = [];
-      for (const c of attributedConversions) {
-        if (!c.trial.originatingLeadId) continue;
-        const lead = await client.platformSalesLead.findUnique({
-          where: { id: c.trial.originatingLeadId },
-          select: { createdAt: true },
+      let leadsCreated: number | null = 0;
+      let leadsCreatedNullOwnerGap = 0;
+      let activities: number | null = 0;
+      let demosScheduled: number | null = 0;
+      let demosScheduledMissingTz = 0;
+      let demosCompleted: number | null = 0;
+      let won: number | null = 0;
+      let lost: number | null = 0;
+      let wonCompleteness: Completeness = 'COMPLETE';
+      let lostCompleteness: Completeness = 'COMPLETE';
+      let leadCompleteness: Completeness = 'COMPLETE';
+
+      if (leadFailed) {
+        leadsCreated = null;
+        activities = null;
+        demosScheduled = null;
+        demosCompleted = null;
+        won = null;
+        lost = null;
+        leadCompleteness = 'UNAVAILABLE';
+        wonCompleteness = 'UNAVAILABLE';
+        lostCompleteness = 'UNAVAILABLE';
+      } else {
+        leadsCreated = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            createdAt: { gte: start, lt: eventUpper },
+          },
         });
-        if (!lead) continue;
-        const days =
-          (c.convertedAt.getTime() - lead.createdAt.getTime()) / (24 * 60 * 60 * 1000);
-        if (days >= 0) convertDays.push(days);
-      }
-      const timeToConvert = median(convertDays);
-      const timeToConvertCompleteness: Completeness =
-        convertDays.length === 0
-          ? 'NOT_APPLICABLE'
-          : convertDays.length < 3
+        leadsCreatedNullOwnerGap = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: null,
+            createdAt: { gte: start, lt: eventUpper },
+          },
+        });
+
+        const notesCount = await client.platformSalesLeadNote.count({
+          where: {
+            createdAt: { gte: start, lt: eventUpper },
+            lead: { ownerRepresentativeId: rep.id },
+          },
+        });
+        const demoUpdates = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
+            updatedAt: { gte: start, lt: eventUpper },
+          },
+        });
+        const nextActionUpdates = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            nextActionType: { not: null },
+            updatedAt: { gte: start, lt: eventUpper },
+          },
+        });
+        activities = notesCount + demoUpdates + nextActionUpdates;
+
+        demosScheduled = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
+            demoScheduledAt: { gte: start, lt: eventUpper },
+          },
+        });
+        demosScheduledMissingTz = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            demoStatus: { in: ['SCHEDULED', 'COMPLETED', 'CANCELLED'] },
+            demoScheduledAt: { gte: start, lt: eventUpper },
+            OR: [{ demoTimezone: null }, { demoTimezone: '' }],
+          },
+        });
+
+        demosCompleted = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            demoStatus: 'COMPLETED',
+            updatedAt: { gte: start, lt: eventUpper },
+          },
+        });
+
+        const wonHistory = await client.platformSalesLeadStageHistory.count({
+          where: {
+            toStage: 'WON',
+            createdAt: { gte: start, lt: eventUpper },
+            lead: { ownerRepresentativeId: rep.id },
+          },
+        });
+        const lostHistory = await client.platformSalesLeadStageHistory.count({
+          where: {
+            toStage: 'LOST',
+            createdAt: { gte: start, lt: eventUpper },
+            lead: { ownerRepresentativeId: rep.id },
+          },
+        });
+        const historyMissingWonFallback = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            stage: 'WON',
+            updatedAt: { gte: start, lt: eventUpper },
+            stageHistory: { none: { toStage: 'WON' } },
+          },
+        });
+        const historyMissingLostFallback = await client.platformSalesLead.count({
+          where: {
+            ownerRepresentativeId: rep.id,
+            stage: 'LOST',
+            updatedAt: { gte: start, lt: eventUpper },
+            stageHistory: { none: { toStage: 'LOST' } },
+          },
+        });
+        won = wonHistory + historyMissingWonFallback;
+        lost = lostHistory + historyMissingLostFallback;
+        wonCompleteness =
+          historyMissingWonFallback > 0 || historyMissingLostFallback > 0
             ? 'PARTIAL'
             : 'COMPLETE';
+        lostCompleteness = historyMissingLostFallback > 0 ? 'PARTIAL' : 'COMPLETE';
+      }
 
-      const ownerships = await client.platformSalesCustomerOwnership.findMany({
-        where: { representativeId: rep.id },
-        select: { platformTenantId: true },
-      });
-      const ownedTenantIds = ownerships.map((o) => o.platformTenantId);
-      let activeCustomers = 0;
-      if (ownedTenantIds.length > 0) {
-        activeCustomers = await client.platformSubscriptionCommercialConfig.count({
+      let trialsCreated: number | null = 0;
+      let trialCompleteness: Completeness = 'COMPLETE';
+      if (trialFailed) {
+        trialsCreated = null;
+        trialCompleteness = 'UNAVAILABLE';
+      } else {
+        trialsCreated = await client.platformSalesTrial.count({
           where: {
-            platformTenantId: { in: ownedTenantIds },
-            isCurrent: true,
-            lifecycle: 'ACTIVE_COMMERCIAL',
-            OR: [{ activatedAt: null }, { activatedAt: { lte: sourceCutoffAt } }],
+            ownerRepresentativeId: rep.id,
+            createdAt: { gte: start, lt: eventUpper },
           },
         });
       }
 
-      const cancelledConfigs =
-        ownedTenantIds.length === 0
-          ? []
-          : await client.platformSubscriptionCommercialConfig.findMany({
-              where: {
-                platformTenantId: { in: ownedTenantIds },
-                lifecycle: 'CANCELLED',
-                OR: [
-                  { cancelledAt: { gte: start, lt: eventUpper } },
-                  {
-                    cancelledAt: null,
-                    cancellationEffectiveAt: { gte: start, lt: eventUpper },
-                  },
-                ],
-              },
+      type ConversionRow = {
+        id: string;
+        targetPaidPlanVersionId: string;
+        convertedAt: Date;
+        dispositionsJson: Prisma.JsonValue;
+        trial: {
+          id: string;
+          platformTenantId: string | null;
+          originatingLeadId: string | null;
+          ownerRepresentativeId: string | null;
+          attributionSnapshotJson: Prisma.JsonValue;
+          createdAt: Date;
+        };
+      };
+
+      let attributedConversions: ConversionRow[] = [];
+      let paidConversions: number | null = 0;
+      let paidMissingAttr = 0;
+      let conversionCompleteness: Completeness = 'COMPLETE';
+      let attributionCompleteness: Completeness = 'COMPLETE';
+
+      if (attributionFailed) {
+        // Fail closed: do NOT fall back to current owner/manager for historical credit.
+        attributedConversions = [];
+        paidConversions = null;
+        conversionCompleteness = 'UNAVAILABLE';
+        attributionCompleteness = 'UNAVAILABLE';
+      } else if (trialFailed) {
+        paidConversions = null;
+        conversionCompleteness = 'UNAVAILABLE';
+      } else {
+        const conversions = await client.platformSalesTrialConversion.findMany({
+          where: { convertedAt: { gte: start, lt: eventUpper } },
+          select: {
+            id: true,
+            targetPaidPlanVersionId: true,
+            convertedAt: true,
+            dispositionsJson: true,
+            trial: {
               select: {
                 id: true,
                 platformTenantId: true,
-                cancelledAt: true,
-                cancellationEffectiveAt: true,
+                originatingLeadId: true,
+                ownerRepresentativeId: true,
+                attributionSnapshotJson: true,
+                createdAt: true,
               },
-            });
-      const cancellations = cancelledConfigs.length;
-      const cancellationAttribution: CancellationAttribution = {
-        count: cancellations,
-        basis: 'current_ownership_partial',
-        completeness: cancellations > 0 ? 'PARTIAL' : 'COMPLETE',
-      };
-
-      // Add-on sales: assignments created in period on paid ACTIVE/CANCELLED commercial configs
-      // for owned tenants + conversion dispositions that migrate/retain once.
-      const addOnAttribution: AddOnAttribution[] = [];
-      const addOnMap = new Map<string, AddOnAttribution>();
-      if (ownedTenantIds.length > 0) {
-        const assignments = await client.platformSubscriptionAddOnAssignment.findMany({
-          where: {
-            createdAt: { gte: start, lt: eventUpper },
-            config: {
-              platformTenantId: { in: ownedTenantIds },
-              lifecycle: { in: ['ACTIVE_COMMERCIAL', 'CANCELLED'] },
             },
           },
-          select: { addOnVersionId: true },
         });
-        for (const a of assignments) {
-          const prev = addOnMap.get(a.addOnVersionId);
-          if (prev) prev.count += 1;
-          else {
-            addOnMap.set(a.addOnVersionId, {
-              addOnVersionId: a.addOnVersionId,
-              count: 1,
-              basis: 'assignment_created',
-            });
+
+        attributedConversions = conversions.filter((c) => {
+          const attr =
+            asAttributionId(c.trial.attributionSnapshotJson) ?? c.trial.ownerRepresentativeId;
+          return attr === rep.id;
+        });
+        paidConversions = attributedConversions.length;
+        paidMissingAttr = attributedConversions.filter((c) => {
+          const snap = c.trial.attributionSnapshotJson;
+          return !asAttributionId(snap);
+        }).length;
+        conversionCompleteness = paidMissingAttr > 0 ? 'PARTIAL' : 'COMPLETE';
+      }
+
+      let planVersionAttribution: PlanVersionAttribution[] = [];
+      let planMixCompleteness: Completeness = 'COMPLETE';
+      if (planVersionFailed || attributionFailed || trialFailed) {
+        planVersionAttribution = [];
+        planMixCompleteness = 'UNAVAILABLE';
+      } else {
+        const planMixMap = new Map<string, number>();
+        for (const c of attributedConversions) {
+          // Immutable Plan Version id only — never Plan display name / latest substitution.
+          planMixMap.set(
+            c.targetPaidPlanVersionId,
+            (planMixMap.get(c.targetPaidPlanVersionId) ?? 0) + 1,
+          );
+        }
+        planVersionAttribution = [...planMixMap.entries()].map(([planVersionId, count]) => ({
+          planVersionId,
+          count,
+        }));
+      }
+
+      let timeToConvert: number | null = null;
+      let timeToConvertCompleteness: Completeness = 'NOT_APPLICABLE';
+      if (leadFailed || trialFailed || attributionFailed) {
+        timeToConvert = null;
+        timeToConvertCompleteness = 'UNAVAILABLE';
+      } else {
+        const convertDays: number[] = [];
+        for (const c of attributedConversions) {
+          if (!c.trial.originatingLeadId) continue;
+          const lead = await client.platformSalesLead.findUnique({
+            where: { id: c.trial.originatingLeadId },
+            select: { createdAt: true },
+          });
+          if (!lead) continue;
+          const days =
+            (c.convertedAt.getTime() - lead.createdAt.getTime()) / (24 * 60 * 60 * 1000);
+          if (days >= 0) convertDays.push(days);
+        }
+        timeToConvert = median(convertDays);
+        timeToConvertCompleteness =
+          convertDays.length === 0
+            ? 'NOT_APPLICABLE'
+            : convertDays.length < 3
+              ? 'PARTIAL'
+              : 'COMPLETE';
+      }
+
+      let activeCustomers: number | null = 0;
+      let cancellations: number | null = 0;
+      let cancellationAttribution: CancellationAttribution = {
+        count: 0,
+        basis: 'current_ownership_partial',
+        completeness: 'COMPLETE',
+      };
+      let subscriptionCompleteness: Completeness = 'COMPLETE';
+
+      if (subscriptionFailed) {
+        activeCustomers = null;
+        cancellations = null;
+        cancellationAttribution = {
+          count: 0,
+          basis: 'current_ownership_partial',
+          completeness: 'UNAVAILABLE',
+        };
+        subscriptionCompleteness = 'UNAVAILABLE';
+      } else {
+        const ownerships = await client.platformSalesCustomerOwnership.findMany({
+          where: { representativeId: rep.id },
+          select: { platformTenantId: true },
+        });
+        const ownedTenantIds = ownerships.map((o) => o.platformTenantId);
+        if (ownedTenantIds.length > 0) {
+          activeCustomers = await client.platformSubscriptionCommercialConfig.count({
+            where: {
+              platformTenantId: { in: ownedTenantIds },
+              isCurrent: true,
+              lifecycle: 'ACTIVE_COMMERCIAL',
+              OR: [{ activatedAt: null }, { activatedAt: { lte: sourceCutoffAt } }],
+            },
+          });
+        }
+
+        const cancelledConfigs =
+          ownedTenantIds.length === 0
+            ? []
+            : await client.platformSubscriptionCommercialConfig.findMany({
+                where: {
+                  platformTenantId: { in: ownedTenantIds },
+                  lifecycle: 'CANCELLED',
+                  OR: [
+                    { cancelledAt: { gte: start, lt: eventUpper } },
+                    {
+                      cancelledAt: null,
+                      cancellationEffectiveAt: { gte: start, lt: eventUpper },
+                    },
+                  ],
+                },
+                select: {
+                  id: true,
+                  platformTenantId: true,
+                  cancelledAt: true,
+                  cancellationEffectiveAt: true,
+                },
+              });
+        cancellations = cancelledConfigs.length;
+        cancellationAttribution = {
+          count: cancellations,
+          basis: 'current_ownership_partial',
+          completeness: cancellations > 0 ? 'PARTIAL' : 'COMPLETE',
+        };
+      }
+
+      let addOnAttribution: AddOnAttribution[] = [];
+      let addonSales: number | null = 0;
+      let addonCompleteness: Completeness = 'PARTIAL';
+      if (addonFailed || attributionFailed || subscriptionFailed) {
+        addOnAttribution = [];
+        addonSales = null;
+        addonCompleteness = 'UNAVAILABLE';
+      } else {
+        const addOnMap = new Map<string, AddOnAttribution>();
+        const ownershipsForAddon = await client.platformSalesCustomerOwnership.findMany({
+          where: { representativeId: rep.id },
+          select: { platformTenantId: true },
+        });
+        const ownedTenantIds = ownershipsForAddon.map((o) => o.platformTenantId);
+        if (ownedTenantIds.length > 0) {
+          const assignments = await client.platformSubscriptionAddOnAssignment.findMany({
+            where: {
+              createdAt: { gte: start, lt: eventUpper },
+              config: {
+                platformTenantId: { in: ownedTenantIds },
+                lifecycle: { in: ['ACTIVE_COMMERCIAL', 'CANCELLED'] },
+              },
+            },
+            select: { addOnVersionId: true },
+          });
+          for (const a of assignments) {
+            const prev = addOnMap.get(a.addOnVersionId);
+            if (prev) prev.count += 1;
+            else {
+              addOnMap.set(a.addOnVersionId, {
+                addOnVersionId: a.addOnVersionId,
+                count: 1,
+                basis: 'assignment_created',
+              });
+            }
           }
         }
-      }
-      for (const c of attributedConversions) {
-        const dispositions = Array.isArray(c.dispositionsJson)
-          ? (c.dispositionsJson as Array<Record<string, unknown>>)
-          : [];
-        for (const d of dispositions) {
-          const disposition = String(d.disposition ?? '');
-          if (
-            disposition !== 'MIGRATE_TO_PAID_EQUIVALENT' &&
-            disposition !== 'RETAIN_NOT_TRIAL_ONLY'
-          ) {
-            continue;
+        for (const c of attributedConversions) {
+          const dispositions = Array.isArray(c.dispositionsJson)
+            ? (c.dispositionsJson as Array<Record<string, unknown>>)
+            : [];
+          for (const d of dispositions) {
+            const disposition = String(d.disposition ?? '');
+            if (
+              disposition !== 'MIGRATE_TO_PAID_EQUIVALENT' &&
+              disposition !== 'RETAIN_NOT_TRIAL_ONLY'
+            ) {
+              continue;
+            }
+            const key =
+              typeof d.paidEquivalentKey === 'string'
+                ? d.paidEquivalentKey
+                : typeof d.grantKey === 'string'
+                  ? d.grantKey
+                  : null;
+            if (!key) continue;
+            const basis =
+              disposition === 'MIGRATE_TO_PAID_EQUIVALENT'
+                ? ('conversion_disposition_migrate' as const)
+                : ('conversion_disposition_retain' as const);
+            const prev = addOnMap.get(key);
+            if (prev) prev.count += 1;
+            else addOnMap.set(key, { addOnVersionId: key, count: 1, basis });
           }
-          const key =
-            typeof d.paidEquivalentKey === 'string'
-              ? d.paidEquivalentKey
-              : typeof d.grantKey === 'string'
-                ? d.grantKey
-                : null;
-          if (!key) continue;
-          const basis =
-            disposition === 'MIGRATE_TO_PAID_EQUIVALENT'
-              ? ('conversion_disposition_migrate' as const)
-              : ('conversion_disposition_retain' as const);
-          const prev = addOnMap.get(key);
-          if (prev) prev.count += 1;
-          else addOnMap.set(key, { addOnVersionId: key, count: 1, basis });
         }
+        addOnAttribution.push(...addOnMap.values());
+        addonSales = addOnAttribution.reduce((sum, a) => sum + a.count, 0);
       }
-      addOnAttribution.push(...addOnMap.values());
-      const addonSales = addOnAttribution.reduce((sum, a) => sum + a.count, 0);
 
-      const convertedCustomers = new Set(
-        attributedConversions
-          .map((c) => c.trial.platformTenantId)
-          .filter((id): id is string => typeof id === 'string' && id.length > 0),
-      ).size;
+      let convertedCustomers: number | null = 0;
+      if (trialFailed || attributionFailed) {
+        convertedCustomers = null;
+      } else {
+        convertedCustomers = new Set(
+          attributedConversions
+            .map((c) => c.trial.platformTenantId)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0),
+        ).size;
+      }
 
-      // M16 target progress — monthly quota vs won count when unitless; money targets N/A.
       let targetProgress: number | null = null;
       let targetCompleteness: Completeness = 'NOT_APPLICABLE';
       let targetExplanation: string | null = 'missing_target';
-      if (rep.targetPeriod === 'MONTH' && rep.targetAmount != null) {
+      if (targetSourceFailed) {
+        targetProgress = null;
+        targetCompleteness = 'UNAVAILABLE';
+        targetExplanation = 'target_source_unavailable';
+      } else if (leadFailed && rep.targetPeriod === 'MONTH' && rep.targetAmount != null) {
+        // Won numerator unavailable → progress unavailable (never treat as zero progress).
+        targetProgress = null;
+        targetCompleteness = 'UNAVAILABLE';
+        targetExplanation = 'won_numerator_unavailable';
+      } else if (rep.targetPeriod === 'MONTH' && rep.targetAmount != null) {
         const targetNum = Number(rep.targetAmount);
         if (rep.targetCurrency) {
           targetCompleteness = 'NOT_APPLICABLE';
           targetExplanation = 'target_unit_unconfigured_for_money';
           targetProgress = null;
-        } else if (targetNum > 0) {
+        } else if (targetNum > 0 && won != null) {
           targetProgress = won / targetNum;
           targetCompleteness = 'COMPLETE';
           targetExplanation = 'won_count_vs_unitless_quota';
-        } else {
+        } else if (targetNum <= 0) {
           targetCompleteness = 'UNAVAILABLE';
           targetExplanation = 'invalid_target_amount';
         }
       }
 
       const leadToWonRate =
-        leadsCreated === 0 ? null : won / leadsCreated;
+        leadsCreated == null || won == null
+          ? null
+          : leadsCreated === 0
+            ? null
+            : won / leadsCreated;
       const trialToPaidRate =
-        trialsCreated === 0 ? null : paidConversions / trialsCreated;
+        trialsCreated == null || paidConversions == null
+          ? null
+          : trialsCreated === 0
+            ? null
+            : paidConversions / trialsCreated;
 
-      const m01 = metric('M01', 'leads_created', leadsCreated, 'COMPLETE', {
-        explanation:
-          leadsCreatedNullOwnerGap > 0
-            ? `period_has_${leadsCreatedNullOwnerGap}_leads_with_null_owner_not_attributed`
-            : null,
-      });
-      const m02 = metric('M02', 'activities', activities, 'COMPLETE');
-      const m03 = metric(
-        'M03',
-        'demos_scheduled',
-        demosScheduled,
-        demosScheduledMissingTz > 0 ? 'PARTIAL' : 'COMPLETE',
-        {
-          explanation:
-            demosScheduledMissingTz > 0
-              ? 'timezone_missing_counted_in_utc'
-              : null,
-        },
-      );
-      const m04 = metric('M04', 'demos_completed', demosCompleted, 'COMPLETE');
-      const m05 = metric('M05', 'trials_created', trialsCreated, 'COMPLETE');
-      const m06 = metric('M06', 'won', won, wonCompleteness);
-      const m07 = metric(
-        'M07',
-        'lost',
-        lost,
-        historyMissingLostFallback > 0 ? 'PARTIAL' : 'COMPLETE',
-      );
-      const m08 = metric(
-        'M08',
-        'paid_conversions',
-        paidConversions,
-        paidMissingAttr > 0 ? 'PARTIAL' : 'COMPLETE',
-      );
-      const m09 = metric(
-        'M09',
-        'lead_to_won_rate',
-        leadToWonRate,
-        leadsCreated === 0 ? 'NOT_APPLICABLE' : 'COMPLETE',
-        {
-          numerator: won,
-          denominator: leadsCreated,
-          rankingEligible: leadsCreated > 0 && leadToWonRate !== null,
-        },
-      );
-      const m10 = metric(
-        'M10',
-        'trial_to_paid_rate',
-        trialToPaidRate,
-        trialsCreated === 0 ? 'NOT_APPLICABLE' : 'COMPLETE',
-        {
-          numerator: paidConversions,
-          denominator: trialsCreated,
-          rankingEligible: trialsCreated > 0 && trialToPaidRate !== null,
-        },
-      );
-      const m11 = metric(
-        'M11',
-        'time_to_convert_days',
-        timeToConvert,
-        timeToConvertCompleteness,
-        {
-          rankingEligible: timeToConvertCompleteness === 'COMPLETE',
-        },
-      );
-      const m12 = metric('M12', 'active_customers', activeCustomers, 'COMPLETE');
-      const m13 = metric(
-        'M13',
-        'cancellations',
-        cancellations,
-        cancellationAttribution.completeness,
-      );
-      const m14 = metric(
-        'M14',
-        'plan_version_mix',
-        planVersionAttribution.reduce((s, p) => s + p.count, 0),
-        planVersionAttribution.length > 0 ? 'COMPLETE' : 'COMPLETE',
-        { rankingEligible: false },
-      );
-      const m15 = metric('M15', 'addon_sales', addonSales, 'PARTIAL');
+      const m01 = leadFailed
+        ? unavailableMetric('M01', 'leads_created', 'lead_source_unavailable')
+        : metric('M01', 'leads_created', leadsCreated, 'COMPLETE', {
+            explanation:
+              leadsCreatedNullOwnerGap > 0
+                ? `period_has_${leadsCreatedNullOwnerGap}_leads_with_null_owner_not_attributed`
+                : null,
+          });
+      const m02 = leadFailed
+        ? unavailableMetric('M02', 'activities', 'lead_source_unavailable')
+        : metric('M02', 'activities', activities, 'COMPLETE');
+      const m03 = leadFailed
+        ? unavailableMetric('M03', 'demos_scheduled', 'lead_source_unavailable')
+        : metric(
+            'M03',
+            'demos_scheduled',
+            demosScheduled,
+            demosScheduledMissingTz > 0 ? 'PARTIAL' : 'COMPLETE',
+            {
+              explanation:
+                demosScheduledMissingTz > 0 ? 'timezone_missing_counted_in_utc' : null,
+            },
+          );
+      const m04 = leadFailed
+        ? unavailableMetric('M04', 'demos_completed', 'lead_source_unavailable')
+        : metric('M04', 'demos_completed', demosCompleted, 'COMPLETE');
+      const m05 = trialFailed
+        ? unavailableMetric('M05', 'trials_created', 'trial_source_unavailable')
+        : metric('M05', 'trials_created', trialsCreated, trialCompleteness);
+      const m06 = leadFailed
+        ? unavailableMetric('M06', 'won', 'lead_source_unavailable')
+        : metric('M06', 'won', won, wonCompleteness);
+      const m07 = leadFailed
+        ? unavailableMetric('M07', 'lost', 'lead_source_unavailable')
+        : metric('M07', 'lost', lost, lostCompleteness);
+      const m08 =
+        trialFailed || attributionFailed
+          ? unavailableMetric(
+              'M08',
+              'paid_conversions',
+              attributionFailed ? 'attribution_source_unavailable' : 'trial_source_unavailable',
+            )
+          : metric('M08', 'paid_conversions', paidConversions, conversionCompleteness);
+      const m09 =
+        leadFailed || leadsCreated == null || won == null
+          ? unavailableMetric('M09', 'lead_to_won_rate', 'lead_source_unavailable')
+          : metric(
+              'M09',
+              'lead_to_won_rate',
+              leadToWonRate,
+              leadsCreated === 0 ? 'NOT_APPLICABLE' : 'COMPLETE',
+              {
+                numerator: won,
+                denominator: leadsCreated,
+                rankingEligible: leadsCreated > 0 && leadToWonRate !== null,
+              },
+            );
+      const m10 =
+        trialFailed || attributionFailed || trialsCreated == null || paidConversions == null
+          ? unavailableMetric(
+              'M10',
+              'trial_to_paid_rate',
+              attributionFailed ? 'attribution_source_unavailable' : 'trial_source_unavailable',
+            )
+          : metric(
+              'M10',
+              'trial_to_paid_rate',
+              trialToPaidRate,
+              trialsCreated === 0 ? 'NOT_APPLICABLE' : 'COMPLETE',
+              {
+                numerator: paidConversions,
+                denominator: trialsCreated,
+                rankingEligible: trialsCreated > 0 && trialToPaidRate !== null,
+              },
+            );
+      const m11 =
+        leadFailed || trialFailed || attributionFailed
+          ? unavailableMetric('M11', 'time_to_convert_days', 'source_unavailable')
+          : metric('M11', 'time_to_convert_days', timeToConvert, timeToConvertCompleteness, {
+              rankingEligible: timeToConvertCompleteness === 'COMPLETE',
+            });
+      const m12 = subscriptionFailed
+        ? unavailableMetric('M12', 'active_customers', 'subscription_source_unavailable')
+        : metric('M12', 'active_customers', activeCustomers, subscriptionCompleteness);
+      const m13 = subscriptionFailed
+        ? unavailableMetric('M13', 'cancellations', 'subscription_source_unavailable')
+        : metric('M13', 'cancellations', cancellations, cancellationAttribution.completeness);
+      const m14 =
+        planVersionFailed || attributionFailed || trialFailed
+          ? unavailableMetric(
+              'M14',
+              'plan_version_mix',
+              planVersionFailed
+                ? 'plan_version_source_unavailable'
+                : 'attribution_or_trial_source_unavailable',
+            )
+          : metric(
+              'M14',
+              'plan_version_mix',
+              planVersionAttribution.reduce((s, p) => s + p.count, 0),
+              planMixCompleteness,
+              { rankingEligible: false },
+            );
+      const m15 =
+        addonFailed || attributionFailed || subscriptionFailed
+          ? unavailableMetric('M15', 'addon_sales', 'addon_source_unavailable')
+          : metric('M15', 'addon_sales', addonSales, addonCompleteness);
       const m16 = metric('M16', 'target_progress', targetProgress, targetCompleteness, {
         numerator: won,
-        denominator: rep.targetAmount != null ? Number(rep.targetAmount) : null,
+        denominator:
+          !targetSourceFailed && rep.targetAmount != null ? Number(rep.targetAmount) : null,
         explanation: targetExplanation,
         rankingEligible: targetCompleteness === 'COMPLETE' && targetProgress !== null,
       });
-      const m17 = metric('M17', 'converted_customers', convertedCustomers, 'COMPLETE');
-      const m18 = metric(
-        'M18',
-        'cancellation_attribution',
-        cancellationAttribution.count,
-        cancellationAttribution.completeness,
-        { explanation: cancellationAttribution.basis },
-      );
+      const m17 =
+        trialFailed || attributionFailed
+          ? unavailableMetric('M17', 'converted_customers', 'attribution_or_trial_unavailable')
+          : metric('M17', 'converted_customers', convertedCustomers, 'COMPLETE');
+      const m18 = subscriptionFailed
+        ? unavailableMetric('M18', 'cancellation_attribution', 'subscription_source_unavailable')
+        : metric(
+            'M18',
+            'cancellation_attribution',
+            cancellationAttribution.count,
+            cancellationAttribution.completeness,
+            { explanation: cancellationAttribution.basis },
+          );
 
-      const metrics: MetricValue[] = [
+      let metrics: MetricValue[] = [
         m01,
         m02,
         m03,
@@ -521,14 +719,42 @@ export class ProductivityMetricsService {
         m18,
       ];
 
-      const metricCompleteness = metrics.map((m) => m.completeness);
-      const periodSource: Completeness = 'COMPLETE';
-      const reporting = worstCompleteness([...metricCompleteness, periodSource]);
+      const anySourceFailed =
+        leadFailed ||
+        trialFailed ||
+        subscriptionFailed ||
+        planVersionFailed ||
+        addonFailed ||
+        targetSourceFailed ||
+        attributionFailed ||
+        completenessFailed;
+
+      let periodSource: Completeness = anySourceFailed ? 'UNAVAILABLE' : 'COMPLETE';
+      let reporting = worstCompleteness([
+        ...metrics.map((m) => m.completeness),
+        periodSource,
+      ]);
+
+      if (completenessFailed) {
+        // Fail closed: never default to COMPLETE; strip ranking eligibility.
+        periodSource = 'UNAVAILABLE';
+        reporting = 'UNAVAILABLE';
+        metrics = metrics.map((m) => ({
+          ...m,
+          completeness: m.completeness === 'NOT_APPLICABLE' ? 'NOT_APPLICABLE' : 'UNAVAILABLE',
+          value: m.completeness === 'NOT_APPLICABLE' ? m.value : null,
+          rankingEligible: false,
+          explanation: m.explanation ?? 'completeness_evaluator_unavailable',
+        }));
+      }
+
       const m19 = metric('M19', 'period_source_completeness', null, periodSource, {
         rankingEligible: false,
+        explanation: anySourceFailed || completenessFailed ? 'source_or_completeness_unavailable' : null,
       });
       const m20 = metric('M20', 'reporting_completeness', null, reporting, {
         rankingEligible: false,
+        explanation: reporting === 'UNAVAILABLE' ? 'reporting_unavailable' : null,
       });
       metrics.push(m19, m20);
 
@@ -543,6 +769,18 @@ export class ProductivityMetricsService {
         >,
         period_source_completeness: periodSource,
         reporting_completeness: reporting,
+        notes: anySourceFailed || completenessFailed
+          ? [
+              leadFailed ? 'lead_source_unavailable' : null,
+              trialFailed ? 'trial_source_unavailable' : null,
+              subscriptionFailed ? 'subscription_source_unavailable' : null,
+              planVersionFailed ? 'plan_version_source_unavailable' : null,
+              addonFailed ? 'addon_source_unavailable' : null,
+              targetSourceFailed ? 'target_source_unavailable' : null,
+              attributionFailed ? 'attribution_source_unavailable' : null,
+              completenessFailed ? 'completeness_evaluator_unavailable' : null,
+            ].filter((n): n is string => Boolean(n))
+          : undefined,
       };
 
       if (isSalesProductivityFailureInjectionActive('after_metrics_compute')) {

@@ -6,9 +6,11 @@ import {
   SALES_COMMISSION_AUDIT_ACTIONS,
   SALES_COMMISSION_AUDIT_RESOURCE_TYPE,
   SALES_PRODUCTIVITY_PERMISSIONS,
+  isSalesProductivityFailureInjectionActive,
 } from '../platform-sales-productivity.constants';
 import { utcMonthPeriod } from '../domain/period.util';
 import {
+  SalesProductivityError,
   SalesProductivityForbiddenError,
   SalesProductivityValidationError,
 } from '../domain/sales-productivity.errors';
@@ -116,6 +118,15 @@ export class ProductivityExportService {
             .join(','),
         );
       }
+    }
+
+    // F20 — fail before any response body is returned (no partial/corrupt CSV artifact).
+    if (isSalesProductivityFailureInjectionActive('during_export_serialize')) {
+      throw new SalesProductivityError(
+        'injected_failure',
+        'Injected export serialization failure',
+        500,
+      );
     }
 
     await this.audit.record({

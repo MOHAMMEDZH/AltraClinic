@@ -502,7 +502,17 @@ export function diffSoR(
 }
 
 export function metricById(
-  bundle: { metrics: Array<{ id: string; value: number | null; completeness: string; rankingEligible: boolean }> },
+  bundle: {
+    metrics: Array<{
+      id: string;
+      value: number | null;
+      completeness: string;
+      rankingEligible: boolean;
+      explanation?: string | null;
+      numerator?: number | null;
+      denominator?: number | null;
+    }>;
+  },
   id: string,
 ) {
   const m = bundle.metrics.find((x) => x.id === id);

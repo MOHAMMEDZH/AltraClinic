@@ -59,6 +59,26 @@ export const SALES_PRODUCTIVITY_FAILURE_INJECTION_POINTS = [
   'idempotency_claim_race',
   'visibility_deny',
   'mark_paid_side_effect_guard',
+  /** F02 — isolated lead/activity/demo/won-lost source failure (fail-closed UNAVAILABLE). */
+  'before_lead_source_query',
+  /** F03 — isolated Trial source failure. */
+  'before_trial_source_query',
+  /** F04 — isolated Subscription/commercial-config source failure. */
+  'before_subscription_source_query',
+  /** F05 — isolated Plan Version identity source failure. */
+  'before_plan_version_source_query',
+  /** F06 — isolated Add-on commercial source failure. */
+  'before_addon_source_query',
+  /** F07 — isolated target source failure (≠ zero target). */
+  'before_target_source_query',
+  /** F08 — isolated frozen attribution source failure (no current-owner fallback). */
+  'before_attribution_source_query',
+  /** F09 — completeness evaluator fail-closed (never COMPLETE). */
+  'before_completeness_eval',
+  /** F19 — reconciliation evaluation failure (never reconciled=true). */
+  'during_reconciliation',
+  /** F20 — CSV export serialization/stream failure (no partial body). */
+  'during_export_serialize',
 ] as const;
 
 export type SalesProductivityFailureInjectionPoint =

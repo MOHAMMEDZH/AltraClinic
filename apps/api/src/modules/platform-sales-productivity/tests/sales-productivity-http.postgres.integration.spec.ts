@@ -452,8 +452,42 @@ describeDb('Step 26 productivity HTTP H01–H50 (PostgreSQL)', () => {
     expect(res.headers.get('cache-control')).toBe('private, no-store');
   });
 
-  it('H21: N/A — passive read session extension is auth middleware concern outside Step 26 controller', () => {
-    expect(true).toBe(true);
+  it('H21: passive Step 26 GET does not extend Platform session activity/expiry', async () => {
+    const { accessToken, session } = await issuePlatformToken([SALES_REP_ROLE]);
+    const before = await prisma.platformRefreshToken.findUniqueOrThrow({
+      where: { sessionId: session.sessionId },
+    });
+    const auditsBefore = await prisma.auditEntry.count({
+      where: { category: 'sales_commission_management' },
+    });
+    const beforeSoR = await protectedProductivitySoR(prisma);
+
+    const res = await http('GET', `/platform/sales/productivity/self?periodKey=${PERIOD_KEY}`, {
+      token: accessToken,
+    });
+    expect(res.status).toBe(200);
+
+    const after = await prisma.platformRefreshToken.findUniqueOrThrow({
+      where: { sessionId: session.sessionId },
+    });
+    expect(after.lastActivityAt.toISOString()).toBe(before.lastActivityAt.toISOString());
+    expect(after.expiresAt.toISOString()).toBe(before.expiresAt.toISOString());
+    expect(after.absoluteExpiresAt.toISOString()).toBe(before.absoluteExpiresAt.toISOString());
+    expect(after.revokedAt).toBe(before.revokedAt);
+    expect(after.tokenHash).toBe(before.tokenHash);
+    expect(
+      await prisma.auditEntry.count({
+        where: { category: 'sales_commission_management' },
+      }),
+    ).toBe(auditsBefore);
+    expect(diffSoR(beforeSoR, await protectedProductivitySoR(prisma))).toMatchObject({
+      commercialConfigs: 0,
+      subscriptions: 0,
+      platformTenants: 0,
+      entitlements: 0,
+      trials: 0,
+      conversions: 0,
+    });
   });
 
   it('H22: N/A — Step 26 productivity routes are not rate-limited in current architecture', () => {
