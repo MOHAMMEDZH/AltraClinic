@@ -164,4 +164,19 @@ export class BackgroundScheduler {
       { skipMetrics: true },
     );
   }
+
+  /**
+   * Every hour — Flexible Step 27 platform notification advance-warning / reminder scan.
+   * Behind BACKGROUND_SCHEDULERS_ENABLED (disabled in NODE_ENV=test).
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async schedulePlatformNotificationWarningScan(): Promise<void> {
+    if (!schedulersEnabled()) return;
+    await this.jobQueue.enqueue(
+      BACKGROUND_QUEUES.PLATFORM_NOTIFICATION_WARNINGS,
+      BACKGROUND_JOBS.PLATFORM_NOTIFICATION_WARNING_SCAN,
+      {},
+      { skipMetrics: true },
+    );
+  }
 }

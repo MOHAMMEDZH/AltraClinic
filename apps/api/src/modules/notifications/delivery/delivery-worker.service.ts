@@ -5,6 +5,7 @@ import { PrismaService } from '../../../infrastructure/prisma.service';
 import { TenantExecutionService } from '../../../infrastructure/tenant-execution.service';
 import { CommunicationDispatchService } from '../../subscription/application/services/communication-dispatch.service';
 import { CommunicationChannel } from '../../subscription/domain/exceptions/communication-limit-exceeded.exception';
+import { isPlatformAuditSentinelTenantId } from '../../platform-tenants/platform-tenants.tokens';
 import { DELIVERY_JOB_NAME, DELIVERY_QUEUE_NAME, NotificationChannelId } from './delivery.types';
 import { DeliveryJobService } from './delivery-job.service';
 import { ReceiptService } from './receipt.service';
@@ -218,7 +219,13 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
         throw new Error(`No adapter registered for channel "${context.job.channel}"`);
       }
 
-      const ledgerChannel = LEDGER_CHANNEL_BY_ID[context.job.channel];
+      // Governed production invariant: the Platform audit sentinel is not a licensable tenant
+      // (see LicensingEngineService.resolveLicense). Step 27 platform-principal notifications
+      // route through this sentinel tenantId and must never be metered/limited by tenant
+      // communication quotas that do not apply to them.
+      const ledgerChannel = isPlatformAuditSentinelTenantId(context.intent.tenantId)
+        ? undefined
+        : LEDGER_CHANNEL_BY_ID[context.job.channel];
       if (ledgerChannel) {
         await this.communicationLimits.assertCanDispatch(context.intent.tenantId, ledgerChannel, context.job.id);
       }

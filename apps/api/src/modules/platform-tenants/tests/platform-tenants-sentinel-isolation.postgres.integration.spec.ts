@@ -94,6 +94,53 @@ async function deleteSentinelIfPresent(prisma: PrismaClient): Promise<void> {
   } finally {
     await prisma.$executeRawUnsafe(`ALTER TABLE audit_entries ENABLE TRIGGER USER`);
   }
+  // Flexible Step 27 (and any Phase 41d producer) may attach delivery rows to the sentinel
+  // tenantId. Clear those FK children before deleting the Tenant row.
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_dead_letters"
+    WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+       OR "jobId" IN (
+         SELECT id FROM "notification_delivery_jobs"
+         WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+       )
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_receipts"
+    WHERE "jobId" IN (
+      SELECT id FROM "notification_delivery_jobs"
+      WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_delivery_attempts"
+    WHERE "jobId" IN (
+      SELECT id FROM "notification_delivery_jobs"
+      WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_delivery_jobs"
+    WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_messages"
+    WHERE "intentId" IN (
+      SELECT id FROM "notification_intents"
+      WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notification_intents"
+    WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "notifications"
+    WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+  `);
+  await prisma.$executeRawUnsafe(`
+    DELETE FROM "communication_dispatch_ledger"
+    WHERE "tenantId" = '${PLATFORM_AUDIT_SENTINEL_TENANT_ID}'::uuid
+  `);
   await prisma.tenant.deleteMany({
     where: {
       OR: [{ id: PLATFORM_AUDIT_SENTINEL_TENANT_ID }, { slug: PLATFORM_AUDIT_SENTINEL_SLUG }],

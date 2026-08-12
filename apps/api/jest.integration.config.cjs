@@ -13,6 +13,7 @@ module.exports = {
     '**/platform-operations-console/tests/**/*.spec.ts',
     '**/platform-sales-representatives/tests/**/*.spec.ts',
     '**/platform-sales-productivity/tests/**/*.spec.ts',
+    '**/platform-notifications/tests/**/*.spec.ts',
   ],
   // Base unit config ignores postgres integration specs; this runner must include them.
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],

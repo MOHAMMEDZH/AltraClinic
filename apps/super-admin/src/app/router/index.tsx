@@ -90,6 +90,10 @@ import { SalesProductivitySelfPage } from '../../pages/sales/productivity/SalesP
 import { SalesProductivityTeamPage } from '../../pages/sales/productivity/SalesProductivityTeamPage';
 import { SalesCommissionSnapshotsListPage } from '../../pages/sales/productivity/SalesCommissionSnapshotsListPage';
 import { SalesCommissionSnapshotDetailPage } from '../../pages/sales/productivity/SalesCommissionSnapshotDetailPage';
+import { NotificationTemplatesPage } from '../../pages/notifications/NotificationTemplatesPage';
+import { NotificationTemplateDetailPage } from '../../pages/notifications/NotificationTemplateDetailPage';
+import { NotificationPreferencesPage } from '../../pages/notifications/NotificationPreferencesPage';
+import { NotificationDeliveriesPage } from '../../pages/notifications/NotificationDeliveriesPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -600,6 +604,38 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('audit').policy}>
               <AuditCenterPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-templates')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-templates').policy}>
+              <NotificationTemplatesPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-templates-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-templates-detail').policy}>
+              <NotificationTemplateDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-preferences')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-preferences').policy}>
+              <NotificationPreferencesPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-deliveries')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-deliveries').policy}>
+              <NotificationDeliveriesPage />
             </RequirePermissionPolicy>
           }
         />

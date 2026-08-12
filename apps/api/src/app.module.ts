@@ -50,6 +50,7 @@ import { PlatformSalesRepresentativesModule } from './modules/platform-sales-rep
 import { PlatformSalesLeadsModule } from './modules/platform-sales-leads/platform-sales-leads.module';
 import { PlatformSalesTrialsModule } from './modules/platform-sales-trials/platform-sales-trials.module';
 import { PlatformSalesProductivityModule } from './modules/platform-sales-productivity/platform-sales-productivity.module';
+import { PlatformNotificationsModule } from './modules/platform-notifications/platform-notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -119,6 +120,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     PlatformSalesLeadsModule,
     PlatformSalesTrialsModule,
     PlatformSalesProductivityModule,
+    PlatformNotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },

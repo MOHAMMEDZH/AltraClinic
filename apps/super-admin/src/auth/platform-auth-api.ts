@@ -3578,6 +3578,100 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         },
       );
     },
+
+    listPlatformNotificationTemplates(accessToken: string) {
+      return request<{ key: string; category: string; mandatory: boolean; version: string }[]>(
+        '/platform/notifications/templates',
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getPlatformNotificationTemplate(accessToken: string, key: string) {
+      return request<Record<string, unknown>>(
+        `/platform/notifications/templates/${encodeURIComponent(key)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    previewPlatformNotificationTemplate(
+      accessToken: string,
+      key: string,
+      body: { locale?: string } = {},
+    ) {
+      return request<{ templateKey: string; subject: string; body: string; variables: Record<string, string> }>(
+        `/platform/notifications/templates/${encodeURIComponent(key)}/preview`,
+        { method: 'POST', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    listPlatformNotificationPreferences(accessToken: string) {
+      return request<
+        Array<{
+          id: string;
+          category: string;
+          channel: string;
+          enabled: boolean;
+          locale: string;
+          rowVersion: number;
+        }>
+      >('/platform/notifications/preferences', { method: 'GET', accessToken });
+    },
+
+    patchPlatformNotificationPreference(
+      accessToken: string,
+      body: {
+        category: string;
+        channel: string;
+        enabled: boolean;
+        locale?: string;
+        expectedRowVersion?: number;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<Record<string, unknown>>('/platform/notifications/preferences', {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    listPlatformNotificationDeliveries(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      if (query.page) params.set('page', String(query.page));
+      if (query.pageSize) params.set('pageSize', String(query.pageSize));
+      if (query.status) params.set('status', query.status);
+      const qs = params.toString();
+      return request<{
+        page: number;
+        pageSize: number;
+        total: number;
+        items: Array<Record<string, unknown>>;
+      }>(`/platform/notifications/deliveries${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    retryPlatformNotificationDelivery(
+      accessToken: string,
+      id: string,
+      body: { reason: string; jobId?: string },
+      idempotencyKey: string,
+    ) {
+      return request<{ accepted: boolean; jobId: string; intentId: string }>(
+        `/platform/notifications/deliveries/${encodeURIComponent(id)}/retry`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
   };
 }
 

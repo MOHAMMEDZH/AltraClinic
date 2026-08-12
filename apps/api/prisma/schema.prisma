@@ -974,6 +974,7 @@ model PlatformUser {
   mfaResetRequestsAsRequester PlatformMfaResetRequest[] @relation("MfaResetRequester")
   mfaResetRequestsAsApprover  PlatformMfaResetRequest[] @relation("MfaResetApprover")
   salesRepresentative         PlatformSalesRepresentative?
+  notificationPreferences     PlatformNotificationPreference[]
 
   @@index([isActive])
   @@index([status])
@@ -6258,4 +6259,26 @@ model PlatformSalesCommissionSnapshot {
   @@index([paidStatus])
   @@index([createdAt, id])
   @@map("platform_sales_commission_snapshots")
+}
+
+/// Flexible Step 27 — Platform notification preferences (mandatory categories cannot be disabled in API).
+/// Contract: docs/NOTIFICATIONS_AND_TEMPLATES.md
+model PlatformNotificationPreference {
+  id             String   @id @default(uuid()) @db.Uuid
+  platformUserId String   @db.Uuid
+  /// security | lifecycle | commercial | usage | operational | sales | sales_manager
+  category       String   @db.VarChar(64)
+  /// email (platform); in-app reserved for clinic path
+  channel        String   @db.VarChar(32)
+  enabled        Boolean  @default(true)
+  locale         String   @default("en-US") @db.VarChar(16)
+  rowVersion     Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@unique([platformUserId, category, channel])
+  @@index([platformUserId, category])
+  @@map("platform_notification_preferences")
 }

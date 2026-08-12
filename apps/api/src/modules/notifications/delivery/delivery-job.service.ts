@@ -196,6 +196,16 @@ export class DeliveryJobService {
     });
   }
 
+  /** Manual admin-triggered retry: resets a dead-lettered/failed job back to `pending` for immediate re-lease. */
+  async requeueJob(jobId: string): Promise<void> {
+    const client = this.client();
+    if (!client.deliveryJob) return;
+    await client.deliveryJob.update({
+      where: { id: jobId },
+      data: { status: 'pending', scheduledAt: null, leaseExpiresAt: null },
+    });
+  }
+
   /** Fails a job, classifying and either scheduling a jittered retry or dead-lettering it. */
   async failJob(job: { id: string; attemptCount: number; maxAttempts: number }, error: unknown): Promise<{ failureClass: FailureClass; retry?: RetrySchedule }> {
     const failureClass = classifyFailure(error, job.attemptCount, job.maxAttempts);

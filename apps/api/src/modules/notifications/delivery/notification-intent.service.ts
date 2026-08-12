@@ -50,28 +50,40 @@ export class NotificationIntentService {
       throw new ConflictException(`Duplicate idempotencyKey "${input.idempotencyKey}" already used for this tenant`);
     }
 
-    const created = await client.notificationIntent.create({
-      data: {
-        tenantId: input.tenantId,
-        branchId: input.branchId ?? null,
-        recipientId: input.recipientId,
-        recipientType: input.recipientType ?? 'user',
-        notificationTypeId: input.notificationTypeId ?? null,
-        category: input.category ?? null,
-        transactional: input.transactional ?? true,
-        priority: input.priority ?? 'medium',
-        requestedChannels: input.requestedChannels,
-        idempotencyKey: input.idempotencyKey,
-        title: input.title,
-        body: input.body,
-        titleAr: input.titleAr ?? null,
-        bodyAr: input.bodyAr ?? null,
-        locale: input.locale ?? 'en',
-        metadata: (input.metadata as never) ?? {},
-        scheduledAt: input.scheduledAt ?? null,
-        status: 'created',
-      },
-    });
+    let created: { id: string; tenantId: string; idempotencyKey: string; status: string };
+    try {
+      created = await client.notificationIntent.create({
+        data: {
+          tenantId: input.tenantId,
+          branchId: input.branchId ?? null,
+          recipientId: input.recipientId,
+          recipientType: input.recipientType ?? 'user',
+          notificationTypeId: input.notificationTypeId ?? null,
+          category: input.category ?? null,
+          transactional: input.transactional ?? true,
+          priority: input.priority ?? 'medium',
+          requestedChannels: input.requestedChannels,
+          idempotencyKey: input.idempotencyKey,
+          title: input.title,
+          body: input.body,
+          titleAr: input.titleAr ?? null,
+          bodyAr: input.bodyAr ?? null,
+          locale: input.locale ?? 'en',
+          metadata: (input.metadata as never) ?? {},
+          scheduledAt: input.scheduledAt ?? null,
+          status: 'created',
+        },
+      });
+    } catch (error) {
+      // Race window between the findFirst check above and this create: a concurrent request
+      // for the same (tenantId, idempotencyKey) can win the insert first. Prisma surfaces that
+      // as a raw P2002 unique-violation, which we normalize to the same ConflictException the
+      // pre-check throws so callers (e.g. dispatch idempotent-replay handling) see one shape.
+      if ((error as { code?: string })?.code === 'P2002') {
+        throw new ConflictException(`Duplicate idempotencyKey "${input.idempotencyKey}" already used for this tenant`);
+      }
+      throw error;
+    }
 
     return { id: created.id, tenantId: created.tenantId, idempotencyKey: created.idempotencyKey, status: created.status, persisted: true };
   }

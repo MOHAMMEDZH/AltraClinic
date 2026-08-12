@@ -215,6 +215,11 @@ export const PLATFORM_PERMISSIONS: readonly PlatformPermissionDefinition[] = [
   p('commission-snapshot.mark-paid', 'Mark commission snapshots paid (administrative)', 'high', {
     stepUpExpected: true,
   }),
+  p('notifications.templates.view', 'View platform notification templates', 'low'),
+  p('notifications.preferences.view', 'View platform notification preferences', 'low'),
+  p('notifications.preferences.manage', 'Manage platform notification preferences', 'medium'),
+  p('notifications.deliveries.view', 'View platform notification deliveries', 'low'),
+  p('notifications.deliveries.retry', 'Retry platform notification deliveries', 'medium'),
 ];
 
 const ALL_KEYS = PLATFORM_PERMISSIONS.map((x) => x.key);
@@ -313,6 +318,11 @@ export const PLATFORM_ROLES: readonly PlatformRoleDefinition[] = [
       'settings.reference.manage',
       'operations.view',
       'audit.view',
+      'notifications.templates.view',
+      'notifications.preferences.view',
+      'notifications.preferences.manage',
+      'notifications.deliveries.view',
+      'notifications.deliveries.retry',
       // Explicitly NO plan-version.publish, override.approve, platform-user.suspend, MFA reset approve
     ],
   },

@@ -27,8 +27,9 @@
 | Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
 | Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md` |
 | Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md` |
-| Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md`. Steps 27–29 unauthorized |
-| Flexible Steps **27–29** | **Not Authorized** |
+| Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md` |
+| Flexible Step **27** — Notifications and Templates | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-12T06:41:22.728Z`; Attempt 1 invalidated for dirty sentinel Phase 41d FK residue). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 unauthorized |
+| Flexible Steps **28–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -1599,23 +1600,33 @@ Snapshots/productivity reporting only. Steps 27–29 remain Not Authorized.
 
 ## 56. Step 27 — Notifications and Templates
 
+### Status
+**Accepted / Complete.** Case C Attempt 2 authoritative on frozen `booking_test` (freeze `2026-08-12T06:41:22.728Z`; ~54.9 min; all counters 0). Attempt 1 invalidated (dirty sentinel tenant Phase 41d notification FK residue from focused DB runs; harness cleanup hardened). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Reuses Phase 41d/41e delivery engine only (no second engine). Steps 28–29 Not Authorized.
+
 ### Objective
-Reuse notification infrastructure for platform/sales events; redaction; no PHI.
+Reuse notification infrastructure for platform/sales/commercial events; redaction; no PHI; advance Add-on/Override warnings; effective-limit alerts via EER/U01.
 
 ### Prerequisites
-Prior events exist; notification center.
+Steps 01–26 + U01; notification center / Phase 41d engine.
 
 ### Tests
-Template render without PHI/secrets.
+N01–N24, TW01–TW16, L01–L16, I/R/T/A/F/C/H/P/UI matrices; Case C one-pass.
+
+### Evidence
+Step 27 DB **224/224**; UI **60/60**; clean/upgrade validators; Case C one-pass.
+
+### Final Case C
+Attempt **1** INVALIDATED (sentinel `notifications_tenantId_fkey` residue).
+Attempt **2**: freeze `2026-08-12T06:41:22.728Z`; duration ~3295s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene restored Catalog `68/136/68/13`.
 
 ### Rollback
-Disable templates.
+Disable adapters/scheduler/UI; preserve intents/attempts/prefs/audit.
 
 ### Blocks
 28.
 
 ### Commit Boundary
-Notifications only.
+Notifications only. Steps 28–29 remain Not Authorized.
 
 ---
 

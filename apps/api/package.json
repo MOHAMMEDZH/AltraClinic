@@ -26,7 +26,7 @@
     "test:platform-plans-migration": "node scripts/validate-platform-plans-clean.mjs && node scripts/validate-platform-plans-upgrade.mjs",
     "seed:healthcare-catalog": "npx ts-node --transpile-only src/modules/platform-healthcare-catalog/seed/run-healthcare-catalog-seed.ts",
     "seed:platform-plans": "npx ts-node --transpile-only src/modules/platform-plans/seed/run-platform-plans-seed.ts",
-    "db:test:up": "docker compose -f ../../docker-compose.test.yml up -d postgres-test",
+    "db:test:up": "docker compose -f ../../docker-compose.test.yml up -d postgres-test redis-test",
     "db:test:migrate": "node scripts/migrate-platform-db-security.mjs",
     "db:test:upgrade-validate": "node scripts/validate-platform-db-security-upgrade.mjs",
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
@@ -75,10 +75,13 @@
     "test:sales-trials-upgrade-migration": "node scripts/validate-sales-trials-upgrade.mjs",
     "test:trials-conversion-final-onepass": "node scripts/run-step25-final-onepass.mjs",
     "test:sales-productivity-db": "node scripts/run-sales-productivity-db.mjs",
-    "test:sales-productivity-db": "node scripts/run-sales-productivity-db.mjs",
     "test:sales-productivity-clean-migration": "node scripts/validate-sales-productivity-clean.mjs",
     "test:sales-productivity-upgrade-migration": "node scripts/validate-sales-productivity-upgrade.mjs",
-    "test:sales-productivity-commission-final-onepass": "node scripts/run-step26-final-onepass.mjs"
+    "test:sales-productivity-commission-final-onepass": "node scripts/run-step26-final-onepass.mjs",
+    "test:notifications-templates-db": "node scripts/run-notifications-templates-db.mjs",
+    "test:notifications-templates-clean-migration": "node scripts/validate-notifications-templates-clean.mjs",
+    "test:notifications-templates-upgrade-migration": "node scripts/validate-notifications-templates-upgrade.mjs",
+    "test:notifications-templates-final-onepass": "node scripts/run-step27-final-onepass.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

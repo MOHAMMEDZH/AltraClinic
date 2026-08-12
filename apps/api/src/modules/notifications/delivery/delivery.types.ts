@@ -31,7 +31,7 @@ export interface IntentInput {
   tenantId: string;
   branchId?: string | null;
   recipientId: string;
-  recipientType?: 'user' | 'patient';
+  recipientType?: 'user' | 'patient' | 'platform_user';
   notificationTypeId?: string | null;
   category?: string | null;
   /** Transactional notifications bypass promotional consent gates (never marketing). */

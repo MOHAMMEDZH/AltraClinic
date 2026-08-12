@@ -84,6 +84,10 @@ export type SuperAdminRouteId =
   | 'sales-productivity-team'
   | 'sales-commission-snapshots'
   | 'sales-commission-snapshots-detail'
+  | 'notification-templates'
+  | 'notification-templates-detail'
+  | 'notification-preferences'
+  | 'notification-deliveries'
   | 'settings'
   | 'feature-flags-new'
   | 'feature-flags-detail'
@@ -761,6 +765,59 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
     showInNav: true,
     layout: 'app',
     step: 21,
+    status: 'available',
+  },
+  {
+    id: 'notification-templates',
+    path: '/notifications/templates',
+    titleKey: 'routes.notificationTemplates.title',
+    descriptionKey: 'routes.notificationTemplates.description',
+    navLabelKey: 'nav.notificationTemplates',
+    navGroup: 'operations',
+    icon: 'activity',
+    policy: { type: 'permission', permission: 'notifications.templates.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 27,
+    status: 'available',
+  },
+  {
+    id: 'notification-templates-detail',
+    path: '/notifications/templates/:key',
+    titleKey: 'routes.notificationTemplatesDetail.title',
+    policy: { type: 'permission', permission: 'notifications.templates.view' },
+    showInNav: false,
+    breadcrumbParentId: 'notification-templates',
+    layout: 'app',
+    step: 27,
+    status: 'available',
+  },
+  {
+    id: 'notification-preferences',
+    path: '/notifications/preferences',
+    titleKey: 'routes.notificationPreferences.title',
+    descriptionKey: 'routes.notificationPreferences.description',
+    navLabelKey: 'nav.notificationPreferences',
+    navGroup: 'operations',
+    icon: 'activity',
+    policy: { type: 'permission', permission: 'notifications.preferences.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 27,
+    status: 'available',
+  },
+  {
+    id: 'notification-deliveries',
+    path: '/notifications/deliveries',
+    titleKey: 'routes.notificationDeliveries.title',
+    descriptionKey: 'routes.notificationDeliveries.description',
+    navLabelKey: 'nav.notificationDeliveries',
+    navGroup: 'operations',
+    icon: 'activity',
+    policy: { type: 'permission', permission: 'notifications.deliveries.view' },
+    showInNav: true,
+    layout: 'app',
+    step: 27,
     status: 'available',
   },
   {
