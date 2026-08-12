@@ -4,7 +4,7 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | 28 — Security Hardening and Compliance Review |
-| **Status** | In Progress with Step 28 |
+| **Status** | Accepted / Complete with Step 28 |
 | **Related** | `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md` |
 
 **Rules:** Never paste real secrets, tokens, MFA seeds, connection strings, or PHI into tickets, chat, or this document. Use redaction and secret-manager references only.

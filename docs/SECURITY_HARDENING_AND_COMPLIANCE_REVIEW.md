@@ -4,14 +4,14 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress / Acceptance Pending** — narrow evidence/containment closure gate; Case C Attempt 2 (`515faf3`) invalidated by rate-limit containment + CSP SSOT runtime changes |
+| **Status** | **Accepted / Complete** — narrow evidence/containment closure passed; Final Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`, exit 0). Attempt 2 (`515faf3`) invalidated by RL containment + CSP SSOT runtime changes. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
 | **Steps 01–27 + U01** | Accepted / Complete |
 | **Step 29** | Not Authorized |
 
-**Closure note:** Attempt 2 preserved only until rate-limit `NODE_ENV=test` containment and Super Admin CSP SSOT landed; those change executable security/runtime behavior → **new Case C required**.
+**Case C Attempt 3:** frozen `booking_test`, commit `6dafb4498819a4c0cd5d91dd3704eca3b9a0fb59`, duration ~56.3 min, all counters 0, `exitCode=0`. Per-ID evidence: `apps/api/src/modules/security-hardening/step28-matrix-evidence.ts` (704 IDs). Temporary one-pass artifacts removed after green.
 
 ---
 
