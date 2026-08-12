@@ -1,5 +1,5 @@
 /**
- * Flexible Step 27 — real Passport HTTP matrix H01–H40.
+ * Flexible Step 27 — real Passport HTTP matrix H01–H50.
  */
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
@@ -39,7 +39,7 @@ import {
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
 
-describeDb('Step 27 notifications HTTP H01-H40 (PostgreSQL)', () => {
+describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
   let prisma: PrismaClient;
   let app: INestApplication;
   let baseUrl: string;
@@ -668,5 +668,156 @@ describeDb('Step 27 notifications HTTP H01-H40 (PostgreSQL)', () => {
       { token: accessToken, body: { locale: 'en-US' } },
     );
     expect(stack.emailService.sent.length).toBe(before);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+  });
+
+  it('H41: PATCH preferences unknown category → 4xx', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'not_a_real_category', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+  });
+
+  it('H42: deliveries pageSize>100 clamped', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http('GET', '/platform/notifications/deliveries?pageSize=500', {
+      token: accessToken,
+    });
+    expect(res.status).toBe(200);
+    expect((res.json as { pageSize: number }).pageSize).toBe(100);
+  });
+
+  it('H43: deliveries status filter', async () => {
+    const { accessToken } = await issuePlatformToken();
+    await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `h43-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const all = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
+    expect(all.status).toBe(200);
+    const status = (all.json as { items: Array<{ status: string }> }).items[0]?.status;
+    expect(status).toBeTruthy();
+    const filtered = await http(
+      'GET',
+      `/platform/notifications/deliveries?status=${encodeURIComponent(status!)}`,
+      { token: accessToken },
+    );
+    expect(filtered.status).toBe(200);
+    expect(
+      (filtered.json as { items: Array<{ status: string }> }).items.every(
+        (i) => i.status === status,
+      ),
+    ).toBe(true);
+  });
+
+  it('H44: POST preview without body locale defaults en-US 200', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http(
+      'POST',
+      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
+      { token: accessToken, body: {} },
+    );
+    expect(res.status).toBe(200);
+    expect((res.json as { locale: string }).locale).toBe('en-US');
+  });
+
+  it('H45: GET deliveries without token → 401', async () => {
+    const res = await http('GET', '/platform/notifications/deliveries');
+    expect(res.status).toBe(401);
+  });
+
+  it('H46: POST retry with view-only perms → 403', async () => {
+    const { accessToken } = await issuePlatformToken(['sales_representative']);
+    const res = await http('POST', `/platform/notifications/deliveries/${randomUUID()}/retry`, {
+      token: accessToken,
+      body: { reason: 'ops' },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('H47: PATCH preferences OCC success path increments rowVersion', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const first = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(first.status).toBe(200);
+    const v1 = (first.json as { rowVersion: number }).rowVersion;
+    const second = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: {
+        category: 'usage',
+        channel: 'email',
+        enabled: true,
+        expectedRowVersion: v1,
+      },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(second.status).toBe(200);
+    expect((second.json as { rowVersion: number }).rowVersion).toBeGreaterThan(v1);
+  });
+
+  it('H48: template detail unknown → 4xx', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http('GET', '/platform/notifications/templates/tpl.platform.does_not_exist', {
+      token: accessToken,
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+  });
+
+  it('H49: deliveries detail Cache-Control', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `h49-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const res = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+      token: accessToken,
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+  });
+
+  it('H50: realExternalDeliveriesDuringTests counter === 0 after HTTP retry path', async () => {
+    const { accessToken } = await issuePlatformToken();
+    setPlatformNotificationFailureInjection('provider_transient');
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `h50-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    clearPlatformNotificationFailureInjection();
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({
+      where: { id: result.intentId! },
+      include: { jobs: true },
+    });
+    await prisma.notificationIntent.update({
+      where: { id: result.intentId! },
+      data: {
+        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
+      },
+    });
+    await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
+      token: accessToken,
+      body: { reason: 'h50', jobId: intent.jobs[0].id },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
   });
 });

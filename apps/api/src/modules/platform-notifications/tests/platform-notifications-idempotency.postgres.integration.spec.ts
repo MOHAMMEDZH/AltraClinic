@@ -1,5 +1,5 @@
 /**
- * Flexible Step 27 — idempotency matrix I01–I10.
+ * Flexible Step 27 — idempotency matrix I01–I16.
  * Dedupe is keyed by (eventKey, sourceType, sourceId, windowKey, recipientId, channel) via the
  * Phase 41d `NotificationIntent` unique (tenantId, idempotencyKey) constraint.
  */
@@ -14,11 +14,12 @@ import {
   DEFAULT_PLATFORM_DB_SECURITY_URL,
   ensureSentinel,
   platformDbSecurityEnabled,
+  setPlatformNotificationFailureInjection,
 } from './platform-notifications-db.harness';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
 
-describeDb('Step 27 idempotency matrix I01-I10 (PostgreSQL)', () => {
+describeDb('Step 27 idempotency matrix I01-I16 (PostgreSQL)', () => {
   let prisma: PrismaClient;
   let stack: PlatformNotificationsStack;
 
@@ -161,5 +162,113 @@ describeDb('Step 27 idempotency matrix I01-I10 (PostgreSQL)', () => {
     const b = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
     expect(a.intentId).not.toBe(b.intentId);
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
+  });
+
+  it('I11: limit threshold duplicate usage event', async () => {
+    const evidenceId = randomUUID();
+    const email = `i11-${randomUUID()}@test.local`;
+    const input = {
+      level: 'warning' as const,
+      evidenceId,
+      organizationName: 'Acme',
+      limitKey: 'sms_monthly',
+      effectiveLimit: '1000',
+      currentUsage: '820',
+      thresholdPercent: '82',
+      limitProvenance: 'PLAN',
+      windowKey: 'default',
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.limitAlert(input);
+    const second = await stack.adapters.limitAlert(input);
+    expect(second.replayed).toBe(true);
+    expect(second.intentId).toBe(first.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('I12: provisioning failure replay', async () => {
+    const email = `i12-${randomUUID()}@test.local`;
+    const input = {
+      recovered: false,
+      operationId: randomUUID(),
+      organizationName: 'Acme',
+      operationReference: 'prov-op-1',
+      failureClass: 'timeout',
+      at: new Date().toISOString(),
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.provisioning(input);
+    const second = await stack.adapters.provisioning(input);
+    expect(second.replayed).toBe(true);
+    expect(second.intentId).toBe(first.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('I13: Trial expiry scheduler replay (adapter trialExpiry same window)', async () => {
+    const email = `i13-${randomUUID()}@test.local`;
+    const input = {
+      approaching: true,
+      trialId: randomUUID(),
+      organizationName: 'Acme',
+      expiryDate: new Date().toISOString(),
+      planVersionId: randomUUID(),
+      windowKey: 'd7',
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.trialExpiry(input);
+    const second = await stack.adapters.trialExpiry(input);
+    expect(second.replayed).toBe(true);
+    expect(second.intentId).toBe(first.intentId);
+  });
+
+  it('I14: lead reminder scheduler replay', async () => {
+    const email = `i14-${randomUUID()}@test.local`;
+    const input = {
+      leadId: randomUUID(),
+      leadReference: 'LEAD-14',
+      organizationName: 'Acme',
+      nextActionDate: new Date().toISOString(),
+      nextActionType: 'call',
+      windowKey: 'd1',
+      ownerPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.leadNextActionReminder(input);
+    const second = await stack.adapters.leadNextActionReminder(input);
+    expect(second.replayed).toBe(true);
+    expect(second.intentId).toBe(first.intentId);
+  });
+
+  it('I15: manager alert replay', async () => {
+    const email = `i15-${randomUUID()}@test.local`;
+    const input = {
+      ops: false,
+      alertId: randomUUID(),
+      managerPlatformUserId: randomUUID(),
+      recipientEmail: email,
+      managerDisplayName: 'Mgr',
+      staleCount: 3,
+      periodLabel: '7d',
+    };
+    const first = await stack.adapters.managerAlert(input);
+    const second = await stack.adapters.managerAlert(input);
+    expect(second.replayed).toBe(true);
+    expect(second.intentId).toBe(first.intentId);
+  });
+
+  it('I16: provider retry after ambiguous response (injection provider_ambiguous then clear + processDeliveryJob — no duplicate user-visible email if already sent, or single retry path)', async () => {
+    setPlatformNotificationFailureInjection('provider_ambiguous');
+    const email = `i16-${randomUUID()}@test.local`;
+    const result = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
+    const jobs = await prisma.deliveryJob.findMany({ where: { intentId: result.intentId! } });
+    expect(jobs).toHaveLength(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+    clearPlatformNotificationFailureInjection();
+    await stack.worker.processDeliveryJob(jobs[0].id);
+    // Single successful retry path — exactly one user-visible email, never a duplicate fan-out.
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
   });
 });

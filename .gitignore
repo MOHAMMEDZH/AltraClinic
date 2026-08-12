@@ -29,3 +29,8 @@ out/
 /apps/api/br-step21-*
 /apps/api/step21-*.txt
 /apps/api/step21-audit-export*
+/apps/api/step27-final-onepass*
+/apps/api/br-step27-*
+/apps/api/step27-*.log
+/apps/api/step27-case-c*
+/apps/api/step27-db-run*

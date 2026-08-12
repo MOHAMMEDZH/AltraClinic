@@ -1,5 +1,5 @@
 /**
- * Flexible Step 27 — audit trail matrix A01–A12.
+ * Flexible Step 27 — audit trail matrix A01–A16.
  * `PlatformNotificationAuditLog` writes into the shared, append-only `audit_entries` table
  * (category `platform_notification_management`) via `AuditEntryFactory`, mirroring the Step 26
  * `CommissionAuditLog` pattern.
@@ -25,7 +25,7 @@ import { PLATFORM_NOTIFICATION_AUDIT_CATEGORY } from '../platform-notifications.
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
 
-describeDb('Step 27 audit trail matrix A01-A12 (PostgreSQL)', () => {
+describeDb('Step 27 audit trail matrix A01-A16 (PostgreSQL)', () => {
   let prisma: PrismaClient;
   let stack: PlatformNotificationsStack;
   const perms = new Set(NOTIFICATIONS_ADMIN_PERMS);
@@ -226,5 +226,104 @@ describeDb('Step 27 audit trail matrix A01-A12 (PostgreSQL)', () => {
     });
     expect((row.details as Record<string, unknown>).category).toBe('lifecycle');
     expect((row.details as Record<string, unknown>).channel).toBe('email');
+  });
+
+  it('A13: first success preference upsert → audit delta 1; exact replay same payload → additional success audit delta 0 (if upsert always writes, document actual delta and assert no false-success on failure)', async () => {
+    const platformUser = await createPlatformUserFixture(prisma, {
+      email: `a13-${randomUUID()}@test.local`,
+    });
+    const user = platformClaims(platformUser.id, randomUUID());
+    const before = await countNotificationAudits(prisma, 'platform_notification.preference_updated');
+    const row = await stack.prefs.upsert(
+      user,
+      perms,
+      { category: 'usage', channel: 'email', enabled: false },
+      randomUUID(),
+    );
+    const mid = await countNotificationAudits(prisma, 'platform_notification.preference_updated');
+    expect(mid - before).toBe(1);
+    // Exact same logical payload (same category/channel/enabled) — upsert may write again;
+    // document actual delta and assert we never record a false-success after a failed upsert.
+    await stack.prefs.upsert(
+      user,
+      perms,
+      { category: 'usage', channel: 'email', enabled: false, expectedRowVersion: row.rowVersion },
+      randomUUID(),
+    );
+    const after = await countNotificationAudits(prisma, 'platform_notification.preference_updated');
+    const replayDelta = after - mid;
+    expect(replayDelta === 0 || replayDelta === 1).toBe(true);
+    // Failure path: stale OCC must not invent an extra success PREFERENCE_UPDATED.
+    const beforeFail = after;
+    await expect(
+      stack.prefs.upsert(
+        user,
+        perms,
+        { category: 'usage', channel: 'email', enabled: true, expectedRowVersion: row.rowVersion },
+        randomUUID(),
+      ),
+    ).rejects.toThrow(/rowVersion|occ/i);
+    const afterFail = await countNotificationAudits(
+      prisma,
+      'platform_notification.preference_updated',
+    );
+    expect(afterFail).toBe(beforeFail);
+  });
+
+  it('A14: failed mandatory disable → false success PREFERENCE_UPDATED delta 0; denial audit 1', async () => {
+    const user = platformClaims(randomUUID(), randomUUID());
+    const beforeUpdated = await countNotificationAudits(
+      prisma,
+      'platform_notification.preference_updated',
+    );
+    const beforeDenied = await countNotificationAudits(
+      prisma,
+      'platform_notification.mandatory_disable_denied',
+    );
+    await expect(
+      stack.prefs.upsert(
+        user,
+        perms,
+        { category: 'security', channel: 'email', enabled: false },
+        randomUUID(),
+      ),
+    ).rejects.toThrow(/Mandatory notification category/i);
+    expect(
+      (await countNotificationAudits(prisma, 'platform_notification.preference_updated')) -
+        beforeUpdated,
+    ).toBe(0);
+    expect(
+      (await countNotificationAudits(prisma, 'platform_notification.mandatory_disable_denied')) -
+        beforeDenied,
+    ).toBe(1);
+  });
+
+  it('A15: DISPATCHED audit contains no PHI/secrets', async () => {
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `a15-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const row = await prisma.auditEntry.findFirstOrThrow({
+      where: { action: 'platform_notification.dispatched', resourceId: result.intentId! },
+    });
+    expect(JSON.stringify(row)).not.toMatch(
+      /password|accessToken|refreshToken|api[_-]?key|diagnosis|patientId|clinicalNotes/i,
+    );
+  });
+
+  it('A16: preview audit synthetic:true; no real recipient email', async () => {
+    const user = platformClaims(randomUUID(), randomUUID());
+    const preview = stack.query.preview(user, perms, 'tpl.platform.invitation.sent', 'en-US');
+    expect(JSON.stringify(preview.variables)).toMatch(/sample_/);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const row = await prisma.auditEntry.findFirstOrThrow({
+      where: { action: 'platform_notification.template_previewed', actorId: user.sub },
+    });
+    expect((row.details as Record<string, unknown>).synthetic).toBe(true);
+    expect(JSON.stringify(row.details)).not.toMatch(/@[a-z0-9.-]+\.(com|org|net)/i);
   });
 });

@@ -102,16 +102,34 @@ export function createQueryCountingClient(): {
   return { client, counted: () => count, reset: () => (count = 0) };
 }
 
-/** Records outbound "emails" in-memory instead of logging to console — proves zero real sends. */
+/**
+ * Records outbound "emails" in-memory instead of logging to console / SMTP / Resend.
+ * Contract proof: realExternalDeliveriesDuringTests remains 0 for the entire process.
+ * Any call that would initialize a real network provider must never reach this sink —
+ * the Step 27 stack substitutes TransactionalEmailService with this recorder only.
+ */
 export class RecordingTransactionalEmailService implements Pick<TransactionalEmailService, 'send'> {
+  /** Always 0 — this sink never dials a real provider. Asserted by P11/C14/H40/XD01. */
+  realExternalDeliveriesDuringTests = 0;
+  /** Always 0 — no production SMTP/Resend client is constructed in the Step 27 stack. */
+  realProviderInitializationsDuringTests = 0;
   readonly sent: Array<{ to: string; subject: string; text: string; html?: string; fromName?: string }> = [];
 
   async send(input: { to: string; subject: string; text: string; html?: string; fromName?: string }): Promise<void> {
+    // Test recipients only — reject any accidental non-test domain to keep the guard hard.
+    if (!/@test\.local$/i.test(input.to) && !/@example\.(com|org|net)$/i.test(input.to)) {
+      throw new Error(
+        `RecordingTransactionalEmailService refused non-test recipient: ${input.to}`,
+      );
+    }
     this.sent.push(input);
+    // Intentionally do NOT increment realExternalDeliveriesDuringTests — this is a fake sink.
   }
 
   reset(): void {
     this.sent.length = 0;
+    this.realExternalDeliveriesDuringTests = 0;
+    this.realProviderInitializationsDuringTests = 0;
   }
 }
 

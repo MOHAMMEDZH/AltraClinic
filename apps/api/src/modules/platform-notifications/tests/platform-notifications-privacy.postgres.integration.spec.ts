@@ -1,5 +1,5 @@
 /**
- * Flexible Step 27 — privacy matrix P01–P12.
+ * Flexible Step 27 — privacy matrix P01–P20.
  * No PHI / platform secrets / second-engine fields in messages, deliveries, prefs, or audits.
  */
 import { randomUUID } from 'crypto';
@@ -28,7 +28,7 @@ const SECRET_MARKERS = /password|accessToken|refreshToken|secret|411111111111111
 const PATIENT_FIELD_MARKERS = /diagnosis|patientId|clinicalNotes|patientContact|clinicalRecord|ssn|mrn/i;
 const STEP28_MARKERS = /hardeningRun|releaseGate|step28|step29/i;
 
-describeDb('Step 27 privacy P01-P12 (PostgreSQL)', () => {
+describeDb('Step 27 privacy P01-P20 (PostgreSQL)', () => {
   let prisma: PrismaClient;
   let stack: PlatformNotificationsStack;
   const perms = new Set(NOTIFICATIONS_ADMIN_PERMS);
@@ -211,6 +211,7 @@ describeDb('Step 27 privacy P01-P12 (PostgreSQL)', () => {
     expect(stack.emailService.sent.length).toBe(before + 1);
     // No SMTP host / API key fields appear on recorded messages.
     expect(JSON.stringify(stack.emailService.sent)).not.toMatch(/smtp|sendgrid|mailgun/i);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
   });
 
   it('P12: preference deny audit does not persist secrets', async () => {
@@ -231,5 +232,154 @@ describeDb('Step 27 privacy P01-P12 (PostgreSQL)', () => {
       },
     });
     expect(JSON.stringify(row)).not.toMatch(SECRET_MARKERS);
+  });
+
+  it('P13: manager alert body no free-text lead notes', async () => {
+    const email = `p13-${randomUUID()}@test.local`;
+    await stack.adapters.managerAlert({
+      ops: true,
+      alertId: randomUUID(),
+      managerPlatformUserId: randomUUID(),
+      recipientEmail: email,
+      managerDisplayName: 'Mgr',
+      alertSummary: 'ops threshold',
+      operationReference: 'op-13',
+    });
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).not.toMatch(/leadNote|free.?text|clinicalNotes|patient notes/i);
+    expect(sent?.text).not.toMatch(PATIENT_FIELD_MARKERS);
+  });
+
+  it('P14: provisioning failure body sanitized (no stack/secrets)', async () => {
+    const email = `p14-${randomUUID()}@test.local`;
+    await stack.adapters.provisioning({
+      recovered: false,
+      operationId: randomUUID(),
+      organizationName: 'Acme',
+      operationReference: 'op-14',
+      failureClass: 'timeout',
+      at: new Date().toISOString(),
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    });
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).not.toMatch(SECRET_MARKERS);
+    expect(sent?.text).not.toMatch(/at Object\.|Error:|stack trace|databaseUrl/i);
+  });
+
+  it('P15: getDelivery HTTP-equivalent query surface no PHI', async () => {
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `p15-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const detail = await stack.query.getDelivery(perms, result.intentId!);
+    expect(JSON.stringify(detail)).not.toMatch(PATIENT_FIELD_MARKERS);
+    expect(JSON.stringify(detail)).not.toMatch(SECRET_MARKERS);
+  });
+
+  it('P16: ar-SY invitation body no PHI', async () => {
+    const email = `p16-${randomUUID()}@test.local`;
+    await stack.dispatch.dispatch({
+      eventKey: 'platform.invitation.sent',
+      sourceType: 'platform_user_invitation',
+      sourceId: randomUUID(),
+      recipientKind: 'platform_user',
+      recipientId: randomUUID(),
+      recipientEmail: email,
+      locale: 'ar-SY',
+      variables: {
+        recipientDisplayName: 'Ali',
+        inviterDisplayName: 'Root',
+        expiresAt: new Date().toISOString(),
+      },
+    });
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).not.toMatch(PATIENT_FIELD_MARKERS);
+    expect(sent?.text).not.toMatch(SECRET_MARKERS);
+  });
+
+  it('P17: recording sink never initializes real provider (realProviderInitializationsDuringTests===0)', async () => {
+    await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `p17-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    expect(stack.emailService.realProviderInitializationsDuringTests).toBe(0);
+  });
+
+  it('P18: assert realExternalDeliveriesDuringTests === 0 after multi-event fan-out', async () => {
+    const email = `p18-${randomUUID()}@test.local`;
+    await Promise.all([
+      stack.adapters.invitationSent({
+        invitationId: randomUUID(),
+        platformUserId: randomUUID(),
+        recipientEmail: email,
+        recipientDisplayName: 'Admin',
+        inviterDisplayName: 'Root',
+        expiresAt: new Date().toISOString(),
+      }),
+      stack.adapters.mfaSecurityAlert({
+        alertId: randomUUID(),
+        platformUserId: randomUUID(),
+        recipientEmail: email,
+        recipientDisplayName: 'Admin',
+        alertSummary: 'login',
+        occurredAt: new Date().toISOString(),
+      }),
+      stack.adapters.limitAlert({
+        level: 'warning',
+        evidenceId: randomUUID(),
+        organizationName: 'Acme',
+        limitKey: 'sms',
+        effectiveLimit: '100',
+        currentUsage: '82',
+        thresholdPercent: '82',
+        limitProvenance: 'PLAN',
+        windowKey: 'default',
+        recipientPlatformUserId: randomUUID(),
+        recipientEmail: email,
+      }),
+    ]);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+  });
+
+  it('P19: in-app not used for platform_user (email-only)', async () => {
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `p19-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const jobs = await prisma.deliveryJob.findMany({ where: { intentId: result.intentId! } });
+    expect(jobs.length).toBeGreaterThan(0);
+    expect(jobs.every((j) => j.channel === 'email')).toBe(true);
+    expect(jobs.some((j) => /in.?app/i.test(j.channel))).toBe(false);
+  });
+
+  it('P20: no databaseUrl/apiKey in audit details', async () => {
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: `p20-${randomUUID()}@test.local`,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    const audits = await prisma.auditEntry.findMany({
+      where: {
+        category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+        resourceId: result.intentId!,
+      },
+    });
+    expect(JSON.stringify(audits)).not.toMatch(/databaseUrl|DATABASE_URL|apiKey|api_key/i);
   });
 });

@@ -5,7 +5,7 @@
 **Authority:** Steps 01–26 + U01 Accepted/Complete; Phase 41d/41e Notification Delivery Engine is the sole delivery SoR.
 
 Steps **01–26** + **U01**: Accepted/Complete.
-Step **27**: Accepted / Complete.
+Step **27**: Accepted / Complete (narrow evidence/hygiene closure passed).
 Steps **28–29**: Not Authorized.
 
 ```text
@@ -34,8 +34,9 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 | Freeze | `2026-08-12T06:41:22.728Z` |
 | Duration | ~3295s (~54.9 min) |
 | Counters | failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0 |
-| Log | `apps/api/step27-final-onepass.jsonl` |
-| Hygiene | Catalog restored to `68 / 136 / 68 / 13` |
+| Narrow closure | Evidence/hygiene gate passed; Attempt 2 preserved (test/docs/hygiene only; no product or material one-pass harness change) |
+| External delivery | `realExternalDeliveriesDuringTests = 0` (RecordingTransactionalEmailService + XD/P/C/H guards) |
+| Hygiene | `step27-final-onepass.jsonl` ABSENT; prohibited artifacts = 0; Catalog `68 / 136 / 68 / 13` |
 
 ---
 

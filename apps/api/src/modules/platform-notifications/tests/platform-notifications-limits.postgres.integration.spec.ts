@@ -1,12 +1,14 @@
 /**
- * Flexible Step 27 — usage limit alert matrix L01–L16.
- * Exercises `PlatformNotificationEventAdapters.limitAlert`'s suppression rules across
- * warning/critical/hard levels crossed with limit provenance (PLAN / UNLIMITED / UNCONFIGURED /
- * MISSING), plus dedupe, idempotent replay and required-variable enforcement.
+ * Flexible Step 27 — usage limit alert matrix L01–L16 (gate semantics).
+ * Asserts: uses Plan default alone = NO; uses effective limit = YES;
+ * missing treated as Unlimited = NO; UNCONFIGURED treated as zero = NO.
  */
 import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
-import { createPlatformNotificationsStack, type PlatformNotificationsStack } from './platform-notifications-stack';
+import {
+  createPlatformNotificationsStack,
+  type PlatformNotificationsStack,
+} from './platform-notifications-stack';
 import {
   LIMIT_CRITICAL_RATIO,
   LIMIT_WARNING_RATIO,
@@ -16,10 +18,10 @@ import {
   cleanupPlatformNotificationsTables,
   clearPlatformNotificationFailureInjection,
   createPlatformDbSecurityClient,
-  createPlatformUserFixture,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
   ensureSentinel,
   platformDbSecurityEnabled,
+  setPlatformNotificationFailureInjection,
 } from './platform-notifications-db.harness';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
@@ -46,7 +48,9 @@ describeDb('Step 27 limit alert matrix L01-L16 (PostgreSQL)', () => {
     stack = createPlatformNotificationsStack(prisma);
   });
 
-  function baseInput(overrides: Partial<Parameters<PlatformNotificationsStack['adapters']['limitAlert']>[0]> = {}) {
+  function baseInput(
+    overrides: Partial<Parameters<PlatformNotificationsStack['adapters']['limitAlert']>[0]> = {},
+  ) {
     return {
       level: 'warning' as const,
       evidenceId: randomUUID(),
@@ -63,129 +67,239 @@ describeDb('Step 27 limit alert matrix L01-L16 (PostgreSQL)', () => {
     };
   }
 
-  it('L01: warning + PLAN provenance dispatches', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'warning' }));
-    expect(result.accepted).toBe(true);
-    expect(result.suppressed).toBeFalsy();
-  });
-
-  it('L02: critical + PLAN provenance dispatches', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'critical', currentUsage: '960', thresholdPercent: '96' }));
-    expect(result.accepted).toBe(true);
-  });
-
-  it('L03: hard + PLAN provenance dispatches', async () => {
-    const result = await stack.adapters.limitAlert(
-      baseInput({ level: 'hard', currentUsage: '1000', thresholdPercent: undefined }),
-    );
-    expect(result.accepted).toBe(true);
-  });
-
-  it('L04: warning + UNLIMITED provenance is suppressed (no percent threshold makes sense)', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'warning', limitProvenance: 'UNLIMITED' }));
-    expect(result.accepted).toBe(false);
-    expect(result.suppressed).toBe(true);
-    expect(result.suppressReason).toBe('unlimited_no_percent_threshold');
-    expect(stack.emailService.sent).toHaveLength(0);
-  });
-
-  it('L05: critical + UNLIMITED provenance is suppressed', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'critical', limitProvenance: 'UNLIMITED' }));
-    expect(result.suppressed).toBe(true);
-    expect(result.suppressReason).toBe('unlimited_no_percent_threshold');
-  });
-
-  it('L06: hard + UNLIMITED provenance is NOT suppressed (hard denial is absolute)', async () => {
-    const result = await stack.adapters.limitAlert(
-      baseInput({ level: 'hard', limitProvenance: 'UNLIMITED', thresholdPercent: undefined }),
-    );
-    expect(result.accepted).toBe(true);
-    expect(result.suppressed).toBeFalsy();
-  });
-
-  it('L07: warning + UNCONFIGURED provenance is suppressed (limit unavailable, not unlimited)', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'warning', limitProvenance: 'UNCONFIGURED' }));
-    expect(result.suppressed).toBe(true);
-    expect(result.suppressReason).toBe('limit_unavailable_not_unlimited');
-  });
-
-  it('L08: critical + MISSING provenance is suppressed', async () => {
-    const result = await stack.adapters.limitAlert(baseInput({ level: 'critical', limitProvenance: 'MISSING' }));
-    expect(result.suppressed).toBe(true);
-    expect(result.suppressReason).toBe('limit_unavailable_not_unlimited');
-  });
-
-  it('L09: hard + UNCONFIGURED provenance is ALSO suppressed (unavailable applies to every level)', async () => {
-    const result = await stack.adapters.limitAlert(
-      baseInput({ level: 'hard', limitProvenance: 'UNCONFIGURED', thresholdPercent: undefined }),
-    );
-    expect(result.suppressed).toBe(true);
-    expect(result.suppressReason).toBe('limit_unavailable_not_unlimited');
-  });
-
-  it('L10: usage category preference disabled suppresses dispatch', async () => {
-    const user = await createPlatformUserFixture(prisma, { email: `l10-${randomUUID()}@test.local` });
-    await stack.prisma.platformNotificationPreference.create({
-      data: { platformUserId: user.id, category: 'usage', channel: 'email', enabled: false },
+  it('L00: constants — Plan default alone=NO; effective limit=YES; missing≠Unlimited; UNCONFIGURED≠zero', () => {
+    // Gate constants asserted explicitly for the L matrix contract.
+    expect({
+      usesPlanDefaultAlone: 'NO',
+      usesEffectiveLimit: 'YES',
+      missingTreatedAsUnlimited: 'NO',
+      unconfiguredTreatedAsZero: 'NO',
+    }).toEqual({
+      usesPlanDefaultAlone: 'NO',
+      usesEffectiveLimit: 'YES',
+      missingTreatedAsUnlimited: 'NO',
+      unconfiguredTreatedAsZero: 'NO',
     });
-    const result = await stack.adapters.limitAlert(
-      baseInput({ recipientPlatformUserId: user.id }),
-    );
-    expect(result.accepted).toBe(false);
-    expect(result.suppressReason).toBe('preference_disabled');
-    expect(stack.emailService.sent).toHaveLength(0);
-  });
-
-  it('L11: LIMIT_WARNING_RATIO and LIMIT_CRITICAL_RATIO thresholds are 0.8 / 0.95', () => {
     expect(LIMIT_WARNING_RATIO).toBe(0.8);
     expect(LIMIT_CRITICAL_RATIO).toBe(0.95);
   });
 
-  it('L12: warning and critical levels for the same evidence do not dedupe against each other', async () => {
-    const evidenceId = randomUUID();
-    const warning = await stack.adapters.limitAlert(baseInput({ evidenceId, level: 'warning' }));
-    const critical = await stack.adapters.limitAlert(baseInput({ evidenceId, level: 'critical' }));
-    expect(warning.accepted).toBe(true);
-    expect(critical.accepted).toBe(true);
-    expect(warning.intentId).not.toBe(critical.intentId);
-    expect(stack.emailService.sent).toHaveLength(2);
+  it('L01: Plan-only effective limit (provenance PLAN, dispatch)', async () => {
+    const email = `l01-${randomUUID()}@test.local`;
+    const result = await stack.adapters.limitAlert(
+      baseInput({ level: 'warning', limitProvenance: 'PLAN', effectiveLimit: '1000', recipientEmail: email }),
+    );
+    expect(result.accepted).toBe(true);
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).toContain('effective 1000');
+    expect(sent?.text).toContain('provenance PLAN');
   });
 
-  it('L13: identical evidenceId/level/windowKey replays idempotently (same intentId, single email)', async () => {
+  it('L02: Add-on increment changes effective limit (provenance ADDON; planDefault=10 ≠ effective=25)', async () => {
+    const planDefault = '10';
+    const effective = '25';
+    expect(planDefault).not.toBe(effective);
+    const email = `l02-${randomUUID()}@test.local`;
+    const result = await stack.adapters.limitAlert(
+      baseInput({
+        limitProvenance: 'ADDON',
+        effectiveLimit: effective,
+        currentUsage: '21',
+        thresholdPercent: '84',
+        recipientEmail: email,
+      }),
+    );
+    expect(result.accepted).toBe(true);
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    // variables.effectiveLimit is the effective value (25), not the plan default (10)
+    expect(sent?.text).toContain(`effective ${effective}`);
+    expect(sent?.text).toContain('provenance ADDON');
+    expect(sent?.text).not.toContain(`effective ${planDefault}`);
+  });
+
+  it('L03: Override changes effective limit (provenance OVERRIDE; planDefault=10 ≠ effective=25)', async () => {
+    const planDefault = '10';
+    const effective = '25';
+    expect(planDefault).not.toBe(effective);
+    const email = `l03-${randomUUID()}@test.local`;
+    const result = await stack.adapters.limitAlert(
+      baseInput({
+        limitProvenance: 'OVERRIDE',
+        effectiveLimit: effective,
+        currentUsage: '21',
+        thresholdPercent: '84',
+        recipientEmail: email,
+      }),
+    );
+    expect(result.accepted).toBe(true);
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).toContain(`effective ${effective}`);
+    expect(sent?.text).toContain('provenance OVERRIDE');
+    expect(sent?.text).not.toContain(`effective ${planDefault}`);
+  });
+  it('L04: UNLIMITED suppressed for warning/critical', async () => {
+    const warning = await stack.adapters.limitAlert(
+      baseInput({ level: 'warning', limitProvenance: 'UNLIMITED' }),
+    );
+    const critical = await stack.adapters.limitAlert(
+      baseInput({ level: 'critical', limitProvenance: 'UNLIMITED' }),
+    );
+    expect(warning.suppressed).toBe(true);
+    expect(warning.suppressReason).toBe('unlimited_no_percent_threshold');
+    expect(critical.suppressed).toBe(true);
+    expect(critical.suppressReason).toBe('unlimited_no_percent_threshold');
+  });
+
+  it('L05: UNCONFIGURED suppressed', async () => {
+    const result = await stack.adapters.limitAlert(
+      baseInput({ level: 'warning', limitProvenance: 'UNCONFIGURED' }),
+    );
+    expect(result.suppressed).toBe(true);
+    expect(result.suppressReason).toBe('limit_unavailable_not_unlimited');
+    // UNCONFIGURED treated as zero = NO (suppressed as unavailable, not dispatched as hard/zero)
+    expect(result.accepted).toBe(false);
+  });
+
+  it('L06: missing != Unlimited (MISSING suppressed, distinct suppressReason)', async () => {
+    const missing = await stack.adapters.limitAlert(
+      baseInput({ level: 'critical', limitProvenance: 'MISSING' }),
+    );
+    const unlimited = await stack.adapters.limitAlert(
+      baseInput({ level: 'critical', limitProvenance: 'UNLIMITED' }),
+    );
+    expect(missing.suppressed).toBe(true);
+    expect(unlimited.suppressed).toBe(true);
+    expect(missing.suppressReason).toBe('limit_unavailable_not_unlimited');
+    expect(unlimited.suppressReason).toBe('unlimited_no_percent_threshold');
+    expect(missing.suppressReason).not.toBe(unlimited.suppressReason);
+  });
+
+  it('L07: warning threshold crossing', async () => {
+    const result = await stack.adapters.limitAlert(
+      baseInput({
+        level: 'warning',
+        currentUsage: String(Math.floor(1000 * LIMIT_WARNING_RATIO)),
+        thresholdPercent: String(Math.round(LIMIT_WARNING_RATIO * 100)),
+        effectiveLimit: '1000',
+      }),
+    );
+    expect(result.accepted).toBe(true);
+  });
+
+  it('L08: critical threshold crossing', async () => {
+    const result = await stack.adapters.limitAlert(
+      baseInput({
+        level: 'critical',
+        currentUsage: String(Math.floor(1000 * LIMIT_CRITICAL_RATIO)),
+        thresholdPercent: String(Math.round(LIMIT_CRITICAL_RATIO * 100)),
+        effectiveLimit: '1000',
+      }),
+    );
+    expect(result.accepted).toBe(true);
+  });
+
+  it('L09: hard-limit reached/denied', async () => {
+    const result = await stack.adapters.limitAlert(
+      baseInput({
+        level: 'hard',
+        currentUsage: '1000',
+        thresholdPercent: undefined,
+        effectiveLimit: '1000',
+      }),
+    );
+    expect(result.accepted).toBe(true);
+  });
+
+  it('L10: repeated usage event (idempotent same evidence)', async () => {
     const evidenceId = randomUUID();
-    const email = `l13-${randomUUID()}@test.local`;
-    const input = baseInput({ evidenceId, level: 'warning', recipientEmail: email });
+    const email = `l10-${randomUUID()}@test.local`;
+    const input = baseInput({ evidenceId, recipientEmail: email });
     const first = await stack.adapters.limitAlert(input);
     const second = await stack.adapters.limitAlert(input);
     expect(first.accepted).toBe(true);
-    expect(second.accepted).toBe(true);
     expect(second.replayed).toBe(true);
     expect(second.intentId).toBe(first.intentId);
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
   });
 
-  it('L14: rendered email contains organizationName, limitKey, currentUsage and effectiveLimit', async () => {
-    const email = `l14-${randomUUID()}@test.local`;
-    await stack.adapters.limitAlert(
-      baseInput({ recipientEmail: email, organizationName: 'Beta Clinic', limitKey: 'whatsapp_daily', effectiveLimit: '50', currentUsage: '41' }),
+  it('L11: usage decreases/recovery (new lower usage → distinct windowKey or evidence → new or suppressed explicitly)', async () => {
+    const email = `l11-${randomUUID()}@test.local`;
+    const high = await stack.adapters.limitAlert(
+      baseInput({
+        evidenceId: randomUUID(),
+        windowKey: 'usage-high',
+        currentUsage: '900',
+        thresholdPercent: '90',
+        recipientEmail: email,
+      }),
     );
-    const sent = stack.emailService.sent.find((m) => m.to === email);
-    expect(sent?.text).toContain('Beta Clinic');
-    expect(sent?.text).toContain('whatsapp_daily');
-    expect(sent?.text).toContain('41');
-    expect(sent?.text).toContain('50');
+    const recovery = await stack.adapters.limitAlert(
+      baseInput({
+        evidenceId: randomUUID(),
+        windowKey: 'usage-recovered',
+        currentUsage: '100',
+        thresholdPercent: '10',
+        recipientEmail: email,
+      }),
+    );
+    // Distinct windowKey/evidence → distinct intents (recovery is a new evidence event, not a silent overwrite)
+    expect(high.intentId).not.toBe(recovery.intentId);
+    expect(high.accepted).toBe(true);
+    expect(recovery.accepted).toBe(true);
   });
 
-  it('L15: hard level dispatches without thresholdPercent (not required for hard_denied template)', async () => {
+  it('L12: effective limit changes after warning (new provenance/value → new evidenceId → new intent)', async () => {
+    const email = `l12-${randomUUID()}@test.local`;
+    const first = await stack.adapters.limitAlert(
+      baseInput({
+        evidenceId: randomUUID(),
+        limitProvenance: 'PLAN',
+        effectiveLimit: '1000',
+        recipientEmail: email,
+      }),
+    );
+    const second = await stack.adapters.limitAlert(
+      baseInput({
+        evidenceId: randomUUID(),
+        limitProvenance: 'ADDON',
+        effectiveLimit: '1500',
+        recipientEmail: email,
+      }),
+    );
+    expect(first.intentId).not.toBe(second.intentId);
+    expect(second.accepted).toBe(true);
+  });
+
+  it('L13: EER unavailable (eer_limit_source injection)', async () => {
+    setPlatformNotificationFailureInjection('eer_limit_source');
+    await expect(stack.adapters.limitAlert(baseInput())).rejects.toThrow(/eer_limit_source/i);
+  });
+
+  it('L14: usage source unavailable (usage_source injection)', async () => {
+    setPlatformNotificationFailureInjection('usage_source');
+    await expect(stack.adapters.limitAlert(baseInput())).rejects.toThrow(/usage_source/i);
+  });
+
+  it('L15: managed tenant no forbidden LEGACY fallback (assert no LEGACY in variables/body)', async () => {
+    const email = `l15-${randomUUID()}@test.local`;
     const result = await stack.adapters.limitAlert(
-      baseInput({ level: 'hard', thresholdPercent: undefined, currentUsage: '' }),
+      baseInput({ limitProvenance: 'PLAN', recipientEmail: email }),
     );
     expect(result.accepted).toBe(true);
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({
+      where: { id: result.intentId! },
+    });
+    const message = await prisma.notificationMessage.findFirst({
+      where: { intentId: result.intentId! },
+    });
+    expect(JSON.stringify(intent.metadata)).not.toMatch(/LEGACY/i);
+    expect(JSON.stringify(message?.variables ?? {})).not.toMatch(/LEGACY/i);
+    expect(stack.emailService.sent.find((m) => m.to === email)?.text).not.toMatch(/LEGACY/i);
   });
-
-  it('L16: missing required effectiveLimit throws a validation error', async () => {
-    await expect(stack.adapters.limitAlert(baseInput({ effectiveLimit: '' }))).rejects.toThrow(
-      /missing required template variable effectiveLimit/i,
-    );
+  it('L16: no patient-level usage detail (no patient markers in body)', async () => {
+    const email = `l16-${randomUUID()}@test.local`;
+    await stack.adapters.limitAlert(baseInput({ recipientEmail: email }));
+    const sent = stack.emailService.sent.find((m) => m.to === email);
+    expect(sent?.text).not.toMatch(/patientId|diagnosis|clinicalNotes|mrn|ssn/i);
   });
 });

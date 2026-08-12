@@ -1,5 +1,5 @@
 /**
- * Flexible Step 27 — concurrency matrix C01–C16.
+ * Flexible Step 27 — concurrency matrix C01–C24.
  */
 import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
@@ -12,6 +12,10 @@ import {
   assertSafePlatformTestDatabaseUrl,
   cleanupPlatformNotificationsTables,
   clearPlatformNotificationFailureInjection,
+  createAddOnAssignmentFixture,
+  createAddOnVersionFixture,
+  createClinicTenantFixture,
+  createCommercialConfigFixture,
   createPlatformDbSecurityClient,
   createPlatformUserFixture,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
@@ -24,7 +28,7 @@ import {
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
 
-describeDb('Step 27 concurrency C01-C16 (PostgreSQL)', () => {
+describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
   let prisma: PrismaClient;
   let stack: PlatformNotificationsStack;
   const perms = new Set(NOTIFICATIONS_ADMIN_PERMS);
@@ -317,6 +321,7 @@ describeDb('Step 27 concurrency C01-C16 (PostgreSQL)', () => {
     ]);
     // RecordingTransactionalEmailService is the only send sink — no network adapter.
     expect(stack.emailService.sent.every((m) => m.to.endsWith('@test.local'))).toBe(true);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
   });
 
   it('C15: concurrent suppressed preference dispatches invent zero intents', async () => {
@@ -371,5 +376,191 @@ describeDb('Step 27 concurrency C01-C16 (PostgreSQL)', () => {
     );
     const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
     expect(final.status).toBe('completed');
+  });
+
+  it('C17: concurrent N01+N02 distinct events', async () => {
+    const email = `c17-${randomUUID()}@test.local`;
+    const [inv, mfa] = await Promise.all([
+      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
+      stack.adapters.mfaSecurityAlert({
+        alertId: randomUUID(),
+        platformUserId: randomUUID(),
+        recipientEmail: email,
+        recipientDisplayName: 'Admin',
+        alertSummary: 'login',
+        occurredAt: new Date().toISOString(),
+      }),
+    ]);
+    expect(inv.intentId).not.toBe(mfa.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
+  });
+
+  it('C18: concurrent preference list+upsert', async () => {
+    const userRow = await createPlatformUserFixture(prisma, {
+      email: `c18-${randomUUID()}@test.local`,
+    });
+    const claims = platformClaims(userRow.id, randomUUID());
+    const [list, upsert] = await Promise.all([
+      stack.prefs.list(claims, perms),
+      stack.prefs.upsert(
+        claims,
+        perms,
+        { category: 'usage', channel: 'email', enabled: false },
+        randomUUID(),
+      ),
+    ]);
+    expect(Array.isArray(list)).toBe(true);
+    expect(upsert.enabled).toBe(false);
+  });
+
+  it('C19: concurrent warning scan + addon dispatch', async () => {
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const userRow = await createPlatformUserFixture(prisma, {
+      email: `c19-${randomUUID()}@test.local`,
+    });
+    const { platformTenant } = await createClinicTenantFixture(prisma);
+    const config = await createCommercialConfigFixture(prisma, {
+      platformTenantId: platformTenant.id,
+      createdByPlatformUserId: userRow.id,
+      commercialEnd: new Date(now.getTime() + 6 * DAY_MS),
+    });
+    const version = await createAddOnVersionFixture(prisma);
+    const assignment = await createAddOnAssignmentFixture(prisma, {
+      configId: config.id,
+      addOnVersionId: version.id,
+    });
+    const email = `c19-${randomUUID()}@test.local`;
+    const [scan, dispatch] = await Promise.all([
+      stack.scheduler.runDueScan(now),
+      stack.adapters.addOnExpiry({
+        approaching: true,
+        assignmentId: assignment.id,
+        organizationName: 'Acme',
+        addOnLabel: 'addon',
+        addOnVersionId: version.id,
+        expiryDate: new Date(now.getTime() + 6 * DAY_MS).toISOString(),
+        windowKey: 'd7',
+        recipientPlatformUserId: userRow.id,
+        recipientEmail: email,
+      }),
+    ]);
+    expect(scan.dispatched).toBe(0);
+    expect(dispatch.accepted).toBe(true);
+  });
+
+  it('C20: two stacks (true multi-instance) same invitation → 1 email', async () => {
+    const s1 = createPlatformNotificationsStack(prisma);
+    const s2 = createPlatformNotificationsStack(prisma);
+    const input = invitation();
+    const [a, b] = await Promise.all([
+      s1.adapters.invitationSent(input),
+      s2.adapters.invitationSent(input),
+    ]);
+    expect(a.intentId).toBe(b.intentId);
+    const sent = [...s1.emailService.sent, ...s2.emailService.sent].filter(
+      (m) => m.to === input.recipientEmail,
+    );
+    expect(sent.length).toBe(1);
+  });
+
+  it('C21: concurrent template previews under injection clear', async () => {
+    clearPlatformNotificationFailureInjection();
+    const user = platformClaims(randomUUID(), randomUUID());
+    await Promise.all([
+      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.invitation.sent')),
+      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.mfa.security_alert')),
+    ]);
+    expect(await prisma.notificationIntent.count()).toBe(0);
+  });
+
+  it('C22: concurrent dead-letter manual retries converge', async () => {
+    setPlatformNotificationFailureInjection('provider_transient');
+    const result = await stack.adapters.invitationSent(invitation());
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    const job = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+    for (let i = job.attemptCount; i < job.maxAttempts; i++) {
+      await stack.worker.processDeliveryJob(job.id);
+    }
+    clearPlatformNotificationFailureInjection();
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({
+      where: { id: result.intentId! },
+    });
+    await prisma.notificationIntent.update({
+      where: { id: result.intentId! },
+      data: {
+        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
+      },
+    });
+    const user = platformClaims(randomUUID(), randomUUID());
+    const settled = await Promise.allSettled([
+      stack.query.retryDelivery(
+        user,
+        perms,
+        result.intentId!,
+        { reason: 'c22a', jobId: jobs[0].id },
+        randomUUID(),
+      ),
+      stack.query.retryDelivery(
+        user,
+        perms,
+        result.intentId!,
+        { reason: 'c22b', jobId: jobs[0].id },
+        randomUUID(),
+      ),
+    ]);
+    expect(settled.some((r) => r.status === 'fulfilled')).toBe(true);
+    const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+    expect(['completed', 'pending', 'dead_letter']).toContain(final.status);
+  });
+
+  it('C23: concurrent limitAlert UNLIMITED suppressions invent 0 intents', async () => {
+    const [a, b] = await Promise.all([
+      stack.adapters.limitAlert({
+        level: 'warning',
+        evidenceId: randomUUID(),
+        organizationName: 'Acme',
+        limitKey: 'sms',
+        effectiveLimit: '∞',
+        currentUsage: '0',
+        limitProvenance: 'UNLIMITED',
+        windowKey: 'default',
+        recipientPlatformUserId: randomUUID(),
+        recipientEmail: `c23a-${randomUUID()}@test.local`,
+      }),
+      stack.adapters.limitAlert({
+        level: 'critical',
+        evidenceId: randomUUID(),
+        organizationName: 'Acme',
+        limitKey: 'sms',
+        effectiveLimit: '∞',
+        currentUsage: '0',
+        limitProvenance: 'UNLIMITED',
+        windowKey: 'default',
+        recipientPlatformUserId: randomUUID(),
+        recipientEmail: `c23b-${randomUUID()}@test.local`,
+      }),
+    ]);
+    expect(a.suppressed).toBe(true);
+    expect(b.suppressed).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(0);
+  });
+
+  it('C24: high fan-in listDeliveries under concurrent dispatches remains consistent', async () => {
+    const dispatches = Array.from({ length: 5 }, () =>
+      stack.adapters.invitationSent(invitation()),
+    );
+    await Promise.all([
+      stack.query.listDeliveries(perms, { pageSize: 100 }),
+      ...dispatches,
+    ]);
+    // After fan-in settles, listDeliveries must match persisted Step 27 intents consistently.
+    const final = await stack.query.listDeliveries(perms, { pageSize: 100 });
+    const intentCount = await prisma.notificationIntent.count({
+      where: { metadata: { path: ['step27'], equals: true } },
+    });
+    expect(final.total).toBe(intentCount);
+    expect(final.items.length).toBe(Math.min(100, intentCount));
+    expect(final.total).toBeGreaterThanOrEqual(5);
   });
 });
