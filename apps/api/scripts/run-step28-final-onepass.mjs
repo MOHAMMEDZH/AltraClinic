@@ -364,7 +364,7 @@ run('npm run test:notifications-templates-db', apiRoot, {
 waitPostgres('after-notifications-templates-db');
 // 26f Step 28 auth boundary + MFA session unit regression
 run(
-  'npx jest --config jest.config.cjs --runInBand --testPathPattern "platform-auth.boundary.spec|platform-rbac-security-integration|platform-mfa-session.security|api-rate-limit.service.spec|effective-entitlement.cache.unit|logging-and-correlation"',
+  'npx jest --config jest.config.cjs --runInBand --testPathPattern "platform-auth.boundary.spec|platform-rbac-security-integration|platform-mfa-session.security|api-rate-limit.service.spec|effective-entitlement.cache.unit|step28-security-hardening.unit"',
   apiRoot,
 );
 // 27–29 Prisma + API TS
