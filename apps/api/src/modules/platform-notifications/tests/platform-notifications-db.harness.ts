@@ -107,6 +107,10 @@ export function createQueryCountingClient(): {
  * Contract proof: realExternalDeliveriesDuringTests remains 0 for the entire process.
  * Any call that would initialize a real network provider must never reach this sink —
  * the Step 27 stack substitutes TransactionalEmailService with this recorder only.
+ *
+ * In-process messageId dedupe is a test observability aid only. Production SMTP has no
+ * idempotency key; Resend path does not send Idempotency-Key today. Durable safety after
+ * provider-may-have-accepted is Strategy B (`DeliveryJob.status=ambiguous`), not this sink.
  */
 export class RecordingTransactionalEmailService implements Pick<TransactionalEmailService, 'send'> {
   /** Always 0 — this sink never dials a real provider. Asserted by P11/C14/H40/XD01. */

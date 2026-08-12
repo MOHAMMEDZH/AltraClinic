@@ -246,10 +246,8 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
   });
 
-  it('C07-A: conversion commits first; producer eligibility (trial.status===ACTIVE) gates emit → intentΔ=0, emailΔ=0', async () => {
-    // Policy: warning scheduler does NOT scan trials. Trial warning emission is producer-driven
-    // via trialExpiry adapter. C07-A uses TEST-SIDE eligibility (status===ACTIVE) before emit —
-    // do NOT add trial-status suppress inside the adapter (would invalidate Case C Attempt 2).
+  it('C07-A: convert first; trialExpiry adapter obsolete-suppress → intentΔ=0, emailΔ=0', async () => {
+    // Belt: adapter loads trial and suppresses before produce when CONVERTED/CANCELLED/EXPIRED(approaching).
     const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
       await seedActiveTrialForC07();
     try {
@@ -268,19 +266,18 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
       const intentsBefore = await prisma.notificationIntent.count();
       const emailsBefore = stack.emailService.sent.filter((m) => m.to === email).length;
 
-      const fresh = await prisma.platformSalesTrial.findUniqueOrThrow({ where: { id: trial.id } });
-      if (fresh.status === 'ACTIVE') {
-        await stack.adapters.trialExpiry({
-          approaching: true,
-          trialId: trial.id,
-          organizationName: 'C07 Clinic',
-          expiryDate: (fresh.expiresAt ?? new Date()).toISOString(),
-          planVersionId: fresh.trialPlanVersionId,
-          windowKey: 'd7',
-          recipientPlatformUserId: recipientId,
-          recipientEmail: email,
-        });
-      }
+      const result = await stack.adapters.trialExpiry({
+        approaching: true,
+        trialId: trial.id,
+        organizationName: 'C07 Clinic',
+        expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+        planVersionId: trial.trialPlanVersionId,
+        windowKey: 'd7',
+        recipientPlatformUserId: recipientId,
+        recipientEmail: email,
+      });
+      expect(result.suppressed).toBe(true);
+      expect(result.suppressReason).toMatch(/trial_obsolete_CONVERTED/);
 
       expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
       expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(emailsBefore);
@@ -290,9 +287,8 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
     }
   });
 
-  it('C07-B (policy B): emit while ACTIVE under claim inject; convert; clear+process may deliver frozen intent', async () => {
-    // Policy B frozen: a warning intent created while ACTIVE may still deliver after conversion
-    // (no adapter-side suppress of in-flight jobs). User-visible 1 is allowed; no duplicate intent.
+  it('C07-B: queued ACTIVE intent; convert; send-time revalidation suppresses (emailΔ=0)', async () => {
+    // Suspenders: intent+job created while ACTIVE; after convert, worker suppresses before provider.
     const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
       await seedActiveTrialForC07();
     try {
@@ -331,8 +327,11 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
 
       clearPlatformNotificationFailureInjection();
       const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
-      expect(outcome.status).toBe('delivered');
-      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+      expect(outcome.status).toBe('suppressed');
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      const after = await getDeliveryArtifacts(prisma, intent.id);
+      expect(after.jobs[0].status).toBe('suppressed');
+      expect(String(after.jobs[0].failureReason)).toMatch(/trial_obsolete:CONVERTED/);
       expect(await prisma.notificationIntent.count()).toBe(1);
       expect(await prisma.platformSalesTrialConversion.count({ where: { trialId: trial.id } })).toBe(1);
 
@@ -346,14 +345,14 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
         recipientPlatformUserId: recipientId,
         recipientEmail: email,
       });
-      expect(replay.replayed).toBe(true);
+      expect(replay.suppressed).toBe(true);
       expect(await prisma.notificationIntent.count()).toBe(1);
     } finally {
       await cleanupC07Fixtures();
     }
   });
 
-  it('C07-C: Promise.all(convert, trialExpiry) — conversion cardinality 1; warning intents ≤1; no rollback', async () => {
+  it('C07-C: Promise.all(convert, trialExpiry) — conversion cardinality 1; no conversion rollback; email only if still ACTIVE at send', async () => {
     const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
       await seedActiveTrialForC07();
     try {
@@ -391,12 +390,164 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
         },
       });
       expect(warningIntents).toBeLessThanOrEqual(1);
-      if (warnSettled.status === 'fulfilled' && warnSettled.value.accepted && !warnSettled.value.replayed) {
-        expect(warningIntents).toBe(1);
-      }
       const finalTrial = await prisma.platformSalesTrial.findUniqueOrThrow({ where: { id: trial.id } });
       expect(finalTrial.status).toBe('CONVERTED');
       expect(conversions).toBe(1);
+
+      // If a warning intent exists, any completed/suppressed/ambiguous job must not leave a
+      // user-visible email after obsolete conversion (send-time suppress when convert won first).
+      if (warningIntents === 1) {
+        const intent = await prisma.notificationIntent.findFirstOrThrow({
+          where: { metadata: { path: ['eventKey'], equals: 'platform.trial.approaching_expiry' } },
+        });
+        const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+        if (jobs[0]?.status === 'suppressed' || jobs[0]?.status === 'ambiguous') {
+          expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+        }
+      }
+      if (warnSettled.status === 'fulfilled' && warnSettled.value.suppressed) {
+        expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      }
+    } finally {
+      await cleanupC07Fixtures();
+    }
+  });
+
+  it('C07-D: service recreation after convert — fresh stack processes queued warning → stale emailΔ=0', async () => {
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      setPlatformNotificationFailureInjection('before_delivery_job_claim');
+      await expect(
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+          planVersionId: trial.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        }),
+      ).rejects.toThrow(/before_delivery_job_claim/);
+      const intent = await prisma.notificationIntent.findFirstOrThrow();
+      const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+
+      await trialsStack.conversion.convert(
+        actor.claims,
+        trialsStack.perms,
+        trial.id,
+        {
+          targetPaidPlanVersionId: paidPlanVersionId,
+          expectedRowVersion: trial.rowVersion,
+          reason: 'c07-d',
+        },
+        randomUUID(),
+      );
+      clearPlatformNotificationFailureInjection();
+
+      const recreated = createPlatformNotificationsStack(prisma, {
+        emailService: stack.emailService,
+      });
+      const outcome = await recreated.worker.processDeliveryJob(jobs[0].id);
+      expect(outcome.status).toBe('suppressed');
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+      expect(final.status).toBe('suppressed');
+      expect(String(final.failureReason)).toMatch(/trial_obsolete:CONVERTED/);
+    } finally {
+      await cleanupC07Fixtures();
+    }
+  });
+
+  it('C07-E: process cache loss — new stack + new recording sink; durable Trial CONVERTED still suppresses', async () => {
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      setPlatformNotificationFailureInjection('before_delivery_job_claim');
+      await expect(
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+          planVersionId: trial.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        }),
+      ).rejects.toThrow(/before_delivery_job_claim/);
+      const intent = await prisma.notificationIntent.findFirstOrThrow();
+      const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+
+      await trialsStack.conversion.convert(
+        actor.claims,
+        trialsStack.perms,
+        trial.id,
+        {
+          targetPaidPlanVersionId: paidPlanVersionId,
+          expectedRowVersion: trial.rowVersion,
+          reason: 'c07-e',
+        },
+        randomUUID(),
+      );
+      clearPlatformNotificationFailureInjection();
+
+      // Brand-new sink = process-local cache gone; suppression relies on durable Trial SoR only.
+      const fresh = createPlatformNotificationsStack(prisma);
+      const outcome = await fresh.worker.processDeliveryJob(jobs[0].id);
+      expect(outcome.status).toBe('suppressed');
+      expect(fresh.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+    } finally {
+      await cleanupC07Fixtures();
+    }
+  });
+
+  it('C07-F: multi-instance — two workers race after convert → automatic stale emailΔ=0', async () => {
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      setPlatformNotificationFailureInjection('before_delivery_job_claim');
+      await expect(
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+          planVersionId: trial.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        }),
+      ).rejects.toThrow(/before_delivery_job_claim/);
+      const intent = await prisma.notificationIntent.findFirstOrThrow();
+      const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+
+      await trialsStack.conversion.convert(
+        actor.claims,
+        trialsStack.perms,
+        trial.id,
+        {
+          targetPaidPlanVersionId: paidPlanVersionId,
+          expectedRowVersion: trial.rowVersion,
+          reason: 'c07-f',
+        },
+        randomUUID(),
+      );
+      clearPlatformNotificationFailureInjection();
+
+      const other = createPlatformNotificationsStack(prisma, { emailService: stack.emailService });
+      const [a, b] = await Promise.all([
+        stack.worker.processDeliveryJob(jobs[0].id),
+        other.worker.processDeliveryJob(jobs[0].id),
+      ]);
+      const statuses = [a.status, b.status].sort();
+      expect(statuses).toContain('suppressed');
+      expect(statuses).toContain('skipped_leased');
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+      expect(final.status).toBe('suppressed');
     } finally {
       await cleanupC07Fixtures();
     }

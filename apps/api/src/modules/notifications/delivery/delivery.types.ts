@@ -22,7 +22,7 @@ export const ALL_NOTIFICATION_CHANNEL_IDS: readonly NotificationChannelId[] = [
 
 export type NotificationLocale = 'en' | 'ar';
 
-export type FailureClass = 'retryable' | 'permanent' | 'fallback' | 'dead_letter';
+export type FailureClass = 'retryable' | 'permanent' | 'fallback' | 'dead_letter' | 'ambiguous';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
 

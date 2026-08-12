@@ -1,10 +1,11 @@
 # Notifications and Templates (Flexible Step 27)
 
-**Status:** Accepted / Complete
+**Status:** In Progress / Acceptance Pending
 **Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 27
 **Authority:** Steps 01–26 + U01 Accepted/Complete; Phase 41d/41e Notification Delivery Engine is the sole delivery SoR.
 
-Steps **01–27** + **U01**: Accepted/Complete.
+Steps **01–26** + **U01**: Accepted/Complete.
+Step **27**: In Progress / Acceptance Pending (final product correction: C07 send-time Trial revalidation + production-safe ambiguous delivery Strategy B).
 Steps **28–29**: Not Authorized.
 
 ```text
@@ -28,15 +29,9 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 
 | Field | Value |
 |-------|--------|
-| Attempt | **2** (Attempt 1 invalidated — dirty sentinel Phase 41d FK residue) |
-| Frozen DB | `booking_test` @ localhost:5433 |
-| Freeze | `2026-08-12T06:41:22.728Z` |
-| Duration | ~3295s (~54.9 min) |
-| Counters | failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0 |
-| Narrow closure | Evidence/hygiene + final matrix mapping + ultra-narrow F09/F11/C07/T15/I16-R07 product/policy closure passed; Attempt 2 preserved (contained test hooks + docs/policy matching existing behavior; no happy-path product change) |
-| External delivery | `realExternalDeliveriesDuringTests = 0` (RecordingTransactionalEmailService + XD/P/C/H guards) |
-| Hygiene | `step27-final-onepass.jsonl` ABSENT; prohibited artifacts = 0; Catalog `68 / 136 / 68 / 13` |
-| Final matrix remap | TW15 N/A (no time-bound migrated grant SoR); T15 executable (suspend does not suppress email); I/R/F/C/H/P/UI exact one-to-one PASS |
+| Attempt | **2 INVALIDATED** — product behavior changed (C07 suppress + Strategy B ambiguous). Re-run required for final acceptance. |
+| Prior Attempt 2 freeze | `2026-08-12T06:41:22.728Z` (historical only; no longer authoritative) |
+| Narrow closure note | Attempt 2 preserved only docs/policy matching then-current behavior; that closure is superseded by this final product correction |
 
 ---
 
@@ -56,6 +51,19 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 **Not reused as a fork:** clinic Notification Center CMS UI; SMS/WhatsApp/Push for new platform events (channels exist but Step 27 platform events are email-first).
 
 **Minimal extensions:** `recipientType=platform_user` preference skip; platform preference table; code-defined Step 27 template catalog; event adapters + warning scheduler (hourly cron behind `BACKGROUND_SCHEDULERS_ENABLED`).
+
+### Provider contract / ambiguous delivery (Strategy B)
+
+| Fact | Value |
+|------|--------|
+| Production adapters | `console` \| `smtp` \| `resend` via `TransactionalEmailService` |
+| SMTP native idempotency | **NO** |
+| Resend `Idempotency-Key` header today | **NO** |
+| Delivery reconciliation / query API | **NO** |
+| Strategy | **B** — durable `DeliveryJob.status=ambiguous` when provider may have accepted; **no automatic resend** |
+| Manual retry | `requeueJob` / platform retry allowed from `ambiguous` → `pending` (permission + reason). Duplicate provider delivery risk is operator-accepted; `failureReason` remains visible on list/get. |
+
+Statuses exposed as-is on deliveries list/get include `ambiguous` and `suppressed`.
 
 ---
 
@@ -85,15 +93,21 @@ Executable: T15-A (security), T15-B (commercial), T15-C (lead reminder), T15-D (
 | ID | Selector | Seam |
 |----|----------|------|
 | F09 | `before_delivery_job_claim` | `DeliveryJobService.leaseJob` — throw **before** `updateMany` so status stays `pending` |
-| F11 | `before_delivery_attempt_persist` | `DeliveryJobService.recordAttempt` — provider send is **before** attempt persist (Case A: no persist-before-provider ordering exists) |
-| I16 / R07 | `provider_accept_then_ack_loss` | `EmailAdapter` after successful `email.send` returns failure (local ack absent). Test recorder dedupes on `idempotencyKey=messageId`. Stack recreation reuses the same `RecordingTransactionalEmailService` instance. |
+| F11-A | `before_provider_send` | Worker after lease, before `adapter.send` — providerΔ=0 |
+| F11-B/C/D | `provider_accept_then_ack_loss` | After successful `email.send`, return failure with `failureClass=ambiguous` → durable `status=ambiguous`; no auto-resend |
+| F11 post-persist | `before_delivery_attempt_persist` | After provider accept, attempt persist fails → Strategy B `ambiguous` (no blind auto-resend) |
+| I16 / R07 | `provider_accept_then_ack_loss` | Durable `ambiguous`; second `processDeliveryJob` → `skipped_leased`; provider/logical send count stays 1. Test recorder dedupe is **observability only** — production safety is Strategy B, not recorder dedupe. |
 
-### C07 conversion × trial warning (policy B)
+### C07 conversion × trial warning (send-time + adapter obsolete suppress)
 
 - Warning scheduler does **not** scan trials; trial warnings are producer-driven via `trialExpiry`.
-- **C07-A:** conversion first; test-side eligibility `trial.status==='ACTIVE'` before emit → intentΔ=0, emailΔ=0.
-- **C07-B (policy B):** intent+job created while ACTIVE may still deliver after convert (frozen intent allowed); no duplicate warning intent; no adapter-side trial-status suppress.
+- **Adapter suppress (belt):** `trialExpiry` loads `platformSalesTrial`; if `CONVERTED` / `CANCELLED` / (`approaching` && `EXPIRED`) → `{ accepted:true, suppressed:true }` without produce (intentΔ=0).
+- **Send-time revalidation (suspenders):** before `adapter.send`, worker loads trial by `metadata.sourceId` for trial expiry events; obsolete → `status=suppressed`, no provider call, source mutation Δ=0.
+- **C07-A:** convert first; `trialExpiry` → adapter suppress → intentΔ=0, emailΔ=0.
+- **C07-B:** intent+job created while ACTIVE under claim inject; convert; clear+process → send-time `suppressed`, emailΔ=0.
 - **C07-C:** concurrent convert + `trialExpiry` → conversion cardinality 1; warning intents ≤1; notification does not mutate/rollback conversion.
+- **C07-D/E:** CANCELLED / EXPIRED(approaching) adapter suppress.
+- **C07-F:** two workers after convert → one `suppressed`, one `skipped_leased`; emailΔ=0.
 
 ---
 
@@ -171,15 +185,15 @@ Super Admin: `/notifications/templates`, `/notifications/preferences`, `/notific
 
 | Suite | Result |
 |-------|--------|
-| Step 27 DB matrices | **314/314** (15 suites) |
-| Super Admin UI01–UI60 | **60/60** |
+| Step 27 DB matrices | Pending re-run after final product correction |
+| Super Admin UI01–UI60 | **60/60** (prior) |
 | Clean / upgrade validators | PASS (Catalog 68/136/68/13) |
-| Case C Attempt 2 | PASS (authoritative; preserved) |
-| Final matrix mapping closure | PASS |
-| Ultra-narrow F09/F11/C07/T15/I16-R07 | PASS |
+| Case C Attempt 2 | **INVALIDATED** (product behavior changed) |
+| Final matrix mapping closure | Pending re-run |
+| Ultra-narrow F09/F11/C07/T15/I16-R07 | Product correction applied; re-verify |
 
 ---
 
 ## 9. Non-goals
 
-No Step 28/29. No second engine. No SMS/push/WhatsApp for new platform events. No template CMS. No PHI. Catalog `68 / 136 / 68 / 13`.
+No Step 28/29. No second engine. No SMS/push/WhatsApp for new platform events. No template CMS. No PHI. Catalog `68 / 136 / 68 / 13`. No migration for ambiguous/suppressed (reuse existing `DeliveryJob.status` varchar).

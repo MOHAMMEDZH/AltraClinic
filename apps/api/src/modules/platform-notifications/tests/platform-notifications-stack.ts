@@ -130,7 +130,7 @@ export function createPlatformNotificationsStack(
   prisma: PrismaClient,
   opts: {
     permissions?: string[];
-    /** Reuse an existing recording sink across stack recreation (I16/R07 ack-loss safety). */
+    /** Reuse an existing recording sink across stack recreation (observability only — production safety is Strategy B ambiguous, not recorder dedupe). */
     emailService?: RecordingTransactionalEmailService;
   } = {},
 ): PlatformNotificationsStack {
@@ -213,7 +213,7 @@ export function createPlatformNotificationsStack(
   const prefs = new PlatformNotificationPreferenceService(wrapped, auditLog);
   const dispatch = new PlatformNotificationDispatchService(wrapped, producer, worker, prefs, auditLog);
   const query = new PlatformNotificationQueryService(wrapped, deliveryJobs, worker, auditLog);
-  const adapters = new PlatformNotificationEventAdapters(dispatch);
+  const adapters = new PlatformNotificationEventAdapters(dispatch, wrapped);
   const scheduler = new PlatformNotificationWarningScheduler(wrapped, adapters);
 
   return {

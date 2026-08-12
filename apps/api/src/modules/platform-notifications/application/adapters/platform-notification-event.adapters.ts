@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { PlatformNotificationDispatchService } from '../platform-notification-dispatch.service';
 import type { PlatformDispatchResult } from '../../domain/platform-notifications.types';
 import { isPlatformNotificationFailureInjectionActive } from '../../platform-notifications.constants';
@@ -10,7 +11,10 @@ import { PlatformNotificationValidationError } from '../../domain/platform-notif
  */
 @Injectable()
 export class PlatformNotificationEventAdapters {
-  constructor(private readonly dispatch: PlatformNotificationDispatchService) {}
+  constructor(
+    private readonly dispatch: PlatformNotificationDispatchService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   private guard(point: string) {
     if (isPlatformNotificationFailureInjectionActive(point)) {
@@ -98,7 +102,7 @@ export class PlatformNotificationEventAdapters {
     });
   }
 
-  /** N04 / N05 */
+  /** N04 / N05 — adapter-level obsolete suppress (belt) + worker send-time revalidation (suspenders). */
   async trialExpiry(input: {
     approaching: boolean;
     trialId: string;
@@ -110,10 +114,38 @@ export class PlatformNotificationEventAdapters {
     recipientEmail: string;
   }): Promise<PlatformDispatchResult> {
     this.guard('trial_source');
+    const eventKey = input.approaching
+      ? 'platform.trial.approaching_expiry'
+      : 'platform.trial.expired';
+    const dedupeKey = [
+      eventKey,
+      'platform_sales_trial',
+      input.trialId,
+      input.windowKey,
+      input.recipientPlatformUserId,
+      'email',
+    ].join('|');
+
+    const trial = await this.prisma.platformSalesTrial.findUnique({
+      where: { id: input.trialId },
+      select: { status: true },
+    });
+    if (
+      trial &&
+      (trial.status === 'CONVERTED' ||
+        trial.status === 'CANCELLED' ||
+        (input.approaching && trial.status === 'EXPIRED'))
+    ) {
+      return {
+        accepted: true,
+        suppressed: true,
+        suppressReason: `trial_obsolete_${trial.status}`,
+        dedupeKey,
+      };
+    }
+
     return this.dispatch.dispatch({
-      eventKey: input.approaching
-        ? 'platform.trial.approaching_expiry'
-        : 'platform.trial.expired',
+      eventKey,
       sourceType: 'platform_sales_trial',
       sourceId: input.trialId,
       windowKey: input.windowKey,

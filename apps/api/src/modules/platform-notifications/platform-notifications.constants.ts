@@ -53,6 +53,7 @@ export const PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS = [
   'provider_ambiguous',
   'after_provider_before_ack',
   'before_delivery_job_claim',
+  'before_provider_send',
   'before_delivery_attempt_persist',
   'provider_accept_then_ack_loss',
   'audit_write',

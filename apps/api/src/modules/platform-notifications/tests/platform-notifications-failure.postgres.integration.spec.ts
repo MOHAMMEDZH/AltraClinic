@@ -234,69 +234,109 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
     expect(await prisma.deliveryJob.count()).toBe(0);
   });
 
-  it('F11: before_delivery_attempt_persist — Case A ordering + Case B post-provider persist fail then exactly-once retry', async () => {
-    // Case A: "persist before provider" does not exist in this engine. DeliveryWorkerService
-    // calls adapter.send first, then recordAttempt on the success path (and again in catch on
-    // failure). Source proof:
+  it('F11-A: before_provider_send — fail between lease and provider; providerΔ=0', async () => {
+    // Case A: send is ordered after lease; before_provider_send fails between lease and adapter.send.
     const workerSource = readFileSync(
       resolve(__dirname, '../../notifications/delivery/delivery-worker.service.ts'),
       'utf8',
     );
+    const leaseIdx = workerSource.indexOf('leaseJob(');
+    const beforeSendIdx = workerSource.indexOf('before_provider_send');
     const sendIdx = workerSource.indexOf('adapter.send(');
-    const successAttemptIdx = workerSource.indexOf('recordAttempt(');
-    expect(sendIdx).toBeGreaterThan(-1);
-    expect(successAttemptIdx).toBeGreaterThan(sendIdx);
-    // Selector still required for the post-provider persist seam (Case B below).
-    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toContain('before_delivery_attempt_persist');
+    expect(leaseIdx).toBeGreaterThan(-1);
+    expect(beforeSendIdx).toBeGreaterThan(leaseIdx);
+    expect(sendIdx).toBeGreaterThan(beforeSendIdx);
+    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toContain('before_provider_send');
 
-    // Case B: provider succeeds, then recordAttempt throws. Catch also calls recordAttempt, so
-    // the injection still throws and failJob may not run — job can remain leased. Safe recovery:
-    // clear injection, expire/requeue lease, process once; messageId idempotency suppresses a
-    // second user-visible send.
-    const email = `f11-${randomUUID()}@test.local`;
+    const email = `f11a-${randomUUID()}@test.local`;
+    setPlatformNotificationFailureInjection('before_provider_send');
+    const result = await stack.adapters.invitationSent(invitation(email));
+    expect(result.accepted).toBe(true);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(0);
+    const { jobs, attempts } = await getDeliveryArtifacts(prisma, result.intentId!);
+    expect(jobs).toHaveLength(1);
+    expect(attempts.filter((a) => a.success)).toHaveLength(0);
+    expect(jobs[0].status).toBe('pending');
+    expect(String(jobs[0].failureReason)).toMatch(/before_provider_send/);
+  });
+
+  it('F11-B: provider_accept_then_ack_loss → durable ambiguous; no auto duplicate', async () => {
+    const email = `f11b-${randomUUID()}@test.local`;
+    setPlatformNotificationFailureInjection('provider_accept_then_ack_loss');
+    await stack.adapters.invitationSent(invitation(email));
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+    expect(jobs[0].status).toBe('ambiguous');
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+
+    const sendsBefore = stack.emailService.logicalAcceptedSendCount;
+    const second = await stack.worker.processDeliveryJob(jobs[0].id);
+    expect(second.status).toBe('skipped_leased');
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(sendsBefore);
+  });
+
+  it('F11-C: recreate stack + process ambiguous → no auto send', async () => {
+    const email = `f11c-${randomUUID()}@test.local`;
+    setPlatformNotificationFailureInjection('provider_accept_then_ack_loss');
+    await stack.adapters.invitationSent(invitation(email));
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+    expect(jobs[0].status).toBe('ambiguous');
+
+    const emailSink = stack.emailService;
+    const sendsBefore = emailSink.logicalAcceptedSendCount;
+    const recreated = createPlatformNotificationsStack(prisma, { emailService: emailSink });
+    const outcome = await recreated.worker.processDeliveryJob(jobs[0].id);
+    expect(outcome.status).toBe('skipped_leased');
+    expect(emailSink.logicalAcceptedSendCount).toBe(sendsBefore);
+    expect(emailSink.sent.filter((m) => m.to === email)).toHaveLength(1);
+    const finalJob = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+    expect(finalJob.status).toBe('ambiguous');
+  });
+
+  it('F11-D: two workers on ambiguous → automatic duplicate provider sends = 0', async () => {
+    const email = `f11d-${randomUUID()}@test.local`;
+    setPlatformNotificationFailureInjection('provider_accept_then_ack_loss');
+    await stack.adapters.invitationSent(invitation(email));
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+    expect(jobs[0].status).toBe('ambiguous');
+    const sendsBefore = stack.emailService.logicalAcceptedSendCount;
+
+    const other = createPlatformNotificationsStack(prisma, { emailService: stack.emailService });
+    const [a, b] = await Promise.all([
+      stack.worker.processDeliveryJob(jobs[0].id),
+      other.worker.processDeliveryJob(jobs[0].id),
+    ]);
+    expect(a.status).toBe('skipped_leased');
+    expect(b.status).toBe('skipped_leased');
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(sendsBefore);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('F11-B2: before_delivery_attempt_persist after provider → durable ambiguous (Strategy B)', async () => {
+    // Provider succeeds, then recordAttempt throws. Strategy B: mark ambiguous; no blind auto-resend.
+    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toContain('before_delivery_attempt_persist');
+    const email = `f11b2-${randomUUID()}@test.local`;
     const sorBefore = await protectedNotificationsSoR(prisma);
     setPlatformNotificationFailureInjection('before_delivery_attempt_persist');
-    await expect(stack.adapters.invitationSent(invitation(email))).rejects.toThrow(
-      /before_delivery_attempt_persist/,
-    );
+    const result = await stack.adapters.invitationSent(invitation(email));
+    expect(result.accepted).toBe(true);
 
     expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
-    const intent = await prisma.notificationIntent.findFirstOrThrow();
-    let { jobs, attempts } = await getDeliveryArtifacts(prisma, intent.id);
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
     expect(jobs).toHaveLength(1);
-    // Persist never completed — attempt rows absent; job likely still leased.
-    expect(attempts).toHaveLength(0);
-    expect(['leased', 'pending']).toContain(jobs[0].status);
-    expect(
-      await prisma.auditEntry.count({
-        where: {
-          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
-          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
-          resourceId: intent.id,
-        },
-      }),
-    ).toBe(0);
+    expect(jobs[0].status).toBe('ambiguous');
+    expect(String(jobs[0].failureReason)).toMatch(/before_delivery_attempt_persist/);
 
+    const sendsBefore = stack.emailService.logicalAcceptedSendCount;
     clearPlatformNotificationFailureInjection();
-    // Requeue / expire lease so the next process can claim.
-    await prisma.deliveryJob.update({
-      where: { id: jobs[0].id },
-      data: {
-        status: 'pending',
-        scheduledAt: null,
-        leaseExpiresAt: null,
-        leasedAt: null,
-      },
-    });
-    const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
-    expect(outcome.status).toBe('delivered');
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
-    expect(stack.emailService.idempotentReplaySuppressions).toBeGreaterThanOrEqual(1);
-    expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
-    ({ jobs, attempts } = await getDeliveryArtifacts(prisma, intent.id));
-    expect(jobs[0].status).toBe('completed');
-    expect(attempts.some((a) => a.success)).toBe(true);
+    const second = await stack.worker.processDeliveryJob(jobs[0].id);
+    expect(second.status).toBe('skipped_leased');
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(sendsBefore);
     expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
       true,
     );
@@ -336,21 +376,23 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
     const email = `f15-${randomUUID()}@test.local`;
     const result = await stack.adapters.invitationSent(invitation(email));
     const { jobs, receipts } = await getDeliveryArtifacts(prisma, result.intentId!);
-    expect(jobs[0].status).not.toBe('completed');
+    expect(jobs[0].status).toBe('ambiguous');
     expect(receipts.every((r) => r.status !== 'DELIVERED')).toBe(true);
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
   });
 
-  it('F16: after_provider_before_ack — provider accepted but acknowledgement failed leaves exactly one logical intent (no duplicate fan-out)', async () => {
+  it('F16: after_provider_before_ack — provider accepted but acknowledgement failed → durable ambiguous', async () => {
     setPlatformNotificationFailureInjection('after_provider_before_ack');
     const email = `f16-${randomUUID()}@test.local`;
     await stack.adapters.invitationSent(invitation(email));
-    // The email may have reached the recording sink before the injected post-send throw; what must
-    // never happen is a second logical intent / duplicate fan-out for the same event.
     expect(stack.emailService.sent.filter((m) => m.to === email).length).toBeLessThanOrEqual(1);
     expect(
       await prisma.notificationIntent.count({ where: { metadata: { path: ['step27'], equals: true } } }),
     ).toBe(1);
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+    expect(jobs[0].status).toBe('ambiguous');
+    expect(String(jobs[0].failureReason)).toMatch(/after_provider_before_ack/);
   });
 
   it('F17: audit_write — audit persistence failure aborts the admin-visible dispatch record', async () => {
@@ -594,8 +636,8 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
   });
 
   it('Model B: catalog enumerates exactly the independent selector inventory', () => {
-    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toHaveLength(32);
-    expect(new Set(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).size).toBe(32);
+    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toHaveLength(33);
+    expect(new Set(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).size).toBe(33);
   });
 
   it('Model B: selectors are inert when NODE_ENV is not test', () => {

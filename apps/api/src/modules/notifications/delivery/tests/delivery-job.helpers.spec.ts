@@ -3,6 +3,18 @@ import { ProviderUnavailableError } from '../provider-adapter.contract';
 import { RECEIPT_STATUS_RANK } from '../receipt.service';
 
 describe('DeliveryJobService helpers', () => {
+  it('classifies ambiguous ack-loss failures', () => {
+    const hinted = Object.assign(new Error('provider_accept_then_ack_loss'), {
+      failureClassHint: 'ambiguous' as const,
+    });
+    expect(classifyFailure(hinted, 1, 5)).toBe('ambiguous');
+    expect(classifyFailure(new Error('provider_accept_then_ack_loss'), 1, 5)).toBe('ambiguous');
+    expect(classifyFailure(new Error('after_provider_before_ack'), 1, 5)).toBe('ambiguous');
+    expect(classifyFailure(new Error('Injected after_provider_before_ack failure'), 1, 5)).toBe(
+      'ambiguous',
+    );
+  });
+
   it('classifies permanent failures', () => {
     expect(classifyFailure(new Error('invalid recipient'), 1, 5)).toBe('permanent');
     expect(classifyFailure(new Error('unauthorized'), 1, 5)).toBe('permanent');

@@ -222,6 +222,8 @@ export class PlatformNotificationQueryService {
     });
 
     await this.jobs.requeueJob(job.id);
+    // Manual retry from `ambiguous` may duplicate provider delivery (no native provider
+    // idempotency). Operator-supplied reason is audited; prior failureReason stays visible on get/list.
     if (process.env.NODE_ENV === 'test') {
       await this.worker.processDeliveryJob(job.id);
     }

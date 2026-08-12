@@ -82,7 +82,7 @@ export class EmailAdapter implements NotificationProviderAdapter {
           providerKey: this.providerKey,
           channel: this.channelId,
           error: 'provider_ambiguous',
-          failureClass: 'fallback',
+          failureClass: 'ambiguous',
         };
       }
       if (inj === 'provider_transient') {
@@ -118,17 +118,20 @@ export class EmailAdapter implements NotificationProviderAdapter {
       ...(input.messageId ? { idempotencyKey: input.messageId } : {}),
     });
 
+    // Strategy B: after provider accept, local ack loss → durable ambiguous (no auto-resend).
     if (
       process.env.NODE_ENV === 'test' &&
       process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'after_provider_before_ack'
     ) {
-      throw new ProviderUnavailableError(
-        this.providerKey,
-        'Injected after_provider_before_ack failure',
-      );
+      return {
+        success: false,
+        providerKey: this.providerKey,
+        channel: this.channelId,
+        error: 'after_provider_before_ack',
+        failureClass: 'ambiguous',
+      };
     }
 
-    // Provider accepted the message, but local ack/receipt is lost — return failure after send.
     if (
       process.env.NODE_ENV === 'test' &&
       process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'provider_accept_then_ack_loss'
@@ -138,7 +141,7 @@ export class EmailAdapter implements NotificationProviderAdapter {
         providerKey: this.providerKey,
         channel: this.channelId,
         error: 'provider_accept_then_ack_loss',
-        failureClass: 'fallback',
+        failureClass: 'ambiguous',
       };
     }
 

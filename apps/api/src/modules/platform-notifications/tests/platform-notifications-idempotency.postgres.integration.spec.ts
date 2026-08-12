@@ -372,44 +372,33 @@ describeDb('Step 27 idempotency matrix I01-I16 (PostgreSQL)', () => {
     expect(sentTo(email)).toBe(1);
   });
 
-  it('I16: provider_accept_then_ack_loss then retry → exactly one user-visible email (messageId idempotency)', async () => {
-    // True ack-loss: EmailAdapter.send succeeds into the recording sink, then returns failure so
-    // local DELIVERED ack is absent. Retry reuses the same messageId; the recording sink dedupes.
-    // Service recreation reuses the SAME emailService instance (in-process keys survive).
+  it('I16: provider_accept_then_ack_loss → durable ambiguous; no auto-resend (Strategy B)', async () => {
+    // Provider accepted into the recording sink, then local ack is lost. Production has no
+    // provider-native idempotency — Strategy B marks the job ambiguous and never auto-retries.
     setPlatformNotificationFailureInjection('provider_accept_then_ack_loss');
     const email = `i16-${randomUUID()}@test.local`;
     const result = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
     const jobs = await prisma.deliveryJob.findMany({ where: { intentId: result.intentId! } });
     expect(jobs).toHaveLength(1);
+    expect(jobs[0].status).toBe('ambiguous');
+    expect(String(jobs[0].failureReason)).toMatch(/provider_accept_then_ack_loss/);
     expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
-    expect(jobs[0].status).not.toBe('completed');
     const receiptsAfterAmbiguous = await prisma.notificationReceipt.findMany({
       where: { jobId: jobs[0].id },
     });
     expect(receiptsAfterAmbiguous.every((r) => r.status !== 'DELIVERED')).toBe(true);
 
-    clearPlatformNotificationFailureInjection();
+    const sendsBefore = stack.emailService.logicalAcceptedSendCount;
     const emailSink = stack.emailService;
     const recreated = createPlatformNotificationsStack(prisma, { emailService: emailSink });
-    const outcome = await recreated.worker.processDeliveryJob(jobs[0].id);
-    expect(outcome.status).toBe('delivered');
-
-    expect(emailSink.logicalAcceptedSendCount).toBe(1);
+    const second = await recreated.worker.processDeliveryJob(jobs[0].id);
+    expect(second.status).toBe('skipped_leased');
+    expect(emailSink.logicalAcceptedSendCount).toBe(sendsBefore);
     expect(emailSink.sent.filter((m) => m.to === email)).toHaveLength(1);
-    expect(emailSink.idempotentReplaySuppressions).toBeGreaterThanOrEqual(1);
     expect(await prisma.notificationIntent.count({ where: { id: result.intentId! } })).toBe(1);
-    expect(
-      await prisma.auditEntry.count({
-        where: {
-          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
-          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
-          resourceId: result.intentId!,
-        },
-      }),
-    ).toBe(1);
     const finalJob = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
-    expect(finalJob.status).toBe('completed');
+    expect(finalJob.status).toBe('ambiguous');
   });
 
   it('Idempotency audit: a replayed logical event writes no second DISPATCHED audit entry', async () => {
