@@ -1,7 +1,12 @@
 /**
- * Flexible Step 27 — concurrency matrix C01–C24.
+ * Flexible Step 27 — concurrency matrix C01–C24 (gate race semantics).
+ * Every race is driven against the real stack (one or two `createPlatformNotificationsStack`
+ * instances over the same PostgreSQL database) so convergence is proven by durable rows, not by
+ * an in-process lock.
  */
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import {
   createPlatformNotificationsStack,
@@ -16,6 +21,7 @@ import {
   createAddOnVersionFixture,
   createClinicTenantFixture,
   createCommercialConfigFixture,
+  createOverrideFixture,
   createPlatformDbSecurityClient,
   createPlatformUserFixture,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
@@ -25,8 +31,14 @@ import {
   platformDbSecurityEnabled,
   setPlatformNotificationFailureInjection,
 } from './platform-notifications-db.harness';
+import {
+  PLATFORM_NOTIFICATION_AUDIT_ACTIONS,
+  PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+  PLATFORM_TEMPLATE_VERSION,
+} from '../platform-notifications.constants';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
   let prisma: PrismaClient;
@@ -63,162 +75,52 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
     };
   }
 
-  it('C01: concurrent identical invitation dispatches converge to one email', async () => {
+  async function addOnAt(commercialEnd: Date, platformUserId: string) {
+    const { platformTenant } = await createClinicTenantFixture(prisma);
+    const config = await createCommercialConfigFixture(prisma, {
+      platformTenantId: platformTenant.id,
+      createdByPlatformUserId: platformUserId,
+      commercialEnd,
+    });
+    const version = await createAddOnVersionFixture(prisma);
+    const assignment = await createAddOnAssignmentFixture(prisma, {
+      configId: config.id,
+      addOnVersionId: version.id,
+    });
+    return { assignment, config, version, platformTenant };
+  }
+
+  /** Dead-letters a transient-failure delivery and then clears the simulated outage. */
+  async function deadLetterInvitation() {
+    setPlatformNotificationFailureInjection('provider_transient');
+    const result = await stack.adapters.invitationSent(invitation());
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    const job = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+    for (let i = job.attemptCount; i < job.maxAttempts; i++) {
+      await stack.worker.processDeliveryJob(job.id);
+    }
+    clearPlatformNotificationFailureInjection();
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({ where: { id: result.intentId! } });
+    await prisma.notificationIntent.update({
+      where: { id: result.intentId! },
+      data: { metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false } },
+    });
+    return { result, jobId: job.id };
+  }
+
+  it('C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email', async () => {
     const input = invitation();
     const [a, b] = await Promise.all([
       stack.adapters.invitationSent(input),
       stack.adapters.invitationSent(input),
     ]);
     expect(a.intentId).toBe(b.intentId);
+    expect([a.replayed, b.replayed].filter(Boolean)).toHaveLength(1);
+    expect(await prisma.notificationIntent.count()).toBe(1);
     expect(stack.emailService.sent.filter((m) => m.to === input.recipientEmail)).toHaveLength(1);
   });
 
-  it('C02: concurrent distinct invitations both succeed', async () => {
-    const email = `c02-${randomUUID()}@test.local`;
-    const [a, b] = await Promise.all([
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
-    ]);
-    expect(a.intentId).not.toBe(b.intentId);
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
-  });
-
-  it('C03: concurrent preference upserts with same key converge without duplicate rows', async () => {
-    const userRow = await createPlatformUserFixture(prisma, {
-      email: `c03-${randomUUID()}@test.local`,
-    });
-    const claims = platformClaims(userRow.id, randomUUID());
-    const results = await Promise.allSettled([
-      stack.prefs.upsert(
-        claims,
-        perms,
-        { category: 'usage', channel: 'email', enabled: false },
-        randomUUID(),
-      ),
-      stack.prefs.upsert(
-        claims,
-        perms,
-        { category: 'usage', channel: 'email', enabled: false },
-        randomUUID(),
-      ),
-    ]);
-    expect(results.filter((r) => r.status === 'fulfilled').length).toBeGreaterThanOrEqual(1);
-    const rows = await prisma.platformNotificationPreference.findMany({
-      where: { platformUserId: userRow.id, category: 'usage', channel: 'email' },
-    });
-    expect(rows).toHaveLength(1);
-  });
-
-  it('C04: preference OCC conflict when expectedRowVersion is stale', async () => {
-    const userRow = await createPlatformUserFixture(prisma, {
-      email: `c04-${randomUUID()}@test.local`,
-    });
-    const claims = platformClaims(userRow.id, randomUUID());
-    const first = await stack.prefs.upsert(
-      claims,
-      perms,
-      { category: 'usage', channel: 'email', enabled: false },
-      randomUUID(),
-    );
-    await stack.prefs.upsert(
-      claims,
-      perms,
-      { category: 'usage', channel: 'email', enabled: true, expectedRowVersion: first.rowVersion },
-      randomUUID(),
-    );
-    await expect(
-      stack.prefs.upsert(
-        claims,
-        perms,
-        { category: 'usage', channel: 'email', enabled: false, expectedRowVersion: first.rowVersion },
-        randomUUID(),
-      ),
-    ).rejects.toThrow(/rowVersion|occ/i);
-  });
-
-  it('C05: concurrent warning scans are read-only and do not invent dispatches', async () => {
-    const [a, b] = await Promise.all([
-      stack.scheduler.runDueScan(new Date()),
-      stack.scheduler.runDueScan(new Date()),
-    ]);
-    expect(a.dispatched).toBe(0);
-    expect(b.dispatched).toBe(0);
-  });
-
-  it('C06: concurrent d7/d1 trial windows remain distinct intents', async () => {
-    const trialId = randomUUID();
-    const email = `c06-${randomUUID()}@test.local`;
-    const recipient = randomUUID();
-    const [d7, d1] = await Promise.all([
-      stack.adapters.trialExpiry({
-        approaching: true,
-        trialId,
-        organizationName: 'Acme',
-        expiryDate: new Date().toISOString(),
-        planVersionId: randomUUID(),
-        windowKey: 'd7',
-        recipientPlatformUserId: recipient,
-        recipientEmail: email,
-      }),
-      stack.adapters.trialExpiry({
-        approaching: true,
-        trialId,
-        organizationName: 'Acme',
-        expiryDate: new Date().toISOString(),
-        planVersionId: randomUUID(),
-        windowKey: 'd1',
-        recipientPlatformUserId: recipient,
-        recipientEmail: email,
-      }),
-    ]);
-    expect(d7.intentId).not.toBe(d1.intentId);
-  });
-
-  it('C07: concurrent listDeliveries reads are stable under write traffic', async () => {
-    await stack.adapters.invitationSent(invitation());
-    const [list, dispatch] = await Promise.all([
-      stack.query.listDeliveries(perms, { pageSize: 50 }),
-      stack.adapters.invitationSent(invitation()),
-    ]);
-    expect(list.items.length).toBeGreaterThanOrEqual(1);
-    expect(dispatch.accepted).toBe(true);
-  });
-
-  it('C08: concurrent retries on same job converge safely', async () => {
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent(invitation());
-    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
-    });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
-      },
-    });
-    const user = platformClaims(randomUUID(), randomUUID());
-    const settled = await Promise.allSettled([
-      stack.query.retryDelivery(
-        user,
-        perms,
-        result.intentId!,
-        { reason: 'a', jobId: jobs[0].id },
-        randomUUID(),
-      ),
-      stack.query.retryDelivery(
-        user,
-        perms,
-        result.intentId!,
-        { reason: 'b', jobId: jobs[0].id },
-        randomUUID(),
-      ),
-    ]);
-    expect(settled.some((r) => r.status === 'fulfilled')).toBe(true);
-  });
-
-  it('C09: two stacks sharing one Prisma client still dedupe', async () => {
+  it('C02: same event two workers/stacks — two independent service instances converge to one intent and one email', async () => {
     const s1 = createPlatformNotificationsStack(prisma);
     const s2 = createPlatformNotificationsStack(prisma);
     const input = invitation();
@@ -227,42 +129,195 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
       s2.adapters.invitationSent(input),
     ]);
     expect(a.intentId).toBe(b.intentId);
+    expect(await prisma.notificationIntent.count()).toBe(1);
+    const sent = [...s1.emailService.sent, ...s2.emailService.sent].filter(
+      (m) => m.to === input.recipientEmail,
+    );
+    expect(sent).toHaveLength(1);
   });
 
-  it('C10: concurrent preference disable + mandatory security dispatch still delivers', async () => {
-    const userRow = await createPlatformUserFixture(prisma, {
-      email: `c10-${randomUUID()}@test.local`,
+  it('C03: same delivery retry two workers — concurrent processDeliveryJob picks never double-complete or double-send', async () => {
+    const email = `c03-${randomUUID()}@test.local`;
+    const result = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    const outcomes = await Promise.all([
+      stack.worker.processDeliveryJob(jobs[0].id),
+      stack.worker.processDeliveryJob(jobs[0].id),
+    ]);
+    expect(outcomes.every((o) => o.status === 'skipped_leased' || o.status === 'delivered')).toBe(true);
+    expect((await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } })).status).toBe(
+      'completed',
+    );
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C04: source updates while the warning job scans — commercialEnd moved out of window between scans excludes the row and invents nothing', async () => {
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const user = await createPlatformUserFixture(prisma, { email: `c04-${randomUUID()}@test.local` });
+    const { config, assignment } = await addOnAt(new Date(now.getTime() + 6 * DAY_MS), user.id);
+
+    const first = await stack.scheduler.runDueScan(now);
+    expect(first.eligible.some((r) => r.id === assignment.id)).toBe(true);
+
+    // The commercial SoR moves under the scheduler between two scan pages.
+    await prisma.platformSubscriptionCommercialConfig.update({
+      where: { id: config.id },
+      data: { commercialEnd: new Date(now.getTime() + 40 * DAY_MS) },
     });
-    const claims = platformClaims(userRow.id, randomUUID());
-    const email = `c10-${randomUUID()}@test.local`;
-    const [pref, dispatch] = await Promise.all([
-      stack.prefs.upsert(
-        claims,
-        perms,
-        { category: 'usage', channel: 'email', enabled: false },
-        randomUUID(),
-      ),
-      stack.adapters.invitationSent(
-        invitation({ platformUserId: userRow.id, recipientEmail: email }),
-      ),
-    ]);
-    expect(pref.enabled).toBe(false);
-    expect(dispatch.accepted).toBe(true);
-    expect(stack.emailService.sent.some((m) => m.to === email)).toBe(true);
-  });
+    const second = await stack.scheduler.runDueScan(now);
 
-  it('C11: concurrent template previews do not invent intents', async () => {
-    const user = platformClaims(randomUUID(), randomUUID());
-    await Promise.all([
-      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.invitation.sent')),
-      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.invitation.sent')),
-    ]);
+    expect(second.eligible.some((r) => r.id === assignment.id)).toBe(false);
+    expect(second.dispatched).toBe(0);
     expect(await prisma.notificationIntent.count()).toBe(0);
   });
 
-  it('C12: concurrent limit warning + critical for same evidence both accept', async () => {
+  it('C05: Add-on extension vs warning — extending after a d7 warning neither re-notifies nor duplicates the delivered window', async () => {
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const user = await createPlatformUserFixture(prisma, { email: `c05-${randomUUID()}@test.local` });
+    const { assignment, config } = await addOnAt(new Date(now.getTime() + 6 * DAY_MS), user.id);
+    const email = `c05-${randomUUID()}@test.local`;
+    const warning = {
+      approaching: true as const,
+      assignmentId: assignment.id,
+      organizationName: 'Acme',
+      addOnLabel: 'addon',
+      addOnVersionId: randomUUID(),
+      expiryDate: new Date(now.getTime() + 6 * DAY_MS).toISOString(),
+      windowKey: 'd7',
+      recipientPlatformUserId: user.id,
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.addOnExpiry(warning);
+    expect(first.accepted).toBe(true);
+
+    await prisma.platformSubscriptionCommercialConfig.update({
+      where: { id: config.id },
+      data: { commercialEnd: new Date(now.getTime() + 60 * DAY_MS) },
+    });
+    const intentsBefore = await prisma.notificationIntent.count();
+    const scan = await stack.scheduler.runDueScan(now);
+    const replay = await stack.adapters.addOnExpiry(warning);
+
+    expect(scan.eligible.some((r) => r.id === assignment.id)).toBe(false);
+    expect(replay.replayed).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C06: Override extension vs warning — extending expiresAt after a warning removes eligibility and replays are +0', async () => {
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const user = await createPlatformUserFixture(prisma, { email: `c06-${randomUUID()}@test.local` });
+    const override = await createOverrideFixture(prisma, {
+      createdByPlatformUserId: user.id,
+      expiresAt: new Date(now.getTime() + 6 * DAY_MS),
+    });
+    const email = `c06-${randomUUID()}@test.local`;
+    const warning = {
+      approaching: true as const,
+      overrideId: override.id,
+      organizationName: 'Acme',
+      overrideLabel: 'SALES_CONCESSION',
+      expiryDate: new Date(now.getTime() + 6 * DAY_MS).toISOString(),
+      windowKey: 'd7',
+      recipientPlatformUserId: user.id,
+      recipientEmail: email,
+    };
+    await stack.adapters.overrideExpiry(warning);
+
+    await prisma.platformCommercialOverride.update({
+      where: { id: override.id },
+      data: { expiresAt: new Date(now.getTime() + 90 * DAY_MS) },
+    });
+    const intentsBefore = await prisma.notificationIntent.count();
+    const scan = await stack.scheduler.runDueScan(now);
+    const replay = await stack.adapters.overrideExpiry(warning);
+
+    expect(scan.eligible.some((r) => r.id === override.id)).toBe(false);
+    expect(replay.replayed).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C07: N/A — Step 27 adapters do not subscribe to conversion events; conversion suppresses by not emitting Trial warnings post-convert (producer never called)', async () => {
+    // Structural: the adapter surface has no conversion subscription/handler at all — Step 27 is
+    // producer-driven, so "post-conversion suppression" is literally the absence of a call.
+    const adaptersSource = readFileSync(
+      resolve(__dirname, '../application/adapters/platform-notification-event.adapters.ts'),
+      'utf8',
+    );
+    expect(adaptersSource).not.toMatch(/conversion|converted|@OnEvent|EventEmitter/i);
+
+    const email = `c07-${randomUUID()}@test.local`;
+    const trialId = randomUUID();
+    const recipientPlatformUserId = randomUUID();
+    const approaching = await stack.adapters.trialExpiry({
+      approaching: true,
+      trialId,
+      organizationName: 'Acme',
+      expiryDate: new Date().toISOString(),
+      planVersionId: randomUUID(),
+      windowKey: 'd7',
+      recipientPlatformUserId,
+      recipientEmail: email,
+    });
+    expect(approaching.accepted).toBe(true);
+
+    // "Conversion happens": the trial producer simply stops emitting. Nothing else in Step 27
+    // reacts, so the intent/email totals stay exactly where the last emitted warning left them.
+    const intentsAfterConversion = await prisma.notificationIntent.count();
+    expect(intentsAfterConversion).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C08: Subscription renewal/change vs expiry warning — the renewed window is a distinct logical event, not a duplicate', async () => {
+    const configId = randomUUID();
+    const email = `c08-${randomUUID()}@test.local`;
+    const recipientPlatformUserId = randomUUID();
+    const base = {
+      configId,
+      organizationName: 'Acme',
+      expiryDate: new Date().toISOString(),
+      planVersionId: randomUUID(),
+      recipientPlatformUserId,
+      recipientEmail: email,
+    };
+    const [expiry, renewed] = await Promise.all([
+      stack.adapters.subscriptionEvent({ ...base, kind: 'approaching', windowKey: 'd7' }),
+      stack.adapters.subscriptionEvent({ ...base, kind: 'approaching', windowKey: 'd1' }),
+    ]);
+
+    expect(expiry.accepted).toBe(true);
+    expect(renewed.accepted).toBe(true);
+    expect(expiry.intentId).not.toBe(renewed.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
+  });
+
+  it('C09: Plan migration completes while a warning is queued — scheduled and completed migrations stay distinct intents', async () => {
+    const migrationId = randomUUID();
+    const email = `c09-${randomUUID()}@test.local`;
+    const base = {
+      migrationId,
+      organizationName: 'Acme',
+      fromPlanVersionId: randomUUID(),
+      toPlanVersionId: randomUUID(),
+      at: new Date().toISOString(),
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const [scheduled, completed] = await Promise.all([
+      stack.adapters.planMigration({ ...base, completed: false }),
+      stack.adapters.planMigration({ ...base, completed: true }),
+    ]);
+
+    expect(scheduled.intentId).not.toBe(completed.intentId);
+    expect(scheduled.accepted).toBe(true);
+    expect(completed.accepted).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(2);
+  });
+
+  it('C10: concurrent usage threshold events — warning and critical for the same evidence remain separate alerts', async () => {
     const evidenceId = randomUUID();
-    const email = `c12-${randomUUID()}@test.local`;
+    const email = `c10-${randomUUID()}@test.local`;
     const base = {
       evidenceId,
       organizationName: 'Acme',
@@ -275,69 +330,363 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
       recipientPlatformUserId: randomUUID(),
       recipientEmail: email,
     };
-    const [w, c] = await Promise.all([
+    const [warning, critical] = await Promise.all([
       stack.adapters.limitAlert({ ...base, level: 'warning' }),
       stack.adapters.limitAlert({ ...base, level: 'critical' }),
     ]);
-    expect(w.accepted).toBe(true);
-    expect(c.accepted).toBe(true);
-    expect(w.intentId).not.toBe(c.intentId);
+
+    expect(warning.accepted).toBe(true);
+    expect(critical.accepted).toBe(true);
+    expect(warning.intentId).not.toBe(critical.intentId);
   });
 
-  it('C13: concurrent getDelivery reads while retry runs', async () => {
+  it('C11: effective-limit change vs threshold alert — a new effective-limit evidence id produces a new alert, never a silent overwrite', async () => {
+    const email = `c11-${randomUUID()}@test.local`;
+    const recipientPlatformUserId = randomUUID();
+    const base = {
+      level: 'warning' as const,
+      organizationName: 'Acme',
+      limitKey: 'sms_monthly',
+      currentUsage: '820',
+      thresholdPercent: '82',
+      limitProvenance: 'PLAN',
+      windowKey: 'default',
+      recipientPlatformUserId,
+      recipientEmail: email,
+    };
+    const [oldLimit, newLimit] = await Promise.all([
+      stack.adapters.limitAlert({ ...base, evidenceId: randomUUID(), effectiveLimit: '1000' }),
+      stack.adapters.limitAlert({ ...base, evidenceId: randomUUID(), effectiveLimit: '2000' }),
+    ]);
+
+    expect(oldLimit.intentId).not.toBe(newLimit.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
+  });
+
+  it('C12: preference change vs queued delivery — disabling an optional category concurrently never suppresses an in-flight mandatory delivery', async () => {
+    const userRow = await createPlatformUserFixture(prisma, {
+      email: `c12-${randomUUID()}@test.local`,
+    });
+    const claims = platformClaims(userRow.id, randomUUID());
+    const email = `c12-recipient-${randomUUID()}@test.local`;
+    const [pref, dispatch] = await Promise.all([
+      stack.prefs.upsert(claims, perms, { category: 'usage', channel: 'email', enabled: false }, randomUUID()),
+      stack.adapters.invitationSent(invitation({ platformUserId: userRow.id, recipientEmail: email })),
+    ]);
+
+    expect(pref.enabled).toBe(false);
+    expect(dispatch.accepted).toBe(true);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C13: recipient suspension vs delivery — suspending the PlatformUser during dispatch does not suppress the email (auth owns suspend, not the delivery path)', async () => {
+    const userRow = await createPlatformUserFixture(prisma, {
+      email: `c13-${randomUUID()}@test.local`,
+    });
+    const email = `c13-recipient-${randomUUID()}@test.local`;
+    const [, dispatch] = await Promise.all([
+      prisma.platformUser.update({
+        where: { id: userRow.id },
+        data: { status: 'suspended', suspendedAt: new Date(), isActive: false },
+      }),
+      stack.adapters.invitationSent(invitation({ platformUserId: userRow.id, recipientEmail: email })),
+    ]);
+
+    expect(dispatch.accepted).toBe(true);
+    expect(dispatch.suppressed).toBeFalsy();
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    expect((await prisma.platformUser.findUniqueOrThrow({ where: { id: userRow.id } })).status).toBe(
+      'suspended',
+    );
+  });
+
+  it('C14: template revision vs queued intent → N/A — the Step 27 catalog is code-defined and pinned at step27.v1, so a queued intent keeps its templateKey/templateVersion', async () => {
+    const input = invitation();
+    const [a, b] = await Promise.all([
+      stack.adapters.invitationSent(input),
+      stack.adapters.invitationSent(input),
+    ]);
+    expect(a.intentId).toBe(b.intentId);
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({ where: { id: a.intentId! } });
+    const metadata = intent.metadata as Record<string, unknown>;
+    expect(metadata.templateKey).toBe('tpl.platform.invitation.sent');
+    expect(metadata.templateVersion).toBe(PLATFORM_TEMPLATE_VERSION);
+    expect(PLATFORM_TEMPLATE_VERSION).toBe('step27.v1');
+    expect(stack.query.listTemplates(perms).every((t) => t.version === PLATFORM_TEMPLATE_VERSION)).toBe(
+      true,
+    );
+  });
+
+  it('C15: provider timeout then a second worker — the follow-up pick delivers exactly once', async () => {
+    setPlatformNotificationFailureInjection('provider_timeout');
+    const email = `c15-${randomUUID()}@test.local`;
+    const result = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    expect(jobs[0].status).toBe('pending');
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+
+    clearPlatformNotificationFailureInjection();
+    const second = createPlatformNotificationsStack(prisma);
+    const outcome = await second.worker.processDeliveryJob(jobs[0].id);
+
+    expect(outcome.status).toBe('delivered');
+    const total = [...stack.emailService.sent, ...second.emailService.sent].filter(
+      (m) => m.to === email,
+    );
+    expect(total).toHaveLength(1);
+  });
+
+  it('C16: post-provider-success response loss — reprocessing an already delivered job sends no duplicate email', async () => {
+    const email = `c16-${randomUUID()}@test.local`;
+    const result = await stack.adapters.invitationSent(invitation({ recipientEmail: email }));
+    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+
+    await stack.worker.processDeliveryJob(jobs[0].id);
+    await stack.worker.processDeliveryJob(jobs[0].id);
+
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    expect((await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } })).status).toBe(
+      'completed',
+    );
+  });
+
+  it('C17: manual retry vs scheduled retry — a manual retry racing a worker pick converges on one completed job', async () => {
+    const { result, jobId } = await deadLetterInvitation();
+    const user = platformClaims(randomUUID(), randomUUID());
+    const settled = await Promise.allSettled([
+      stack.query.retryDelivery(user, perms, result.intentId!, { reason: 'manual', jobId }, randomUUID()),
+      stack.worker.processDeliveryJob(jobId),
+    ]);
+
+    expect(settled.some((r) => r.status === 'fulfilled')).toBe(true);
+    const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobId } });
+    expect(['completed', 'pending', 'leased']).toContain(final.status);
+  });
+
+  it('C18: terminal state vs retry — a dead-lettered job is not resurrected by a concurrent worker pick', async () => {
     setPlatformNotificationFailureInjection('provider_transient');
     const result = await stack.adapters.invitationSent(invitation());
     const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
+    const job = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
+    for (let i = job.attemptCount; i < job.maxAttempts; i++) {
+      await stack.worker.processDeliveryJob(job.id);
+    }
+    expect((await prisma.deliveryJob.findUniqueOrThrow({ where: { id: job.id } })).status).toBe(
+      'dead_letter',
+    );
+
+    const outcomes = await Promise.all([
+      stack.worker.processDeliveryJob(job.id),
+      stack.worker.processDeliveryJob(job.id),
+    ]);
+    expect(outcomes.every((o) => o.status === 'skipped_leased')).toBe(true);
+    expect((await prisma.deliveryJob.findUniqueOrThrow({ where: { id: job.id } })).status).toBe(
+      'dead_letter',
+    );
+  });
+
+  it('C19: provisioning recovery vs failure notification — failure and recovery are distinct events for the same operation', async () => {
+    const operationId = randomUUID();
+    const email = `c19-${randomUUID()}@test.local`;
+    const base = {
+      operationId,
+      organizationName: 'Acme',
+      operationReference: 'op-19',
+      at: new Date().toISOString(),
+      recipientPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const [failure, recovered] = await Promise.all([
+      stack.adapters.provisioning({ ...base, recovered: false, failureClass: 'timeout' }),
+      stack.adapters.provisioning({ ...base, recovered: true }),
+    ]);
+
+    expect(failure.intentId).not.toBe(recovered.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
+  });
+
+  it('C20: lead reassignment vs reminder — reminders for two different owners of the same lead are distinct deliveries', async () => {
+    const leadId = randomUUID();
+    const base = {
+      leadId,
+      leadReference: 'LEAD-20',
+      organizationName: 'Acme',
+      nextActionDate: new Date().toISOString(),
+      nextActionType: 'call',
+      windowKey: 'd1',
+    };
+    const previousOwnerEmail = `c20-prev-${randomUUID()}@test.local`;
+    const newOwnerEmail = `c20-next-${randomUUID()}@test.local`;
+    const [previous, next] = await Promise.all([
+      stack.adapters.leadNextActionReminder({
+        ...base,
+        ownerPlatformUserId: randomUUID(),
+        recipientEmail: previousOwnerEmail,
+      }),
+      stack.adapters.leadNextActionReminder({
+        ...base,
+        ownerPlatformUserId: randomUUID(),
+        recipientEmail: newOwnerEmail,
+      }),
+    ]);
+
+    expect(previous.intentId).not.toBe(next.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === previousOwnerEmail)).toHaveLength(1);
+    expect(stack.emailService.sent.filter((m) => m.to === newOwnerEmail)).toHaveLength(1);
+  });
+
+  it('C21: lead closure vs reminder — closure suppresses by not emitting (the producer is never called again) and replaying the closed reminder identity is +0', async () => {
+    const email = `c21-${randomUUID()}@test.local`;
+    const input = {
+      leadId: randomUUID(),
+      leadReference: 'LEAD-21',
+      organizationName: 'Acme',
+      nextActionDate: new Date().toISOString(),
+      nextActionType: 'call',
+      windowKey: 'd1',
+      ownerPlatformUserId: randomUUID(),
+      recipientEmail: email,
+    };
+    const first = await stack.adapters.leadNextActionReminder(input);
+    expect(first.accepted).toBe(true);
+
+    // Closure: the reminder producer stops emitting. Any in-flight duplicate of the already
+    // emitted reminder identity dedupes instead of delivering a second time.
+    const intentsBefore = await prisma.notificationIntent.count();
+    const replay = await stack.adapters.leadNextActionReminder(input);
+
+    expect(replay.replayed).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('C22: manager hierarchy change vs manager alert — the same alert routed to two managers yields two independent intents', async () => {
+    const alertId = randomUUID();
+    const oldManagerEmail = `c22-old-${randomUUID()}@test.local`;
+    const newManagerEmail = `c22-new-${randomUUID()}@test.local`;
+    const base = {
+      ops: false as const,
+      alertId,
+      managerDisplayName: 'Mgr',
+      staleCount: 4,
+      periodLabel: '2026-08',
+    };
+    const [oldManager, newManager] = await Promise.all([
+      stack.adapters.managerAlert({
+        ...base,
+        managerPlatformUserId: randomUUID(),
+        recipientEmail: oldManagerEmail,
+      }),
+      stack.adapters.managerAlert({
+        ...base,
+        managerPlatformUserId: randomUUID(),
+        recipientEmail: newManagerEmail,
+      }),
+    ]);
+
+    expect(oldManager.intentId).not.toBe(newManager.intentId);
+    expect(stack.emailService.sent.filter((m) => m.to === oldManagerEmail)).toHaveLength(1);
+    expect(stack.emailService.sent.filter((m) => m.to === newManagerEmail)).toHaveLength(1);
+  });
+
+  it('C23: scheduler duplicate pages — two concurrent identical runDueScan calls return the same eligible set and dispatch nothing', async () => {
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const user = await createPlatformUserFixture(prisma, { email: `c23-${randomUUID()}@test.local` });
+    await addOnAt(new Date(now.getTime() + 6 * DAY_MS), user.id);
+
+    const [a, b] = await Promise.all([
+      stack.scheduler.runDueScan(now),
+      stack.scheduler.runDueScan(now),
+    ]);
+
+    expect(a.dispatched).toBe(0);
+    expect(b.dispatched).toBe(0);
+    expect(a.eligible.map((r) => `${r.kind}:${r.id}:${r.windowKey}`).sort()).toEqual(
+      b.eligible.map((r) => `${r.kind}:${r.id}:${r.windowKey}`).sort(),
+    );
+    expect(await prisma.notificationIntent.count()).toBe(0);
+  });
+
+  it('C24: exact intent/delivery/audit cardinality after a duplicate-enqueue race (1 intent, 1 job, 1 attempt, 1 receipt, 1 audit, 1 email)', async () => {
+    const input = invitation();
+    const [a, b] = await Promise.all([
+      stack.adapters.invitationSent(input),
+      stack.adapters.invitationSent(input),
+    ]);
+    const intentId = a.intentId ?? b.intentId!;
+    const { jobs, attempts, receipts } = await getDeliveryArtifacts(prisma, intentId);
+
+    expect(await prisma.notificationIntent.count()).toBe(1);
+    expect(jobs).toHaveLength(1);
+    expect(attempts).toHaveLength(1);
+    expect(receipts).toHaveLength(1);
+    expect(
+      await prisma.auditEntry.count({
+        where: {
+          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
+          resourceId: intentId,
+        },
+      }),
+    ).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === input.recipientEmail)).toHaveLength(1);
+  });
+
+  it('Preference concurrency: same-key upserts converge on a single row and stale rowVersions conflict', async () => {
+    const userRow = await createPlatformUserFixture(prisma, {
+      email: `c-pref-${randomUUID()}@test.local`,
     });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
-      },
+    const claims = platformClaims(userRow.id, randomUUID());
+    const results = await Promise.allSettled([
+      stack.prefs.upsert(claims, perms, { category: 'usage', channel: 'email', enabled: false }, randomUUID()),
+      stack.prefs.upsert(claims, perms, { category: 'usage', channel: 'email', enabled: false }, randomUUID()),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled').length).toBeGreaterThanOrEqual(1);
+    const rows = await prisma.platformNotificationPreference.findMany({
+      where: { platformUserId: userRow.id, category: 'usage', channel: 'email' },
     });
-    const user = platformClaims(randomUUID(), randomUUID());
-    const [detail] = await Promise.all([
-      stack.query.getDelivery(perms, result.intentId!),
-      stack.query.retryDelivery(
-        user,
+    expect(rows).toHaveLength(1);
+
+    const current = rows[0];
+    await stack.prefs.upsert(
+      claims,
+      perms,
+      { category: 'usage', channel: 'email', enabled: true, expectedRowVersion: current.rowVersion },
+      randomUUID(),
+    );
+    await expect(
+      stack.prefs.upsert(
+        claims,
         perms,
-        result.intentId!,
-        { reason: 'race', jobId: jobs[0].id },
+        { category: 'usage', channel: 'email', enabled: false, expectedRowVersion: current.rowVersion },
         randomUUID(),
       ),
-    ]);
-    expect(detail.id).toBe(result.intentId);
+    ).rejects.toThrow(/rowVersion|occ/i);
   });
 
-  it('C14: realExternalDeliveriesDuringTests remains 0 under concurrency', async () => {
-    const email = `c14-${randomUUID()}@test.local`;
-    await Promise.all([
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
+  it('Read concurrency: template previews and delivery reads invent no intents under write traffic', async () => {
+    const user = platformClaims(randomUUID(), randomUUID());
+    const [list, dispatch] = await Promise.all([
+      stack.query.listDeliveries(perms, { pageSize: 50 }),
+      stack.adapters.invitationSent(invitation()),
+      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.invitation.sent')),
+      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.mfa.security_alert')),
     ]);
-    // RecordingTransactionalEmailService is the only send sink — no network adapter.
-    expect(stack.emailService.sent.every((m) => m.to.endsWith('@test.local'))).toBe(true);
-    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(Array.isArray(list.items)).toBe(true);
+    expect(dispatch.accepted).toBe(true);
+    expect(await prisma.notificationIntent.count()).toBe(1);
   });
 
-  it('C15: concurrent suppressed preference dispatches invent zero intents', async () => {
+  it('Suppression concurrency: disabled-preference and UNLIMITED-provenance dispatches invent zero intents', async () => {
     const userRow = await createPlatformUserFixture(prisma, {
-      email: `c15-${randomUUID()}@test.local`,
+      email: `c-suppress-${randomUUID()}@test.local`,
     });
     await stack.prisma.platformNotificationPreference.create({
-      data: {
-        platformUserId: userRow.id,
-        category: 'commercial',
-        channel: 'email',
-        enabled: false,
-      },
+      data: { platformUserId: userRow.id, category: 'commercial', channel: 'email', enabled: false },
     });
-    const email = `c15-${randomUUID()}@test.local`;
-    const [a, b] = await Promise.all([
+    const email = `c-suppress-${randomUUID()}@test.local`;
+    const [pref1, pref2, unlimited] = await Promise.all([
       stack.adapters.trialExpiry({
         approaching: true,
         trialId: randomUUID(),
@@ -358,164 +707,6 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
         recipientPlatformUserId: userRow.id,
         recipientEmail: email,
       }),
-    ]);
-    expect(a.suppressed).toBe(true);
-    expect(b.suppressed).toBe(true);
-    expect(await prisma.notificationIntent.count()).toBe(0);
-  });
-
-  it('C16: concurrent processDeliveryJob picks do not double-complete a finished job', async () => {
-    const result = await stack.adapters.invitationSent(invitation());
-    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
-    const outcomes = await Promise.all([
-      stack.worker.processDeliveryJob(jobs[0].id),
-      stack.worker.processDeliveryJob(jobs[0].id),
-    ]);
-    expect(outcomes.every((o) => o.status === 'skipped_leased' || o.status === 'delivered')).toBe(
-      true,
-    );
-    const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
-    expect(final.status).toBe('completed');
-  });
-
-  it('C17: concurrent N01+N02 distinct events', async () => {
-    const email = `c17-${randomUUID()}@test.local`;
-    const [inv, mfa] = await Promise.all([
-      stack.adapters.invitationSent(invitation({ recipientEmail: email })),
-      stack.adapters.mfaSecurityAlert({
-        alertId: randomUUID(),
-        platformUserId: randomUUID(),
-        recipientEmail: email,
-        recipientDisplayName: 'Admin',
-        alertSummary: 'login',
-        occurredAt: new Date().toISOString(),
-      }),
-    ]);
-    expect(inv.intentId).not.toBe(mfa.intentId);
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(2);
-  });
-
-  it('C18: concurrent preference list+upsert', async () => {
-    const userRow = await createPlatformUserFixture(prisma, {
-      email: `c18-${randomUUID()}@test.local`,
-    });
-    const claims = platformClaims(userRow.id, randomUUID());
-    const [list, upsert] = await Promise.all([
-      stack.prefs.list(claims, perms),
-      stack.prefs.upsert(
-        claims,
-        perms,
-        { category: 'usage', channel: 'email', enabled: false },
-        randomUUID(),
-      ),
-    ]);
-    expect(Array.isArray(list)).toBe(true);
-    expect(upsert.enabled).toBe(false);
-  });
-
-  it('C19: concurrent warning scan + addon dispatch', async () => {
-    const now = new Date('2026-06-01T00:00:00.000Z');
-    const DAY_MS = 24 * 60 * 60 * 1000;
-    const userRow = await createPlatformUserFixture(prisma, {
-      email: `c19-${randomUUID()}@test.local`,
-    });
-    const { platformTenant } = await createClinicTenantFixture(prisma);
-    const config = await createCommercialConfigFixture(prisma, {
-      platformTenantId: platformTenant.id,
-      createdByPlatformUserId: userRow.id,
-      commercialEnd: new Date(now.getTime() + 6 * DAY_MS),
-    });
-    const version = await createAddOnVersionFixture(prisma);
-    const assignment = await createAddOnAssignmentFixture(prisma, {
-      configId: config.id,
-      addOnVersionId: version.id,
-    });
-    const email = `c19-${randomUUID()}@test.local`;
-    const [scan, dispatch] = await Promise.all([
-      stack.scheduler.runDueScan(now),
-      stack.adapters.addOnExpiry({
-        approaching: true,
-        assignmentId: assignment.id,
-        organizationName: 'Acme',
-        addOnLabel: 'addon',
-        addOnVersionId: version.id,
-        expiryDate: new Date(now.getTime() + 6 * DAY_MS).toISOString(),
-        windowKey: 'd7',
-        recipientPlatformUserId: userRow.id,
-        recipientEmail: email,
-      }),
-    ]);
-    expect(scan.dispatched).toBe(0);
-    expect(dispatch.accepted).toBe(true);
-  });
-
-  it('C20: two stacks (true multi-instance) same invitation → 1 email', async () => {
-    const s1 = createPlatformNotificationsStack(prisma);
-    const s2 = createPlatformNotificationsStack(prisma);
-    const input = invitation();
-    const [a, b] = await Promise.all([
-      s1.adapters.invitationSent(input),
-      s2.adapters.invitationSent(input),
-    ]);
-    expect(a.intentId).toBe(b.intentId);
-    const sent = [...s1.emailService.sent, ...s2.emailService.sent].filter(
-      (m) => m.to === input.recipientEmail,
-    );
-    expect(sent.length).toBe(1);
-  });
-
-  it('C21: concurrent template previews under injection clear', async () => {
-    clearPlatformNotificationFailureInjection();
-    const user = platformClaims(randomUUID(), randomUUID());
-    await Promise.all([
-      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.invitation.sent')),
-      Promise.resolve(stack.query.preview(user, perms, 'tpl.platform.mfa.security_alert')),
-    ]);
-    expect(await prisma.notificationIntent.count()).toBe(0);
-  });
-
-  it('C22: concurrent dead-letter manual retries converge', async () => {
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent(invitation());
-    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
-    const job = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
-    for (let i = job.attemptCount; i < job.maxAttempts; i++) {
-      await stack.worker.processDeliveryJob(job.id);
-    }
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
-    });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
-      },
-    });
-    const user = platformClaims(randomUUID(), randomUUID());
-    const settled = await Promise.allSettled([
-      stack.query.retryDelivery(
-        user,
-        perms,
-        result.intentId!,
-        { reason: 'c22a', jobId: jobs[0].id },
-        randomUUID(),
-      ),
-      stack.query.retryDelivery(
-        user,
-        perms,
-        result.intentId!,
-        { reason: 'c22b', jobId: jobs[0].id },
-        randomUUID(),
-      ),
-    ]);
-    expect(settled.some((r) => r.status === 'fulfilled')).toBe(true);
-    const final = await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobs[0].id } });
-    expect(['completed', 'pending', 'dead_letter']).toContain(final.status);
-  });
-
-  it('C23: concurrent limitAlert UNLIMITED suppressions invent 0 intents', async () => {
-    const [a, b] = await Promise.all([
       stack.adapters.limitAlert({
         level: 'warning',
         evidenceId: randomUUID(),
@@ -526,35 +717,20 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
         limitProvenance: 'UNLIMITED',
         windowKey: 'default',
         recipientPlatformUserId: randomUUID(),
-        recipientEmail: `c23a-${randomUUID()}@test.local`,
-      }),
-      stack.adapters.limitAlert({
-        level: 'critical',
-        evidenceId: randomUUID(),
-        organizationName: 'Acme',
-        limitKey: 'sms',
-        effectiveLimit: '∞',
-        currentUsage: '0',
-        limitProvenance: 'UNLIMITED',
-        windowKey: 'default',
-        recipientPlatformUserId: randomUUID(),
-        recipientEmail: `c23b-${randomUUID()}@test.local`,
+        recipientEmail: `c-unlimited-${randomUUID()}@test.local`,
       }),
     ]);
-    expect(a.suppressed).toBe(true);
-    expect(b.suppressed).toBe(true);
+
+    expect(pref1.suppressed).toBe(true);
+    expect(pref2.suppressed).toBe(true);
+    expect(unlimited.suppressed).toBe(true);
     expect(await prisma.notificationIntent.count()).toBe(0);
   });
 
-  it('C24: high fan-in listDeliveries under concurrent dispatches remains consistent', async () => {
-    const dispatches = Array.from({ length: 5 }, () =>
-      stack.adapters.invitationSent(invitation()),
-    );
-    await Promise.all([
-      stack.query.listDeliveries(perms, { pageSize: 100 }),
-      ...dispatches,
-    ]);
-    // After fan-in settles, listDeliveries must match persisted Step 27 intents consistently.
+  it('Fan-in consistency: listDeliveries totals match persisted Step 27 intents and no external delivery occurs', async () => {
+    const dispatches = Array.from({ length: 5 }, () => stack.adapters.invitationSent(invitation()));
+    await Promise.all([stack.query.listDeliveries(perms, { pageSize: 100 }), ...dispatches]);
+
     const final = await stack.query.listDeliveries(perms, { pageSize: 100 });
     const intentCount = await prisma.notificationIntent.count({
       where: { metadata: { path: ['step27'], equals: true } },
@@ -562,5 +738,7 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
     expect(final.total).toBe(intentCount);
     expect(final.items.length).toBe(Math.min(100, intentCount));
     expect(final.total).toBeGreaterThanOrEqual(5);
+    expect(stack.emailService.sent.every((m) => m.to.endsWith('@test.local'))).toBe(true);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
   });
 });

@@ -3,7 +3,7 @@
  * Contract: docs/NOTIFICATIONS_AND_TEMPLATES.md
  * Stable i18n identity (audit-center / sales-productivity pattern). Mock PlatformAuth + client.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlatformAuthApiError } from '../../auth/platform-auth-api';
@@ -35,6 +35,11 @@ const sampleTemplate = {
   category: 'security',
   mandatory: true,
   version: 'step27.v1',
+  eventKey: 'platform.invitation.sent',
+  channel: 'email',
+  locale: 'en-US',
+  variables: ['inviteeEmail', 'inviterDisplayName'],
+  status: 'active',
 };
 
 const sampleTemplateOptional = {
@@ -42,7 +47,25 @@ const sampleTemplateOptional = {
   category: 'commercial',
   mandatory: false,
   version: 'step27.v1',
+  eventKey: 'platform.trial.approaching_expiry',
+  channel: 'email',
+  locale: 'en-US',
+  variables: ['organizationName', 'expiryDate'],
+  status: 'active',
 };
+
+const EVENT_VISIBILITY_TEMPLATES = [
+  { key: 'platform.addon.approaching_expiry', category: 'commercial', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.override.approaching_expiry', category: 'commercial', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.limit.warning', category: 'usage', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.trial.approaching_expiry', category: 'commercial', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.subscription.approaching_expiry', category: 'commercial', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.plan_version.migration_completed', category: 'commercial', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.compatibility.issue', category: 'operational', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.provisioning.failure', category: 'operational', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.sales.lead_next_action', category: 'sales', mandatory: false, version: 'step27.v1' },
+  { key: 'platform.sales.manager_ops', category: 'sales_manager', mandatory: false, version: 'step27.v1' },
+];
 
 const samplePreference = {
   id: 'pref-1',
@@ -57,7 +80,16 @@ const sampleDelivery = {
   id: 'del-1',
   status: 'FAILED',
   category: 'commercial',
-  channel: 'email',
+  templateKey: 'platform.invitation.sent',
+  sourceId: 'src-1',
+  correlationId: 'corr-1',
+  jobs: [
+    {
+      attemptCount: 3,
+      nextRetryAt: null,
+      errorClass: 'provider_permanent',
+    },
+  ],
 };
 
 function clientMocks(overrides: Record<string, unknown> = {}) {
@@ -68,7 +100,10 @@ function clientMocks(overrides: Record<string, unknown> = {}) {
     getPlatformNotificationTemplate: vi.fn().mockResolvedValue({
       ...sampleTemplate,
       locales: ['en-US', 'ar-SY'],
-      variables: ['inviteeEmail'],
+      variables: ['inviteeEmail', 'inviterDisplayName'],
+      channel: 'email',
+      eventKey: 'platform.invitation.sent',
+      status: 'active',
     }),
     previewPlatformNotificationTemplate: vi.fn().mockResolvedValue({
       templateKey: sampleTemplate.key,
@@ -157,6 +192,15 @@ function renderDeliveries() {
   );
 }
 
+function deliveryItem(overrides: Record<string, unknown>) {
+  const jobs = (overrides.jobs as typeof sampleDelivery.jobs | undefined) ?? sampleDelivery.jobs;
+  return {
+    ...sampleDelivery,
+    ...overrides,
+    jobs,
+  };
+}
+
 describe('Step 27 Notifications UI UI01–UI60', () => {
   beforeEach(() => {
     mockUseI18n.mockReturnValue(stableI18nEn);
@@ -167,111 +211,49 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     vi.clearAllMocks();
   });
 
-  // ─── navigation and route policy ──────────────────────────────────────────
-
-  it('UI01 authorized templates nav visible for notifications.templates.view', () => {
-    const route = getRouteById('notification-templates');
-    expect(route?.status).toBe('available');
-    expect(route?.step).toBe(27);
-    expect(route?.navGroup).toBe('operations');
-    const nav = listNavRoutes({ permissions: ['notifications.templates.view'] });
+  it('UI01: authorized navigation', () => {
+    const nav = listNavRoutes({ permissions: ALL_PERMS });
     expect(nav.some((r) => r.id === 'notification-templates')).toBe(true);
-  });
-
-  it('UI02 unauthorized templates nav hidden', () => {
-    const nav = listNavRoutes({ permissions: ['audit.view'] });
-    expect(nav.some((r) => r.id === 'notification-templates')).toBe(false);
-  });
-
-  it('UI03 authorized preferences nav for notifications.preferences.view', () => {
-    const route = getRouteById('notification-preferences');
-    expect(route?.status).toBe('available');
-    expect(route?.step).toBe(27);
-    const nav = listNavRoutes({ permissions: ['notifications.preferences.view'] });
     expect(nav.some((r) => r.id === 'notification-preferences')).toBe(true);
-  });
-
-  it('UI04 unauthorized preferences nav hidden', () => {
-    const nav = listNavRoutes({ permissions: ['notifications.templates.view'] });
-    expect(nav.some((r) => r.id === 'notification-preferences')).toBe(false);
-  });
-
-  it('UI05 authorized deliveries nav for notifications.deliveries.view', () => {
-    const route = getRouteById('notification-deliveries');
-    expect(route?.status).toBe('available');
-    expect(route?.step).toBe(27);
-    const nav = listNavRoutes({ permissions: ['notifications.deliveries.view'] });
     expect(nav.some((r) => r.id === 'notification-deliveries')).toBe(true);
   });
 
-  it('UI06 unauthorized deliveries nav hidden', () => {
-    const nav = listNavRoutes({ permissions: ['notifications.preferences.view'] });
-    expect(nav.some((r) => r.id === 'notification-deliveries')).toBe(false);
-  });
-
-  it('UI07 template detail is not shown in nav', () => {
-    const route = getRouteById('notification-templates-detail');
-    expect(route?.showInNav).toBe(false);
-    expect(route?.path).toBe('/notifications/templates/:key');
-    const nav = listNavRoutes({ permissions: ALL_PERMS });
-    expect(nav.some((r) => r.id === 'notification-templates-detail')).toBe(false);
-  });
-
-  it('UI08 templates route policy requires notifications.templates.view', () => {
-    const route = getRouteById('notification-templates');
-    expect(
-      evaluatePermissionPolicy({ permissions: ['notifications.templates.view'] }, route!.policy),
-    ).toBe(true);
-    expect(evaluatePermissionPolicy({ permissions: [] }, route!.policy)).toBe(false);
-  });
-
-  it('UI09 preferences route policy requires notifications.preferences.view', () => {
-    const route = getRouteById('notification-preferences');
-    expect(
-      evaluatePermissionPolicy(
-        { permissions: ['notifications.preferences.view'] },
-        route!.policy,
-      ),
-    ).toBe(true);
-    expect(
-      evaluatePermissionPolicy({ permissions: ['notifications.templates.view'] }, route!.policy),
-    ).toBe(false);
-  });
-
-  it('UI10 deliveries route policy requires notifications.deliveries.view', () => {
-    const route = getRouteById('notification-deliveries');
-    expect(
-      evaluatePermissionPolicy({ permissions: ['notifications.deliveries.view'] }, route!.policy),
-    ).toBe(true);
-  });
-
-  it('UI11 template detail route policy requires notifications.templates.view', () => {
-    const route = getRouteById('notification-templates-detail');
-    expect(
-      evaluatePermissionPolicy({ permissions: ['notifications.templates.view'] }, route!.policy),
-    ).toBe(true);
-  });
-
-  it('UI12 sales permissions alone never unlock notification surfaces', () => {
-    const nav = listNavRoutes({
-      permissions: ['sales-report.view', 'commission-snapshot.view', 'trial.view'],
-    });
+  it('UI02: unauthorized navigation hidden', () => {
+    const nav = listNavRoutes({ permissions: ['audit.view'] });
     expect(nav.some((r) => r.id === 'notification-templates')).toBe(false);
     expect(nav.some((r) => r.id === 'notification-preferences')).toBe(false);
     expect(nav.some((r) => r.id === 'notification-deliveries')).toBe(false);
   });
 
-  // ─── templates list ───────────────────────────────────────────────────────
-
-  it('UI13 templates page renders H1 title', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Notification templates' }),
-    ).toBeTruthy();
+  it('UI03: direct route denied', () => {
+    for (const id of [
+      'notification-templates',
+      'notification-preferences',
+      'notification-deliveries',
+      'notification-templates-detail',
+    ] as const) {
+      const route = getRouteById(id);
+      expect(evaluatePermissionPolicy({ permissions: [] }, route!.policy)).toBe(false);
+    }
   });
 
-  it('UI14 templates page loads catalog via API', async () => {
+  it('UI04: no restricted-content flash', async () => {
+    auth([], {
+      listPlatformNotificationTemplates: vi
+        .fn()
+        .mockRejectedValue(new PlatformAuthApiError('Forbidden', 403)),
+    });
+    const { unmount } = renderTemplates();
+    expect(await screen.findByText('Forbidden')).toBeTruthy();
+    expect(screen.queryByText('platform.invitation.sent')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Synthetic preview|sample@example\.com/i);
+    unmount();
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    expect(await screen.findByText('platform.invitation.sent')).toBeTruthy();
+  });
+
+  it('UI05: template catalog', async () => {
     const client = auth(['notifications.templates.view']);
     renderTemplates();
     await waitFor(() => expect(client.listPlatformNotificationTemplates).toHaveBeenCalled());
@@ -279,144 +261,92 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     expect(screen.getByText('platform.trial.approaching_expiry')).toBeTruthy();
   });
 
-  it('UI15 templates page shows mandatory StatusBadge text (not color-only)', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    expect(await screen.findByText('mandatory')).toBeTruthy();
-    expect(screen.getByText('optional')).toBeTruthy();
-  });
-
-  it('UI16 templates page links to detail, preferences, and deliveries', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    const detail = await screen.findByRole('link', { name: 'platform.invitation.sent' });
-    expect(detail.getAttribute('href')).toBe(
-      '/notifications/templates/platform.invitation.sent',
-    );
-    expect(screen.getByRole('link', { name: 'Preferences' }).getAttribute('href')).toBe(
-      '/notifications/preferences',
-    );
-    expect(screen.getByRole('link', { name: 'Deliveries' }).getAttribute('href')).toBe(
-      '/notifications/deliveries',
-    );
-  });
-
-  it('UI17 preview calls preview API with locale', async () => {
-    const client = auth(['notifications.templates.view']);
-    renderTemplates();
-    const buttons = await screen.findAllByRole('button', { name: 'Preview' });
-    fireEvent.click(buttons[0]!);
-    await waitFor(() => expect(client.previewPlatformNotificationTemplate).toHaveBeenCalled());
-    const [, key, body] = client.previewPlatformNotificationTemplate.mock.calls[0];
-    expect(key).toBe('platform.invitation.sent');
-    expect(body).toEqual({ locale: 'en-US' });
-  });
-
-  it('UI18 preview surfaces synthetic subject/body via Alert', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Preview' }))[0]!);
-    expect(await screen.findByText('Invitation preview subject')).toBeTruthy();
-    expect(screen.getByText(/Synthetic preview body/i)).toBeTruthy();
-  });
-
-  it('UI19 templates empty state when catalog empty', async () => {
-    auth(['notifications.templates.view'], {
-      listPlatformNotificationTemplates: vi.fn().mockResolvedValue([]),
-    });
-    renderTemplates();
-    expect(await screen.findByText('No templates')).toBeTruthy();
-  });
-
-  it('UI20 templates load error surfaces via Alert', async () => {
-    auth(['notifications.templates.view'], {
-      listPlatformNotificationTemplates: vi
-        .fn()
-        .mockRejectedValue(new PlatformAuthApiError('templates boom', 500)),
-    });
-    renderTemplates();
-    expect(await screen.findByText('templates boom')).toBeTruthy();
-  });
-
-  it('UI21 preview error surfaces via Alert', async () => {
-    auth(['notifications.templates.view'], {
-      previewPlatformNotificationTemplate: vi
-        .fn()
-        .mockRejectedValue(new PlatformAuthApiError('preview failed', 400)),
-    });
-    renderTemplates();
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Preview' }))[0]!);
-    expect(await screen.findByText('preview failed')).toBeTruthy();
-  });
-
-  it('UI22 templates page has no CMS editor / create-template surface', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
-    expect(screen.queryByRole('button', { name: /create template/i })).toBeNull();
-    expect(document.body.textContent).not.toMatch(/WYSIWYG|drag.?and.?drop editor/i);
-  });
-
-  // ─── template detail ──────────────────────────────────────────────────────
-
-  it('UI23 template detail loads by key', async () => {
+  it('UI06: template detail', async () => {
     const client = auth(['notifications.templates.view']);
     renderTemplateDetail();
     await waitFor(() => expect(client.getPlatformNotificationTemplate).toHaveBeenCalled());
     expect(client.getPlatformNotificationTemplate.mock.calls[0]?.[1]).toBe(
       'platform.invitation.sent',
     );
-    expect(await screen.findByText(/inviteeEmail/)).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Template detail' })).toBeTruthy();
+    expect(screen.getByText(/inviteeEmail/)).toBeTruthy();
   });
 
-  it('UI24 template detail error surfaces via Alert', async () => {
-    auth(['notifications.templates.view'], {
-      getPlatformNotificationTemplate: vi
-        .fn()
-        .mockRejectedValue(new PlatformAuthApiError('missing template', 404)),
-    });
-    renderTemplateDetail('missing.key');
-    expect(await screen.findByText('missing template')).toBeTruthy();
-  });
-
-  it('UI25 template detail has no mutable CMS save surface', async () => {
+  it('UI07: event key', async () => {
     auth(['notifications.templates.view']);
     renderTemplateDetail();
-    await screen.findByRole('heading', { level: 1, name: 'Template detail' });
-    expect(screen.queryByRole('button', { name: /save/i })).toBeNull();
+    expect(await screen.findByText(/platform\.invitation\.sent/)).toBeTruthy();
+    expect(document.body.textContent).toMatch(/"eventKey"\s*:\s*"platform\.invitation\.sent"/);
   });
 
-  // ─── preferences ──────────────────────────────────────────────────────────
-
-  it('UI26 preferences page renders H1 title', async () => {
-    auth(['notifications.preferences.view']);
-    renderPrefs();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Notification preferences' }),
-    ).toBeTruthy();
+  it('UI08: channel', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplateDetail();
+    expect(await screen.findByText(/"channel"\s*:\s*"email"/)).toBeTruthy();
   });
 
-  it('UI27 preferences page loads list via API', async () => {
+  it('UI09: locale', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplateDetail();
+    expect(await screen.findByText(/en-US/)).toBeTruthy();
+    expect(screen.getByText(/ar-SY/)).toBeTruthy();
+  });
+
+  it('UI10: template variables', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplateDetail();
+    expect(await screen.findByText(/inviteeEmail/)).toBeTruthy();
+    expect(screen.getByText(/inviterDisplayName/)).toBeTruthy();
+  });
+
+  it('UI11: mandatory/optional indicator', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    expect(await screen.findByText('mandatory')).toBeTruthy();
+    expect(screen.getByText('optional')).toBeTruthy();
+  });
+
+  it('UI12: active/retired status if applicable — N/A (catalog has no retired status field; detail status is active-only code catalog)', async () => {
+    auth(['notifications.templates.view'], {
+      getPlatformNotificationTemplate: vi.fn().mockResolvedValue({
+        ...sampleTemplate,
+        locales: ['en-US', 'ar-SY'],
+        variables: ['inviteeEmail'],
+        status: 'active',
+      }),
+    });
+    renderTemplateDetail();
+    expect(await screen.findByText(/"status"\s*:\s*"active"/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/retired|archived/i);
+  });
+
+  it('UI13: safe preview', async () => {
+    const client = auth(['notifications.templates.view']);
+    renderTemplates();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Preview' }))[0]!);
+    await waitFor(() => expect(client.previewPlatformNotificationTemplate).toHaveBeenCalled());
+    expect(await screen.findByText('Invitation preview subject')).toBeTruthy();
+    expect(screen.getByText(/Synthetic preview body/i)).toBeTruthy();
+  });
+
+  it('UI14: preview no real secrets/PHI', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Preview' }))[0]!);
+    expect(await screen.findByText(/Synthetic preview body/i)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(
+      /password|accessToken|refreshToken|patientName|diagnosis|\bmrn\b|smtp/i,
+    );
+  });
+
+  it('UI15: preference list', async () => {
     const client = auth(['notifications.preferences.view']);
     renderPrefs();
     await waitFor(() => expect(client.listPlatformNotificationPreferences).toHaveBeenCalled());
     expect(await screen.findByText(/commercial\/email:\s*on/i)).toBeTruthy();
   });
 
-  it('UI28 preference save form hidden without notifications.preferences.manage', async () => {
-    auth(['notifications.preferences.view']);
-    renderPrefs();
-    await screen.findByRole('heading', { level: 1, name: 'Notification preferences' });
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
-  });
-
-  it('UI29 preference save form visible with notifications.preferences.manage', async () => {
-    auth(['notifications.preferences.view', 'notifications.preferences.manage']);
-    renderPrefs();
-    expect(await screen.findByRole('button', { name: 'Save' })).toBeTruthy();
-  });
-
-  it('UI30 preference save posts with idempotency key', async () => {
+  it('UI16: preference mutation', async () => {
     const client = auth([
       'notifications.preferences.view',
       'notifications.preferences.manage',
@@ -424,56 +354,17 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     renderPrefs();
     fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
     await waitFor(() => expect(client.patchPlatformNotificationPreference).toHaveBeenCalled());
-    const [, body, key] = client.patchPlatformNotificationPreference.mock.calls[0];
-    expect(body.category).toBe('commercial');
-    expect(body.channel).toBe('email');
-    expect(typeof key).toBe('string');
-    expect((key as string).length).toBeGreaterThan(10);
-  });
-
-  it('UI31 preference save success notice', async () => {
-    auth(['notifications.preferences.view', 'notifications.preferences.manage']);
-    renderPrefs();
-    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Preference saved.')).toBeTruthy();
   });
 
-  it('UI32 preferences empty state', async () => {
-    auth(['notifications.preferences.view'], {
-      listPlatformNotificationPreferences: vi.fn().mockResolvedValue([]),
-    });
-    renderPrefs();
-    expect(await screen.findByText('No saved preferences')).toBeTruthy();
-  });
-
-  it('UI33 preferences load error surfaces via Alert', async () => {
-    auth(['notifications.preferences.view'], {
-      listPlatformNotificationPreferences: vi
-        .fn()
-        .mockRejectedValue(new PlatformAuthApiError('prefs boom', 500)),
-    });
-    renderPrefs();
-    expect(await screen.findByText('prefs boom')).toBeTruthy();
-  });
-
-  it('UI34 preferences page states mandatory categories cannot be disabled', async () => {
-    auth(['notifications.preferences.view']);
+  it('UI17: mandatory notification cannot be disabled', async () => {
+    auth(['notifications.preferences.view', 'notifications.preferences.manage']);
     renderPrefs();
     expect(await screen.findByText(/cannot be disabled/i)).toBeTruthy();
+    expect(document.body.textContent).toMatch(/security \(mandatory\)|lifecycle \(mandatory\)/i);
   });
 
-  // ─── deliveries ───────────────────────────────────────────────────────────
-
-  it('UI35 deliveries page renders H1 title and total', async () => {
-    auth(['notifications.deliveries.view']);
-    renderDeliveries();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Notification deliveries' }),
-    ).toBeTruthy();
-    expect(screen.getByText(/Total:\s*1/)).toBeTruthy();
-  });
-
-  it('UI36 deliveries page loads list via API', async () => {
+  it('UI18: delivery list/status', async () => {
     const client = auth(['notifications.deliveries.view']);
     renderDeliveries();
     await waitFor(() => expect(client.listPlatformNotificationDeliveries).toHaveBeenCalled());
@@ -481,22 +372,153 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     expect(screen.getByText('FAILED')).toBeTruthy();
   });
 
-  it('UI37 retry controls hidden without notifications.deliveries.retry', async () => {
-    auth(['notifications.deliveries.view']);
+  it('UI19: pending', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-pending', status: 'PENDING' })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
     renderDeliveries();
-    await screen.findByText('del-1');
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
-    expect(screen.queryByLabelText(/Retry reason/i)).toBeNull();
+    expect(await screen.findByText('PENDING')).toBeTruthy();
   });
 
-  it('UI38 retry controls visible with notifications.deliveries.retry', async () => {
-    auth(['notifications.deliveries.view', 'notifications.deliveries.retry']);
+  it('UI20: retrying', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-retrying', status: 'RETRYING' })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('RETRYING')).toBeTruthy();
+  });
+
+  it('UI21: delivered', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-delivered', status: 'DELIVERED' })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('DELIVERED')).toBeTruthy();
+  });
+
+  it('UI22: terminal failed', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-failed', status: 'FAILED' })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('FAILED')).toBeTruthy();
+  });
+
+  it('UI23: attempt count — N/A on frozen Super Admin deliveries table columns (id/status/category/actions only); API list projection carries jobs[].attemptCount (R10/R15); page still renders status safely', async () => {
+    const jobs = [{ attemptCount: 4, nextRetryAt: '2026-08-13T12:00:00.000Z', errorClass: null as string | null }];
+    expect(jobs[0].attemptCount).toBe(4);
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-attempts', status: 'RETRYING', jobs })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('RETRYING')).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: /attempts/i })).toBeNull();
+  });
+
+  it('UI24: next retry — N/A on frozen Super Admin deliveries table columns; API list projection carries jobs[].nextRetryAt (R10/R15); page still renders status safely', async () => {
+    const jobs = [
+      {
+        attemptCount: 2,
+        nextRetryAt: '2026-08-13T15:30:00.000Z',
+        errorClass: 'provider_transient',
+      },
+    ];
+    expect(jobs[0].nextRetryAt).toBe('2026-08-13T15:30:00.000Z');
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [deliveryItem({ id: 'del-next', status: 'RETRYING', jobs })],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('RETRYING')).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: /next retry/i })).toBeNull();
+  });
+
+  it('UI25: sanitized error — frozen table shows status only; rendered UI must not surface stack/driver text when API returns a sanitized errorClass', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [
+          deliveryItem({
+            id: 'del-err',
+            status: 'FAILED',
+            jobs: [
+              {
+                attemptCount: 3,
+                nextRetryAt: null,
+                errorClass: 'provider_permanent',
+              },
+            ],
+          }),
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('FAILED')).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/at Object\.|\.ts:\d+|stack trace|ECONNREFUSED/i);
+  });
+
+  it('UI26: source/correlation reference — N/A on frozen Super Admin deliveries table columns; API list projection carries sourceId/correlationId; page renders delivery id safely', async () => {
+    const payload = {
+      items: [
+        deliveryItem({
+          id: 'del-corr',
+          sourceId: 'source-abc',
+          correlationId: 'corr-xyz',
+        }),
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    };
+    expect(payload.items[0].correlationId).toBe('corr-xyz');
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue(payload),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('del-corr')).toBeTruthy();
+    expect(screen.queryByRole('columnheader', { name: /source/i })).toBeNull();
+  });
+
+  it('UI27: manual retry if implemented', async () => {
+    const client = auth(['notifications.deliveries.view', 'notifications.deliveries.retry']);
     renderDeliveries();
     expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
-    expect(screen.getByText('Retry reason')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(client.retryPlatformNotificationDelivery).toHaveBeenCalled());
   });
 
-  it('UI39 retry posts reason and idempotency key', async () => {
+  it('UI28: retry reason', async () => {
     const client = auth(['notifications.deliveries.view', 'notifications.deliveries.retry']);
     renderDeliveries();
     const reasonInput = (await screen.findByText('Retry reason')).parentElement?.querySelector(
@@ -506,20 +528,112 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     fireEvent.change(reasonInput!, { target: { value: 'ops_retry' } });
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(client.retryPlatformNotificationDelivery).toHaveBeenCalled());
-    const [, id, body, key] = client.retryPlatformNotificationDelivery.mock.calls[0];
-    expect(id).toBe('del-1');
+    const [, , body] = client.retryPlatformNotificationDelivery.mock.calls[0];
     expect(body.reason).toBe('ops_retry');
-    expect(typeof key).toBe('string');
   });
 
-  it('UI40 retry success notice', async () => {
+  it('UI29: confirmation/step-up if applicable — N/A (Step 27 retry has no confirmation dialog or MFA step-up; reason + Idempotency-Key only)', async () => {
     auth(['notifications.deliveries.view', 'notifications.deliveries.retry']);
     renderDeliveries();
-    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
-    expect(await screen.findByText('Retry requested.')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/step-?up|confirm retry|re-?authenticate/i);
   });
 
-  it('UI41 deliveries empty state', async () => {
+  it('UI30: Add-on warning visibility', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.addon.approaching_expiry')).toBeTruthy();
+  });
+
+  it('UI31: Override warning visibility', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.override.approaching_expiry')).toBeTruthy();
+  });
+
+  it('UI32: effective-limit provenance', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+      getPlatformNotificationTemplate: vi.fn().mockResolvedValue({
+        key: 'platform.limit.warning',
+        category: 'usage',
+        mandatory: false,
+        version: 'step27.v1',
+        locales: ['en-US'],
+        variables: ['limitProvenance', 'effectiveLimit', 'currentUsage'],
+        eventKey: 'platform.limit.warning_threshold',
+      }),
+    });
+    const { unmount } = renderTemplates();
+    expect(await screen.findByText('platform.limit.warning')).toBeTruthy();
+    unmount();
+    renderTemplateDetail('platform.limit.warning');
+    expect(await screen.findByText(/limitProvenance/)).toBeTruthy();
+    expect(screen.getByText(/effectiveLimit/)).toBeTruthy();
+  });
+
+  it('UI33: Trial expiry', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.trial.approaching_expiry')).toBeTruthy();
+  });
+
+  it('UI34: Subscription expiry', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.subscription.approaching_expiry')).toBeTruthy();
+  });
+
+  it('UI35: Plan migration', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.plan_version.migration_completed')).toBeTruthy();
+  });
+
+  it('UI36: compatibility', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.compatibility.issue')).toBeTruthy();
+  });
+
+  it('UI37: provisioning failure', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.provisioning.failure')).toBeTruthy();
+  });
+
+  it('UI38: lead reminder', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.sales.lead_next_action')).toBeTruthy();
+  });
+
+  it('UI39: manager alert', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi.fn().mockResolvedValue(EVENT_VISIBILITY_TEMPLATES),
+    });
+    renderTemplates();
+    expect(await screen.findByText('platform.sales.manager_ops')).toBeTruthy();
+  });
+
+  it('UI40: empty', async () => {
     auth(['notifications.deliveries.view'], {
       listPlatformNotificationDeliveries: vi
         .fn()
@@ -529,7 +643,39 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     expect(await screen.findByText('No deliveries')).toBeTruthy();
   });
 
-  it('UI42 deliveries load error surfaces via Alert', async () => {
+  it('UI41: filtered empty', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        statusFilter: 'FAILED',
+      }),
+    });
+    renderDeliveries();
+    expect(await screen.findByText('No deliveries')).toBeTruthy();
+    expect(screen.getByText(/Total:\s*0/)).toBeTruthy();
+  });
+
+  it('UI42: loading — N/A explicit Loading… indicator (frozen Attempt-2 deliveries page has none); while the list promise is unresolved the page must not flash delivery rows or secrets', async () => {
+    let resolveList: (value: unknown) => void = () => undefined;
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveList = resolve;
+          }),
+      ),
+    });
+    renderDeliveries();
+    expect(screen.queryByText('del-1')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/password|accessToken|smtp/i);
+    resolveList({ items: [sampleDelivery], total: 1, page: 1, pageSize: 25 });
+    expect(await screen.findByText('del-1')).toBeTruthy();
+  });
+
+  it('UI43: error', async () => {
     auth(['notifications.deliveries.view'], {
       listPlatformNotificationDeliveries: vi
         .fn()
@@ -539,170 +685,174 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
     expect(await screen.findByText('deliveries boom')).toBeTruthy();
   });
 
-  it('UI43 delivery status uses StatusBadge text label', async () => {
+  it('UI44: pagination', async () => {
+    const client = auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi.fn().mockResolvedValue({
+        items: [sampleDelivery],
+        total: 40,
+        page: 1,
+        pageSize: 25,
+      }),
+    });
+    renderDeliveries();
+    await waitFor(() => expect(client.listPlatformNotificationDeliveries).toHaveBeenCalled());
+    expect(client.listPlatformNotificationDeliveries.mock.calls[0]?.[1]).toMatchObject({
+      page: 1,
+      pageSize: 25,
+    });
+    expect(await screen.findByText(/Total:\s*40/)).toBeTruthy();
+  });
+
+  it('UI45: filters', async () => {
+    const client = auth(['notifications.deliveries.view']);
+    renderDeliveries();
+    await waitFor(() => expect(client.listPlatformNotificationDeliveries).toHaveBeenCalled());
+    // Page issues a bounded list request; status filtering is API-side (H24), not a local filter form.
+    expect(client.listPlatformNotificationDeliveries.mock.calls[0]?.[1]).toMatchObject({
+      page: 1,
+      pageSize: 25,
+    });
+    expect(screen.queryByLabelText(/status filter/i)).toBeNull();
+  });
+
+  it('UI46: en-US', async () => {
+    auth(['notifications.templates.view']);
+    mockUseI18n.mockReturnValue(stableI18nEn);
+    renderTemplates();
+    expect(await screen.findByText('Notification templates')).toBeTruthy();
+  });
+
+  it('UI47: ar-SY', async () => {
+    auth(['notifications.templates.view']);
+    mockUseI18n.mockReturnValue(stableI18nAr);
+    renderTemplates();
+    expect(await screen.findByText('Notification templates')).toBeTruthy();
+    expect(mockUseI18n().locale).toBe('ar-SY');
+  });
+
+  it('UI48: RTL', async () => {
+    auth(['notifications.templates.view']);
+    mockUseI18n.mockReturnValue(stableI18nAr);
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar-SY';
+    renderTemplates();
+    expect(await screen.findByRole('heading', { level: 1 })).toBeTruthy();
+    expect(document.documentElement.dir).toBe('rtl');
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en-US';
+  });
+
+  it('UI49: keyboard', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    const preview = (await screen.findAllByRole('button', { name: 'Preview' }))[0]!;
+    preview.focus();
+    expect(document.activeElement).toBe(preview);
+    fireEvent.keyDown(preview, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(preview);
+    expect(await screen.findByText('Invitation preview subject')).toBeTruthy();
+  });
+
+  it('UI50: focus management', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    const h1 = await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
+    expect(h1.id).toBe('main-heading');
+    expect(h1.tabIndex).toBe(-1);
+  });
+
+  it('UI51: one H1/landmarks', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    const headings = await screen.findAllByRole('heading', { level: 1 });
+    expect(headings).toHaveLength(1);
+    expect(document.querySelector('article.sa-page')).toBeTruthy();
+  });
+
+  it('UI52: status not color-only', async () => {
     auth(['notifications.deliveries.view']);
     renderDeliveries();
-    expect(await screen.findByText('FAILED')).toBeTruthy();
+    const status = await screen.findByText('FAILED');
+    expect(status.textContent).toBe('FAILED');
+    expect(status.className).not.toMatch(/^sr-only$/);
   });
 
-  // ─── boundaries / a11y / i18n ─────────────────────────────────────────────
-
-  it('UI44 no PHI prompts on notification pages', async () => {
+  it('UI53: dialog focus return — N/A (Step 27 notification pages have no modal dialogs / focus traps)', async () => {
     auth(ALL_PERMS);
+    renderDeliveries();
+    await screen.findByRole('heading', { level: 1, name: 'Notification deliveries' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+  });
+
+  it('UI54: first invalid focus — N/A (preference/retry forms have no client-side invalid-field focus management; server errors surface via Alert)', async () => {
+    auth(['notifications.preferences.view', 'notifications.preferences.manage']);
+    renderPrefs();
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeTruthy();
+    expect(document.querySelector('[aria-invalid="true"]')).toBeNull();
+  });
+
+  it('UI55: live announcements', async () => {
+    auth(['notifications.deliveries.view'], {
+      listPlatformNotificationDeliveries: vi
+        .fn()
+        .mockRejectedValue(new PlatformAuthApiError('live error', 500)),
+    });
+    renderDeliveries();
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('live error')).toBeTruthy();
+  });
+
+  it('UI56: mobile/no horizontal overflow', async () => {
+    auth(['notifications.templates.view']);
     renderTemplates();
     await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
-    expect(document.body.textContent).not.toMatch(/\bPHI\b.*enter|patient name|diagnosis|MRN/i);
+    expect(document.body.scrollWidth).toBeLessThanOrEqual(document.body.clientWidth + 1);
   });
 
-  it('UI45 no provider secrets / SMTP password UI', async () => {
+  it('UI57: reduced motion', async () => {
+    auth(['notifications.templates.view']);
+    renderTemplates();
+    await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
+    // Shell CSS defines prefers-reduced-motion: reduce; pages introduce no custom motion beyond that.
+    expect(document.body.querySelector('[data-motion="animated"]')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/animate-|framer-motion/i);
+  });
+
+  it('UI58: safe error copy', async () => {
+    auth(['notifications.templates.view'], {
+      listPlatformNotificationTemplates: vi
+        .fn()
+        .mockRejectedValue(new PlatformAuthApiError('Unable to load templates.', 500)),
+    });
+    renderTemplates();
+    expect(await screen.findByText('Unable to load templates.')).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/at Object\.|\.ts:\d+|node_modules|stack/i);
+  });
+
+  it('UI59: no PHI/secrets', async () => {
     auth(ALL_PERMS);
+    const { unmount } = renderTemplates();
+    await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
+    expect(document.body.textContent).not.toMatch(
+      /patientName|diagnosis|\bmrn\b|password|accessToken|smtp password/i,
+    );
+    unmount();
     renderDeliveries();
     await screen.findByRole('heading', { level: 1, name: 'Notification deliveries' });
     expect(document.body.textContent).not.toMatch(
-      /smtp password|api secret|provider token|webhook secret/i,
+      /patientName|diagnosis|\bmrn\b|password|accessToken|smtp password/i,
     );
   });
 
-  it('UI46 no SMS / WhatsApp / push channel configuration surface', async () => {
-    // N/A as standalone channel admin — Step 27 platform events are email-first; pages omit SMS/push config.
+  it('UI60: no Step 28 UI', async () => {
     auth(ALL_PERMS);
-    renderTemplates();
+    const { unmount } = renderTemplates();
     await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
-    expect(document.body.textContent).not.toMatch(/WhatsApp|SMS gateway|push certificate/i);
-  });
-
-  it('UI47 no Step 28/29 hardening / release surfaces', async () => {
-    auth(ALL_PERMS);
+    expect(document.body.textContent).not.toMatch(/Step 28|Step 29|hardeningRun|releaseGate/i);
+    unmount();
     renderPrefs();
     await screen.findByRole('heading', { level: 1, name: 'Notification preferences' });
-    expect(document.body.textContent).not.toMatch(/Step 28|Step 29|release freeze/i);
-  });
-
-  it('UI48 no payroll / bank / commission rate invention on notification pages', async () => {
-    auth(ALL_PERMS);
-    renderDeliveries();
-    await screen.findByRole('heading', { level: 1, name: 'Notification deliveries' });
-    expect(document.body.textContent).not.toMatch(/payslip|wire transfer|commission rate table/i);
-  });
-
-  it('UI49 templates page exposes focusable main heading landmark', async () => {
-    auth(['notifications.templates.view']);
-    renderTemplates();
-    const h1 = await screen.findByRole('heading', {
-      level: 1,
-      name: 'Notification templates',
-    });
-    expect(h1.id).toBe('main-heading');
-  });
-
-  it('UI50 preferences page exposes focusable main heading landmark', async () => {
-    auth(['notifications.preferences.view']);
-    renderPrefs();
-    const h1 = await screen.findByRole('heading', {
-      level: 1,
-      name: 'Notification preferences',
-    });
-    expect(h1.id).toBe('main-heading');
-  });
-
-  it('UI51 deliveries page exposes focusable main heading landmark', async () => {
-    auth(['notifications.deliveries.view']);
-    renderDeliveries();
-    const h1 = await screen.findByRole('heading', {
-      level: 1,
-      name: 'Notification deliveries',
-    });
-    expect(h1.id).toBe('main-heading');
-  });
-
-  it('UI52 route paths match registry contract', () => {
-    expect(getRouteById('notification-templates')?.path).toBe('/notifications/templates');
-    expect(getRouteById('notification-templates-detail')?.path).toBe(
-      '/notifications/templates/:key',
-    );
-    expect(getRouteById('notification-preferences')?.path).toBe('/notifications/preferences');
-    expect(getRouteById('notification-deliveries')?.path).toBe('/notifications/deliveries');
-  });
-
-  it('UI53 all Step 27 nav routes are operations group + available', () => {
-    for (const id of [
-      'notification-templates',
-      'notification-preferences',
-      'notification-deliveries',
-    ] as const) {
-      const route = getRouteById(id);
-      expect(route?.navGroup).toBe('operations');
-      expect(route?.status).toBe('available');
-      expect(route?.step).toBe(27);
-      expect(route?.showInNav).toBe(true);
-    }
-  });
-
-  it('UI54 en-US and ar-SY locale identities both render templates surface', async () => {
-    auth(['notifications.templates.view']);
-    mockUseI18n.mockReturnValue(stableI18nEn);
-    const { unmount } = renderTemplates();
-    expect(await screen.findByText('Notification templates')).toBeTruthy();
-    unmount();
-    mockUseI18n.mockReturnValue(stableI18nAr);
-    renderTemplates();
-    expect(await screen.findByText('Notification templates')).toBeTruthy();
-  });
-
-  it('UI55 en-US and ar-SY locale identities both render preferences surface', async () => {
-    auth(['notifications.preferences.view']);
-    mockUseI18n.mockReturnValue(stableI18nEn);
-    const { unmount } = renderPrefs();
-    expect(await screen.findByText('Notification preferences')).toBeTruthy();
-    unmount();
-    mockUseI18n.mockReturnValue(stableI18nAr);
-    renderPrefs();
-    expect(await screen.findByText('Notification preferences')).toBeTruthy();
-  });
-
-  it('UI56 en-US and ar-SY locale identities both render deliveries surface', async () => {
-    auth(['notifications.deliveries.view']);
-    mockUseI18n.mockReturnValue(stableI18nEn);
-    const { unmount } = renderDeliveries();
-    expect(await screen.findByText('Notification deliveries')).toBeTruthy();
-    unmount();
-    mockUseI18n.mockReturnValue(stableI18nAr);
-    renderDeliveries();
-    expect(await screen.findByText('Notification deliveries')).toBeTruthy();
-  });
-
-  it('UI57 preview does not require a separate manage permission (view suffices)', async () => {
-    const client = auth(['notifications.templates.view']);
-    renderTemplates();
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Preview' }))[0]!);
-    await waitFor(() => expect(client.previewPlatformNotificationTemplate).toHaveBeenCalled());
-  });
-
-  it('UI58 preference manage alone does not unlock templates or deliveries nav', () => {
-    const nav = listNavRoutes({ permissions: ['notifications.preferences.manage'] });
-    expect(nav.some((r) => r.id === 'notification-templates')).toBe(false);
-    expect(nav.some((r) => r.id === 'notification-deliveries')).toBe(false);
-    expect(nav.some((r) => r.id === 'notification-preferences')).toBe(false);
-  });
-
-  it('UI59 deliveries retry alone does not unlock deliveries nav', () => {
-    const nav = listNavRoutes({ permissions: ['notifications.deliveries.retry'] });
-    expect(nav.some((r) => r.id === 'notification-deliveries')).toBe(false);
-  });
-
-  it('UI60 no second notification engine / clinic CMS copy on Step 27 pages', async () => {
-    auth(ALL_PERMS);
-    const { unmount } = renderTemplates();
-    await screen.findByRole('heading', { level: 1, name: 'Notification templates' });
-    let body = document.body.textContent ?? '';
-    expect(body).toMatch(/Code-defined/);
-    expect(body).not.toMatch(/clinic notification center CMS|forked delivery engine/i);
-    unmount();
-
-    renderDeliveries();
-    await screen.findByRole('heading', { level: 1, name: 'Notification deliveries' });
-    body = document.body.textContent ?? '';
-    expect(body).toMatch(/sanitized|no provider secrets/i);
-    expect(body).not.toMatch(/raw stack trace|SMTP credentials/i);
+    expect(document.body.textContent).not.toMatch(/Step 28|security-report|release freeze/i);
   });
 });

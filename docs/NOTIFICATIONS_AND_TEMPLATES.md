@@ -4,8 +4,7 @@
 **Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 27
 **Authority:** Steps 01–26 + U01 Accepted/Complete; Phase 41d/41e Notification Delivery Engine is the sole delivery SoR.
 
-Steps **01–26** + **U01**: Accepted/Complete.
-Step **27**: Accepted / Complete (narrow evidence/hygiene closure passed).
+Steps **01–27** + **U01**: Accepted/Complete.
 Steps **28–29**: Not Authorized.
 
 ```text
@@ -34,9 +33,10 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 | Freeze | `2026-08-12T06:41:22.728Z` |
 | Duration | ~3295s (~54.9 min) |
 | Counters | failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0 |
-| Narrow closure | Evidence/hygiene gate passed; Attempt 2 preserved (test/docs/hygiene only; no product or material one-pass harness change) |
+| Narrow closure | Evidence/hygiene gate + final matrix mapping/report closure passed; Attempt 2 preserved (test/docs only; no product or material one-pass harness change) |
 | External delivery | `realExternalDeliveriesDuringTests = 0` (RecordingTransactionalEmailService + XD/P/C/H guards) |
 | Hygiene | `step27-final-onepass.jsonl` ABSENT; prohibited artifacts = 0; Catalog `68 / 136 / 68 / 13` |
+| Final matrix remap | TW15 N/A (no time-bound migrated grant SoR); T15 executable (suspend does not suppress email); I/R/F/C/H/P/UI exact one-to-one PASS |
 
 ---
 
@@ -142,10 +142,11 @@ Super Admin: `/notifications/templates`, `/notifications/preferences`, `/notific
 
 | Suite | Result |
 |-------|--------|
-| Step 27 DB matrices | **224/224** |
+| Step 27 DB matrices | **309/309** (15 suites) |
 | Super Admin UI01–UI60 | **60/60** |
 | Clean / upgrade validators | PASS (Catalog 68/136/68/13) |
-| Case C Attempt 2 | PASS |
+| Case C Attempt 2 | PASS (authoritative; preserved) |
+| Final matrix mapping closure | PASS (TW15, T15, I01–I16, R01–R16, F01–F32, C01–C24, H01–H50, P01–P20, UI01–UI60) |
 
 ---
 

@@ -21,8 +21,10 @@ import {
   createPlatformDbSecurityClient,
   createPlatformUserFixture,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
+  diffSoR,
   ensureSentinel,
   platformDbSecurityEnabled,
+  protectedNotificationsSoR,
 } from './platform-notifications-db.harness';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
@@ -267,10 +269,51 @@ describeDb('Step 27 scheduler/time matrix T01-T16 (PostgreSQL)', () => {
     expect(result.suppressReason).toBe('preference_disabled');
   });
 
-  it('T15: recipient suspended → N/A (no suspend gate on platform_user dispatch path in Step 27)', () => {
-    // Architectural N/A: PlatformNotificationDispatchService checks preference enablement and
-    // recipientEmail only — there is no platform_user suspended/lifecycle gate on dispatch.
-    expect(true).toBe(true);
+  it('T15: recipient suspended — PlatformUser.suspended does not suppress Step 27 email dispatch (no delivery suspend gate; auth/session owns suspend)', async () => {
+    // Executable proof of the *accepted* Step 27 policy, not a product change: suspension is an
+    // authentication/session authority (PlatformUser.canAuthenticate() → 401/403 on the HTTP
+    // surface, refresh-session revocation), while the Step 27 delivery path gates on preference
+    // enablement + recipientEmail only. A mandatory (security-category) notification therefore
+    // still reaches the recorded recipientEmail after suspension.
+    const suspended = await createPlatformUserFixture(prisma, {
+      email: `t15-user-${randomUUID()}@test.local`,
+    });
+    await prisma.platformUser.update({
+      where: { id: suspended.id },
+      data: { status: 'suspended', suspendedAt: new Date(), isActive: false },
+    });
+    const before = await prisma.platformUser.findUniqueOrThrow({ where: { id: suspended.id } });
+    expect(before.status).toBe('suspended');
+    expect(before.isActive).toBe(false);
+    expect(before.suspendedAt).not.toBeNull();
+
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const recipientEmail = `t15-recipient-${randomUUID()}@test.local`;
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: suspended.id,
+      recipientEmail,
+      recipientDisplayName: 'Suspended Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.suppressed).toBeFalsy();
+    expect(result.intentId).toBeTruthy();
+    const sent = stack.emailService.sent.filter((m) => m.to === recipientEmail);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to.endsWith('@test.local')).toBe(true);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+
+    // Source mutation N/A — dispatch never writes to any business SoR, including the suspended
+    // PlatformUser row itself (status/isActive/authzRevision untouched).
+    const delta = diffSoR(sorBefore, await protectedNotificationsSoR(prisma));
+    expect(Object.values(delta).every((v) => v === 0)).toBe(true);
+    const after = await prisma.platformUser.findUniqueOrThrow({ where: { id: suspended.id } });
+    expect(after.status).toBe('suspended');
+    expect(after.isActive).toBe(false);
+    expect(after.authzRevision).toBe(before.authzRevision);
   });
 
   it('T16: deterministic ordering/pagination (eligible ids sorted stably by id asc)', async () => {

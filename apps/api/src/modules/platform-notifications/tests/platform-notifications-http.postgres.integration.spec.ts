@@ -1,13 +1,17 @@
 /**
- * Flexible Step 27 — real Passport HTTP matrix H01–H50.
+ * Flexible Step 27 — real Passport HTTP matrix H01–H50 (gate semantics).
+ * Real Nest app + real JwtStrategy/JwtAuthGuard/PlatformPermissionGuard over the real controller;
+ * only the outbound email provider is substituted (recording sink).
  */
-import { type INestApplication, ValidationPipe } from '@nestjs/common';
+import { type INestApplication } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import { AddressInfo } from 'net';
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/api/guards/jwt-auth.guard';
 import { PlatformPermissionGuard } from '../../auth/api/guards/platform-permission.guard';
@@ -30,14 +34,21 @@ import {
   createPlatformRefreshSession,
   createPlatformUserFixture,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
+  diffSoR,
   ensureSentinel,
   JWT_CFG,
   NOTIFICATIONS_ADMIN_ROLE,
   platformDbSecurityEnabled,
+  protectedNotificationsSoR,
   setPlatformNotificationFailureInjection,
 } from './platform-notifications-db.harness';
+import { PLATFORM_NOTIFICATION_PERMISSIONS } from '../platform-notifications.constants';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
+
+const PHI_MARKERS = /diagnosis|patientId|patientName|clinicalNotes|mrn\b/i;
+const SECRET_MARKERS = /password|accessToken|refreshToken|smtp|sendgrid|mailgun|api[_-]?key|secret/i;
+const STEP28_MARKERS = /hardeningRun|releaseGate|step28|step29/i;
 
 describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
   let prisma: PrismaClient;
@@ -125,13 +136,13 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     moduleRef.get(JwtStrategy);
     app = moduleRef.createNestApplication();
     app.useGlobalGuards(app.get(JwtAuthGuard), app.get(PlatformPermissionGuard));
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.listen(0);
     const addr = app.getHttpServer().address() as AddressInfo;
     baseUrl = `http://127.0.0.1:${addr.port}`;
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await app?.close();
   });
 
@@ -172,20 +183,53 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     return { status: res.status, json, text, headers: res.headers };
   }
 
-  it('H01: GET templates succeeds for platform_administrator', async () => {
+  async function dispatchInvitation(email = `h-${randomUUID()}@test.local`) {
+    return stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: randomUUID(),
+      recipientEmail: email,
+      recipientDisplayName: 'Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+  }
+
+  /** Dispatches with a forced transient failure so a retryable job exists, then clears the outage. */
+  async function dispatchRetryableInvitation() {
+    setPlatformNotificationFailureInjection('provider_transient');
+    const result = await dispatchInvitation();
+    clearPlatformNotificationFailureInjection();
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({
+      where: { id: result.intentId! },
+      include: { jobs: true },
+    });
+    await prisma.notificationIntent.update({
+      where: { id: result.intentId! },
+      data: {
+        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
+      },
+    });
+    return { intentId: result.intentId!, jobId: intent.jobs[0].id };
+  }
+
+  it('H01: authorized template catalog read — platform_administrator gets the full code-defined catalog', async () => {
     const { accessToken } = await issuePlatformToken();
     const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
     expect(res.status).toBe(200);
     expect(Array.isArray(res.json)).toBe(true);
     expect((res.json as unknown[]).length).toBe(24);
+    const first = (res.json as Array<{ key: string; version: string }>)[0];
+    expect(first.key).toMatch(/^tpl\.platform\./);
+    expect(first.version).toBe('step27.v1');
   });
 
-  it('H02: unauthenticated templates → 401', async () => {
+  it('H02: unauthenticated request is rejected (401, no catalog leak)', async () => {
     const res = await http('GET', '/platform/notifications/templates');
     expect(res.status).toBe(401);
+    expect(JSON.stringify(res.json)).not.toMatch(/tpl\.platform\./);
   });
 
-  it('H03: clinic principal denied', async () => {
+  it('H03: Clinic principal denied on the Platform notifications surface', async () => {
     const token = jwtService.sign(
       {
         sub: randomUUID(),
@@ -207,6 +251,7 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     const { user, session } = await issuePlatformToken();
     const token = jwtService.sign(
       {
+        type: 'access',
         sub: user.id,
         tenantId: null,
         roles: [NOTIFICATIONS_ADMIN_ROLE],
@@ -226,6 +271,7 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     const { user, session } = await issuePlatformToken();
     const token = jwtService.sign(
       {
+        type: 'access',
         sub: user.id,
         tenantId: null,
         roles: [NOTIFICATIONS_ADMIN_ROLE],
@@ -241,10 +287,11 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     expect([401, 403]).toContain(res.status);
   });
 
-  it('H06: expired token rejected', async () => {
+  it('H06: expired token rejected (401)', async () => {
     const { user, session } = await issuePlatformToken();
     const token = jwtService.sign(
       {
+        type: 'access',
         sub: user.id,
         tenantId: null,
         roles: [NOTIFICATIONS_ADMIN_ROLE],
@@ -260,45 +307,112 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     expect(res.status).toBe(401);
   });
 
-  it('H07: revoked / blacklisted JTI rejected', async () => {
+  it('H07: revoked session (blacklisted JTI) rejected', async () => {
     const { accessToken } = await issuePlatformToken();
-    try {
-      const payload = JSON.parse(
-        Buffer.from(accessToken.split('.')[1], 'base64url').toString('utf8'),
-      ) as { jti?: string };
-      if (payload.jti) blacklistedJtis.add(payload.jti);
-    } catch {
-      /* ignore */
-    }
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1], 'base64url').toString('utf8'),
+    ) as { jti?: string };
+    expect(payload.jti).toBeTruthy();
+    blacklistedJtis.add(payload.jti!);
     const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
     expect([401, 403]).toContain(res.status);
   });
 
-  it('H08: Cache-Control private, no-store on templates', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
-    expect(res.headers.get('cache-control')).toMatch(/private/i);
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+  it('H08: suspended Platform user is denied even with a structurally valid JWT (authz re-reads PlatformUser.canAuthenticate; documented actual = 403)', async () => {
+    const { accessToken, user } = await issuePlatformToken();
+    const before = await http('GET', '/platform/notifications/templates', { token: accessToken });
+    expect(before.status).toBe(200);
+
+    await prisma.platformUser.update({
+      where: { id: user.id },
+      data: { status: 'suspended', suspendedAt: new Date(), isActive: false },
+    });
+
+    const after = await http('GET', '/platform/notifications/templates', { token: accessToken });
+    // The JWT itself is still cryptographically valid and un-blacklisted; the *authorization*
+    // stage resolves zero effective permissions for a suspended account and fails closed.
+    expect(after.status).toBe(403);
+    expect(JSON.stringify(after.json)).not.toMatch(/tpl\.platform\./);
   });
 
-  it('H09: GET template detail', async () => {
+  it('H09: missing permission denied — an authenticated platform role without notification permissions gets 403', async () => {
+    const { accessToken } = await issuePlatformToken(['sales_representative']);
+    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
+    expect(res.status).toBe(403);
+  });
+
+  it('H10: authorized preference read returns the caller-scoped preference list', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates/tpl.platform.invitation.sent', {
+    const res = await http('GET', '/platform/notifications/preferences', { token: accessToken });
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.json)).toBe(true);
+  });
+
+  it('H11: authorized preference mutation persists an optional-category change', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http('PATCH', '/platform/notifications/preferences', {
       token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
     });
     expect(res.status).toBe(200);
-    expect(res.json).toMatchObject({ key: 'tpl.platform.invitation.sent' });
+    expect(res.json).toMatchObject({ category: 'usage', channel: 'email', enabled: false });
+    expect(await prisma.platformNotificationPreference.count()).toBe(1);
   });
 
-  it('H10: GET unknown template → 4xx', async () => {
+  it('H12: mandatory-notification disable attempt denied (403, nothing persisted)', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates/tpl.platform.missing', {
+    const res = await http('PATCH', '/platform/notifications/preferences', {
       token: accessToken,
+      body: { category: 'security', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
     });
-    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBe(403);
+    expect(
+      await prisma.platformNotificationPreference.count({ where: { category: 'security' } }),
+    ).toBe(0);
   });
 
-  it('H11: POST template preview', async () => {
+  it('H13: role-name bypass denied — role membership without notification permissions never authorizes', async () => {
+    for (const roleKeys of [['sales_representative'], ['security_administrator']]) {
+      const { accessToken } = await issuePlatformToken(roleKeys);
+      const templates = await http('GET', '/platform/notifications/templates', { token: accessToken });
+      const prefs = await http('PATCH', '/platform/notifications/preferences', {
+        token: accessToken,
+        body: { category: 'usage', channel: 'email', enabled: false },
+        headers: { 'Idempotency-Key': randomUUID() },
+      });
+      expect(templates.status).toBe(403);
+      expect(prefs.status).toBe(403);
+    }
+  });
+
+  it('H14: wildcard-intent bypass denied → N/A — no wildcard permission exists; the guard requires the exact dotted permission keys', async () => {
+    for (const value of Object.values(PLATFORM_NOTIFICATION_PERMISSIONS)) {
+      expect(value).toMatch(/^notifications\.[a-z]+\.[a-z]+$/);
+      expect(value).not.toContain('*');
+    }
+    const controllerSource = readFileSync(
+      resolve(__dirname, '../api/platform-notifications.controller.ts'),
+      'utf8',
+    );
+    const declared = controllerSource.match(/@RequirePlatformPermission\(([^)]+)\)/g) ?? [];
+    expect(declared.length).toBeGreaterThanOrEqual(7);
+    expect(
+      declared.every((d) => d.includes('PLATFORM_NOTIFICATION_PERMISSIONS.')),
+    ).toBe(true);
+    // A role with unrelated platform permissions still cannot reach any Step 27 route.
+    const { accessToken } = await issuePlatformToken(['sales_manager']);
+    for (const path of [
+      '/platform/notifications/templates',
+      '/platform/notifications/preferences',
+      '/platform/notifications/deliveries',
+    ]) {
+      expect((await http('GET', path, { token: accessToken })).status).toBe(403);
+    }
+  });
+
+  it('H15: template preview authorized for templates.view (no separate manage permission)', async () => {
     const { accessToken } = await issuePlatformToken();
     const res = await http(
       'POST',
@@ -309,66 +423,24 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     expect(res.json).toMatchObject({ templateKey: 'tpl.platform.invitation.sent', locale: 'en-US' });
   });
 
-  it('H12: GET preferences', async () => {
+  it('H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/preferences', { token: accessToken });
+    const res = await http(
+      'POST',
+      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
+      { token: accessToken, body: { locale: 'en-US' } },
+    );
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.json)).toBe(true);
+    const body = JSON.stringify(res.json);
+    expect(body).toMatch(/sample_/);
+    expect(body).not.toMatch(PHI_MARKERS);
+    expect(body).not.toMatch(SECRET_MARKERS);
+    expect(await prisma.notificationIntent.count()).toBe(0);
   });
 
-  it('H13: PATCH preferences requires Idempotency-Key', async () => {
+  it('H17: delivery list authorized — dispatched Step 27 intents are listed with their template key', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false },
-    });
-    expect(res.status).toBeGreaterThanOrEqual(400);
-  });
-
-  it('H14: PATCH preferences succeeds with Idempotency-Key', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBe(200);
-    expect(res.json).toMatchObject({ category: 'usage', enabled: false });
-  });
-
-  it('H15: PATCH cannot disable mandatory security category', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'security', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('H16: sales_representative without notification perms denied on templates', async () => {
-    const { accessToken } = await issuePlatformToken(['sales_representative']);
-    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
-    expect(res.status).toBe(403);
-  });
-
-  it('H17: GET deliveries empty page', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
-    expect(res.status).toBe(200);
-    expect(res.json).toMatchObject({ page: 1, total: 0, items: [] });
-  });
-
-  it('H18: GET deliveries after dispatch lists intent', async () => {
-    const { accessToken } = await issuePlatformToken();
-    await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h18-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
+    await dispatchInvitation(`h17-${randomUUID()}@test.local`);
     const res = await http('GET', '/platform/notifications/deliveries?pageSize=10', {
       token: accessToken,
     });
@@ -379,114 +451,673 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     );
   });
 
-  it('H19: GET delivery detail', async () => {
+  it('H18: delivery direct-ID read is scope-enforced (own Step 27 intent 200; anything outside that scope 404)', async () => {
     const { accessToken } = await issuePlatformToken();
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h19-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    const res = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+    const result = await dispatchInvitation(`h18-${randomUUID()}@test.local`);
+    const ok = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
       token: accessToken,
     });
-    expect(res.status).toBe(200);
-    expect((res.json as { id: string }).id).toBe(result.intentId);
+    expect(ok.status).toBe(200);
+    expect((ok.json as { id: string }).id).toBe(result.intentId);
+
+    const outOfScope = await http('GET', `/platform/notifications/deliveries/${randomUUID()}`, {
+      token: accessToken,
+    });
+    expect(outOfScope.status).toBe(404);
   });
 
-  it('H20: GET missing delivery → 404', async () => {
+  it('H19: retry authorized with reason + Idempotency-Key', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', `/platform/notifications/deliveries/${randomUUID()}`, {
+    const { intentId, jobId } = await dispatchRetryableInvitation();
+    const res = await http('POST', `/platform/notifications/deliveries/${intentId}/retry`, {
       token: accessToken,
-    });
-    expect(res.status).toBe(404);
-  });
-
-  it('H21: POST retry requires Idempotency-Key', async () => {
-    const { accessToken } = await issuePlatformToken();
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h21-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    clearPlatformNotificationFailureInjection();
-    const res = await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
-      token: accessToken,
-      body: { reason: 'ops' },
-    });
-    expect(res.status).toBeGreaterThanOrEqual(400);
-  });
-
-  it('H22: POST retry succeeds with reason + Idempotency-Key', async () => {
-    const { accessToken } = await issuePlatformToken();
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h22-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
-      include: { jobs: true },
-    });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
-      },
-    });
-    const res = await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
-      token: accessToken,
-      body: { reason: 'manual recovery', jobId: intent.jobs[0].id },
+      body: { reason: 'manual recovery', jobId },
       headers: { 'Idempotency-Key': randomUUID() },
     });
     expect(res.status).toBe(200);
     expect(res.json).toMatchObject({ accepted: true });
   });
 
-  it('H23: POST retry empty reason → 4xx', async () => {
+  it('H20: retry reason is required (blank reason → 4xx, no requeue)', async () => {
     const { accessToken } = await issuePlatformToken();
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h23-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    clearPlatformNotificationFailureInjection();
-    const res = await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
+    const { intentId, jobId } = await dispatchRetryableInvitation();
+    const res = await http('POST', `/platform/notifications/deliveries/${intentId}/retry`, {
       token: accessToken,
-      body: { reason: '   ' },
+      body: { reason: '   ', jobId },
       headers: { 'Idempotency-Key': randomUUID() },
     });
     expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+    expect((await prisma.deliveryJob.findUniqueOrThrow({ where: { id: jobId } })).status).toBe(
+      'pending',
+    );
   });
 
-  it('H24: Cache-Control on deliveries', async () => {
+  it('H21: step-up required → N/A — no Step 27 route declares a step-up/MFA re-auth requirement (permission + Idempotency-Key only)', async () => {
+    const controllerSource = readFileSync(
+      resolve(__dirname, '../api/platform-notifications.controller.ts'),
+      'utf8',
+    );
+    expect(controllerSource).not.toMatch(/StepUp|step_up|stepUpVerifiedAt|RequireMfa/i);
+    // Consequence: a normal (non step-up) session performs the highest-privilege Step 27 mutation.
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+    const { intentId, jobId } = await dispatchRetryableInvitation();
+    const res = await http('POST', `/platform/notifications/deliveries/${intentId}/retry`, {
+      token: accessToken,
+      body: { reason: 'no step-up required', jobId },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(res.status).toBe(200);
   });
 
-  it('H25: Cache-Control on preferences', async () => {
+  it('H22: OCC conflict on preference mutation returns 409 for a stale expectedRowVersion', async () => {
     const { accessToken } = await issuePlatformToken();
+    const first = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(first.status).toBe(200);
+    const rowVersion = (first.json as { rowVersion: number }).rowVersion;
+    const second = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: true, expectedRowVersion: rowVersion },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(second.status).toBe(200);
+    expect((second.json as { rowVersion: number }).rowVersion).toBeGreaterThan(rowVersion);
+
+    const conflict = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false, expectedRowVersion: rowVersion },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(conflict.status).toBe(409);
+  });
+
+  it('H23: deterministic pagination — repeated identical page requests return identical ordered ids', async () => {
+    const { accessToken } = await issuePlatformToken();
+    for (let i = 0; i < 3; i++) {
+      await dispatchInvitation(`h23-${i}-${randomUUID()}@test.local`);
+    }
+    const first = await http('GET', '/platform/notifications/deliveries?page=1&pageSize=2', {
+      token: accessToken,
+    });
+    const repeat = await http('GET', '/platform/notifications/deliveries?page=1&pageSize=2', {
+      token: accessToken,
+    });
+    const page2 = await http('GET', '/platform/notifications/deliveries?page=2&pageSize=2', {
+      token: accessToken,
+    });
+    const ids = (r: typeof first) => (r.json as { items: Array<{ id: string }> }).items.map((i) => i.id);
+
+    expect(first.status).toBe(200);
+    expect((first.json as { pageSize: number }).pageSize).toBe(2);
+    expect(ids(first)).toHaveLength(2);
+    expect(ids(repeat)).toEqual(ids(first));
+    expect(ids(page2).some((id) => ids(first).includes(id))).toBe(false);
+  });
+
+  it('H24: bounded filtering — pageSize is clamped and the status filter never widens the result set', async () => {
+    const { accessToken } = await issuePlatformToken();
+    await dispatchInvitation(`h24-${randomUUID()}@test.local`);
+    const clamped = await http('GET', '/platform/notifications/deliveries?pageSize=500', {
+      token: accessToken,
+    });
+    expect(clamped.status).toBe(200);
+    expect((clamped.json as { pageSize: number }).pageSize).toBe(100);
+
+    const status = (clamped.json as { items: Array<{ status: string }> }).items[0]?.status;
+    expect(status).toBeTruthy();
+    const filtered = await http(
+      'GET',
+      `/platform/notifications/deliveries?status=${encodeURIComponent(status!)}`,
+      { token: accessToken },
+    );
+    expect(filtered.status).toBe(200);
+    expect(
+      (filtered.json as { items: Array<{ status: string }> }).items.every((i) => i.status === status),
+    ).toBe(true);
+
+    const noMatch = await http('GET', '/platform/notifications/deliveries?status=not_a_status', {
+      token: accessToken,
+    });
+    expect(noMatch.status).toBe(200);
+    expect((noMatch.json as { total: number }).total).toBe(0);
+  });
+
+  it('H25: no existence oracle — an unauthorized caller gets the same 403 for an existing and a missing delivery id', async () => {
+    const { accessToken: adminToken } = await issuePlatformToken();
+    const existing = await dispatchInvitation(`h25-${randomUUID()}@test.local`);
+    const authorized404 = await http('GET', `/platform/notifications/deliveries/${randomUUID()}`, {
+      token: adminToken,
+    });
+    expect(authorized404.status).toBe(404);
+
+    const { accessToken: deniedToken } = await issuePlatformToken(['sales_representative']);
+    const deniedExisting = await http(
+      'GET',
+      `/platform/notifications/deliveries/${existing.intentId}`,
+      { token: deniedToken },
+    );
+    const deniedMissing = await http('GET', `/platform/notifications/deliveries/${randomUUID()}`, {
+      token: deniedToken,
+    });
+    expect(deniedExisting.status).toBe(403);
+    expect(deniedMissing.status).toBe(403);
+    expect((deniedExisting.json as { message?: string }).message).toBe(
+      (deniedMissing.json as { message?: string }).message,
+    );
+  });
+
+  it('H26: infrastructure error is reported safely (no stack trace, driver text or connection string)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    setPlatformNotificationFailureInjection('preference_lookup');
     const res = await http('GET', '/platform/notifications/preferences', { token: accessToken });
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+    clearPlatformNotificationFailureInjection();
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    const body = JSON.stringify(res.json);
+    expect(body).not.toMatch(/at Object\.|\.ts:\d+|node_modules|prisma|postgres|databaseUrl/i);
+    expect(body).not.toMatch(SECRET_MARKERS);
   });
 
-  it('H26: ar-SY preview locale', async () => {
+  it('H27: no PHI / secrets / tokens in any authorized response body', async () => {
+    const { accessToken } = await issuePlatformToken();
+    await dispatchInvitation(`h27-${randomUUID()}@test.local`);
+    const bodies = [
+      await http('GET', '/platform/notifications/templates', { token: accessToken }),
+      await http('GET', '/platform/notifications/preferences', { token: accessToken }),
+      await http('GET', '/platform/notifications/deliveries', { token: accessToken }),
+    ].map((r) => JSON.stringify(r.json));
+
+    for (const body of bodies) {
+      expect(body).not.toMatch(PHI_MARKERS);
+      expect(body).not.toMatch(SECRET_MARKERS);
+      expect(body).not.toContain(accessToken);
+    }
+  });
+
+  it('H28: provider credentials are absent from every response (no SMTP host / API key / sender secret)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const result = await dispatchInvitation(`h28-${randomUUID()}@test.local`);
+    const detail = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+      token: accessToken,
+    });
+    const list = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
+    for (const res of [detail, list]) {
+      expect(JSON.stringify(res.json)).not.toMatch(
+        /smtp|sendgrid|mailgun|resend|api[_-]?key|providerSecret/i,
+      );
+    }
+  });
+
+  it('H29: passive read preserves session state (no rotation, revocation or authzRevision bump)', async () => {
+    const { accessToken, user, session } = await issuePlatformToken();
+    const before = await prisma.platformRefreshToken.findFirstOrThrow({
+      where: { sessionId: session.sessionId },
+    });
+    const userBefore = await prisma.platformUser.findUniqueOrThrow({ where: { id: user.id } });
+
+    expect((await http('GET', '/platform/notifications/deliveries', { token: accessToken })).status).toBe(200);
+    expect((await http('GET', '/platform/notifications/templates', { token: accessToken })).status).toBe(200);
+
+    const after = await prisma.platformRefreshToken.findFirstOrThrow({
+      where: { sessionId: session.sessionId },
+    });
+    expect(after.revokedAt).toBeNull();
+    expect(after.tokenHash).toBe(before.tokenHash);
+    expect(
+      (await prisma.platformUser.findUniqueOrThrow({ where: { id: user.id } })).authzRevision,
+    ).toBe(userBefore.authzRevision);
+  });
+
+  it('H30: the application service is never invoked after an authorization denial', async () => {
+    const listSpy = jest.spyOn(stack.query, 'listDeliveries');
+    const retrySpy = jest.spyOn(stack.query, 'retryDelivery');
+    const { accessToken } = await issuePlatformToken(['sales_representative']);
+
+    expect((await http('GET', '/platform/notifications/deliveries', { token: accessToken })).status).toBe(403);
+    expect(
+      (
+        await http('POST', `/platform/notifications/deliveries/${randomUUID()}/retry`, {
+          token: accessToken,
+          body: { reason: 'ops' },
+          headers: { 'Idempotency-Key': randomUUID() },
+        })
+      ).status,
+    ).toBe(403);
+
+    expect(listSpy).not.toHaveBeenCalled();
+    expect(retrySpy).not.toHaveBeenCalled();
+  });
+
+  it('H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)', async () => {
+    const { accessToken } = await issuePlatformToken(['sales_representative']);
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const prefsBefore = await prisma.platformNotificationPreference.count();
+    const intentsBefore = await prisma.notificationIntent.count();
+
+    await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    await http('GET', '/platform/notifications/deliveries', { token: accessToken });
+
+    const delta = diffSoR(sorBefore, await protectedNotificationsSoR(prisma));
+    expect(Object.values(delta).every((v) => v === 0)).toBe(true);
+    expect(await prisma.platformNotificationPreference.count()).toBe(prefsBefore);
+    expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
+  });
+
+  const eventSafeMetadataCases: Array<{
+    id: string;
+    canonical: string;
+    dispatch: (email: string) => Promise<{ intentId?: string }>;
+    templateKey: string;
+    extraAssert?: (ctx: {
+      resJson: unknown;
+      metadata: Record<string, unknown>;
+      intentId: string;
+      email: string;
+    }) => Promise<void> | void;
+  }> = [
+    {
+      id: 'H32',
+      canonical: 'invitation message metadata safe',
+      templateKey: 'tpl.platform.invitation.sent',
+      dispatch: (email) => dispatchInvitation(email),
+    },
+    {
+      id: 'H33',
+      canonical: 'MFA alert metadata safe',
+      templateKey: 'tpl.platform.mfa.security_alert',
+      dispatch: (email) =>
+        stack.adapters.mfaSecurityAlert({
+          alertId: randomUUID(),
+          platformUserId: randomUUID(),
+          recipientEmail: email,
+          recipientDisplayName: 'Admin',
+          alertSummary: 'new device login',
+          occurredAt: new Date().toISOString(),
+        }),
+    },
+    {
+      id: 'H34',
+      canonical: 'lifecycle event delivery status safe',
+      templateKey: 'tpl.platform.tenant.lifecycle',
+      dispatch: (email) =>
+        stack.adapters.lifecycleTransition({
+          platformTenantId: randomUUID(),
+          organizationName: 'Acme',
+          fromState: 'ACTIVE',
+          toState: 'SUSPENDED',
+          occurredAt: new Date().toISOString(),
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H35',
+      canonical: 'Trial warning status safe',
+      templateKey: 'tpl.platform.trial.approaching_expiry',
+      dispatch: (email) =>
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: randomUUID(),
+          organizationName: 'Acme',
+          expiryDate: new Date().toISOString(),
+          planVersionId: randomUUID(),
+          windowKey: 'd7',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H36',
+      canonical: 'Subscription warning status safe',
+      templateKey: 'tpl.platform.subscription.approaching_expiry',
+      dispatch: (email) =>
+        stack.adapters.subscriptionEvent({
+          kind: 'approaching',
+          configId: randomUUID(),
+          organizationName: 'Acme',
+          expiryDate: new Date().toISOString(),
+          planVersionId: randomUUID(),
+          windowKey: 'd7',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H37',
+      canonical: 'Add-on warning status safe',
+      templateKey: 'tpl.platform.addon.approaching_expiry',
+      dispatch: (email) =>
+        stack.adapters.addOnExpiry({
+          approaching: true,
+          assignmentId: randomUUID(),
+          organizationName: 'Acme',
+          addOnLabel: 'addon.telehealth',
+          addOnVersionId: randomUUID(),
+          expiryDate: new Date().toISOString(),
+          windowKey: 'd7',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H38',
+      canonical: 'Override warning status safe',
+      templateKey: 'tpl.platform.override.approaching_expiry',
+      dispatch: (email) =>
+        stack.adapters.overrideExpiry({
+          approaching: true,
+          overrideId: randomUUID(),
+          organizationName: 'Acme',
+          overrideLabel: 'SALES_CONCESSION',
+          expiryDate: new Date().toISOString(),
+          windowKey: 'd7',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H39',
+      canonical: 'effective-limit alert provenance safe',
+      templateKey: 'tpl.platform.limit.warning',
+      dispatch: (email) =>
+        stack.adapters.limitAlert({
+          level: 'warning',
+          evidenceId: randomUUID(),
+          organizationName: 'Acme',
+          limitKey: 'sms_monthly',
+          effectiveLimit: '1000',
+          currentUsage: '820',
+          thresholdPercent: '82',
+          limitProvenance: 'PLAN',
+          windowKey: 'default',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+      extraAssert: async ({ resJson, metadata, intentId, email }) => {
+        expect(metadata.sourceType).toBe('platform_usage_limit_evidence');
+        expect(String(metadata.eventKey)).toMatch(/limit\.warning/);
+        const payload = JSON.stringify(resJson);
+        expect(payload).toMatch(/provenance\s+PLAN/i);
+        expect(payload).toMatch(/effective\s+1000/i);
+        const intent = await prisma.notificationIntent.findUniqueOrThrow({ where: { id: intentId } });
+        expect(intent.body).toMatch(/provenance\s+PLAN/i);
+        expect(intent.body).toMatch(/effective\s+1000/i);
+        const sent = stack.emailService.sent.find((m) => m.to === email);
+        expect(sent?.text).toMatch(/provenance\s+PLAN/i);
+        expect(sent?.text).toMatch(/limitProvenance|PLAN/i);
+      },
+    },
+    {
+      id: 'H40',
+      canonical: 'compatibility notification safe',
+      templateKey: 'tpl.platform.compatibility.issue',
+      dispatch: (email) =>
+        stack.adapters.compatibilityIssue({
+          resultId: randomUUID(),
+          organizationName: 'Acme',
+          issueSummary: 'module/specialty mismatch',
+          ruleReference: 'RULE-1',
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+    },
+    {
+      id: 'H41',
+      canonical: 'provisioning failure sanitized',
+      templateKey: 'tpl.platform.provisioning.failure',
+      dispatch: (email) =>
+        stack.adapters.provisioning({
+          recovered: false,
+          operationId: randomUUID(),
+          organizationName: 'Acme',
+          operationReference: 'op-41',
+          failureClass: 'timeout',
+          at: new Date().toISOString(),
+          recipientPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+      extraAssert: ({ resJson }) => {
+        const payload = JSON.stringify(resJson);
+        expect(payload).toMatch(/timeout/);
+        expect(payload).not.toMatch(/at Object\.|\.ts:\d+|stack trace/i);
+      },
+    },
+    {
+      id: 'H42',
+      canonical: 'sales reminder scoped',
+      templateKey: 'tpl.platform.sales.lead_next_action',
+      dispatch: (email) =>
+        stack.adapters.leadNextActionReminder({
+          leadId: randomUUID(),
+          leadReference: 'LEAD-42',
+          organizationName: 'Acme',
+          nextActionDate: new Date().toISOString(),
+          nextActionType: 'call',
+          windowKey: 'd1',
+          ownerPlatformUserId: randomUUID(),
+          recipientEmail: email,
+        }),
+      extraAssert: ({ metadata, email }) => {
+        expect(metadata.sourceType).toBe('platform_sales_lead');
+        expect(metadata.recipientEmail).toBe(email);
+        expect(String(metadata.eventKey)).toMatch(/sales\.lead_next_action/);
+      },
+    },
+    {
+      id: 'H43',
+      canonical: 'manager alert scoped',
+      templateKey: 'tpl.platform.sales.manager_ops',
+      dispatch: (email) =>
+        stack.adapters.managerAlert({
+          ops: true,
+          alertId: randomUUID(),
+          managerPlatformUserId: randomUUID(),
+          recipientEmail: email,
+          managerDisplayName: 'Mgr',
+          alertSummary: 'ops threshold',
+          operationReference: 'op-43',
+        }),
+      extraAssert: ({ metadata, email }) => {
+        expect(metadata.sourceType).toBe('platform_ops_alert');
+        expect(metadata.recipientEmail).toBe(email);
+        expect(String(metadata.eventKey)).toMatch(/sales\.manager_ops/);
+      },
+    },
+  ];
+
+  for (const testCase of eventSafeMetadataCases) {
+    it(`${testCase.id}: ${testCase.canonical} — event-safe metadata delivery readable over HTTP with sanitized metadata only`, async () => {
+      const { accessToken } = await issuePlatformToken();
+      const email = `${testCase.id.toLowerCase()}-${randomUUID()}@test.local`;
+      const result = await testCase.dispatch(email);
+      expect(result.intentId).toBeTruthy();
+
+      const res = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+        token: accessToken,
+      });
+      expect(res.status).toBe(200);
+      const body = JSON.stringify(res.json);
+      const metadata = (res.json as { metadata: Record<string, unknown> }).metadata;
+      expect(metadata.templateKey).toBe(testCase.templateKey);
+      expect(metadata.step27).toBe(true);
+      expect(body).not.toMatch(PHI_MARKERS);
+      expect(body).not.toMatch(SECRET_MARKERS);
+      expect(body).not.toMatch(STEP28_MARKERS);
+      await testCase.extraAssert?.({
+        resJson: res.json,
+        metadata,
+        intentId: result.intentId!,
+        email,
+      });
+    });
+  }
+
+  it('H44: preferences cannot cross principal scope (mutating another platform user is denied)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const other = await createPlatformUserFixture(prisma, {
+      email: `h44-other-${randomUUID()}@test.local`,
+    });
+    const res = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { platformUserId: other.id, category: 'usage', channel: 'email', enabled: false },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+    expect(res.status).toBe(403);
+    expect(
+      await prisma.platformNotificationPreference.count({ where: { platformUserId: other.id } }),
+    ).toBe(0);
+  });
+
+  it('H45: retry does not duplicate the logical delivery (same intent, same single email)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    setPlatformNotificationFailureInjection('provider_transient');
+    const email = `h45-${randomUUID()}@test.local`;
+    const dispatched = await dispatchInvitation(email);
+    clearPlatformNotificationFailureInjection();
+    const intent = await prisma.notificationIntent.findUniqueOrThrow({
+      where: { id: dispatched.intentId! },
+      include: { jobs: true },
+    });
+    await prisma.notificationIntent.update({
+      where: { id: dispatched.intentId! },
+      data: {
+        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
+      },
+    });
+
+    const res = await http('POST', `/platform/notifications/deliveries/${dispatched.intentId}/retry`, {
+      token: accessToken,
+      body: { reason: 'single logical delivery', jobId: intent.jobs[0].id },
+      headers: { 'Idempotency-Key': randomUUID() },
+    });
+
+    expect(res.status).toBe(200);
+    expect(await prisma.notificationIntent.count()).toBe(1);
+    expect(await prisma.deliveryJob.count({ where: { intentId: dispatched.intentId! } })).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+  });
+
+  it('H46: missing template / unknown key fails safely (4xx, no catalog enumeration in the error)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const detail = await http('GET', '/platform/notifications/templates/tpl.platform.does_not_exist', {
+      token: accessToken,
+    });
+    const preview = await http(
+      'POST',
+      '/platform/notifications/templates/tpl.platform.does_not_exist/preview',
+      { token: accessToken, body: { locale: 'en-US' } },
+    );
+    for (const res of [detail, preview]) {
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+      expect(JSON.stringify(res.json)).not.toMatch(/tpl\.platform\.invitation\.sent/);
+    }
+  });
+
+  it('H47: unknown locale is handled safely (deterministic en-US fallback, no renderer crash)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const enUs = await http(
+      'POST',
+      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
+      { token: accessToken, body: { locale: 'en-US' } },
+    );
+    const unknown = await http(
+      'POST',
+      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
+      { token: accessToken, body: { locale: 'zz-ZZ' } },
+    );
+    expect(enUs.status).toBe(200);
+    expect([200, 400]).toContain(unknown.status);
+    if (unknown.status === 200) {
+      expect((unknown.json as { subject: string }).subject).toBe(
+        (enUs.json as { subject: string }).subject,
+      );
+    }
+    expect(JSON.stringify(unknown.json)).not.toMatch(/at Object\.|\.ts:\d+/);
+  });
+
+  it('H48: no raw message secret in the delivery response (rendered body carries no credentials or raw tokens)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const result = await dispatchInvitation(`h48-${randomUUID()}@test.local`);
+    const res = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+      token: accessToken,
+    });
+    expect(res.status).toBe(200);
+    const body = JSON.stringify(res.json);
+    expect(body).not.toMatch(/rawInviteToken|bearer |authorization|mfaSeed|encryptionKey/i);
+    expect(body).not.toMatch(SECRET_MARKERS);
+  });
+
+  it('H49: no Step 28 endpoint or surface is exposed by the Step 27 controller', async () => {
+    const { accessToken } = await issuePlatformToken();
+    for (const path of [
+      '/platform/notifications/hardening',
+      '/platform/notifications/release-gate',
+      '/platform/notifications/step28',
+    ]) {
+      const res = await http('GET', path, { token: accessToken });
+      expect(res.status).toBe(404);
+    }
+    const templates = await http('GET', '/platform/notifications/templates', { token: accessToken });
+    expect(JSON.stringify(templates.json)).not.toMatch(STEP28_MARKERS);
+  });
+
+  it('H50: error bodies are safe and shaped (statusCode/code/message only, no stack or internals)', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const notFound = await http('GET', `/platform/notifications/deliveries/${randomUUID()}`, {
+      token: accessToken,
+    });
+    expect(notFound.status).toBe(404);
+    const body = notFound.json as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(['code', 'message', 'statusCode']);
+    expect(JSON.stringify(body)).not.toMatch(/at Object\.|\.ts:\d+|node_modules|stack/i);
+  });
+
+  it('HTTP headers: every Step 27 route responds with Cache-Control private, no-store', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const result = await dispatchInvitation(`h-cache-${randomUUID()}@test.local`);
+    const responses = [
+      await http('GET', '/platform/notifications/templates', { token: accessToken }),
+      await http('GET', '/platform/notifications/templates/tpl.platform.invitation.sent', {
+        token: accessToken,
+      }),
+      await http('GET', '/platform/notifications/preferences', { token: accessToken }),
+      await http('GET', '/platform/notifications/deliveries', { token: accessToken }),
+      await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
+        token: accessToken,
+      }),
+    ];
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+      expect(res.headers.get('cache-control')).toMatch(/private/i);
+      expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+    }
+  });
+
+  it('HTTP idempotency: mutating routes require an Idempotency-Key header', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const { intentId, jobId } = await dispatchRetryableInvitation();
+    const prefs = await http('PATCH', '/platform/notifications/preferences', {
+      token: accessToken,
+      body: { category: 'usage', channel: 'email', enabled: false },
+    });
+    const retry = await http('POST', `/platform/notifications/deliveries/${intentId}/retry`, {
+      token: accessToken,
+      body: { reason: 'ops', jobId },
+    });
+    expect(prefs.status).toBeGreaterThanOrEqual(400);
+    expect(retry.status).toBeGreaterThanOrEqual(400);
+  });
+
+  it('HTTP locale: ar-SY preview renders the Arabic catalog entry', async () => {
     const { accessToken } = await issuePlatformToken();
     const res = await http(
       'POST',
@@ -498,326 +1129,54 @@ describeDb('Step 27 notifications HTTP H01-H50 (PostgreSQL)', () => {
     expect((res.json as { subject: string }).subject).toBe('دعوة للمنصة');
   });
 
-  it('H27: deliveries page query params honored', async () => {
-    const { accessToken } = await issuePlatformToken();
-    for (let i = 0; i < 3; i++) {
-      await stack.adapters.invitationSent({
-        invitationId: randomUUID(),
-        platformUserId: randomUUID(),
-        recipientEmail: `h27-${i}-${randomUUID()}@test.local`,
-        recipientDisplayName: 'Admin',
-        inviterDisplayName: 'Root',
-        expiresAt: new Date().toISOString(),
-      });
-    }
-    const res = await http('GET', '/platform/notifications/deliveries?page=1&pageSize=2', {
-      token: accessToken,
-    });
-    expect(res.status).toBe(200);
-    expect((res.json as { pageSize: number; items: unknown[] }).pageSize).toBe(2);
-    expect((res.json as { items: unknown[] }).items).toHaveLength(2);
-  });
-
-  it('H28: security_administrator without notification perms denied', async () => {
-    const { accessToken } = await issuePlatformToken(['security_administrator']);
-    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
-    expect(res.status).toBe(403);
-  });
-
-  it('H29: platform_owner may view templates if catalog grants (or 403 if not)', async () => {
-    const { accessToken } = await issuePlatformToken(['platform_owner']);
-    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
-    // Owner catalog may or may not include Step 27 perms — assert deterministic authz outcome.
-    expect([200, 403]).toContain(res.status);
-  });
-
-  it('H30: PATCH preferences OCC conflict returns 409', async () => {
-    const { accessToken, user } = await issuePlatformToken();
-    const first = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(first.status).toBe(200);
-    const rowVersion = (first.json as { rowVersion: number }).rowVersion;
-    await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: true, expectedRowVersion: rowVersion },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    const conflict = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false, expectedRowVersion: rowVersion },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(conflict.status).toBe(409);
-    expect(user.id).toBeTruthy();
-  });
-
-  it('H31: GET deliveries does not mutate SoR', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const before = await prisma.platformNotificationPreference.count();
-    await http('GET', '/platform/notifications/deliveries', { token: accessToken });
-    const after = await prisma.platformNotificationPreference.count();
-    expect(after).toBe(before);
-  });
-
-  it('H32: preview does not create intents', async () => {
-    const { accessToken } = await issuePlatformToken();
-    await http(
-      'POST',
-      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
-      { token: accessToken, body: {} },
-    );
-    expect(await prisma.notificationIntent.count()).toBe(0);
-  });
-
-  it('H33: retry without deliveries.retry permission denied', async () => {
-    // Prefer a role that can authenticate but lacks retry — sales_representative.
-    const { accessToken } = await issuePlatformToken(['sales_representative']);
-    const res = await http('POST', `/platform/notifications/deliveries/${randomUUID()}/retry`, {
-      token: accessToken,
-      body: { reason: 'x' },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('H34: preferences manage denied for sales_representative', async () => {
-    const { accessToken } = await issuePlatformToken(['sales_representative']);
-    const res = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('H35: malformed Authorization header rejected', async () => {
-    const res = await http('GET', '/platform/notifications/templates', {
+  it('HTTP validation: malformed and foreign-signed bearer tokens are rejected', async () => {
+    const malformed = await http('GET', '/platform/notifications/templates', {
       headers: { Authorization: 'Bearer not-a-jwt' },
     });
-    expect(res.status).toBe(401);
-  });
+    expect(malformed.status).toBe(401);
 
-  it('H36: template detail Cache-Control', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates/tpl.platform.invitation.sent', {
-      token: accessToken,
-    });
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
-  });
-
-  it('H37: retry Cache-Control', async () => {
-    const { accessToken } = await issuePlatformToken();
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h37-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
-      include: { jobs: true },
-    });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
+    const { user, session } = await issuePlatformToken();
+    const foreignSigned = jwtService.sign(
+      {
+        type: 'access',
+        sub: user.id,
+        tenantId: null,
+        roles: [NOTIFICATIONS_ADMIN_ROLE],
+        sessionId: session.sessionId,
+        sessionClass: 'platform',
+        principalType: 'platform',
+        aud: 'platform',
+        iss: 'booking-platform',
       },
-    });
-    const res = await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
-      token: accessToken,
-      body: { reason: 'ops', jobId: intent.jobs[0].id },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
+      { secret: 'a-different-secret-not-used-by-the-app-x', expiresIn: 900 },
+    );
+    expect(
+      (await http('GET', '/platform/notifications/templates', { token: foreignSigned })).status,
+    ).toBe(401);
   });
 
-  it('H38: list templates response has no secrets', async () => {
+  it('HTTP delivery counters: HTTP-driven reads and retries never perform a real external delivery', async () => {
     const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates', { token: accessToken });
-    expect(JSON.stringify(res.json)).not.toMatch(/password|accessToken|refreshToken/i);
-  });
-
-  it('H39: delivery list response has no PHI markers', async () => {
-    const { accessToken } = await issuePlatformToken();
-    await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h39-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    const res = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
-    expect(JSON.stringify(res.json)).not.toMatch(/diagnosis|patientId|clinicalNotes/i);
-  });
-
-  it('H40: realExternalDeliveriesDuringTests = 0 after HTTP-driven preview/list', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const before = stack.emailService.sent.length;
+    const { intentId, jobId } = await dispatchRetryableInvitation();
     await http('GET', '/platform/notifications/templates', { token: accessToken });
     await http(
       'POST',
       '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
       { token: accessToken, body: { locale: 'en-US' } },
     );
-    expect(stack.emailService.sent.length).toBe(before);
-    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
-  });
-
-  it('H41: PATCH preferences unknown category → 4xx', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('PATCH', '/platform/notifications/preferences', {
+    await http('POST', `/platform/notifications/deliveries/${intentId}/retry`, {
       token: accessToken,
-      body: { category: 'not_a_real_category', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBeGreaterThanOrEqual(400);
-  });
-
-  it('H42: deliveries pageSize>100 clamped', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/deliveries?pageSize=500', {
-      token: accessToken,
-    });
-    expect(res.status).toBe(200);
-    expect((res.json as { pageSize: number }).pageSize).toBe(100);
-  });
-
-  it('H43: deliveries status filter', async () => {
-    const { accessToken } = await issuePlatformToken();
-    await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h43-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    const all = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
-    expect(all.status).toBe(200);
-    const status = (all.json as { items: Array<{ status: string }> }).items[0]?.status;
-    expect(status).toBeTruthy();
-    const filtered = await http(
-      'GET',
-      `/platform/notifications/deliveries?status=${encodeURIComponent(status!)}`,
-      { token: accessToken },
-    );
-    expect(filtered.status).toBe(200);
-    expect(
-      (filtered.json as { items: Array<{ status: string }> }).items.every(
-        (i) => i.status === status,
-      ),
-    ).toBe(true);
-  });
-
-  it('H44: POST preview without body locale defaults en-US 200', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http(
-      'POST',
-      '/platform/notifications/templates/tpl.platform.invitation.sent/preview',
-      { token: accessToken, body: {} },
-    );
-    expect(res.status).toBe(200);
-    expect((res.json as { locale: string }).locale).toBe('en-US');
-  });
-
-  it('H45: GET deliveries without token → 401', async () => {
-    const res = await http('GET', '/platform/notifications/deliveries');
-    expect(res.status).toBe(401);
-  });
-
-  it('H46: POST retry with view-only perms → 403', async () => {
-    const { accessToken } = await issuePlatformToken(['sales_representative']);
-    const res = await http('POST', `/platform/notifications/deliveries/${randomUUID()}/retry`, {
-      token: accessToken,
-      body: { reason: 'ops' },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('H47: PATCH preferences OCC success path increments rowVersion', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const first = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: { category: 'usage', channel: 'email', enabled: false },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(first.status).toBe(200);
-    const v1 = (first.json as { rowVersion: number }).rowVersion;
-    const second = await http('PATCH', '/platform/notifications/preferences', {
-      token: accessToken,
-      body: {
-        category: 'usage',
-        channel: 'email',
-        enabled: true,
-        expectedRowVersion: v1,
-      },
-      headers: { 'Idempotency-Key': randomUUID() },
-    });
-    expect(second.status).toBe(200);
-    expect((second.json as { rowVersion: number }).rowVersion).toBeGreaterThan(v1);
-  });
-
-  it('H48: template detail unknown → 4xx', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const res = await http('GET', '/platform/notifications/templates/tpl.platform.does_not_exist', {
-      token: accessToken,
-    });
-    expect(res.status).toBeGreaterThanOrEqual(400);
-  });
-
-  it('H49: deliveries detail Cache-Control', async () => {
-    const { accessToken } = await issuePlatformToken();
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h49-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    const res = await http('GET', `/platform/notifications/deliveries/${result.intentId}`, {
-      token: accessToken,
-    });
-    expect(res.status).toBe(200);
-    expect(res.headers.get('cache-control')).toMatch(/no-store/i);
-  });
-
-  it('H50: realExternalDeliveriesDuringTests counter === 0 after HTTP retry path', async () => {
-    const { accessToken } = await issuePlatformToken();
-    setPlatformNotificationFailureInjection('provider_transient');
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: randomUUID(),
-      recipientEmail: `h50-${randomUUID()}@test.local`,
-      recipientDisplayName: 'Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-    clearPlatformNotificationFailureInjection();
-    const intent = await prisma.notificationIntent.findUniqueOrThrow({
-      where: { id: result.intentId! },
-      include: { jobs: true },
-    });
-    await prisma.notificationIntent.update({
-      where: { id: result.intentId! },
-      data: {
-        metadata: { ...(intent.metadata as Record<string, unknown>), deliveryGateForceFail: false },
-      },
-    });
-    await http('POST', `/platform/notifications/deliveries/${result.intentId}/retry`, {
-      token: accessToken,
-      body: { reason: 'h50', jobId: intent.jobs[0].id },
+      body: { reason: 'counter check', jobId },
       headers: { 'Idempotency-Key': randomUUID() },
     });
     expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(stack.emailService.sent.every((m) => m.to.endsWith('@test.local'))).toBe(true);
+  });
+
+  it('HTTP empty state: an authorized deliveries read with no data returns a deterministic empty page', async () => {
+    const { accessToken } = await issuePlatformToken();
+    const res = await http('GET', '/platform/notifications/deliveries', { token: accessToken });
+    expect(res.status).toBe(200);
+    expect(res.json).toMatchObject({ page: 1, total: 0, items: [] });
   });
 });

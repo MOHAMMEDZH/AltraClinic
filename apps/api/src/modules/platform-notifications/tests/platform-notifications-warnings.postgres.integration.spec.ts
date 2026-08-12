@@ -3,12 +3,15 @@
  * Prove first eligible → intent delta 1; replay → 0; multi-instance → total 1.
  */
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import {
   createPlatformNotificationsStack,
   type PlatformNotificationsStack,
 } from './platform-notifications-stack';
 import { PlatformNotificationWarningScheduler } from '../application/schedulers/platform-notification-warning.scheduler';
+import { TRIAL_GRANT_DISPOSITIONS } from '../../platform-sales-trials/domain/sales-trial.types';
 import {
   assertSafePlatformTestDatabaseUrl,
   cleanupPlatformNotificationsTables,
@@ -324,10 +327,64 @@ describeDb('Step 27 warning scheduler matrix TW01-TW16 (PostgreSQL)', () => {
     expect(PlatformNotificationWarningScheduler.classifyWindow(end, localOffsetNow)).toBe('d7');
   });
 
-  it('TW15: Trial-conversion migrated grant → N/A (no grant migration source in Step 27 adapters)', () => {
-    // Architectural N/A: PlatformNotificationEventAdapters has no trial-conversion / migrated-grant
-    // source adapter in Step 27 — cannot prove expiry warning for migrated grants via this stack.
-    expect(true).toBe(true);
+  it('TW15: Trial-conversion migrated grant → N/A (Step 25 MIGRATE_TO_PAID_EQUIVALENT does not mint time-bound Add-on/Override SoR; warning scan keys commercialEnd/expiresAt only)', async () => {
+    // Rigorous architectural N/A — proven from the product sources plus an executable scan,
+    // not asserted as a bare truism.
+    //
+    // (1) Scan surface. PlatformNotificationWarningScheduler.runDueScan reads exactly two
+    //     Sources of Record: platformSubscriptionAddOnAssignment (whose expiry is inherited
+    //     from the owning commercial config's `commercialEnd`) and APPROVED
+    //     platformCommercialOverride rows keyed on `expiresAt`. No trial table is scanned.
+    const schedulerSource = readFileSync(
+      resolve(__dirname, '../application/schedulers/platform-notification-warning.scheduler.ts'),
+      'utf8',
+    );
+    expect(schedulerSource).toContain('platformSubscriptionAddOnAssignment');
+    expect(schedulerSource).toContain('commercialEnd: { not: null }');
+    expect(schedulerSource).toContain('platformCommercialOverride');
+    expect(schedulerSource).toContain("lifecycle: 'APPROVED', expiresAt: { not: null }");
+    expect(schedulerSource).not.toMatch(/platformSalesTrial|trialOnlyGrants|MIGRATE_TO_PAID/i);
+
+    // (2) Step 25 disposition semantics. MIGRATE_TO_PAID_EQUIVALENT is a *recorded disposition*
+    //     on the conversion record; the paid path it drives (`migrateCommercialToPaid`) only
+    //     supersedes the commercial config, assigns the target plan version and activates it.
+    //     Neither the conversion service nor the provisioning adapter ever writes an Add-on
+    //     assignment or a Commercial Override, so conversion mints no *time-bound grant row*
+    //     for the warning scan to key on.
+    expect(TRIAL_GRANT_DISPOSITIONS).toContain('MIGRATE_TO_PAID_EQUIVALENT');
+    const trialSources = ['trial-conversion.service.ts', 'trial-provisioning.adapter.ts'].map(
+      (file) =>
+        readFileSync(
+          resolve(__dirname, `../../platform-sales-trials/application/${file}`),
+          'utf8',
+        ),
+    );
+    for (const src of trialSources) {
+      expect(src).not.toMatch(/platformSubscriptionAddOnAssignment/);
+      expect(src).not.toMatch(/platformCommercialOverride/);
+      expect(src).not.toMatch(/platformSubscriptionOverrideAssignment/);
+    }
+    expect(trialSources[1]).toMatch(/migrateCommercialToPaid/);
+    expect(trialSources[1]).toMatch(/assignPlanVersion/);
+
+    // (3) Executable eligibility proof. A converted tenant's commercial config carrying a
+    //     `commercialEnd` well inside the d7 window is invisible to the scan while no Add-on
+    //     assignment and no APPROVED Override exist — the scan counts zero rows and invents
+    //     zero intents for trial-conversion-shaped data.
+    const now = new Date('2026-06-01T00:00:00.000Z');
+    const { platformTenant } = await createClinicTenantFixture(prisma);
+    await createCommercialConfigFixture(prisma, {
+      platformTenantId: platformTenant.id,
+      createdByPlatformUserId: platformUserId,
+      commercialEnd: new Date(now.getTime() + 3 * DAY_MS),
+    });
+    const scan = await stack.scheduler.runDueScan(now);
+    expect(scan.scanned).toBe(0);
+    expect(scan.eligible).toHaveLength(0);
+    expect(scan.dispatched).toBe(0);
+    expect(await prisma.notificationIntent.count()).toBe(0);
+    expect(await prisma.platformSubscriptionAddOnAssignment.count()).toBe(0);
+    expect(await prisma.platformCommercialOverride.count()).toBe(0);
   });
 
   it('TW16: non-time-bound grant does not receive expiry warning (no endsAt/commercialEnd → not eligible)', async () => {
