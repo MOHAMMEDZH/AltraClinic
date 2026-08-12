@@ -33,18 +33,26 @@ describe('ApiRateLimitService', () => {
     recordLicenseEvent: jest.fn(),
   } as unknown as LicensingAuditService;
 
-  const svc = new ApiRateLimitService(rateLimiter, new RedisKeyBuilder('test'), licensing, audit);
+  const svc = new ApiRateLimitService(rateLimiter, new RedisKeyBuilder('test'), licensing, audit, false);
 
   const prevNodeEnv = process.env.NODE_ENV;
+  const prevBypass = process.env.API_RATE_LIMIT_ALLOW_TEST_BYPASS;
+  const prevJest = process.env.JEST_WORKER_ID;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Production enforce path is skipped when NODE_ENV===test; exercise real policy here.
+    // Exercise real production enforce path: dual-gate bypass must be off.
     process.env.NODE_ENV = 'development';
+    delete process.env.API_RATE_LIMIT_ALLOW_TEST_BYPASS;
+    delete process.env.JEST_WORKER_ID;
   });
 
   afterEach(() => {
     process.env.NODE_ENV = prevNodeEnv;
+    if (prevBypass === undefined) delete process.env.API_RATE_LIMIT_ALLOW_TEST_BYPASS;
+    else process.env.API_RATE_LIMIT_ALLOW_TEST_BYPASS = prevBypass;
+    if (prevJest === undefined) delete process.env.JEST_WORKER_ID;
+    else process.env.JEST_WORKER_ID = prevJest;
   });
 
   it('allows tenant request under hourly plan limit', async () => {

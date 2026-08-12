@@ -21,6 +21,7 @@ const env = {
   ALLOW_TEST_DATABASE_RESET: 'true',
   ALLOW_DESTRUCTIVE_PLATFORM_DB_TESTS: '1',
   ALLOW_DESTRUCTIVE_DB_TESTS: '1',
+  API_RATE_LIMIT_ALLOW_TEST_BYPASS: '1',
   NODE_ENV: process.env.NODE_ENV || 'test',
   FEATURE_FLAGS_SETTINGS_ENABLED: process.env.FEATURE_FLAGS_SETTINGS_ENABLED || 'false',
   TENANT_LIFECYCLE_ENABLED: process.env.TENANT_LIFECYCLE_ENABLED || 'false',
@@ -290,6 +291,8 @@ run(
 );
 run('node scripts/step28-secrets-scan.mjs', apiRoot);
 run('node scripts/step28-dep-audit.mjs', apiRoot);
+run('node scripts/step28-dep-classify.mjs', apiRoot);
+run('npm run test:step28-closure-focused', apiRoot);
 // 9 Platform DB security
 run('npm run test:platform-db-security', apiRoot);
 // 10–15 auth/RBAC covered inside platform-db-security + later jest guards

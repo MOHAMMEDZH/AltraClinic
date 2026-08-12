@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Request } from 'express';
 import { RateLimiterService, RateLimitResult } from '../../../../infrastructure/redis/services/rate-limiter.service';
 import { RedisKeyBuilder } from '../../../../infrastructure/redis/redis-key.builder';
@@ -6,6 +6,10 @@ import { UNLIMITED } from '../../domain/config/plan-limits.config';
 import { LicensingEngineService } from './licensing-engine.service';
 import { ApiRateLimitExceededException } from '../../domain/exceptions/api-rate-limit-exceeded.exception';
 import { LicensingAuditService } from './licensing-audit.service';
+import {
+  API_RATE_LIMIT_TEST_BYPASS,
+  isApiRateLimitTestBypassActive,
+} from './api-rate-limit-test-bypass';
 
 export type ApiRateLimitScope =
   | 'public_ip'
@@ -36,6 +40,11 @@ export class ApiRateLimitService {
     private readonly keys: RedisKeyBuilder,
     private readonly licensing: LicensingEngineService,
     private readonly audit: LicensingAuditService,
+    /**
+     * Explicit DI bypass for Nest test modules only.
+     * NODE_ENV=test alone never disables enforcement (Step 28 RLTEST).
+     */
+    @Optional() @Inject(API_RATE_LIMIT_TEST_BYPASS) private readonly diTestBypass?: boolean,
   ) {}
 
   resolvePolicy(request: Request): ApiRateLimitPolicy {
@@ -49,7 +58,7 @@ export class ApiRateLimitService {
       return { scope: 'ai_burst', limit: 120, windowSeconds: 60, algorithm: 'fixed' };
     }
 
-    if (path.includes('/export') || path.includes('/reports') && request.method === 'POST') {
+    if (path.includes('/export') || (path.includes('/reports') && request.method === 'POST')) {
       return { scope: 'export', limit: 30, windowSeconds: 3600, algorithm: 'fixed' };
     }
 
@@ -60,8 +69,18 @@ export class ApiRateLimitService {
     return { scope: 'tenant_user', limit: 0, windowSeconds: 3600, algorithm: 'fixed' };
   }
 
+  /**
+   * True only when an explicit Nest DI token is true OR the dual-gate Jest harness
+   * is active (JEST_WORKER_ID + API_RATE_LIMIT_ALLOW_TEST_BYPASS=1).
+   */
+  isTestHarnessBypassEnabled(): boolean {
+    if (this.diTestBypass === true) return true;
+    return isApiRateLimitTestBypassActive();
+  }
+
   async enforce(request: Request): Promise<RateLimitResult> {
-    if (process.env.NODE_ENV === 'test') {
+    // Step 28: never skip solely because NODE_ENV === 'test'.
+    if (this.isTestHarnessBypassEnabled()) {
       return { allowed: true, count: 0, limit: UNLIMITED, remaining: UNLIMITED, resetAt: 0 };
     }
 
@@ -182,9 +201,7 @@ export class ApiRateLimitService {
 
   /**
    * Client IP for rate-limit keying.
-   * Honor X-Forwarded-For only when TRUST_PROXY is explicitly enabled
-   * (deployment behind a trusted reverse proxy). Otherwise use socket IP
-   * to resist client-spoofed forwarding headers (Step 28 RL spoof resistance).
+   * Honor X-Forwarded-For only when TRUST_PROXY is explicitly enabled.
    */
   private extractIp(request: Request): string {
     const trustProxy =

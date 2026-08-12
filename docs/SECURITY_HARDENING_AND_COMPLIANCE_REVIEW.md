@@ -4,14 +4,14 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **Accepted / Complete** — Final Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-12T19:56:02.079Z`, SHA `515faf3`, exit 0; Attempt 1 invalidated for unrelated logging-and-correlation pattern inclusion) |
+| **Status** | **In Progress / Acceptance Pending** — narrow evidence/containment closure gate; Case C Attempt 2 (`515faf3`) invalidated by rate-limit containment + CSP SSOT runtime changes |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
 | **Steps 01–27 + U01** | Accepted / Complete |
 | **Step 29** | Not Authorized |
 
-**Case C:** Attempt 2 on frozen `booking_test`, commit `515faf3c59227ef86774df79fa1484df21ab3229`, duration ~53.7 min, all counters 0, `exitCode=0`. Temporary one-pass artifacts removed after green.
+**Closure note:** Attempt 2 preserved only until rate-limit `NODE_ENV=test` containment and Super Admin CSP SSOT landed; those change executable security/runtime behavior → **new Case C required**.
 
 ---
 

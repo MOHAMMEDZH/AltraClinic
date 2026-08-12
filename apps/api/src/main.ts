@@ -4,8 +4,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { ApiRateLimitExceptionFilter } from './common/filters/api-rate-limit-exception.filter';
 import { getAllowedHttpCorsOrigins } from './common/security/cors-origins';
 import { securityHeadersMiddleware } from './common/security/security-headers.middleware';
+import { assertProductionSecurityBootstrap } from './common/security/production-security-bootstrap';
 
 async function bootstrap() {
+  assertProductionSecurityBootstrap();
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }));
   app.useGlobalFilters(new ApiRateLimitExceptionFilter());
