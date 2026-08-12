@@ -180,12 +180,28 @@ export class ApiRateLimitService {
     return typeof header === 'string' ? header : undefined;
   }
 
+  /**
+   * Client IP for rate-limit keying.
+   * Honor X-Forwarded-For only when TRUST_PROXY is explicitly enabled
+   * (deployment behind a trusted reverse proxy). Otherwise use socket IP
+   * to resist client-spoofed forwarding headers (Step 28 RL spoof resistance).
+   */
   private extractIp(request: Request): string {
-    const forwarded = request.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string' && forwarded.length > 0) {
-      return forwarded.split(',')[0].trim();
+    const trustProxy =
+      process.env.TRUST_PROXY === 'true' ||
+      process.env.TRUST_PROXY === '1' ||
+      process.env.TRUSTED_PROXY === 'true' ||
+      process.env.TRUSTED_PROXY === '1';
+
+    if (trustProxy) {
+      const forwarded = request.headers['x-forwarded-for'];
+      if (typeof forwarded === 'string' && forwarded.length > 0) {
+        const first = forwarded.split(',')[0]?.trim();
+        if (first) return first;
+      }
     }
-    return request.ip ?? '0.0.0.0';
+
+    return request.ip ?? request.socket?.remoteAddress ?? '0.0.0.0';
   }
 
   private async recordAbuse(tenantId: string | undefined, scope: string, request: Request): Promise<void> {

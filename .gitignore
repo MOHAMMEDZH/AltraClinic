@@ -34,3 +34,7 @@ out/
 /apps/api/step27-*.log
 /apps/api/step27-case-c*
 /apps/api/step27-db-run*
+/apps/api/step28-final-onepass*
+/apps/api/br-step28-*
+/apps/api/step28-*.log
+/apps/api/step28-case-c*

@@ -35,7 +35,17 @@ describe('ApiRateLimitService', () => {
 
   const svc = new ApiRateLimitService(rateLimiter, new RedisKeyBuilder('test'), licensing, audit);
 
-  beforeEach(() => jest.clearAllMocks());
+  const prevNodeEnv = process.env.NODE_ENV;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Production enforce path is skipped when NODE_ENV===test; exercise real policy here.
+    process.env.NODE_ENV = 'development';
+  });
+
+  afterEach(() => {
+    process.env.NODE_ENV = prevNodeEnv;
+  });
 
   it('allows tenant request under hourly plan limit', async () => {
     (licensing.resolveLicense as jest.Mock).mockResolvedValue({
@@ -110,5 +120,31 @@ describe('ApiRateLimitService', () => {
 
     await svc.enforce(mockRequest('/auth/login'));
     expect(rateLimiter.checkSlidingWindow).toHaveBeenCalled();
+  });
+
+  it('ignores spoofed X-Forwarded-For unless TRUST_PROXY is enabled', async () => {
+    delete process.env.TRUST_PROXY;
+    delete process.env.TRUSTED_PROXY;
+    (rateLimiter.checkSlidingWindow as jest.Mock).mockResolvedValue({
+      allowed: true,
+      count: 1,
+      limit: 60,
+      remaining: 59,
+      resetAt: 9999999999,
+    });
+
+    const req = {
+      path: '/platform/auth/login',
+      url: '/platform/auth/login',
+      method: 'POST',
+      headers: { 'x-forwarded-for': '203.0.113.9' },
+      ip: '10.0.0.2',
+      socket: { remoteAddress: '10.0.0.2' },
+    } as never;
+
+    await svc.enforce(req);
+    const key = (rateLimiter.checkSlidingWindow as jest.Mock).mock.calls[0][0] as string;
+    expect(key).toContain('10.0.0.2');
+    expect(key).not.toContain('203.0.113.9');
   });
 });

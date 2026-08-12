@@ -27,6 +27,7 @@ import { RealtimeAuthorizationService } from '../application/services/realtime-a
 import { RealtimeBroadcastService } from '../application/services/realtime-broadcast.service';
 import { RealtimeEventBufferService } from '../application/services/realtime-event-buffer.service';
 import { RealtimeDashboardService } from '../application/services/realtime-dashboard.service';
+import { realtimeCorsOriginOption } from '../../../common/security/cors-origins';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -42,6 +43,7 @@ interface AuthenticatedSocket extends Socket {
  *
  * Namespace: /realtime
  * Auth: JWT in handshake.auth.token or handshake.query.token
+ * CORS: explicit allowlist only (G-CORS-01) — never origin `*` with credentials.
  *
  * COMPETING ARCHITECT:
  *   Challenger: "Use native WebSockets instead of Socket.IO — lighter weight."
@@ -51,7 +53,7 @@ interface AuthenticatedSocket extends Socket {
  */
 @WebSocketGateway({
   namespace: '/realtime',
-  cors: { origin: '*', credentials: true },
+  cors: { origin: realtimeCorsOriginOption(), credentials: true },
   transports: ['websocket', 'polling'],
 })
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {

@@ -2,33 +2,29 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ApiRateLimitExceptionFilter } from './common/filters/api-rate-limit-exception.filter';
-import { getAllowedSuperAdminOrigins } from './modules/auth/api/platform-auth-cookies';
+import { getAllowedHttpCorsOrigins } from './common/security/cors-origins';
+import { securityHeadersMiddleware } from './common/security/security-headers.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }));
   app.useGlobalFilters(new ApiRateLimitExceptionFilter());
+  app.use(securityHeadersMiddleware);
 
-  const baseCorsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const corsOrigins = [...new Set([...baseCorsOrigins, ...getAllowedSuperAdminOrigins()])];
-
-  if (corsOrigins.includes('*')) {
-    throw new Error('CORS_ORIGINS must not include wildcard (*) when credentials are enabled.');
-  }
+  const corsOrigins = getAllowedHttpCorsOrigins();
 
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'x-tenant-id',
       'x-platform-csrf',
       'X-Platform-CSRF',
+      'Idempotency-Key',
+      'If-Match',
     ],
   });
 
