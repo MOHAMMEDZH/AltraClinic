@@ -4,14 +4,14 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress** (documentation + hardening package underway; Final Case C not yet authoritative) |
+| **Status** | **Accepted / Complete** — Final Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-12T19:56:02.079Z`, SHA `515faf3`, exit 0; Attempt 1 invalidated for unrelated logging-and-correlation pattern inclusion) |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
 | **Steps 01–27 + U01** | Accepted / Complete |
 | **Step 29** | Not Authorized |
 
-**Case C note:** When Step 28 Final Case C completes, update this header to Accepted / Complete and record attempt, frozen DB, SHA, counters, and hygiene. Until then this document is the living security review record, not a Case C acceptance certificate.
+**Case C:** Attempt 2 on frozen `booking_test`, commit `515faf3c59227ef86774df79fa1484df21ab3229`, duration ~53.7 min, all counters 0, `exitCode=0`. Temporary one-pass artifacts removed after green.
 
 ---
 
