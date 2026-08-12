@@ -271,3 +271,30 @@ highUnresolvedWithoutReleaseBlock = 0
 ```
 
 Step 29 remains **Not Authorized** until Step 28 is Accepted / Complete.
+
+---
+
+## 11. Super Admin CSP / production header ownership
+
+### Authority (repository)
+- **SSOT:** `apps/super-admin/src/security/csp-policy.ts` (`SUPER_ADMIN_CSP_POLICY`, `CSP_OWNERSHIP`)
+- **Shipped in build:** HTML meta CSP in `apps/super-admin/index.html` (copied into `dist/index.html` on `vite build`)
+- **Dev/preview headers:** `apps/super-admin/vite.config.ts` imports the same SSOT
+
+### Production serving owner
+- **External to this repository** — no nginx/CDN/Dockerfile/static-host config for Super Admin lives in-repo.
+- Deploy owner MUST emit equivalent (or stricter) `Content-Security-Policy` response headers at the edge/ingress in addition to the meta policy.
+- Manual validation required before production cutover (Step 29 ops): fetch production HTML and response headers; confirm CSP present; confirm en-US and ar-SY still load fonts/API/WS.
+
+### Detection
+- Missing CSP header on production Super Admin origin; CSP report-uri violations; XSS probes succeeding.
+
+### Containment
+1. Restore edge CSP from SSOT (or stricter).
+2. Do not widen `script-src` to CDNs without security review.
+3. Rotate any session cookies if XSS is confirmed.
+
+### Ownership / escalation
+- **Owner:** Deploy/Platform Ops for edge headers; Frontend Platform for SSOT/meta
+- **Escalate:** Platform Security if production CSP absent
+
