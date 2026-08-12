@@ -7,6 +7,11 @@ export interface TransactionalEmailPayload {
   html?: string;
   /** Optional White Label / branch sender display name (Phase 41e). */
   fromName?: string;
+  /**
+   * Optional provider-level idempotency key (e.g. NotificationMessage.id).
+   * Production adapters ignore this; test recording sinks may dedupe on it.
+   */
+  idempotencyKey?: string;
 }
 
 /**

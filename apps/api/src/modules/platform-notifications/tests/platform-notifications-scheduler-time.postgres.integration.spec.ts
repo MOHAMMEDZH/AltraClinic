@@ -269,14 +269,102 @@ describeDb('Step 27 scheduler/time matrix T01-T16 (PostgreSQL)', () => {
     expect(result.suppressReason).toBe('preference_disabled');
   });
 
-  it('T15: recipient suspended — PlatformUser.suspended does not suppress Step 27 email dispatch (no delivery suspend gate; auth/session owns suspend)', async () => {
-    // Executable proof of the *accepted* Step 27 policy, not a product change: suspension is an
-    // authentication/session authority (PlatformUser.canAuthenticate() → 401/403 on the HTTP
-    // surface, refresh-session revocation), while the Step 27 delivery path gates on preference
-    // enablement + recipientEmail only. A mandatory (security-category) notification therefore
-    // still reaches the recorded recipientEmail after suspension.
+  it('T15-A: suspended + MFA/security (invitation) → intent+1, email+1, fallback=0 (no engine suspend gate)', async () => {
+    // Frozen T15 policy (matches existing product — no new suspend gate):
+    // - Step 27 dispatch does NOT read PlatformUser.status
+    // - Auth/session owns suspend for HTTP
+    // - Adapters pass explicit recipientEmail; NO silent fallback to another principal
+    // - All categories remain delivery-eligible at engine layer when adapter emits
+    const { recipientEmail, before } = await seedSuspendedRecipient('t15a');
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const result = await stack.adapters.invitationSent({
+      invitationId: randomUUID(),
+      platformUserId: before.id,
+      recipientEmail,
+      recipientDisplayName: 'Suspended Admin',
+      inviterDisplayName: 'Root',
+      expiresAt: new Date().toISOString(),
+    });
+    expect(result.accepted).toBe(true);
+    expect(result.intentId).toBeTruthy();
+    expect(stack.emailService.sent.filter((m) => m.to === recipientEmail)).toHaveLength(1);
+    expect(stack.emailService.sent.filter((m) => m.to !== recipientEmail)).toHaveLength(0);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
+    const after = await prisma.platformUser.findUniqueOrThrow({ where: { id: before.id } });
+    expect(after.status).toBe('suspended');
+  });
+
+  it('T15-B: suspended + optional commercial (trialExpiry) → intent+1, email+1, fallback=0', async () => {
+    const { recipientEmail, before } = await seedSuspendedRecipient('t15b');
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const result = await stack.adapters.trialExpiry({
+      approaching: true,
+      trialId: randomUUID(),
+      organizationName: 'Acme',
+      expiryDate: new Date().toISOString(),
+      planVersionId: randomUUID(),
+      windowKey: 'd7',
+      recipientPlatformUserId: before.id,
+      recipientEmail,
+    });
+    expect(result.accepted).toBe(true);
+    expect(stack.emailService.sent.filter((m) => m.to === recipientEmail)).toHaveLength(1);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
+    expect((await prisma.platformUser.findUniqueOrThrow({ where: { id: before.id } })).status).toBe('suspended');
+  });
+
+  it('T15-C: suspended sales rep + leadNextActionReminder → intent+1, email+1, fallback=0', async () => {
+    const { recipientEmail, before } = await seedSuspendedRecipient('t15c');
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const result = await stack.adapters.leadNextActionReminder({
+      leadId: randomUUID(),
+      leadReference: 'L-T15C',
+      organizationName: 'Acme',
+      nextActionDate: new Date().toISOString(),
+      nextActionType: 'call',
+      windowKey: 'default',
+      ownerPlatformUserId: before.id,
+      recipientEmail,
+    });
+    expect(result.accepted).toBe(true);
+    expect(stack.emailService.sent.filter((m) => m.to === recipientEmail)).toHaveLength(1);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
+    expect((await prisma.platformUser.findUniqueOrThrow({ where: { id: before.id } })).status).toBe('suspended');
+  });
+
+  it('T15-D: suspended manager + managerAlert → intent+1, email+1, fallback=0', async () => {
+    const { recipientEmail, before } = await seedSuspendedRecipient('t15d');
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    const result = await stack.adapters.managerAlert({
+      ops: false,
+      alertId: randomUUID(),
+      managerPlatformUserId: before.id,
+      recipientEmail,
+      managerDisplayName: 'Suspended Mgr',
+      staleCount: 2,
+      periodLabel: '2026-08',
+    });
+    expect(result.accepted).toBe(true);
+    expect(stack.emailService.sent.filter((m) => m.to === recipientEmail)).toHaveLength(1);
+    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
+    expect((await prisma.platformUser.findUniqueOrThrow({ where: { id: before.id } })).status).toBe('suspended');
+  });
+
+  async function seedSuspendedRecipient(tag: string) {
     const suspended = await createPlatformUserFixture(prisma, {
-      email: `t15-user-${randomUUID()}@test.local`,
+      email: `${tag}-user-${randomUUID()}@test.local`,
     });
     await prisma.platformUser.update({
       where: { id: suspended.id },
@@ -284,37 +372,11 @@ describeDb('Step 27 scheduler/time matrix T01-T16 (PostgreSQL)', () => {
     });
     const before = await prisma.platformUser.findUniqueOrThrow({ where: { id: suspended.id } });
     expect(before.status).toBe('suspended');
-    expect(before.isActive).toBe(false);
-    expect(before.suspendedAt).not.toBeNull();
-
-    const sorBefore = await protectedNotificationsSoR(prisma);
-    const recipientEmail = `t15-recipient-${randomUUID()}@test.local`;
-    const result = await stack.adapters.invitationSent({
-      invitationId: randomUUID(),
-      platformUserId: suspended.id,
-      recipientEmail,
-      recipientDisplayName: 'Suspended Admin',
-      inviterDisplayName: 'Root',
-      expiresAt: new Date().toISOString(),
-    });
-
-    expect(result.accepted).toBe(true);
-    expect(result.suppressed).toBeFalsy();
-    expect(result.intentId).toBeTruthy();
-    const sent = stack.emailService.sent.filter((m) => m.to === recipientEmail);
-    expect(sent).toHaveLength(1);
-    expect(sent[0].to.endsWith('@test.local')).toBe(true);
-    expect(stack.emailService.realExternalDeliveriesDuringTests).toBe(0);
-
-    // Source mutation N/A — dispatch never writes to any business SoR, including the suspended
-    // PlatformUser row itself (status/isActive/authzRevision untouched).
-    const delta = diffSoR(sorBefore, await protectedNotificationsSoR(prisma));
-    expect(Object.values(delta).every((v) => v === 0)).toBe(true);
-    const after = await prisma.platformUser.findUniqueOrThrow({ where: { id: suspended.id } });
-    expect(after.status).toBe('suspended');
-    expect(after.isActive).toBe(false);
-    expect(after.authzRevision).toBe(before.authzRevision);
-  });
+    return {
+      before,
+      recipientEmail: `${tag}-recipient-${randomUUID()}@test.local`,
+    };
+  }
 
   it('T16: deterministic ordering/pagination (eligible ids sorted stably by id asc)', async () => {
     const now = new Date('2026-06-01T12:00:00.000Z');

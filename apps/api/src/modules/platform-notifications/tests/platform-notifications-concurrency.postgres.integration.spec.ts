@@ -5,8 +5,6 @@
  * an in-process lock.
  */
 import { randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import {
   createPlatformNotificationsStack,
@@ -36,6 +34,16 @@ import {
   PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
   PLATFORM_TEMPLATE_VERSION,
 } from '../platform-notifications.constants';
+import { createSalesTrialsStack } from '../../platform-sales-trials/tests/sales-trials-stack';
+import {
+  cleanupSalesTrialTables,
+  createPlanVersionFixture,
+  createPlatformRefreshSession,
+  deletePlanVersionFixtures,
+  platformClaims as salesTrialsPlatformClaims,
+  resolveCatalogKeys,
+  SALES_MANAGER_ROLE,
+} from '../../platform-sales-trials/tests/sales-trials-db.harness';
 
 const describeDb = platformDbSecurityEnabled() ? describe : describe.skip;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -238,36 +246,221 @@ describeDb('Step 27 concurrency C01-C24 (PostgreSQL)', () => {
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
   });
 
-  it('C07: N/A — Step 27 adapters do not subscribe to conversion events; conversion suppresses by not emitting Trial warnings post-convert (producer never called)', async () => {
-    // Structural: the adapter surface has no conversion subscription/handler at all — Step 27 is
-    // producer-driven, so "post-conversion suppression" is literally the absence of a call.
-    const adaptersSource = readFileSync(
-      resolve(__dirname, '../application/adapters/platform-notification-event.adapters.ts'),
-      'utf8',
-    );
-    expect(adaptersSource).not.toMatch(/conversion|converted|@OnEvent|EventEmitter/i);
+  it('C07-A: conversion commits first; producer eligibility (trial.status===ACTIVE) gates emit → intentΔ=0, emailΔ=0', async () => {
+    // Policy: warning scheduler does NOT scan trials. Trial warning emission is producer-driven
+    // via trialExpiry adapter. C07-A uses TEST-SIDE eligibility (status===ACTIVE) before emit —
+    // do NOT add trial-status suppress inside the adapter (would invalidate Case C Attempt 2).
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      const converted = await trialsStack.conversion.convert(
+        actor.claims,
+        trialsStack.perms,
+        trial.id,
+        {
+          targetPaidPlanVersionId: paidPlanVersionId,
+          expectedRowVersion: trial.rowVersion,
+          reason: 'c07-a',
+        },
+        randomUUID(),
+      );
+      expect(converted.status).toBe('CONVERTED');
+      const intentsBefore = await prisma.notificationIntent.count();
+      const emailsBefore = stack.emailService.sent.filter((m) => m.to === email).length;
 
-    const email = `c07-${randomUUID()}@test.local`;
-    const trialId = randomUUID();
-    const recipientPlatformUserId = randomUUID();
-    const approaching = await stack.adapters.trialExpiry({
-      approaching: true,
-      trialId,
-      organizationName: 'Acme',
-      expiryDate: new Date().toISOString(),
-      planVersionId: randomUUID(),
-      windowKey: 'd7',
-      recipientPlatformUserId,
-      recipientEmail: email,
-    });
-    expect(approaching.accepted).toBe(true);
+      const fresh = await prisma.platformSalesTrial.findUniqueOrThrow({ where: { id: trial.id } });
+      if (fresh.status === 'ACTIVE') {
+        await stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: (fresh.expiresAt ?? new Date()).toISOString(),
+          planVersionId: fresh.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        });
+      }
 
-    // "Conversion happens": the trial producer simply stops emitting. Nothing else in Step 27
-    // reacts, so the intent/email totals stay exactly where the last emitted warning left them.
-    const intentsAfterConversion = await prisma.notificationIntent.count();
-    expect(intentsAfterConversion).toBe(1);
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+      expect(await prisma.notificationIntent.count()).toBe(intentsBefore);
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(emailsBefore);
+      expect(await prisma.platformSalesTrialConversion.count({ where: { trialId: trial.id } })).toBe(1);
+    } finally {
+      await cleanupC07Fixtures();
+    }
   });
+
+  it('C07-B (policy B): emit while ACTIVE under claim inject; convert; clear+process may deliver frozen intent', async () => {
+    // Policy B frozen: a warning intent created while ACTIVE may still deliver after conversion
+    // (no adapter-side suppress of in-flight jobs). User-visible 1 is allowed; no duplicate intent.
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      setPlatformNotificationFailureInjection('before_delivery_job_claim');
+      await expect(
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+          planVersionId: trial.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        }),
+      ).rejects.toThrow(/before_delivery_job_claim/);
+
+      expect(await prisma.notificationIntent.count()).toBe(1);
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+      const intent = await prisma.notificationIntent.findFirstOrThrow();
+      const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
+      expect(jobs[0].status).toBe('pending');
+
+      const converted = await trialsStack.conversion.convert(
+        actor.claims,
+        trialsStack.perms,
+        trial.id,
+        {
+          targetPaidPlanVersionId: paidPlanVersionId,
+          expectedRowVersion: trial.rowVersion,
+          reason: 'c07-b',
+        },
+        randomUUID(),
+      );
+      expect(converted.status).toBe('CONVERTED');
+
+      clearPlatformNotificationFailureInjection();
+      const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
+      expect(outcome.status).toBe('delivered');
+      expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+      expect(await prisma.notificationIntent.count()).toBe(1);
+      expect(await prisma.platformSalesTrialConversion.count({ where: { trialId: trial.id } })).toBe(1);
+
+      const replay = await stack.adapters.trialExpiry({
+        approaching: true,
+        trialId: trial.id,
+        organizationName: 'C07 Clinic',
+        expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+        planVersionId: trial.trialPlanVersionId,
+        windowKey: 'd7',
+        recipientPlatformUserId: recipientId,
+        recipientEmail: email,
+      });
+      expect(replay.replayed).toBe(true);
+      expect(await prisma.notificationIntent.count()).toBe(1);
+    } finally {
+      await cleanupC07Fixtures();
+    }
+  });
+
+  it('C07-C: Promise.all(convert, trialExpiry) — conversion cardinality 1; warning intents ≤1; no rollback', async () => {
+    const { actor, trialsStack, trial, paidPlanVersionId, email, recipientId } =
+      await seedActiveTrialForC07();
+    try {
+      const rowVersion = trial.rowVersion;
+      const [convSettled, warnSettled] = await Promise.allSettled([
+        trialsStack.conversion.convert(
+          actor.claims,
+          trialsStack.perms,
+          trial.id,
+          {
+            targetPaidPlanVersionId: paidPlanVersionId,
+            expectedRowVersion: rowVersion,
+            reason: 'c07-c',
+          },
+          randomUUID(),
+        ),
+        stack.adapters.trialExpiry({
+          approaching: true,
+          trialId: trial.id,
+          organizationName: 'C07 Clinic',
+          expiryDate: new Date(trial.expiresAt ?? Date.now()).toISOString(),
+          planVersionId: trial.trialPlanVersionId,
+          windowKey: 'd7',
+          recipientPlatformUserId: recipientId,
+          recipientEmail: email,
+        }),
+      ]);
+
+      expect(convSettled.status).toBe('fulfilled');
+      const conversions = await prisma.platformSalesTrialConversion.count({ where: { trialId: trial.id } });
+      expect(conversions).toBe(1);
+      const warningIntents = await prisma.notificationIntent.count({
+        where: {
+          metadata: { path: ['eventKey'], equals: 'platform.trial.approaching_expiry' },
+        },
+      });
+      expect(warningIntents).toBeLessThanOrEqual(1);
+      if (warnSettled.status === 'fulfilled' && warnSettled.value.accepted && !warnSettled.value.replayed) {
+        expect(warningIntents).toBe(1);
+      }
+      const finalTrial = await prisma.platformSalesTrial.findUniqueOrThrow({ where: { id: trial.id } });
+      expect(finalTrial.status).toBe('CONVERTED');
+      expect(conversions).toBe(1);
+    } finally {
+      await cleanupC07Fixtures();
+    }
+  });
+
+  async function seedActiveTrialForC07() {
+    const keys = await resolveCatalogKeys(prisma);
+    const trialPv = await createPlanVersionFixture(prisma, {
+      canonicalKeySuffix: `c07t_${randomUUID().slice(0, 6)}`,
+      moduleKeys: keys.moduleKeys.slice(0, 3),
+      specialtyKeys: keys.specialtyKeys.slice(0, 2),
+      limits: [{ canonicalKey: keys.limitKeys[0], valueText: '7' }],
+      trialDefaultEnabled: true,
+      trialDefaultDays: 14,
+    });
+    const paidPv = await createPlanVersionFixture(prisma, {
+      canonicalKeySuffix: `c07p_${randomUUID().slice(0, 6)}`,
+      paid: true,
+      moduleKeys: keys.moduleKeys.slice(0, 2),
+      specialtyKeys: keys.specialtyKeys.slice(0, 3),
+      limits: [
+        { canonicalKey: keys.limitKeys[0], valueText: '25' },
+        { canonicalKey: keys.limitKeys[1], unlimited: true },
+      ],
+    });
+    const roleKeys = [SALES_MANAGER_ROLE];
+    const user = await createPlatformUserFixture(prisma, {
+      email: `c07-mgr-${randomUUID()}@test.local`,
+      roleKeys,
+    });
+    const session = await createPlatformRefreshSession(prisma, user.id);
+    const actor = {
+      user,
+      claims: salesTrialsPlatformClaims(user.id, session.sessionId, roleKeys),
+    };
+    const trialsStack = createSalesTrialsStack(prisma);
+    const trial = await trialsStack.trials.create(
+      actor.claims,
+      trialsStack.perms,
+      {
+        organizationName: 'C07 Clinic',
+        facilityTypeKey: keys.facilityTypeKey,
+        trialPlanVersionId: trialPv.planVersionId,
+        selectedModuleKeys: keys.moduleKeys.slice(0, 3),
+        selectedSpecialtyKeys: keys.specialtyKeys.slice(0, 2),
+      } as never,
+      randomUUID(),
+    );
+    expect(trial.status).toBe('ACTIVE');
+    const email = `c07-${randomUUID()}@test.local`;
+    return {
+      actor,
+      trialsStack,
+      trial,
+      paidPlanVersionId: paidPv.planVersionId,
+      email,
+      recipientId: user.id,
+    };
+  }
+
+  async function cleanupC07Fixtures() {
+    await cleanupSalesTrialTables(prisma);
+    await deletePlanVersionFixtures(prisma);
+  }
 
   it('C08: Subscription renewal/change vs expiry warning — the renewed window is a distinct logical event, not a duplicate', async () => {
     const configId = randomUUID();

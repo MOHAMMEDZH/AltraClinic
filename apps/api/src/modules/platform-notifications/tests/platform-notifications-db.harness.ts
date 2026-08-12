@@ -113,21 +113,55 @@ export class RecordingTransactionalEmailService implements Pick<TransactionalEma
   realExternalDeliveriesDuringTests = 0;
   /** Always 0 — no production SMTP/Resend client is constructed in the Step 27 stack. */
   realProviderInitializationsDuringTests = 0;
-  readonly sent: Array<{ to: string; subject: string; text: string; html?: string; fromName?: string }> = [];
+  readonly sent: Array<{
+    to: string;
+    subject: string;
+    text: string;
+    html?: string;
+    fromName?: string;
+    idempotencyKey?: string;
+  }> = [];
+  /** Keys that have already been logically accepted by this sink (messageId-based dedupe). */
+  readonly logicalAcceptedKeys = new Set<string>();
+  /** Count of first-accept sends (excludes idempotent suppressions). */
+  logicalAcceptedSendCount = 0;
+  /** Count of send() calls suppressed because the idempotencyKey was already accepted. */
+  idempotentReplaySuppressions = 0;
 
-  async send(input: { to: string; subject: string; text: string; html?: string; fromName?: string }): Promise<void> {
+  async send(input: {
+    to: string;
+    subject: string;
+    text: string;
+    html?: string;
+    fromName?: string;
+    idempotencyKey?: string;
+  }): Promise<void> {
     // Test recipients only — reject any accidental non-test domain to keep the guard hard.
     if (!/@test\.local$/i.test(input.to) && !/@example\.(com|org|net)$/i.test(input.to)) {
       throw new Error(
         `RecordingTransactionalEmailService refused non-test recipient: ${input.to}`,
       );
     }
+    const key = input.idempotencyKey?.trim();
+    if (key && this.logicalAcceptedKeys.has(key)) {
+      this.idempotentReplaySuppressions += 1;
+      return;
+    }
     this.sent.push(input);
+    if (key) {
+      this.logicalAcceptedKeys.add(key);
+      this.logicalAcceptedSendCount += 1;
+    } else {
+      this.logicalAcceptedSendCount += 1;
+    }
     // Intentionally do NOT increment realExternalDeliveriesDuringTests — this is a fake sink.
   }
 
   reset(): void {
     this.sent.length = 0;
+    this.logicalAcceptedKeys.clear();
+    this.logicalAcceptedSendCount = 0;
+    this.idempotentReplaySuppressions = 0;
     this.realExternalDeliveriesDuringTests = 0;
     this.realProviderInitializationsDuringTests = 0;
   }

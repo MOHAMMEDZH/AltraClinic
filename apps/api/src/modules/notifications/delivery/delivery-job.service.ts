@@ -146,6 +146,13 @@ export class DeliveryJobService {
 
   /** Optimistic lease: only one worker can transition pending/expired-lease → leased. */
   async leaseJob(jobId: string, leaseDurationMs = 60_000): Promise<Record<string, unknown> | null> {
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'before_delivery_job_claim'
+    ) {
+      throw new Error('Injected before_delivery_job_claim failure');
+    }
+
     const client = this.client();
     if (!client.deliveryJob) return null;
 
@@ -165,6 +172,13 @@ export class DeliveryJobService {
   }
 
   async recordAttempt(jobId: string, tenantId: string, outcome: { success: boolean; providerKey: string; error?: string; externalId?: string | null }): Promise<void> {
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'before_delivery_attempt_persist'
+    ) {
+      throw new Error('Injected before_delivery_attempt_persist failure');
+    }
+
     const client = this.client();
     if (client.deliveryAttempt) {
       await client.deliveryAttempt.create({

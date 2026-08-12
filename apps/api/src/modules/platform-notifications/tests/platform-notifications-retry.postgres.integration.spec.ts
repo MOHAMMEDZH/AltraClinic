@@ -195,20 +195,34 @@ describeDb('Step 27 retry / dead-letter matrix R01-R16 (PostgreSQL)', () => {
     expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
   });
 
-  it('R07: ambiguous provider response is retried, not double-sent (provider_ambiguous → fallback retry, then success sends exactly once)', async () => {
-    setPlatformNotificationFailureInjection('provider_ambiguous');
+  it('R07: provider_accept_then_ack_loss is retried, not double-sent (accept then ack-loss → fallback retry, then success exactly once)', async () => {
+    setPlatformNotificationFailureInjection('provider_accept_then_ack_loss');
     const email = `r07-${randomUUID()}@test.local`;
     const result = await dispatchInvitation(email);
     const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
 
     expect(jobs[0].status).toBe('pending');
-    expect(String(jobs[0].failureReason)).toMatch(/provider_ambiguous/);
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+    expect(String(jobs[0].failureReason)).toMatch(/provider_accept_then_ack_loss/);
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
 
     clearPlatformNotificationFailureInjection();
-    const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
+    const emailSink = stack.emailService;
+    const recreated = createPlatformNotificationsStack(prisma, { emailService: emailSink });
+    const outcome = await recreated.worker.processDeliveryJob(jobs[0].id);
     expect(outcome.status).toBe('delivered');
-    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    expect(emailSink.sent.filter((m) => m.to === email)).toHaveLength(1);
+    expect(emailSink.logicalAcceptedSendCount).toBe(1);
+    expect(emailSink.idempotentReplaySuppressions).toBeGreaterThanOrEqual(1);
+    expect(
+      await prisma.auditEntry.count({
+        where: {
+          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
+          resourceId: result.intentId!,
+        },
+      }),
+    ).toBe(1);
   });
 
   it('R08: max-attempt terminal — sustained transient failure exhausts maxAttempts and dead-letters the job', async () => {

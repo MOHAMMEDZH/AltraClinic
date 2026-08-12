@@ -115,6 +115,7 @@ export class EmailAdapter implements NotificationProviderAdapter {
       text: input.body,
       html: brandedHtml,
       fromName: branding.senderDisplayName,
+      ...(input.messageId ? { idempotencyKey: input.messageId } : {}),
     });
 
     if (
@@ -125,6 +126,20 @@ export class EmailAdapter implements NotificationProviderAdapter {
         this.providerKey,
         'Injected after_provider_before_ack failure',
       );
+    }
+
+    // Provider accepted the message, but local ack/receipt is lost — return failure after send.
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'provider_accept_then_ack_loss'
+    ) {
+      return {
+        success: false,
+        providerKey: this.providerKey,
+        channel: this.channelId,
+        error: 'provider_accept_then_ack_loss',
+        failureClass: 'fallback',
+      };
     }
 
     return {

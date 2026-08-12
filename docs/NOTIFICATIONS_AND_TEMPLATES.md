@@ -33,7 +33,7 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 | Freeze | `2026-08-12T06:41:22.728Z` |
 | Duration | ~3295s (~54.9 min) |
 | Counters | failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0 |
-| Narrow closure | Evidence/hygiene gate + final matrix mapping/report closure passed; Attempt 2 preserved (test/docs only; no product or material one-pass harness change) |
+| Narrow closure | Evidence/hygiene + final matrix mapping + ultra-narrow F09/F11/C07/T15/I16-R07 product/policy closure passed; Attempt 2 preserved (contained test hooks + docs/policy matching existing behavior; no happy-path product change) |
 | External delivery | `realExternalDeliveriesDuringTests = 0` (RecordingTransactionalEmailService + XD/P/C/H guards) |
 | Hygiene | `step27-final-onepass.jsonl` ABSENT; prohibited artifacts = 0; Catalog `68 / 136 / 68 / 13` |
 | Final matrix remap | TW15 N/A (no time-bound migrated grant SoR); T15 executable (suspend does not suppress email); I/R/F/C/H/P/UI exact one-to-one PASS |
@@ -65,6 +65,35 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 |----------|----------|-------------|---------------|----------|
 | Clinic staff | Clinic `Tenant.id` | Clinic `User.id` | `user` | email + in-app |
 | Platform principals | `PLATFORM_AUDIT_SENTINEL_TENANT_ID` | `PlatformUser.id` | `platform_user` | email via `metadata.recipientEmail` |
+
+### Recipient eligibility (T15 policy freeze)
+
+Matches existing product behavior. No new suspend gate was added at dispatch. Emit-time callers remain the eligibility authority.
+
+| Event / category | Mandatory | Suspended eligible | Disabled (`isActive=false`) eligible | Revoked-session relevance | Fallback allowed | Fallback source | Audit / observability | Rationale |
+|------------------|-----------|--------------------|--------------------------------------|---------------------------|------------------|-----------------|----------------------|-----------|
+| Security (invitation, MFA alert) | YES | YES | YES | N/A to durable email once intent exists (HTTP denied) | NO | none | DISPATCHED / delivery status | Security alerts must reach named `recipientEmail` |
+| Lifecycle / operational (tenant lifecycle, provisioning) | YES (critical) | YES | YES | N/A to durable email | NO | none | DISPATCHED / delivery status | Critical ops must not silent-drop |
+| Commercial optional (Trial / Subscription / Add-on / Override / limits) | NO | YES | YES | N/A to durable email | NO | none | DISPATCHED / suppress via preference only | No Step 27 `PlatformUser.status` gate; preferences may suppress optional |
+| Sales reminders (lead / demo) | NO | YES | YES | N/A to durable email | NO | none | DISPATCHED / preference | Emit-time sales producer chooses owner email; engine does not re-route |
+| Manager alerts | NO | YES | YES | N/A to durable email | NO | none | DISPATCHED / preference | Emit-time manager scope; no silent peer fallback |
+
+Executable: T15-A (security), T15-B (commercial), T15-C (lead reminder), T15-D (manager alert). Source mutation = 0; `realExternalDeliveriesDuringTests = 0`.
+
+### Failure-seam selectors (ultra-narrow closure)
+
+| ID | Selector | Seam |
+|----|----------|------|
+| F09 | `before_delivery_job_claim` | `DeliveryJobService.leaseJob` — throw **before** `updateMany` so status stays `pending` |
+| F11 | `before_delivery_attempt_persist` | `DeliveryJobService.recordAttempt` — provider send is **before** attempt persist (Case A: no persist-before-provider ordering exists) |
+| I16 / R07 | `provider_accept_then_ack_loss` | `EmailAdapter` after successful `email.send` returns failure (local ack absent). Test recorder dedupes on `idempotencyKey=messageId`. Stack recreation reuses the same `RecordingTransactionalEmailService` instance. |
+
+### C07 conversion × trial warning (policy B)
+
+- Warning scheduler does **not** scan trials; trial warnings are producer-driven via `trialExpiry`.
+- **C07-A:** conversion first; test-side eligibility `trial.status==='ACTIVE'` before emit → intentΔ=0, emailΔ=0.
+- **C07-B (policy B):** intent+job created while ACTIVE may still deliver after convert (frozen intent allowed); no duplicate warning intent; no adapter-side trial-status suppress.
+- **C07-C:** concurrent convert + `trialExpiry` → conversion cardinality 1; warning intents ≤1; notification does not mutate/rollback conversion.
 
 ---
 
@@ -142,11 +171,12 @@ Super Admin: `/notifications/templates`, `/notifications/preferences`, `/notific
 
 | Suite | Result |
 |-------|--------|
-| Step 27 DB matrices | **309/309** (15 suites) |
+| Step 27 DB matrices | **314/314** (15 suites) |
 | Super Admin UI01–UI60 | **60/60** |
 | Clean / upgrade validators | PASS (Catalog 68/136/68/13) |
 | Case C Attempt 2 | PASS (authoritative; preserved) |
-| Final matrix mapping closure | PASS (TW15, T15, I01–I16, R01–R16, F01–F32, C01–C24, H01–H50, P01–P20, UI01–UI60) |
+| Final matrix mapping closure | PASS |
+| Ultra-narrow F09/F11/C07/T15/I16-R07 | PASS |
 
 ---
 

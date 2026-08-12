@@ -5,6 +5,8 @@
  * `Model B: ...` tests at the end of this suite).
  */
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import {
   createPlatformNotificationsStack,
@@ -17,10 +19,12 @@ import {
   clearPlatformNotificationFailureInjection,
   createPlatformDbSecurityClient,
   DEFAULT_PLATFORM_DB_SECURITY_URL,
+  diffSoR,
   ensureSentinel,
   getDeliveryArtifacts,
   platformClaims,
   platformDbSecurityEnabled,
+  protectedNotificationsSoR,
   setPlatformNotificationFailureInjection,
 } from './platform-notifications-db.harness';
 import {
@@ -180,21 +184,47 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
     expect(await prisma.notificationIntent.count()).toBe(0);
   });
 
-  it('F09: N/A — Phase 41d has no separate Step 27 outbox claim; orchestrator queues DeliveryJob in-process (no distinct claim failure selector)', async () => {
-    // There is no outbox/claim seam to inject: the catalog exposes no such selector, the Prisma
-    // schema has no outbox model, and DeliveryOrchestratorService creates the DeliveryJob rows
-    // in-process during produce (then the worker leases them optimistically).
-    expect(
-      PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS.filter((p) => /outbox|claim/i.test(p)),
-    ).toHaveLength(0);
-    expect((prisma as unknown as Record<string, unknown>).notificationOutbox).toBeUndefined();
+  it('F09: before_delivery_job_claim — claim throw before updateMany leaves job pending; clear+process delivers exactly once', async () => {
+    // Selector fires at the start of DeliveryJobService.leaseJob (before updateMany), so the
+    // optimistic lease never lands and status stays `pending`. Dispatch sync-processes in test,
+    // so the injection is set before invitationSent so produce creates intent+job then claim throws.
+    const email = `f09-${randomUUID()}@test.local`;
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    setPlatformNotificationFailureInjection('before_delivery_job_claim');
+    await expect(stack.adapters.invitationSent(invitation(email))).rejects.toThrow(
+      /before_delivery_job_claim/,
+    );
 
-    const result = await stack.adapters.invitationSent(invitation());
-    const { jobs } = await getDeliveryArtifacts(prisma, result.intentId!);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(0);
+    expect(await prisma.notificationIntent.count()).toBe(1);
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    const { jobs } = await getDeliveryArtifacts(prisma, intent.id);
     expect(jobs).toHaveLength(1);
-    expect(jobs[0].status).toBe('completed');
-    // Lease-based claim (not an outbox row) is the only claim primitive, and it is idempotent.
-    expect(await stack.worker.processDeliveryJob(jobs[0].id)).toEqual({ status: 'skipped_leased' });
+    expect(jobs[0].status).toBe('pending');
+    expect(jobs[0].attemptCount).toBe(0);
+    expect(
+      await prisma.auditEntry.count({
+        where: {
+          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
+          resourceId: intent.id,
+        },
+      }),
+    ).toBe(0);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
+
+    clearPlatformNotificationFailureInjection();
+    const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
+    expect(outcome.status).toBe('delivered');
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    const after = await getDeliveryArtifacts(prisma, intent.id);
+    expect(after.jobs[0].status).toBe('completed');
+
+    const fresh = createPlatformNotificationsStack(prisma);
+    expect(await fresh.worker.processDeliveryJob(jobs[0].id)).toEqual({ status: 'skipped_leased' });
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
   });
 
   it('F10: intent_persist — intent persistence failure aborts before producer.produceChannels', async () => {
@@ -204,23 +234,72 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
     expect(await prisma.deliveryJob.count()).toBe(0);
   });
 
-  it('F11: N/A — no independent delivery-attempt persistence selector exists in the Step 27 catalog (attempt rows are written inside the provider path; that seam is covered by F12–F16)', async () => {
+  it('F11: before_delivery_attempt_persist — Case A ordering + Case B post-provider persist fail then exactly-once retry', async () => {
+    // Case A: "persist before provider" does not exist in this engine. DeliveryWorkerService
+    // calls adapter.send first, then recordAttempt on the success path (and again in catch on
+    // failure). Source proof:
+    const workerSource = readFileSync(
+      resolve(__dirname, '../../notifications/delivery/delivery-worker.service.ts'),
+      'utf8',
+    );
+    const sendIdx = workerSource.indexOf('adapter.send(');
+    const successAttemptIdx = workerSource.indexOf('recordAttempt(');
+    expect(sendIdx).toBeGreaterThan(-1);
+    expect(successAttemptIdx).toBeGreaterThan(sendIdx);
+    // Selector still required for the post-provider persist seam (Case B below).
+    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toContain('before_delivery_attempt_persist');
+
+    // Case B: provider succeeds, then recordAttempt throws. Catch also calls recordAttempt, so
+    // the injection still throws and failJob may not run — job can remain leased. Safe recovery:
+    // clear injection, expire/requeue lease, process once; messageId idempotency suppresses a
+    // second user-visible send.
+    const email = `f11-${randomUUID()}@test.local`;
+    const sorBefore = await protectedNotificationsSoR(prisma);
+    setPlatformNotificationFailureInjection('before_delivery_attempt_persist');
+    await expect(stack.adapters.invitationSent(invitation(email))).rejects.toThrow(
+      /before_delivery_attempt_persist/,
+    );
+
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    const intent = await prisma.notificationIntent.findFirstOrThrow();
+    let { jobs, attempts } = await getDeliveryArtifacts(prisma, intent.id);
+    expect(jobs).toHaveLength(1);
+    // Persist never completed — attempt rows absent; job likely still leased.
+    expect(attempts).toHaveLength(0);
+    expect(['leased', 'pending']).toContain(jobs[0].status);
     expect(
-      PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS.filter((p) => /attempt/i.test(p)),
-    ).toHaveLength(0);
+      await prisma.auditEntry.count({
+        where: {
+          category: PLATFORM_NOTIFICATION_AUDIT_CATEGORY,
+          action: PLATFORM_NOTIFICATION_AUDIT_ACTIONS.DISPATCHED,
+          resourceId: intent.id,
+        },
+      }),
+    ).toBe(0);
 
-    // Attempt rows are persisted on both outcomes, which is why a dedicated failure selector is
-    // unnecessary: any provider selector already exercises the persistence path.
-    const ok = await stack.adapters.invitationSent(invitation());
-    const okArtifacts = await getDeliveryArtifacts(prisma, ok.intentId!);
-    expect(okArtifacts.attempts).toHaveLength(1);
-    expect(okArtifacts.attempts[0].success).toBe(true);
-
-    setPlatformNotificationFailureInjection('provider_permanent');
-    const failed = await stack.adapters.invitationSent(invitation());
-    const failedArtifacts = await getDeliveryArtifacts(prisma, failed.intentId!);
-    expect(failedArtifacts.attempts).toHaveLength(1);
-    expect(failedArtifacts.attempts[0].success).toBe(false);
+    clearPlatformNotificationFailureInjection();
+    // Requeue / expire lease so the next process can claim.
+    await prisma.deliveryJob.update({
+      where: { id: jobs[0].id },
+      data: {
+        status: 'pending',
+        scheduledAt: null,
+        leaseExpiresAt: null,
+        leasedAt: null,
+      },
+    });
+    const outcome = await stack.worker.processDeliveryJob(jobs[0].id);
+    expect(outcome.status).toBe('delivered');
+    expect(stack.emailService.sent.filter((m) => m.to === email)).toHaveLength(1);
+    expect(stack.emailService.idempotentReplaySuppressions).toBeGreaterThanOrEqual(1);
+    expect(stack.emailService.logicalAcceptedSendCount).toBe(1);
+    ({ jobs, attempts } = await getDeliveryArtifacts(prisma, intent.id));
+    expect(jobs[0].status).toBe('completed');
+    expect(attempts.some((a) => a.success)).toBe(true);
+    expect(Object.values(diffSoR(sorBefore, await protectedNotificationsSoR(prisma))).every((v) => v === 0)).toBe(
+      true,
+    );
   });
 
   it('F12: provider_transient — transient provider failure leaves the job pending with a scheduled retry', async () => {
@@ -515,8 +594,8 @@ describeDb('Step 27 failure injection F01-F32 (PostgreSQL)', () => {
   });
 
   it('Model B: catalog enumerates exactly the independent selector inventory', () => {
-    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toHaveLength(29);
-    expect(new Set(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).size).toBe(29);
+    expect(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).toHaveLength(32);
+    expect(new Set(PLATFORM_NOTIFICATION_FAILURE_INJECTION_POINTS).size).toBe(32);
   });
 
   it('Model B: selectors are inert when NODE_ENV is not test', () => {

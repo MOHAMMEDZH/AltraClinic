@@ -128,7 +128,11 @@ function createLicensingChain(prisma: PrismaClient): CommunicationDispatchServic
 
 export function createPlatformNotificationsStack(
   prisma: PrismaClient,
-  opts: { permissions?: string[] } = {},
+  opts: {
+    permissions?: string[];
+    /** Reuse an existing recording sink across stack recreation (I16/R07 ack-loss safety). */
+    emailService?: RecordingTransactionalEmailService;
+  } = {},
 ): PlatformNotificationsStack {
   const wrapped = createHybridPrisma(prisma);
   const perms = new Set(opts.permissions ?? NOTIFICATIONS_ADMIN_PERMS);
@@ -153,7 +157,7 @@ export function createPlatformNotificationsStack(
   const deliveryJobs = new DeliveryJobService(wrapped);
   const receipts = new ReceiptService(wrapped);
 
-  const emailService = new RecordingTransactionalEmailService();
+  const emailService = opts.emailService ?? new RecordingTransactionalEmailService();
   const inAppAdapter = new InAppAdapter(wrapped);
   const emailAdapter = new EmailAdapter(emailService as never, wrapped, brandingResolver);
   const smsAdapter = new SmsAdapter(new ConsoleSmsSender() as never, wrapped);
