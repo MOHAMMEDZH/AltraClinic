@@ -38,3 +38,5 @@ out/
 /apps/api/br-step28-*
 /apps/api/step28-*.log
 /apps/api/step28-case-c*
+# Temporary Step 28 evidence attachment packs (outside committed docs; regenerate via script)
+/.step28-evidence-attachments/
