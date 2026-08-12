@@ -4,14 +4,29 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **Accepted / Complete** — narrow evidence/containment closure passed; Final Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`, exit 0). Attempt 2 (`515faf3`) invalidated by RL containment + CSP SSOT runtime changes. |
+| **Status** | **Accepted / Complete** — final matrix evidence extraction / reviewability gate passed; Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`, exit 0). Attempt 2 invalidated earlier by RL/CSP runtime. No product/security/runtime change during evidence-extraction closure. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
 | **Steps 01–27 + U01** | Accepted / Complete |
 | **Step 29** | Not Authorized |
 
-**Case C Attempt 3:** frozen `booking_test`, commit `6dafb4498819a4c0cd5d91dd3704eca3b9a0fb59`, duration ~56.3 min, all counters 0, `exitCode=0`. Per-ID evidence: `apps/api/src/modules/security-hardening/step28-matrix-evidence.ts` (704 IDs). Temporary one-pass artifacts removed after green.
+**Case C Attempt 3:** frozen `booking_test`, commit `6dafb4498819a4c0cd5d91dd3704eca3b9a0fb59`, duration ~56.3 min, all counters 0, `exitCode=0`. Per-ID evidence: `apps/api/src/modules/security-hardening/step28-matrix-evidence.ts` — canonical families AUTH–TH = **660** IDs; closure-only RLTEST+TENSA+CSP = **44** IDs; catalog total **704**. Validator: `step28-matrix-evidence.validation.unit.spec.ts`. Export tooling: `apps/api/scripts/step28-matrix-evidence-export.mjs`. Temporary exports deleted after reviewability delivery. N/A IDs: CSRF07, HDR15 (rigorous). Attempt 3 remains authoritative after evidence-extraction closure (docs/tests/metadata only).
+
+---
+
+## 2a. Final matrix evidence extraction (reviewability)
+
+| Field | Value |
+|-------|--------|
+| Authoritative source | `apps/api/src/modules/security-hardening/step28-matrix-evidence.ts` |
+| Validator | `apps/api/src/modules/security-hardening/tests/step28-matrix-evidence.validation.unit.spec.ts` |
+| Canonical IDs | 660 (AUTH01–TH40) |
+| Closure-only IDs | 44 (RLTEST01–08, TENSA01–20, CSP01–16) |
+| Missing / duplicates / unknown / semantic mismatches | 0 |
+| N/A | CSRF07, HDR15 |
+| Linkage | exact-title / id-tag / suite-anchor / script-file (deterministic; documented in entry `linkageMode`) |
+| Attempt 3 | Remains authoritative — no product/security/runtime or material one-pass harness change |
 
 ---
 
@@ -321,8 +336,9 @@ EER cache keys MUST include tenant identity and snapshot identity so Tenant A ca
 |---------|--------|
 | Critical unresolved without release block | **None** (`= 0`) |
 | High unresolved without release block | **None** (`= 0`) |
-| Residual notes (non-blocking) | F-TENANT-SA (tenant legacy bypass); G-RLS-01 hybrid app-filter (explicit release note); F-RL-TEST test isolation |
-| Step 28 Final Case C | **Pending** — required before Accepted / Complete |
+| Residual notes (non-blocking) | F-TENANT-SA (tenant-local legacy bypass; TENSA01–20 prove no Release 47 self-grant); G-RLS-01 hybrid app-filter (explicit release note) |
+| Step 28 Final Case C | **Passed** — Attempt 3 authoritative |
+| Step 28 matrix evidence reviewability | **Passed** — complete per-ID catalog + validator |
 | Step 29 | Not Authorized — not a Step 28 blocker |
 
 ---
@@ -338,4 +354,4 @@ This review **does not** claim:
 - That residual Medium items are absent  
 - That Step 29 release readiness / production handover is complete  
 
-What this review **does** claim: repository-executable security hardening and compliance **review** against Playbook v4 gates S-01–S-08 and Step 28 matrices, with Critical/High unresolved-without-block counts at zero for the documented finding set, pending Final Case C green for step acceptance.
+What this review **does** claim: repository-executable security hardening and compliance **review** against Playbook v4 gates S-01–S-08 and Step 28 matrices, with Critical/High unresolved-without-block counts at zero for the documented finding set, Case C Attempt 3 green, and complete per-ID matrix evidence reviewability.

@@ -87,6 +87,7 @@
     "test:step28-dep-audit": "node scripts/step28-dep-audit.mjs",
     "test:step28-security-final-onepass": "node scripts/run-step28-final-onepass.mjs",
     "test:step28-dep-classify": "node scripts/step28-dep-classify.mjs",
+    "test:step28-matrix-evidence-export": "node scripts/step28-matrix-evidence-export.mjs --validate-linkage",
     "test:step28-closure-focused": "jest --config jest.config.cjs --runInBand --testPathPattern \"step28-rltest|step28-tensa|step28-matrix-evidence.validation|step28-security-hardening.unit|api-rate-limit.service.spec|platform-auth.boundary|platform-rbac-security-integration|platform-mfa-session.security|effective-entitlement.cache.unit\""
   },
   "prisma": {
