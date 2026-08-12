@@ -1,11 +1,10 @@
 # Notifications and Templates (Flexible Step 27)
 
-**Status:** In Progress / Acceptance Pending
+**Status:** Accepted / Complete
 **Playbook:** Super Admin Flexible Plans/Entitlements v4 — Step 27
 **Authority:** Steps 01–26 + U01 Accepted/Complete; Phase 41d/41e Notification Delivery Engine is the sole delivery SoR.
 
-Steps **01–26** + **U01**: Accepted/Complete.
-Step **27**: In Progress / Acceptance Pending (final product correction: C07 send-time Trial revalidation + production-safe ambiguous delivery Strategy B).
+Steps **01–27** + **U01**: Accepted/Complete.
 Steps **28–29**: Not Authorized.
 
 ```text
@@ -29,9 +28,15 @@ No duplicate notification engine. No PHI or platform secrets in messages.
 
 | Field | Value |
 |-------|--------|
-| Attempt | **2 INVALIDATED** — product behavior changed (C07 suppress + Strategy B ambiguous). Re-run required for final acceptance. |
-| Prior Attempt 2 freeze | `2026-08-12T06:41:22.728Z` (historical only; no longer authoritative) |
-| Narrow closure note | Attempt 2 preserved only docs/policy matching then-current behavior; that closure is superseded by this final product correction |
+| Attempt | **3** (Attempt 2 **INVALIDATED** — C07 suppress + Strategy B ambiguous product changes) |
+| Frozen DB | `booking_test` @ localhost:5433 |
+| Freeze | `2026-08-12T17:30:45.723Z` |
+| Branch / SHA | `cursor/step27-notifications-and-templates` @ `bd7f35a1c3308b1c740f6ff5609b17fc3275f072` |
+| Duration | ~3215s (~53.6 min) |
+| Counters | failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0 |
+| External delivery | `realExternalDeliveriesDuringTests = 0` |
+| Hygiene | `step27-final-onepass.jsonl` ABSENT after extract; prohibited artifacts = 0; Catalog `68 / 136 / 68 / 13` |
+| Product correction | C07 send-time + adapter Trial obsolete suppress; Strategy B durable `ambiguous` (no blind auto-resend) |
 
 ---
 
@@ -106,7 +111,8 @@ Executable: T15-A (security), T15-B (commercial), T15-C (lead reminder), T15-D (
 - **C07-A:** convert first; `trialExpiry` → adapter suppress → intentΔ=0, emailΔ=0.
 - **C07-B:** intent+job created while ACTIVE under claim inject; convert; clear+process → send-time `suppressed`, emailΔ=0.
 - **C07-C:** concurrent convert + `trialExpiry` → conversion cardinality 1; warning intents ≤1; notification does not mutate/rollback conversion.
-- **C07-D/E:** CANCELLED / EXPIRED(approaching) adapter suppress.
+- **C07-D:** service recreation after convert → `suppressed`, emailΔ=0.
+- **C07-E:** process cache loss (new stack + new sink) → durable Trial CONVERTED still suppresses, emailΔ=0.
 - **C07-F:** two workers after convert → one `suppressed`, one `skipped_leased`; emailΔ=0.
 
 ---
@@ -185,12 +191,12 @@ Super Admin: `/notifications/templates`, `/notifications/preferences`, `/notific
 
 | Suite | Result |
 |-------|--------|
-| Step 27 DB matrices | Pending re-run after final product correction |
-| Super Admin UI01–UI60 | **60/60** (prior) |
+| Step 27 DB matrices | **321/321** (15 suites) |
+| Super Admin UI01–UI60 | **60/60** |
 | Clean / upgrade validators | PASS (Catalog 68/136/68/13) |
-| Case C Attempt 2 | **INVALIDATED** (product behavior changed) |
-| Final matrix mapping closure | Pending re-run |
-| Ultra-narrow F09/F11/C07/T15/I16-R07 | Product correction applied; re-verify |
+| Case C Attempt 3 | PASS (authoritative) |
+| C07 product correction | PASS (stale Trial-expiry email after CONVERTED = 0) |
+| Strategy B ambiguous delivery | PASS (no blind auto-resend) |
 
 ---
 

@@ -28,7 +28,7 @@
 | Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md` |
 | Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md` |
 | Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md` |
-| Flexible Step **27** — Notifications and Templates | **In Progress / Acceptance Pending** — final product correction (C07 stale Trial warning + production-safe ambiguous delivery); Case C Attempt 2 invalidated. Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 unauthorized |
+| Flexible Step **27** — Notifications and Templates | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T17:30:45.723Z`, SHA `bd7f35a`); Attempt 2 invalidated (C07 + Strategy B product fixes). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 unauthorized |
 | Flexible Steps **28–29** | **Not Authorized** |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
@@ -1601,7 +1601,7 @@ Snapshots/productivity reporting only. Steps 27–29 remain Not Authorized.
 ## 56. Step 27 — Notifications and Templates
 
 ### Status
-**In Progress / Acceptance Pending.** Final product correction (C07 send-time Trial revalidation + production-safe ambiguous delivery Strategy B). Case C Attempt 2 invalidated. Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 Not Authorized.
+**Accepted / Complete.** Case C Attempt 3 authoritative on frozen `booking_test` (freeze `2026-08-12T17:30:45.723Z`; SHA `bd7f35a`; ~53.6 min; all counters 0). Attempt 2 invalidated (C07 send-time Trial revalidation + Strategy B ambiguous delivery). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 Not Authorized.
 
 ### Objective
 Reuse notification infrastructure for platform/sales/commercial events; redaction; no PHI; advance Add-on/Override warnings; effective-limit alerts via EER/U01.
@@ -1613,7 +1613,7 @@ Steps 01–26 + U01; notification center / Phase 41d engine.
 N01–N24, TW01–TW16, L01–L16, I/R/T/A/F/C/H/P/UI matrices; Case C one-pass; narrow evidence closure matrices.
 
 ### Evidence
-Step 27 DB **314/314**; UI **60/60**; clean/upgrade validators; `realExternalDeliveriesDuringTests=0`; prohibited evidence = 0; Catalog `68/136/68/13`; final matrix mapping + ultra-narrow F09/F11/C07/T15/I16-R07 PASS.
+Step 27 DB **321/321**; UI **60/60**; clean/upgrade validators; `realExternalDeliveriesDuringTests=0`; prohibited evidence = 0; Catalog `68/136/68/13`; C07 stale-warning fix + Strategy B ambiguous PASS; Case C Attempt 3 PASS.
 
 ### Final Case C
 Attempt **1** INVALIDATED (sentinel `notifications_tenantId_fkey` residue).
