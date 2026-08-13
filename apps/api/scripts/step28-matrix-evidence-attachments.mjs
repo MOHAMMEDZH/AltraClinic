@@ -183,6 +183,10 @@ function scanDirectEvidencePack(records) {
     TH16: { preferred: ['ER16', 'ER01'], rejected: [['API10', 'HTTPSEC50']] },
     TH17: { preferred: ['CACHE02', 'CACHE01'], rejected: [['AUTH11']] },
     TH19: { preferred: ['CACHE01', 'CACHE02'], rejected: [['AUTH11']] },
+    TH26: {
+      preferred: ['AUDSEC01', 'AUDSEC04'],
+      rejected: [['AUDSEC01'], ['AUDSEC02'], ['AUDSEC04'], ['AUDSEC01', 'AUDSEC02'], ['AUDSEC02', 'AUDSEC01']],
+    },
     TH23: { preferred: ['TENSA09', 'TENSA10'], rejected: [['API01', 'HTTPSEC39']] },
     TH27: { preferred: ['LOG01', 'LOG02'], rejected: [['IO02', 'LOG01']] },
     TH29: { preferred: ['HTTPSEC28', 'PRIV01'], rejected: [['NOTSEC01', 'PRIV04']] },
@@ -554,6 +558,9 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`directEvidenceCandidates=${summary.directEvidenceCandidates}`);
   lines.push(`directEvidenceMappingFailures=${summary.directEvidenceMappingFailures}`);
   lines.push(`TH19DirectEvidenceFailure=${summary.TH19DirectEvidenceFailure}`);
+  lines.push(`TH26OmissionEvidenceFailure=${summary.TH26OmissionEvidenceFailure}`);
+  lines.push(`TH26TamperEvidenceFailure=${summary.TH26TamperEvidenceFailure}`);
+  lines.push(`TH26CompositeEvidenceFailure=${summary.TH26CompositeEvidenceFailure}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -717,6 +724,36 @@ function main() {
         mids.length > 0;
       return ok ? 0 : 1;
     })(),
+    TH26OmissionEvidenceFailure: (() => {
+      const th26 = records.find((r) => r.id === 'TH26');
+      const mids = th26?.mitigationIds || [];
+      const byId = new Map(records.map((r) => [r.id, r]));
+      const has = mids.some((id) =>
+        (byId.get(id)?.securityConceptTags || []).includes('audit-omission-prevention'),
+      );
+      return has ? 0 : 1;
+    })(),
+    TH26TamperEvidenceFailure: (() => {
+      const th26 = records.find((r) => r.id === 'TH26');
+      const mids = th26?.mitigationIds || [];
+      const byId = new Map(records.map((r) => [r.id, r]));
+      const has = mids.some((id) =>
+        (byId.get(id)?.securityConceptTags || []).includes('audit-tampering-resistance'),
+      );
+      return has ? 0 : 1;
+    })(),
+    TH26CompositeEvidenceFailure: (() => {
+      const th26 = records.find((r) => r.id === 'TH26');
+      const mids = th26?.mitigationIds || [];
+      const byId = new Map(records.map((r) => [r.id, r]));
+      const tags = new Set(mids.flatMap((id) => byId.get(id)?.securityConceptTags || []));
+      const ok =
+        mids.includes('AUDSEC01') &&
+        mids.includes('AUDSEC04') &&
+        tags.has('audit-omission-prevention') &&
+        tags.has('audit-tampering-resistance');
+      return ok ? 0 : 1;
+    })(),
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -742,6 +779,11 @@ function main() {
         const th19 = records.find((r) => r.id === 'TH19');
         const mids = th19?.mitigationIds || [];
         return mids.includes('CACHE01') && mids.includes('CACHE02');
+      })() &&
+      (() => {
+        const th26 = records.find((r) => r.id === 'TH26');
+        const mids = th26?.mitigationIds || [];
+        return mids.includes('AUDSEC01') && mids.includes('AUDSEC04');
       })(),
   };
 
@@ -814,6 +856,9 @@ function main() {
       summary.ontologyValidationFailures === 0 &&
       summary.directEvidenceMappingFailures === 0 &&
       summary.TH19DirectEvidenceFailure === 0 &&
+      summary.TH26OmissionEvidenceFailure === 0 &&
+      summary.TH26TamperEvidenceFailure === 0 &&
+      summary.TH26CompositeEvidenceFailure === 0 &&
       summary.brokenExecutableLinkage === 0,
   };
 

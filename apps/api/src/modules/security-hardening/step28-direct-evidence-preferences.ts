@@ -90,6 +90,19 @@ export const STEP28_TH_DIRECTNESS_PREFERENCES: Record<string, DirectnessPreferen
     rejectedMitigationSets: [['AUTH11'], ['AUTH11', 'AUTH28'], ['SES02', 'AUTH11']],
     classificationHint: 'ACCEPTABLE COMPOSITE',
   },
+  TH26: {
+    threatId: 'TH26',
+    preferredMitigationIds: ['AUDSEC01', 'AUDSEC04'],
+    preferredEvidenceFamilies: ['AUDSEC'],
+    rejectedMitigationSets: [
+      ['AUDSEC01'],
+      ['AUDSEC02'],
+      ['AUDSEC04'],
+      ['AUDSEC01', 'AUDSEC02'],
+      ['AUDSEC02', 'AUDSEC01'],
+    ],
+    classificationHint: 'ACCEPTABLE COMPOSITE',
+  },
   TH23: {
     threatId: 'TH23',
     preferredMitigationIds: ['TENSA09', 'TENSA10'],

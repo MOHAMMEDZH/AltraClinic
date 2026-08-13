@@ -544,6 +544,94 @@ describe('Step 28 matrix evidence validation', () => {
     );
   });
 
+  it('rejects TH26 omission-only AUDSEC01 mapping', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH26',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['AUDSEC01'],
+    });
+    expect(err).toMatch(/TH26/);
+  });
+
+  it('rejects TH26 view-authorization-only AUDSEC02 mapping', () => {
+    const byId = new Map([
+      ['AUDSEC02', { id: 'AUDSEC02', securityConceptTags: ['http-passport-boundary'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH26',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH26,
+        mitigationIds: ['AUDSEC02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH26/);
+  });
+
+  it('rejects TH26 AUDSEC01+AUDSEC02 without tamper-resistance concept', () => {
+    const byId = new Map([
+      [
+        'AUDSEC01',
+        { id: 'AUDSEC01', securityConceptTags: ['audit-omission-prevention', 'audit-exactly-once'] },
+      ],
+      ['AUDSEC02', { id: 'AUDSEC02', securityConceptTags: ['http-passport-boundary'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH26',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH26,
+        mitigationIds: ['AUDSEC01', 'AUDSEC02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH26/);
+  });
+
+  it('rejects TH26 tamper-only without omission proof', () => {
+    const byId = new Map([
+      [
+        'AUDSEC04',
+        {
+          id: 'AUDSEC04',
+          securityConceptTags: [
+            'audit-tampering-resistance',
+            'audit-append-only',
+            'audit-update-delete-deny',
+          ],
+        },
+      ],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH26',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH26,
+        mitigationIds: ['AUDSEC04'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH26/);
+  });
+
+  it('accepts TH26 AUDSEC01+AUDSEC04 omission and tamper evidence', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    const th26 = byId.get('TH26')!;
+    expect(th26.mitigationIds).toEqual(['AUDSEC01', 'AUDSEC04']);
+    expect(validateThreatMitigationConcepts(th26, byId)).toBeNull();
+    expect(validateDirectEvidenceMapping(th26)).toBeNull();
+    expect(th26.threatConceptTags).toEqual(
+      expect.arrayContaining(['audit-omission-prevention', 'audit-tampering-resistance']),
+    );
+    expect(byId.get('AUDSEC01')!.securityConceptTags).toEqual(
+      expect.arrayContaining(['audit-omission-prevention']),
+    );
+    expect(byId.get('AUDSEC04')!.securityConceptTags).toEqual(
+      expect.arrayContaining(['audit-tampering-resistance']),
+    );
+  });
+
   it('rejects generic ontology-compatible evidence when preferred direct mitigation exists', () => {
     expect(STEP28_TH_DIRECTNESS_PREFERENCES.TH07.preferredMitigationIds).toEqual(
       expect.arrayContaining(['API31']),

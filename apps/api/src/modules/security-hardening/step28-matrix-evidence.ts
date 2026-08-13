@@ -8970,7 +8970,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
   },
   {
     "id": "AUDSEC01",
-    "canonicalMeaning": "Audit completeness/integrity case AUDSEC01",
+    "canonicalMeaning": "Audit omission prevention — exactly-one success audit on first export success",
     "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-core.postgres.integration.spec.ts",
     "testTitle": "A18 export creates exactly one success audit on first success",
     "routeModuleControl": "audit-center + domain audit matrices",
@@ -8985,7 +8985,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "audit-omission-prevention",
+      "audit-exactly-once"
     ]
   },
   {
@@ -9030,22 +9031,24 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
   },
   {
     "id": "AUDSEC04",
-    "canonicalMeaning": "Audit completeness/integrity case AUDSEC04",
+    "canonicalMeaning": "Audit tampering resistance — raw SQL UPDATE/DELETE on audit_entries denied by append-only trigger",
     "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-core.postgres.integration.spec.ts",
-    "testTitle": "A18 export creates exactly one success audit on first success",
+    "testTitle": "I05-I06 runtime SQL update/delete on audit_entries denied by trigger",
     "routeModuleControl": "audit-center + domain audit matrices",
     "principalSetup": "auditor vs unauthorized",
-    "attackOrFailure": "missing audit / duplicate success audit / unauthorized export",
-    "expectedResult": "exactly-once success audit; deny with zero side effects",
+    "attackOrFailure": "mutate or delete existing audit history",
+    "expectedResult": "UPDATE/DELETE rejected; original audit row unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "assertionAnchor": "I05-I06 runtime SQL update/delete on audit_entries denied by trigger",
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "export-sanitization"
+      "audit-tampering-resistance",
+      "audit-append-only",
+      "audit-update-delete-deny"
     ]
   },
   {
@@ -13351,16 +13354,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUDSEC01,AUDSEC02",
+    "assertionAnchor": "mitigationIds=AUDSEC01,AUDSEC04",
     "mitigationIds": [
       "AUDSEC01",
-      "AUDSEC02"
+      "AUDSEC04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "http-passport-boundary"
-    ]
+      "audit-omission-prevention",
+      "audit-tampering-resistance"
+    ],
+    "semanticReviewNote": "Composite TH26 requires AUDSEC01 omission (A18 exactly-once) + AUDSEC04 tamper resistance (I05-I06 append-only trigger); AUDSEC02 audit.view deny is insufficient"
   },
   {
     "id": "TH27",

@@ -69,6 +69,11 @@ export type OntologyConceptId =
   | 'cache-invalidation-fail-safe'
   | 'entitlement-cache-isolation'
   | 'cache-poisoning-resistance'
+  | 'audit-omission-prevention'
+  | 'audit-tampering-resistance'
+  | 'audit-exactly-once'
+  | 'audit-append-only'
+  | 'audit-update-delete-deny'
   | 'secrets-in-logs-deny'
   | 'notification-secret-leakage-deny'
   | 'idor-cross-tenant-deny'
@@ -480,6 +485,36 @@ export const STEP28_SECURITY_CONCEPT_ONTOLOGY: Record<OntologyConceptId, Ontolog
     allowedFamilies: ['CACHE'],
     forbiddenConcepts: ['authz-cache-revision'],
   },
+  'audit-omission-prevention': {
+    id: 'audit-omission-prevention',
+    humanMeaning: 'Required audit entries are not silently omitted (exactly-once where required)',
+    allowedFamilies: ['AUDSEC'],
+    forbiddenConcepts: ['http-passport-boundary'],
+  },
+  'audit-tampering-resistance': {
+    id: 'audit-tampering-resistance',
+    humanMeaning: 'Existing audit history cannot be updated or deleted (append-only / mutation deny)',
+    allowedFamilies: ['AUDSEC'],
+    forbiddenConcepts: ['http-passport-boundary'],
+  },
+  'audit-exactly-once': {
+    id: 'audit-exactly-once',
+    humanMeaning: 'Sensitive success path creates exactly one audit entry',
+    allowedFamilies: ['AUDSEC'],
+    forbiddenConcepts: [],
+  },
+  'audit-append-only': {
+    id: 'audit-append-only',
+    humanMeaning: 'Audit entries are append-only at persistence layer',
+    allowedFamilies: ['AUDSEC'],
+    forbiddenConcepts: [],
+  },
+  'audit-update-delete-deny': {
+    id: 'audit-update-delete-deny',
+    humanMeaning: 'Update/delete of existing audit entries is denied',
+    allowedFamilies: ['AUDSEC'],
+    forbiddenConcepts: [],
+  },
   'secrets-in-logs-deny': {
     id: 'secrets-in-logs-deny',
     humanMeaning: 'Secrets/PHI/tokens absent from logs and safe errors',
@@ -683,9 +718,9 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH26: {
     threatId: 'TH26',
-    requiredConcepts: ['http-passport-boundary'],
-    allowedMitigationFamilies: ['AUDSEC', 'HTTPSEC', 'AUTH'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['audit-omission-prevention', 'audit-tampering-resistance'],
+    allowedMitigationFamilies: ['AUDSEC'],
+    forbiddenMitigationConcepts: ['http-passport-boundary'],
   },
   TH27: {
     threatId: 'TH27',
@@ -849,6 +884,17 @@ export function validateThreatAgainstOntology(
       if (ontologyTagsOverlap(tags, forbiddenHere)) {
         return `${entry.id}: mitigation ${mid} mixes concept ${concept} with forbidden conflations`;
       }
+    }
+  }
+
+  // Composite threats require the union of mitigation tags to cover every required concept.
+  const covered = new Set<string>();
+  for (const mid of entry.mitigationIds) {
+    for (const t of byId.get(mid)?.securityConceptTags ?? []) covered.add(t);
+  }
+  for (const concept of req.requiredConcepts) {
+    if (!covered.has(concept)) {
+      return `${entry.id}: missing required concept coverage (${concept})`;
     }
   }
   return null;

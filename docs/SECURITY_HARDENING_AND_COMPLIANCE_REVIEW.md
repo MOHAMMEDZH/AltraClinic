@@ -4,7 +4,7 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress / Acceptance Pending External Review** — final TH19 direct-evidence cache-poisoning closure complete (evidence/validator/test-only); Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent re-review of the regenerated evidence pack. No product/security/runtime change during this TH19 closure. |
+| **Status** | **In Progress / Acceptance Pending External Review** — final TH26 audit omission/tampering direct-evidence closure complete (evidence/validator/test-only); Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent re-review of the regenerated evidence pack. No product/security/runtime change during this TH26 closure. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
