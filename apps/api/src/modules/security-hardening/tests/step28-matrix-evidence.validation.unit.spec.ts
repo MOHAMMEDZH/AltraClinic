@@ -8,6 +8,12 @@ import {
   STEP28_MATRIX_EVIDENCE_IDS,
   matrixFamilyOf,
 } from '../step28-matrix-evidence';
+import {
+  TH_THREAT_CONCEPTS,
+  scanCandidateSemanticMismatches,
+  validateExactConceptTags,
+  validateThreatMitigationConcepts,
+} from '../step28-semantic-concepts';
 
 /** Jest cwd is apps/api; repository root is two levels up. */
 const REPO_ROOT = path.resolve(process.cwd(), '..', '..');
@@ -195,5 +201,144 @@ describe('Step 28 matrix evidence validation', () => {
       ).map((e) => e.id);
       expect(hits).toEqual([]);
     }
+  });
+
+  it('narrow closure reviewer IDs use exact concept proofs', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    expect(byId.get('RL20')!.testTitle).toMatch(/X-Forwarded-For|TRUST_PROXY/i);
+    expect(byId.get('RL20')!.testTitle).not.toMatch(/testBypass|RLTEST04/i);
+    expect(byId.get('RL20')!.securityConceptTags).toEqual(expect.arrayContaining(['xff-trust-proxy']));
+
+    expect(byId.get('AUTH30')!.testTitle).toMatch(/expired access token/i);
+    expect(byId.get('AUTH30')!.testTitle).not.toMatch(/absolute lifetime|refresh when the session/i);
+    expect(byId.get('AUTH30')!.securityConceptTags).toEqual(
+      expect.arrayContaining(['expired-access-token']),
+    );
+
+    expect(byId.get('AUTH38')!.testTitle).toMatch(/permission exists|deny path/i);
+    expect(byId.get('AUTH38')!.testTitle).not.toMatch(/unknown account|wrong password/i);
+    expect(byId.get('AUTH38')!.securityConceptTags).toEqual(
+      expect.arrayContaining(['permission-enumeration-resistance']),
+    );
+
+    expect(byId.get('TH24')!.mitigationIds).toEqual(
+      expect.arrayContaining(['API10', 'HTTPSEC48', 'HTTPSEC49', 'HTTPSEC50']),
+    );
+    expect(byId.get('TH30')!.mitigationIds).toEqual(expect.arrayContaining(['IO02', 'PRIV03']));
+    expect(byId.get('TH33')!.mitigationIds).toEqual(expect.arrayContaining(['MA16']));
+    expect(byId.get('TH35')!.mitigationIds).toEqual(expect.arrayContaining(['IO03', 'IO24']));
+  });
+
+  it('rejects RL20 XFF claim linked to DI bypass test', () => {
+    const err = validateExactConceptTags({
+      id: 'RL20',
+      semanticReviewStatus: 'EXACT',
+      securityConceptTags: ['rate-limit-test-bypass'],
+      testTitle:
+        'RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter',
+      assertionAnchor: 'RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter',
+    });
+    expect(err).toMatch(/RL20/);
+  });
+
+  it('rejects AUTH30 expired-access-token claim linked to refresh lifetime test', () => {
+    const err = validateExactConceptTags({
+      id: 'AUTH30',
+      semanticReviewStatus: 'EXACT',
+      securityConceptTags: ['refresh-absolute-lifetime'],
+      testTitle: 'rejects refresh when the session breached the absolute lifetime',
+      assertionAnchor: 'rejects refresh when the session breached the absolute lifetime',
+    });
+    expect(err).toMatch(/AUTH30/);
+  });
+
+  it('rejects AUTH38 permission-enumeration claim linked to login-enumeration test', () => {
+    const err = validateExactConceptTags({
+      id: 'AUTH38',
+      semanticReviewStatus: 'EXACT',
+      securityConceptTags: ['login-enumeration-resistance'],
+      testTitle: 'returns indistinguishable errors for unknown account and wrong password',
+      assertionAnchor: 'returns indistinguishable errors for unknown account and wrong password',
+    });
+    expect(err).toMatch(/AUTH38/);
+  });
+
+  it('rejects TH24 unrelated provisioning mitigations', () => {
+    const byId = new Map([
+      ['HTTPSEC01', { id: 'HTTPSEC01', securityConceptTags: ['http-passport-boundary', 'notification-privacy'] }],
+      ['ISO03', { id: 'ISO03', securityConceptTags: ['tenant-isolation'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH24',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH24,
+        mitigationIds: ['HTTPSEC01', 'ISO03'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH24/);
+  });
+
+  it('rejects TH30 unrelated CSV mitigations', () => {
+    const byId = new Map([
+      ['IO01', { id: 'IO01', securityConceptTags: ['dto-whitelist', 'mass-assignment'] }],
+      ['PRIV04', { id: 'PRIV04', securityConceptTags: ['notification-privacy'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH30',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH30,
+        mitigationIds: ['IO01', 'PRIV04'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH30/);
+  });
+
+  it('rejects TH33 unrelated prototype/object-key mitigations', () => {
+    const byId = new Map([
+      ['MA03', { id: 'MA03', securityConceptTags: ['mass-assignment', 'dto-whitelist'] }],
+      ['API02', { id: 'API02', securityConceptTags: ['http-passport-boundary'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH33',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH33,
+        mitigationIds: ['MA03', 'API02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH33/);
+  });
+
+  it('rejects TH35 unrelated path/file mitigations', () => {
+    const byId = new Map([
+      ['FSEC01', { id: 'FSEC01', securityConceptTags: ['notification-privacy'] }],
+      ['IO02', { id: 'IO02', securityConceptTags: ['csv-formula-injection', 'export-sanitization'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH35',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH35,
+        mitigationIds: ['FSEC01', 'IO02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH35/);
+  });
+
+  it('threatSemanticMismatchCount is zero and narrow scan confirms zero', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    let threatSemanticMismatchCount = 0;
+    for (const e of MATRIX_EVIDENCE.filter((x) => x.semanticEvidenceType === 'docs-control-map')) {
+      if (validateThreatMitigationConcepts(e, byId)) threatSemanticMismatchCount += 1;
+    }
+    expect(threatSemanticMismatchCount).toBe(0);
+    const scan = scanCandidateSemanticMismatches(MATRIX_EVIDENCE);
+    expect(scan.confirmed).toEqual([]);
   });
 });

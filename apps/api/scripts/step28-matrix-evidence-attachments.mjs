@@ -132,7 +132,87 @@ function enrich(e) {
     mitigationIds: e.mitigationIds || [],
     semanticReviewStatus: e.semanticReviewStatus || (na ? 'N/A' : 'EXACT'),
     semanticReviewNote: e.semanticReviewNote || 'N/A',
+    securityConceptTags: e.securityConceptTags || [],
+    threatConceptTags: e.threatConceptTags || [],
     result: e.result,
+  };
+}
+
+function tagsOverlap(a, b) {
+  if (!a?.length || !b?.length) return false;
+  const set = new Set(a);
+  return b.some((t) => set.has(t));
+}
+
+function computeThreatSemanticMismatchCount(records) {
+  const byId = new Map(records.map((e) => [e.id, e]));
+  let count = 0;
+  for (const e of records) {
+    if (e.semanticEvidenceType !== 'docs-control-map') continue;
+    const threatTags = e.threatConceptTags?.length ? e.threatConceptTags : [];
+    if (!threatTags.length || !e.mitigationIds?.length) {
+      count += 1;
+      continue;
+    }
+    let bad = false;
+    for (const mid of e.mitigationIds) {
+      const m = byId.get(mid);
+      if (!m || m.semanticEvidenceType === 'docs-control-map' || String(mid).startsWith('TH')) {
+        bad = true;
+        break;
+      }
+      if (!tagsOverlap(threatTags, m.securityConceptTags)) {
+        bad = true;
+        break;
+      }
+    }
+    if (bad) count += 1;
+  }
+  return count;
+}
+
+function scanConfirmedSemanticMismatches(records) {
+  const byId = new Map(records.map((e) => [e.id, e]));
+  const candidates = [];
+  const confirmed = [];
+  for (const e of records) {
+    if (e.semanticReviewStatus === 'N/A') continue;
+    const title = `${e.testTitle} ${e.assertionAnchor ?? ''}`.toLowerCase();
+    const meaning = String(e.canonicalMeaning || '').toLowerCase();
+    const checks = [
+      [/x-?forwarded-for|trust_proxy|xff/, /testbypass|di test|unlimited without calling/, 'xff-vs-bypass'],
+      [/expired access token/, /refresh|absolute lifetime/, 'access-vs-refresh'],
+      [/permission exists|deny path does not leak/, /unknown account|wrong password/, 'authz-vs-authn'],
+      [/csv|export injection/, /whitelist strips|patient identifiers in templates/, 'csv-vs-unrelated'],
+      [/prototype|object key abuse/, /forged ownerid|invalid cursor/, 'proto-vs-unrelated'],
+      [/path handling|unsafe file/, /template_lookup|csv formula neutralized/, 'path-vs-unrelated'],
+      [/provisioning privilege/, /template catalog|tenant a cannot read tenant b patients/, 'prov-vs-unrelated'],
+    ];
+    for (const [need, bad, label] of checks) {
+      if (need.test(meaning) && bad.test(title)) {
+        candidates.push(`${e.id}:${label}`);
+        confirmed.push(`${e.id}:${label}`);
+      }
+    }
+    if (e.semanticEvidenceType === 'docs-control-map') {
+      const threatTags = e.threatConceptTags || [];
+      for (const mid of e.mitigationIds || []) {
+        const m = byId.get(mid);
+        if (!m || !tagsOverlap(threatTags, m.securityConceptTags)) {
+          candidates.push(`${e.id}:threat-concept`);
+          confirmed.push(`${e.id}:threat-concept`);
+          break;
+        }
+      }
+    }
+    if (e.semanticReviewStatus === 'EXACT' && !(e.securityConceptTags || []).length) {
+      candidates.push(`${e.id}:exact-concept`);
+      confirmed.push(`${e.id}:exact-concept`);
+    }
+  }
+  return {
+    candidates: [...new Set(candidates)],
+    confirmed: [...new Set(confirmed)],
   };
 }
 
@@ -378,6 +458,9 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`na=${summary.semanticNa}`);
   lines.push(`brokenExecutableLinkage=${summary.brokenExecutableLinkage}`);
   lines.push(`threatMappingsWithoutMitigation=${summary.threatMappingsWithoutMitigation}`);
+  lines.push(`threatSemanticMismatchCount=${summary.threatSemanticMismatchCount}`);
+  lines.push(`candidateSemanticMismatchScanCount=${summary.candidateSemanticMismatchScanCount}`);
+  lines.push(`confirmedSemanticMismatchScanCount=${summary.confirmedSemanticMismatchScanCount}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -496,6 +579,8 @@ function main() {
       e.semanticEvidenceType === 'docs-control-map' &&
       (!Array.isArray(e.mitigationIds) || e.mitigationIds.length === 0),
   ).length;
+  const threatSemanticMismatchCount = computeThreatSemanticMismatchCount(records);
+  const semanticScan = scanConfirmedSemanticMismatches(records);
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -518,6 +603,9 @@ function main() {
     semanticNa,
     brokenExecutableLinkage: linkage.brokenTestTitleLinks.length + linkage.missingReferencedTestFiles.length,
     threatMappingsWithoutMitigation,
+    threatSemanticMismatchCount,
+    candidateSemanticMismatchScanCount: semanticScan.candidates.length,
+    confirmedSemanticMismatchScanCount: semanticScan.confirmed.length,
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -533,7 +621,9 @@ function main() {
       records.length === 704 &&
       semanticPartial === 0 &&
       semanticMismatch === 0 &&
-      threatMappingsWithoutMitigation === 0,
+      threatMappingsWithoutMitigation === 0 &&
+      threatSemanticMismatchCount === 0 &&
+      semanticScan.confirmed.length === 0,
   };
 
   const jsonPath = path.join(outDir, 'step28-matrix-evidence-complete.json');
@@ -599,6 +689,8 @@ function main() {
       summary.semanticPartial === 0 &&
       summary.semanticMismatch === 0 &&
       summary.threatMappingsWithoutMitigation === 0 &&
+      summary.threatSemanticMismatchCount === 0 &&
+      summary.confirmedSemanticMismatchScanCount === 0 &&
       summary.brokenExecutableLinkage === 0,
   };
 

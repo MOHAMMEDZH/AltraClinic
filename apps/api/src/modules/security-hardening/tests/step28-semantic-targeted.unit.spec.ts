@@ -282,4 +282,101 @@ describe('Step 28 semantic targeted proofs', () => {
     expect(PLATFORM_PERMISSION_KEY).toBeTruthy();
     assertNoWildcards();
   });
+
+  it('AUTH30: expired access token never evaluates permissions', async () => {
+    const { JwtService } = require('@nestjs/jwt');
+    const { JwtTokenService } = require('../../auth/infrastructure/services/jwt-token.service');
+    const jwt = new JwtService({});
+    const svc = new JwtTokenService(jwt, {
+      accessSecret: 'clinic-access-secret-min-32-characters-xx',
+      refreshSecret: 'clinic-refresh-secret-min-32-characters-x',
+      platformAccessSecret: 'platform-access-secret-min-32-chars-xx',
+      platformRefreshSecret: 'platform-refresh-secret-min-32-chars-x',
+      platformIssuer: 'booking-platform',
+      accessTtlSeconds: 900,
+      refreshTtlSeconds: 86400,
+      platformAccessTtlSeconds: 900,
+      platformRefreshTtlSeconds: 86400,
+    });
+    const expired = jwt.sign(
+      {
+        sub: 'u1',
+        type: 'access',
+        sessionId: 's1',
+        sessionClass: 'platform',
+        principalType: 'platform',
+        aud: 'platform',
+        iss: 'booking-platform',
+        tenantId: null,
+        roles: [],
+      },
+      { secret: 'platform-access-secret-min-32-chars-xx', expiresIn: -10 },
+    );
+    expect(svc.verifyAccessToken(expired)).toBeNull();
+
+    const users = new Map([['u1', activeUser('u1')]]);
+    const roles = new Map([['u1', ['platform_owner']]]);
+    const authz = mkAuthz(users, roles);
+    const guard = mkGuard(authz);
+    // Missing/invalid access principal (expired token yields no user) never reaches permission allow.
+    await expect(guard.canActivate(mkCtx(undefined))).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('AUTH38: deny path does not leak whether permission exists', async () => {
+    const users = new Map([['u1', activeUser('u1')]]);
+    const roles = new Map([['u1', ['auditor']]]);
+    const authz = mkAuthz(users, roles);
+    const unknown = authz.assertPermission(platformClaims('u1'), 'not.a.real.permission' as any);
+    const knownDenied = authz.assertPermission(platformClaims('u1'), 'platform-user.invite');
+    await expect(unknown).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(knownDenied).rejects.toBeInstanceOf(ForbiddenException);
+    try {
+      await unknown;
+    } catch (a: any) {
+      try {
+        await knownDenied;
+      } catch (b: any) {
+        expect(a.constructor).toBe(b.constructor);
+        expect(String(a.message)).not.toMatch(/does not exist|unknown permission key catalog/i);
+        expect(String(b.message)).not.toMatch(/exists in catalog|permission is valid/i);
+      }
+    }
+  });
+
+  it('MA16: ValidationPipe strips __proto__/constructor object-key abuse', async () => {
+    const { ValidationPipe } = require('@nestjs/common');
+    const { IsString } = require('class-validator');
+    class BodyDto {
+      @IsString()
+      name!: string;
+    }
+    const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true });
+    const polluted = JSON.parse('{"name":"ok","__proto__":{"admin":true},"constructor":{"prototype":{"x":1}}}');
+    const cleaned = await pipe.transform(polluted, {
+      type: 'body',
+      metatype: BodyDto,
+      data: '',
+    });
+    expect(cleaned).toEqual({ name: 'ok' });
+    expect(Object.getOwnPropertyNames(cleaned)).toEqual(['name']);
+    expect(Object.prototype).not.toHaveProperty('admin');
+    expect((cleaned as any).admin).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(cleaned, '__proto__')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(cleaned, 'constructor')).toBe(false);
+  });
+
+  it('IO24: rejects path traversal in storage keys', async () => {
+    const { mkdtemp, rm } = require('fs/promises');
+    const { join } = require('path');
+    const { tmpdir } = require('os');
+    const { LocalMediaStorageService } = require('../../media/infrastructure/storage/local-media-storage.service');
+    const basePath = await mkdtemp(join(tmpdir(), 'step28-path-'));
+    try {
+      const storage = new LocalMediaStorageService({ basePath });
+      await expect(storage.get('../etc/passwd')).rejects.toThrow(/Invalid storage key/i);
+      await expect(storage.get('tenant-a/../../etc/passwd')).rejects.toThrow(/Invalid storage key/i);
+    } finally {
+      await rm(basePath, { recursive: true, force: true });
+    }
+  });
 });

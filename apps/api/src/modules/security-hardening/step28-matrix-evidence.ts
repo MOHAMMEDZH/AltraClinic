@@ -3,6 +3,12 @@
  * Built from the conversation evidence map; testFile paths are real repository artifacts.
  */
 
+import {
+  scanCandidateSemanticMismatches,
+  validateExactConceptTags,
+  validateThreatMitigationConcepts,
+} from './step28-semantic-concepts';
+
 export type MatrixEvidenceType = 'jest' | 'script' | 'unit' | 'integration' | 'docs';
 export type MatrixApplicability = 'applicable' | 'na';
 export type MatrixEvidenceResult = 'Pass' | 'Fixed' | 'N/A' | 'Residual';
@@ -44,6 +50,10 @@ export type MatrixEvidenceEntry = {
   mitigationIds?: string[];
   semanticReviewStatus?: MatrixSemanticReviewStatus;
   semanticReviewNote?: string;
+  /** Executable security concept tags for EXACT records / mitigations. */
+  securityConceptTags?: string[];
+  /** Threat concept tags for DOCS_ONLY TH records. */
+  threatConceptTags?: string[];
   result: MatrixEvidenceResult;
 };
 
@@ -107,7 +117,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "AUTH02",
@@ -124,7 +138,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "does not grant permissions for legacy super_admin role name",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "role-name-bypass-deny"
+    ]
   },
   {
     "id": "AUTH03",
@@ -141,7 +158,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "super_admin role name grants nothing without permissions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH04",
@@ -158,7 +178,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH04: missing authentication yields Unauthorized on platform permission guard",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "missing-auth",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH05",
@@ -175,7 +199,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH05: empty role set after authz revision bump denies previously allowed permission",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "authz-cache-revision",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH06",
@@ -192,7 +220,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH07",
@@ -209,7 +240,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "wildcard-permission-deny"
+    ]
   },
   {
     "id": "AUTH08",
@@ -226,7 +260,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH09",
@@ -243,7 +280,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH09: sales representative cannot invite platform users",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH10",
@@ -260,7 +300,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH10: suspended platform user denied even with structurally valid session",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "AUTH11",
@@ -277,7 +320,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH11: authz cache invalidated on revision bump",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "authz-cache-revision"
+    ]
   },
   {
     "id": "AUTH12",
@@ -294,7 +340,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces SoD for self-elevation, last owner, and MFA reset parties",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "AUTH13",
@@ -311,7 +360,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "clinic tokens keep clinic audience and are not platform",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH14",
@@ -328,7 +380,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH14: permission denial produces zero authorization side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH15",
@@ -345,7 +400,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "does not grant unknown or super-admin role names",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH16",
@@ -362,7 +420,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH16: inactive permission lifecycle never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH17",
@@ -379,7 +440,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "role name alone does not establish platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH18",
@@ -396,7 +460,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH19",
@@ -413,7 +480,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH20",
@@ -430,7 +500,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH21",
@@ -447,7 +520,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "patient tokens keep patient-portal audience",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH22",
@@ -464,7 +540,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH22: invite permission requires exact catalog key platform-user.invite",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH23",
@@ -481,7 +560,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH24",
@@ -498,7 +580,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH24: mutate permission does not imply approve permission",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH25",
@@ -515,7 +600,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH25: approve permission does not imply revoke permission",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH26",
@@ -532,7 +620,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "prevents self-elevation and last-owner removal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH27",
@@ -549,7 +640,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces SoD for self-elevation, last owner, and MFA reset parties",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "AUTH28",
@@ -566,7 +660,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "issues a preauth token that is REJECTED by the access-token verifier and by type checks",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH29",
@@ -583,24 +680,31 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "logout revokes session and blacklists jti; me returns safe metadata",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime",
+      "expired-access-token"
+    ]
   },
   {
     "id": "AUTH30",
     "canonicalMeaning": "Expired access token never evaluates permissions",
-    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
-    "testTitle": "rejects refresh when the session breached the absolute lifetime",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH30: expired access token never evaluates permissions",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "expired platform access JWT",
+    "attackOrFailure": "present expired access token to permission guard path",
+    "expectedResult": "token verify fails; Unauthorized before permission allow",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "linkageMode": "exact-title",
+    "linkageMode": "id-tag",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "assertionAnchor": "AUTH30: expired access token never evaluates permissions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "expired-access-token"
+    ]
   },
   {
     "id": "AUTH31",
@@ -617,7 +721,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH32",
@@ -634,7 +741,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH32: Clinic PermissionGuard bypass does not apply on platform routes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH33",
@@ -651,7 +761,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH34",
@@ -668,7 +781,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "does not grant unknown or super-admin role names",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH35",
@@ -685,7 +801,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "does not grant unknown or super-admin role names",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH36",
@@ -702,7 +821,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH37",
@@ -719,24 +841,30 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "guard metadata key is required for permission enforcement",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH38",
     "canonicalMeaning": "Deny path does not leak whether permission exists",
-    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
-    "testTitle": "returns indistinguishable errors for unknown account and wrong password",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH38: deny path does not leak whether permission exists",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "authenticated platform user lacking invite permission",
+    "attackOrFailure": "probe unknown vs known-denied permission keys",
+    "expectedResult": "equivalent ForbiddenException; no existence leak",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "linkageMode": "exact-title",
+    "linkageMode": "id-tag",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "returns indistinguishable errors for unknown account and wrong password",
+    "assertionAnchor": "AUTH38: deny path does not leak whether permission exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "permission-enumeration-resistance"
+    ]
   },
   {
     "id": "AUTH39",
@@ -753,7 +881,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "AUTH39: effective permissions sorted deterministically",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUTH40",
@@ -770,7 +901,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND01",
@@ -787,7 +921,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND02",
@@ -804,7 +941,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND03",
@@ -821,7 +961,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong issuer, audience, principal boundary, revoked JTI, and tenant-bearing platform token",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND04",
@@ -838,7 +981,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong issuer, audience, principal, revoked JTI, tenant-bearing platform token",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND05",
@@ -855,7 +1001,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects clinic token on platform tenant-directory routes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND06",
@@ -872,7 +1021,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "POST refresh handler inherits platform-auth route metadata from the controller class",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND07",
@@ -889,7 +1041,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects missing/Clinic/patient/pre-auth; accepts Platform JWT",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND08",
@@ -906,7 +1061,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong principal boundary (platform sessionClass without platform principal)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND09",
@@ -923,7 +1081,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND10",
@@ -940,7 +1101,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND11",
@@ -957,7 +1121,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong issuer, audience, principal boundary, revoked JTI, and tenant-bearing platform token",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND12",
@@ -974,7 +1141,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong issuer, audience, principal, revoked JTI, tenant-bearing platform token",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND13",
@@ -991,7 +1161,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects clinic token on platform tenant-directory routes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND14",
@@ -1008,7 +1181,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "POST refresh handler inherits platform-auth route metadata from the controller class",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND15",
@@ -1025,7 +1201,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects missing/Clinic/patient/pre-auth; accepts Platform JWT",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "BND16",
@@ -1042,7 +1221,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects wrong principal boundary (platform sessionClass without platform principal)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API01",
@@ -1059,7 +1241,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H01: valid Platform principal with required permission (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "API02",
@@ -1076,7 +1262,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API03",
@@ -1093,7 +1282,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "API04",
@@ -1110,7 +1302,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H04: tenant principal rejected (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "API05",
@@ -1127,7 +1323,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H21: passive read does not extend session activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API06",
@@ -1144,7 +1343,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API07",
@@ -1161,7 +1363,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H07: expired session or token (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "API08",
@@ -1178,7 +1384,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API09",
@@ -1195,7 +1404,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "API10",
@@ -1212,7 +1424,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H10: missing permission (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "provisioning-permission-deny",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API11",
@@ -1229,7 +1446,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H21: passive read does not extend session activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API12",
@@ -1246,7 +1466,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API13",
@@ -1263,7 +1486,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: direct-link UI authorization denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API14",
@@ -1280,7 +1507,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API15",
@@ -1297,7 +1527,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "API16",
@@ -1314,7 +1547,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H16: service not called after authorization denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API17",
@@ -1331,7 +1568,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H21: passive read does not extend session activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API18",
@@ -1348,7 +1588,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API19",
@@ -1365,7 +1608,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H19: safe error body (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API20",
@@ -1382,7 +1629,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API21",
@@ -1399,7 +1649,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "API22",
@@ -1416,7 +1669,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H22: pagination and bounds enforced (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API23",
@@ -1433,7 +1690,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H21: passive read does not extend session activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API24",
@@ -1450,7 +1710,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API25",
@@ -1467,7 +1730,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H25: required idempotency key missing (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API26",
@@ -1484,7 +1751,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API27",
@@ -1501,7 +1771,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "API28",
@@ -1518,7 +1791,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H28: expected rowVersion missing when required (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API29",
@@ -1535,7 +1812,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H21: passive read does not extend session activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API30",
@@ -1552,7 +1832,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API31",
@@ -1569,7 +1852,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: stale step-up rejected (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "API32",
@@ -1586,7 +1873,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "R01 H22: invalid cursor",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "MA01",
@@ -1603,7 +1893,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "mass-assignment",
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA02",
@@ -1620,7 +1914,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "mass-assignment",
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA03",
@@ -1637,7 +1935,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "mass-assignment",
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA04",
@@ -1654,7 +1956,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA05",
@@ -1671,7 +1976,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA06",
@@ -1688,7 +1996,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA07",
@@ -1705,7 +2016,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA08",
@@ -1722,7 +2036,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA09",
@@ -1739,7 +2056,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA10",
@@ -1756,7 +2076,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA11",
@@ -1773,7 +2096,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA12",
@@ -1790,7 +2116,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA13",
@@ -1807,7 +2136,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA14",
@@ -1824,7 +2156,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA15",
@@ -1841,24 +2176,32 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "MA16",
-    "canonicalMeaning": "Protected IDs remain server-owned after transform",
-    "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "strips protected fields not declared on DTO (whitelist)",
+    "canonicalMeaning": "ValidationPipe strips __proto__/constructor prototype object-key abuse",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "MA16: ValidationPipe strips __proto__/constructor object-key abuse",
     "routeModuleControl": "ValidationPipe whitelist/transform",
     "principalSetup": "authenticated caller with forged body fields",
-    "attackOrFailure": "mass assignment of protected fields",
-    "expectedResult": "unknown fields stripped; DTO-only shape retained",
+    "attackOrFailure": "JSON body with __proto__/constructor pollution keys",
+    "expectedResult": "whitelist strips dangerous keys; Object.prototype untouched",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "linkageMode": "exact-title",
+    "linkageMode": "id-tag",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "assertionAnchor": "MA16: ValidationPipe strips __proto__/constructor object-key abuse",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "prototype-pollution",
+      "dangerous-object-key",
+      "dto-whitelist"
+    ]
   },
   {
     "id": "PVSEC01",
@@ -1875,7 +2218,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC02",
@@ -1892,7 +2238,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC03",
@@ -1909,7 +2258,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces Plan and Version lifecycle transitions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC04",
@@ -1926,7 +2278,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC05",
@@ -1943,7 +2298,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC06",
@@ -1960,7 +2318,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces Plan and Version lifecycle transitions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC07",
@@ -1977,7 +2338,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC08",
@@ -1994,7 +2358,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC09",
@@ -2011,7 +2378,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces Plan and Version lifecycle transitions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC10",
@@ -2028,7 +2398,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC11",
@@ -2045,7 +2418,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PVSEC12",
@@ -2062,7 +2438,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces Plan and Version lifecycle transitions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "OVR01",
@@ -2079,7 +2458,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR02",
@@ -2096,7 +2478,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GOV06: creator equals approver is rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR03",
@@ -2113,7 +2498,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "exposes all expected Add-on and Override handlers",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR04",
@@ -2130,7 +2518,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR05",
@@ -2147,7 +2538,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GOV06: creator equals approver is rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR06",
@@ -2164,7 +2558,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "exposes all expected Add-on and Override handlers",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR07",
@@ -2181,7 +2578,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR08",
@@ -2198,7 +2598,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GOV06: creator equals approver is rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR09",
@@ -2215,7 +2618,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "exposes all expected Add-on and Override handlers",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR10",
@@ -2232,7 +2638,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR11",
@@ -2249,7 +2658,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GOV06: creator equals approver is rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR12",
@@ -2266,7 +2678,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "exposes all expected Add-on and Override handlers",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR13",
@@ -2283,7 +2698,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR14",
@@ -2300,7 +2718,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GOV06: creator equals approver is rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR15",
@@ -2317,7 +2738,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "exposes all expected Add-on and Override handlers",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "OVR16",
@@ -2334,7 +2758,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG01",
@@ -2351,7 +2778,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG02",
@@ -2368,7 +2798,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG03",
@@ -2385,7 +2818,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG04",
@@ -2402,7 +2838,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG05",
@@ -2419,7 +2858,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG06",
@@ -2436,7 +2878,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG07",
@@ -2453,7 +2898,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG08",
@@ -2470,7 +2918,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG09",
@@ -2487,7 +2938,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG10",
@@ -2504,7 +2958,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG11",
@@ -2521,7 +2978,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG12",
@@ -2538,7 +2998,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG13",
@@ -2555,7 +3018,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG14",
@@ -2572,7 +3038,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG15",
@@ -2589,7 +3058,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG16",
@@ -2606,7 +3078,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG17",
@@ -2623,7 +3098,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG18",
@@ -2640,7 +3118,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SG19",
@@ -2657,7 +3138,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "sod-dual-control"
+    ]
   },
   {
     "id": "SG20",
@@ -2674,7 +3158,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF01",
@@ -2691,7 +3178,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "entitlement deny + flag allow => deny",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "feature-flag-not-entitlement"
+    ]
   },
   {
     "id": "FF02",
@@ -2708,7 +3198,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "feature-flag-not-entitlement"
+    ]
   },
   {
     "id": "FF03",
@@ -2725,7 +3218,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "settings route is available for Step 20",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF04",
@@ -2742,7 +3238,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "entitlement deny + flag allow => deny",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF05",
@@ -2759,7 +3258,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF06",
@@ -2776,7 +3278,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "renders operational banner and empty flags without restricted flash",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF07",
@@ -2793,7 +3298,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "entitlement deny + flag allow => deny",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF08",
@@ -2810,7 +3318,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF09",
@@ -2827,7 +3338,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "settings route is available for Step 20",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF10",
@@ -2844,7 +3358,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "entitlement deny + flag allow => deny",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF11",
@@ -2861,7 +3378,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FF12",
@@ -2878,7 +3398,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "renders operational banner and empty flags without restricted flash",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER01",
@@ -2895,7 +3418,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER02",
@@ -2912,7 +3438,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER03",
@@ -2929,7 +3458,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER04",
@@ -2946,7 +3478,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "fail-closes on unsupported schema",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER05",
@@ -2963,7 +3498,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER06",
@@ -2980,7 +3518,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER07",
@@ -2997,7 +3538,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER08",
@@ -3014,7 +3558,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "trims and accepts stable keys; rejects empty / whitespace-bearing",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER09",
@@ -3031,7 +3578,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER10",
@@ -3048,7 +3598,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER11",
@@ -3065,7 +3618,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER12",
@@ -3082,7 +3638,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "namespaces keys under resolver schema and isolates tenant/provenance/source/snapshot/fingerprint",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER13",
@@ -3099,7 +3658,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER14",
@@ -3116,7 +3678,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER15",
@@ -3133,7 +3698,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER16",
@@ -3150,7 +3718,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "fail-closes on fingerprint mismatch (no silent legacy)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER17",
@@ -3167,7 +3738,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER18",
@@ -3184,7 +3758,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER19",
@@ -3201,7 +3778,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER20",
@@ -3218,7 +3798,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects duplicate addon / override ids",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER21",
@@ -3235,7 +3818,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "ER22",
@@ -3252,7 +3838,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER23",
@@ -3269,7 +3858,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "NEVER_MANAGED when all history absent",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "ER24",
@@ -3286,7 +3878,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SET_UNLIMITED override is distinct from absent limit",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM01",
@@ -3303,7 +3898,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM02",
@@ -3320,7 +3918,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "limit-fail-closed"
+    ]
   },
   {
     "id": "LIM03",
@@ -3337,7 +3938,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "limit-fail-closed"
+    ]
   },
   {
     "id": "LIM04",
@@ -3354,7 +3958,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "limit-fail-closed"
+    ]
   },
   {
     "id": "LIM05",
@@ -3371,7 +3978,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM06",
@@ -3388,7 +3998,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM07",
@@ -3405,7 +4018,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM08",
@@ -3422,7 +4038,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM09",
@@ -3439,7 +4058,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM10",
@@ -3456,7 +4078,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM11",
@@ -3473,7 +4098,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM12",
@@ -3490,7 +4118,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM13",
@@ -3507,7 +4138,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM14",
@@ -3524,7 +4158,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM15",
@@ -3541,7 +4178,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM16",
@@ -3558,7 +4198,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM17",
@@ -3575,7 +4218,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies UNCONFIGURED fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM18",
@@ -3592,7 +4238,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM19",
@@ -3609,7 +4258,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LIM20",
@@ -3626,7 +4278,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE01",
@@ -3643,7 +4298,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "authz-cache-revision",
+      "tenant-isolation"
+    ]
   },
   {
     "id": "CACHE02",
@@ -3660,7 +4319,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE03",
@@ -3677,7 +4339,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE04",
@@ -3694,7 +4359,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE05",
@@ -3711,7 +4379,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE06",
@@ -3728,7 +4399,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE07",
@@ -3745,7 +4419,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE08",
@@ -3762,7 +4439,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE09",
@@ -3779,7 +4459,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE10",
@@ -3796,7 +4479,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE11",
@@ -3813,7 +4499,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE12",
@@ -3830,7 +4519,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE13",
@@ -3847,7 +4539,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE14",
@@ -3864,7 +4559,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE15",
@@ -3881,7 +4579,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE16",
@@ -3898,7 +4599,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE17",
@@ -3915,7 +4619,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "CACHE18",
@@ -3932,7 +4639,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activation invalidates / changes cache key identity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE19",
@@ -3949,7 +4659,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CACHE20",
@@ -3966,7 +4679,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user"
+    ]
   },
   {
     "id": "SES01",
@@ -3983,7 +4699,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES02",
@@ -4000,7 +4719,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES03",
@@ -4017,7 +4739,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never stores the plaintext TOTP secret — only an AES-GCM envelope",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES04",
@@ -4034,7 +4759,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES05",
@@ -4051,7 +4779,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "SES06",
@@ -4068,7 +4799,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects an invalid TOTP code and increments failedMfaCount",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES07",
@@ -4085,7 +4819,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES08",
@@ -4102,7 +4839,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "SES09",
@@ -4119,7 +4859,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step-up verify binds freshness to the CURRENT session only",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES10",
@@ -4136,7 +4879,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES11",
@@ -4153,7 +4899,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "SES12",
@@ -4170,7 +4919,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "PlatformSessionPolicyService rejects and revokes idle/absolute-expired sessions",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES13",
@@ -4187,7 +4939,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES14",
@@ -4204,7 +4959,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "SES15",
@@ -4221,7 +4979,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "session-list and step-up-status polling do not extend idle activity",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES16",
@@ -4238,7 +4999,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SES17",
@@ -4255,7 +5019,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "SES18",
@@ -4272,7 +5039,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "activity after idle or absolute expiry is rejected and never changes absolute expiry",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF01",
@@ -4289,7 +5059,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF02",
@@ -4306,7 +5079,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF03",
@@ -4323,7 +5099,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF04",
@@ -4340,7 +5119,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF05",
@@ -4357,7 +5139,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF06",
@@ -4374,7 +5159,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF07",
@@ -4409,7 +5197,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF09",
@@ -4426,7 +5217,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF10",
@@ -4443,7 +5237,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF11",
@@ -4460,7 +5257,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSRF12",
@@ -4477,7 +5277,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "parses cookies and enforces exact origins",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CORS01",
@@ -4494,7 +5297,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
     "semanticReviewStatus": "EXACT",
-    "result": "Fixed"
+    "result": "Fixed",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS02",
@@ -4511,7 +5317,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS02: wildcard in CORS_ORIGINS throws",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS03",
@@ -4528,7 +5337,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS04",
@@ -4545,7 +5357,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS05",
@@ -4562,7 +5377,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS06",
@@ -4579,7 +5397,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS07",
@@ -4596,7 +5417,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS02: wildcard in CORS_ORIGINS throws",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS08",
@@ -4613,7 +5437,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS09",
@@ -4630,7 +5457,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "CORS10",
@@ -4647,7 +5477,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "HDR01",
@@ -4664,7 +5497,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Fixed"
+    "result": "Fixed",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR02",
@@ -4681,7 +5517,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR03",
@@ -4698,7 +5537,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR04",
@@ -4715,7 +5557,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR05",
@@ -4732,7 +5577,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR06",
@@ -4749,7 +5597,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR07",
@@ -4766,7 +5617,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR08",
@@ -4783,7 +5637,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR09",
@@ -4800,7 +5657,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR10",
@@ -4817,7 +5677,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR11",
@@ -4834,7 +5697,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR12",
@@ -4851,7 +5717,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR13",
@@ -4868,7 +5737,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR14",
@@ -4885,7 +5757,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HDR15",
@@ -4920,7 +5795,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sets baseline security headers and no-store on platform paths",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "RL01",
@@ -4937,7 +5815,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "RL02",
@@ -4954,7 +5835,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "throws 429 when tenant limit exceeded",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "RL03",
@@ -4971,7 +5855,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies when limit is exceeded",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL04",
@@ -4988,7 +5875,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL05",
@@ -5005,7 +5895,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL06",
@@ -5022,7 +5915,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants with different keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL07",
@@ -5039,7 +5935,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "clears the rate limit counter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL08",
@@ -5056,7 +5955,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL09",
@@ -5073,7 +5975,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "RL10",
@@ -5090,7 +5995,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants with different keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL11",
@@ -5107,7 +6015,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "clears the rate limit counter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL12",
@@ -5124,7 +6035,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL13",
@@ -5141,7 +6055,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "RL14",
@@ -5158,7 +6075,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "throws 429 when tenant limit exceeded",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL15",
@@ -5175,7 +6095,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "denies when limit is exceeded",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL16",
@@ -5192,7 +6115,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL17",
@@ -5209,7 +6135,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL18",
@@ -5226,7 +6155,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "isolates tenants with different keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL19",
@@ -5243,24 +6175,30 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "clears the rate limit counter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RL20",
     "canonicalMeaning": "X-Forwarded-For honored only when TRUST_PROXY enabled",
-    "testFile": "apps/api/src/modules/security-hardening/tests/step28-rltest-containment.unit.spec.ts",
-    "testTitle": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
+    "testTitle": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
     "routeModuleControl": "ApiRateLimitService + RateLimiterService",
     "principalSetup": "IP / tenant / tenant_user scopes",
-    "attackOrFailure": "XFF spoof / burst past limit / bypass via NODE_ENV",
-    "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
+    "attackOrFailure": "spoofed X-Forwarded-For when TRUST_PROXY disabled",
+    "expectedResult": "remote IP used; XFF ignored unless TRUST_PROXY enabled",
     "evidenceType": "unit",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
+    "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Fixed"
+    "result": "Fixed",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "SEC01",
@@ -5277,7 +6215,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC02",
@@ -5294,7 +6235,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC03",
@@ -5311,7 +6255,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC04",
@@ -5328,7 +6275,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC05",
@@ -5345,7 +6295,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC06",
@@ -5362,7 +6315,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC07",
@@ -5379,7 +6335,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC08",
@@ -5396,7 +6355,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC09",
@@ -5413,7 +6375,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC10",
@@ -5430,7 +6395,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC11",
@@ -5447,7 +6415,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC12",
@@ -5464,7 +6435,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC13",
@@ -5481,7 +6455,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC14",
@@ -5498,7 +6475,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC15",
@@ -5515,7 +6495,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC16",
@@ -5532,7 +6515,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC17",
@@ -5549,7 +6535,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC18",
@@ -5566,7 +6555,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never returns an access token when MFA is not enabled",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC19",
@@ -5583,7 +6575,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "SEC20",
@@ -5600,7 +6595,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG01",
@@ -5617,7 +6615,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "output-neutralization"
+    ]
   },
   {
     "id": "LOG02",
@@ -5634,7 +6635,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG03",
@@ -5651,7 +6655,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "generates and validates correlation IDs; rejects malformed inbound",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG04",
@@ -5668,7 +6675,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H04: wrong issuer rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG05",
@@ -5685,7 +6695,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HTTP middleware binds correlation when active and sets response header",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG06",
@@ -5702,7 +6715,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG07",
@@ -5719,7 +6735,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG08",
@@ -5736,7 +6755,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG09",
@@ -5753,7 +6775,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG10",
@@ -5770,7 +6795,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H10: authorized preference read returns the caller-scoped preference list",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG11",
@@ -5787,7 +6815,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "enforces tenant isolation on query",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "LOG12",
@@ -5804,7 +6835,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG13",
@@ -5821,7 +6855,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG14",
@@ -5838,7 +6875,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG15",
@@ -5855,7 +6895,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "is dormant when flags are OFF and write fails open",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "LOG16",
@@ -5872,7 +6915,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV01",
@@ -5889,7 +6935,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV02",
@@ -5906,7 +6955,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV03",
@@ -5923,7 +6975,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization",
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV04",
@@ -5940,7 +6997,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV05",
@@ -5957,7 +7017,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects correlationId containing patientId",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV06",
@@ -5974,7 +7037,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "PRIV07",
@@ -5991,7 +7058,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV08",
@@ -6008,7 +7078,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV09",
@@ -6025,7 +7098,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "PRIV10",
@@ -6042,7 +7119,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV11",
@@ -6059,7 +7139,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects correlationId containing patientId",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV12",
@@ -6076,7 +7159,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "PRIV13",
@@ -6093,7 +7180,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV14",
@@ -6110,7 +7200,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV15",
@@ -6127,7 +7220,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "PRIV16",
@@ -6144,7 +7241,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV17",
@@ -6161,7 +7261,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "rejects correlationId containing patientId",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "PRIV18",
@@ -6178,7 +7281,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "PRIV19",
@@ -6195,7 +7302,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01: no patient identifiers in templates",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "PRIV20",
@@ -6212,7 +7322,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP01",
@@ -6229,7 +7342,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP02",
@@ -6246,7 +7362,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP03",
@@ -6263,7 +7382,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP04",
@@ -6280,7 +7402,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP05",
@@ -6297,7 +7422,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP06",
@@ -6314,7 +7442,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP07",
@@ -6331,7 +7462,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP08",
@@ -6348,7 +7482,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP09",
@@ -6365,7 +7502,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP10",
@@ -6382,7 +7522,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP11",
@@ -6399,7 +7542,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP12",
@@ -6416,7 +7562,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP13",
@@ -6433,7 +7582,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP14",
@@ -6450,7 +7602,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP15",
@@ -6467,7 +7622,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP16",
@@ -6484,7 +7642,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP17",
@@ -6501,7 +7662,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP18",
@@ -6518,7 +7682,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP19",
@@ -6535,7 +7702,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "DEP20",
@@ -6552,7 +7722,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "IO01",
@@ -6569,7 +7742,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist",
+      "mass-assignment"
+    ]
   },
   {
     "id": "IO02",
@@ -6586,11 +7763,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization",
+      "output-neutralization"
+    ]
   },
   {
     "id": "IO03",
-    "canonicalMeaning": "Input/output hardening case IO03",
+    "canonicalMeaning": "Absolute filesystem paths redacted from public import/export job metadata",
     "testFile": "apps/api/src/modules/import-export/tests/public-job.mapper.spec.ts",
     "testTitle": "redacts absolute filesystem paths from job metadata",
     "routeModuleControl": "ValidationPipe + CSV/output redaction",
@@ -6603,7 +7785,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redacts absolute filesystem paths from job metadata",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "absolute-path-redaction",
+      "file-path-containment",
+      "safe-file-resolution"
+    ]
   },
   {
     "id": "IO04",
@@ -6620,7 +7807,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO05",
@@ -6637,7 +7827,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO06",
@@ -6654,7 +7848,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sanitizes metadata copies without mutating source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "absolute-path-redaction",
+      "safe-file-resolution"
+    ]
   },
   {
     "id": "IO07",
@@ -6671,7 +7869,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO08",
@@ -6688,7 +7889,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO09",
@@ -6705,7 +7910,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redacts absolute filesystem paths from job metadata",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "absolute-path-redaction"
+    ]
   },
   {
     "id": "IO10",
@@ -6722,7 +7930,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO11",
@@ -6739,7 +7950,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO12",
@@ -6756,7 +7971,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sanitizes metadata copies without mutating source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "IO13",
@@ -6773,7 +7991,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO14",
@@ -6790,7 +8011,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO15",
@@ -6807,7 +8032,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redacts absolute filesystem paths from job metadata",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "absolute-path-redaction"
+    ]
   },
   {
     "id": "IO16",
@@ -6824,7 +8052,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO17",
@@ -6841,7 +8072,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO18",
@@ -6858,7 +8093,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "sanitizes metadata copies without mutating source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "IO19",
@@ -6875,7 +8113,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO20",
@@ -6892,7 +8133,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO21",
@@ -6909,7 +8154,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redacts absolute filesystem paths from job metadata",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "absolute-path-redaction"
+    ]
   },
   {
     "id": "IO22",
@@ -6926,7 +8174,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "dto-whitelist"
+    ]
   },
   {
     "id": "IO23",
@@ -6943,24 +8194,33 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "E08 CSV formula neutralized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization"
+    ]
   },
   {
     "id": "IO24",
-    "canonicalMeaning": "Input/output hardening case IO24",
-    "testFile": "apps/api/src/modules/import-export/tests/public-job.mapper.spec.ts",
-    "testTitle": "sanitizes metadata copies without mutating source",
+    "canonicalMeaning": "Local media storage rejects path traversal in storage keys",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "IO24: rejects path traversal in storage keys",
     "routeModuleControl": "ValidationPipe + CSV/output redaction",
     "principalSetup": "API client with crafted input",
-    "attackOrFailure": "injection via input / formula/CSV exfil",
-    "expectedResult": "whitelist strip; neutralized/safe outputs",
+    "attackOrFailure": "../etc/passwd style storage key",
+    "expectedResult": "Invalid storage key rejection; no filesystem escape",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "linkageMode": "exact-title",
+    "linkageMode": "id-tag",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "sanitizes metadata copies without mutating source",
+    "assertionAnchor": "IO24: rejects path traversal in storage keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "path-traversal",
+      "file-path-containment",
+      "safe-file-resolution"
+    ]
   },
   {
     "id": "ISO01",
@@ -6977,7 +8237,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO02",
@@ -6994,7 +8257,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO03",
@@ -7011,7 +8277,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO04",
@@ -7028,7 +8297,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO05",
@@ -7045,7 +8317,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO06",
@@ -7062,7 +8337,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO07",
@@ -7079,7 +8357,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO08",
@@ -7096,7 +8377,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO09",
@@ -7113,7 +8397,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO10",
@@ -7130,7 +8417,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO11",
@@ -7147,7 +8437,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO12",
@@ -7164,7 +8457,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO13",
@@ -7181,7 +8477,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO14",
@@ -7198,7 +8497,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO15",
@@ -7215,7 +8517,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO16",
@@ -7232,7 +8537,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO17",
@@ -7249,7 +8557,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO18",
@@ -7266,7 +8577,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO19",
@@ -7283,7 +8597,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO20",
@@ -7300,7 +8617,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO21",
@@ -7317,7 +8637,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO22",
@@ -7334,7 +8657,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO23",
@@ -7351,7 +8677,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO24",
@@ -7368,7 +8697,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO25",
@@ -7385,7 +8717,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO26",
@@ -7402,7 +8737,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO27",
@@ -7419,7 +8757,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO28",
@@ -7436,7 +8777,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO29",
@@ -7453,7 +8797,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO30",
@@ -7470,7 +8817,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never queries without tenantId on findById",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO31",
@@ -7487,7 +8837,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "ISO32",
@@ -7504,7 +8857,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "AUDSEC01",
@@ -7521,7 +8877,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC02",
@@ -7538,7 +8897,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC03",
@@ -7555,7 +8917,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC04",
@@ -7572,7 +8937,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC05",
@@ -7589,7 +8957,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC06",
@@ -7606,7 +8977,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC07",
@@ -7623,7 +8997,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC08",
@@ -7640,7 +9017,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC09",
@@ -7657,7 +9037,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC10",
@@ -7674,7 +9057,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC11",
@@ -7691,7 +9077,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC12",
@@ -7708,7 +9097,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC13",
@@ -7725,7 +9117,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC14",
@@ -7742,7 +9137,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC15",
@@ -7759,7 +9157,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC16",
@@ -7776,7 +9177,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC17",
@@ -7793,7 +9197,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC18",
@@ -7810,7 +9217,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC19",
@@ -7827,7 +9237,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC20",
@@ -7844,7 +9257,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC21",
@@ -7861,7 +9277,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC22",
@@ -7878,7 +9297,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC23",
@@ -7895,7 +9317,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC24",
@@ -7912,7 +9337,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC25",
@@ -7929,7 +9357,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC26",
@@ -7946,7 +9377,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC27",
@@ -7963,7 +9397,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC28",
@@ -7980,7 +9417,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC29",
@@ -7997,7 +9437,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC30",
@@ -8014,7 +9457,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "AUDSEC31",
@@ -8031,7 +9477,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "A18 export creates exactly one success audit on first success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "export-sanitization"
+    ]
   },
   {
     "id": "AUDSEC32",
@@ -8048,7 +9497,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK01",
@@ -8065,7 +9517,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "HOOK02",
@@ -8082,7 +9537,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "HOOK03",
@@ -8099,7 +9557,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK04",
@@ -8116,7 +9577,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK05",
@@ -8133,7 +9597,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK06",
@@ -8150,7 +9617,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK07",
@@ -8167,7 +9637,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK08",
@@ -8184,7 +9657,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK09",
@@ -8201,7 +9677,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK10",
@@ -8218,7 +9697,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK11",
@@ -8235,7 +9717,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK12",
@@ -8252,7 +9737,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK13",
@@ -8269,7 +9757,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK14",
@@ -8286,7 +9777,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK15",
@@ -8303,7 +9797,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HOOK16",
@@ -8320,7 +9817,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "NOTSEC01",
@@ -8337,7 +9837,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P19: no Step 28 security-report data",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC02",
@@ -8354,7 +9857,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC03",
@@ -8371,7 +9877,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC04",
@@ -8388,7 +9897,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P19: no Step 28 security-report data",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC05",
@@ -8405,7 +9917,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC06",
@@ -8422,7 +9937,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC07",
@@ -8439,7 +9957,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P19: no Step 28 security-report data",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC08",
@@ -8456,7 +9977,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC09",
@@ -8473,7 +9997,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC10",
@@ -8490,7 +10017,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "P19: no Step 28 security-report data",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC11",
@@ -8507,7 +10037,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "NOTSEC12",
@@ -8524,7 +10057,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "UISEC01",
@@ -8541,7 +10077,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC02",
@@ -8558,7 +10097,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC03",
@@ -8575,7 +10117,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC04",
@@ -8592,7 +10137,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "redirects an in-progress MFA session away from ordinary protected routes back to the MFA step",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC05",
@@ -8609,7 +10157,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC06",
@@ -8626,7 +10177,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC07",
@@ -8643,7 +10197,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC08",
@@ -8660,7 +10217,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "routes a returning account through the MFA challenge page and signs in on success",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC09",
@@ -8677,7 +10237,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC10",
@@ -8694,7 +10257,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC11",
@@ -8711,7 +10277,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC12",
@@ -8728,7 +10297,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "completes enrollment, shows one-time recovery codes, and only continues after acknowledgement",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC13",
@@ -8745,7 +10317,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC14",
@@ -8762,7 +10337,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC15",
@@ -8779,7 +10357,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "UISEC16",
@@ -8796,7 +10377,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "routes a brand-new account through MFA enrollment after login, without touching browser storage",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC01",
@@ -8813,7 +10397,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H01: authorized template catalog read — platform_administrator gets the full code-defined catalog",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "notification-privacy"
+    ]
   },
   {
     "id": "HTTPSEC02",
@@ -8830,7 +10418,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H02: unauthenticated request is rejected (401, no catalog leak)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC03",
@@ -8847,7 +10438,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H03: Clinic principal denied on the Platform notifications surface",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "notification-privacy"
+    ]
   },
   {
     "id": "HTTPSEC04",
@@ -8864,7 +10459,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H04: wrong issuer rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "HTTPSEC05",
@@ -8881,7 +10480,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H05: wrong audience rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC06",
@@ -8898,7 +10500,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H06: expired token rejected (401)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC07",
@@ -8915,7 +10520,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H07: revoked session (blacklisted JTI) rejected",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC08",
@@ -8932,7 +10540,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H08: suspended Platform user is denied even with a structurally valid JWT (authz re-reads PlatformUser.canAuthenticate; documented actual = 403)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "suspended-user"
+    ]
   },
   {
     "id": "HTTPSEC09",
@@ -8949,7 +10561,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H09: missing permission denied — an authenticated platform role without notification permissions gets 403",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "notification-privacy"
+    ]
   },
   {
     "id": "HTTPSEC10",
@@ -8966,7 +10582,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H10: authorized preference read returns the caller-scoped preference list",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC11",
@@ -8983,7 +10602,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H11: authorized preference mutation persists an optional-category change",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC12",
@@ -9000,7 +10622,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H12: mandatory-notification disable attempt denied (403, nothing persisted)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "notification-privacy"
+    ]
   },
   {
     "id": "HTTPSEC13",
@@ -9017,7 +10643,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "notification-privacy"
+    ]
   },
   {
     "id": "HTTPSEC14",
@@ -9034,7 +10664,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H14: wildcard-intent bypass denied → N/A — no wildcard permission exists; the guard requires the exact dotted permission keys",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "permission-enumeration-resistance",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC15",
@@ -9051,7 +10685,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H15: template preview authorized for templates.view (no separate manage permission)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC16",
@@ -9068,7 +10705,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC17",
@@ -9085,7 +10725,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H17: delivery list authorized — dispatched Step 27 intents are listed with their template key",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC18",
@@ -9102,7 +10745,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H18: delivery direct-ID read is scope-enforced (own Step 27 intent 200; anything outside that scope 404)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC19",
@@ -9119,7 +10765,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H19: retry authorized with reason + Idempotency-Key",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC20",
@@ -9136,7 +10785,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H20: retry reason is required (blank reason → 4xx, no requeue)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC21",
@@ -9153,7 +10805,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H21: step-up required → N/A — no Step 27 route declares a step-up/MFA re-auth requirement (permission + Idempotency-Key only)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC22",
@@ -9170,7 +10825,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H22: OCC conflict on preference mutation returns 409 for a stale expectedRowVersion",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC23",
@@ -9187,7 +10845,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H23: deterministic pagination — repeated identical page requests return identical ordered ids",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "tenant-isolation",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC24",
@@ -9204,7 +10866,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H24: bounded filtering — pageSize is clamped and the status filter never widens the result set",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC25",
@@ -9221,7 +10886,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H25: no existence oracle — an unauthorized caller gets the same 403 for an existing and a missing delivery id",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC26",
@@ -9238,7 +10906,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC27",
@@ -9255,7 +10926,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC28",
@@ -9272,7 +10946,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H28: provider credentials are absent from every response (no SMTP host / API key / sender secret)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC29",
@@ -9289,7 +10966,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H29: passive read preserves session state (no rotation, revocation or authzRevision bump)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "authz-cache-revision",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC30",
@@ -9306,7 +10987,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H30: the application service is never invoked after an authorization denial",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC31",
@@ -9323,7 +11007,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC32",
@@ -9340,7 +11027,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H44: preferences cannot cross principal scope (mutating another platform user is denied)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC33",
@@ -9357,7 +11047,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H45: retry does not duplicate the logical delivery (same intent, same single email)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC34",
@@ -9374,7 +11067,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H46: missing template / unknown key fails safely (4xx, no catalog enumeration in the error)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC35",
@@ -9391,7 +11087,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H47: unknown locale is handled safely (deterministic en-US fallback, no renderer crash)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC36",
@@ -9408,7 +11107,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H48: no raw message secret in the delivery response (rendered body carries no credentials or raw tokens)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC37",
@@ -9425,7 +11127,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC38",
@@ -9442,7 +11147,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H50: error bodies are safe and shaped (statusCode/code/message only, no stack or internals)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC39",
@@ -9459,7 +11167,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H01: valid Platform principal with required permission (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "HTTPSEC40",
@@ -9476,7 +11188,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H02: missing authentication (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "missing-auth",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC41",
@@ -9493,7 +11209,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H03: clinic principal rejected (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC42",
@@ -9510,7 +11229,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H04: tenant principal rejected (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC43",
@@ -9527,7 +11249,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H05: wrong issuer (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC44",
@@ -9544,7 +11269,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H06: wrong audience (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC45",
@@ -9561,7 +11289,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H07: expired session or token (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC46",
@@ -9578,7 +11309,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H08: revoked session (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC47",
@@ -9595,7 +11329,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H09: suspended Platform user (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "suspended-user",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC48",
@@ -9612,7 +11350,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H10: missing permission (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "provisioning-permission-deny",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC49",
@@ -9629,7 +11372,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H11: role-name-only bypass denied (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "role-name-bypass-deny",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC50",
@@ -9646,7 +11394,12 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H12: wildcard permission bypass denied (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "provisioning-rbac",
+      "wildcard-permission-deny",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC51",
@@ -9663,7 +11416,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H13: direct-link UI authorization denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC52",
@@ -9680,7 +11436,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H14: actual route rate limit returns 429 (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC53",
@@ -9697,7 +11456,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H15: service not called after authentication denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC54",
@@ -9714,7 +11476,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H16: service not called after authorization denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC55",
@@ -9731,7 +11496,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H17: service not called after rate-limit denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC56",
@@ -9748,7 +11516,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H18: zero side effects after denial (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC57",
@@ -9765,7 +11536,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H19: safe error body (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC58",
@@ -9782,7 +11556,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H20: Cache-Control private no-store (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC59",
@@ -9799,7 +11576,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H21: passive read does not extend Platform session activity (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "HTTPSEC60",
@@ -9816,7 +11596,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "H22: pagination and bounds enforced (${route.key})",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC01",
@@ -9833,7 +11616,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "FSEC02",
@@ -9850,7 +11636,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC03",
@@ -9867,7 +11656,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC04",
@@ -9884,7 +11676,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F04: backup_adapter injection fails listBackups",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC05",
@@ -9901,7 +11696,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC06",
@@ -9918,7 +11716,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC07",
@@ -9935,7 +11736,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC08",
@@ -9952,7 +11756,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F08: after_idempotency_claim injection fails before proceed",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC09",
@@ -9969,7 +11776,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC10",
@@ -9986,7 +11796,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC11",
@@ -10003,7 +11816,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC12",
@@ -10020,7 +11836,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F12: after_commit_before_response injection after successful retry commit",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC13",
@@ -10037,7 +11856,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC14",
@@ -10054,7 +11876,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC15",
@@ -10071,7 +11896,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC16",
@@ -10088,7 +11916,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F16 Not Applicable — no subscription_expiry_retry action in Step 22",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC17",
@@ -10105,7 +11936,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC18",
@@ -10122,7 +11956,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC19",
@@ -10139,7 +11976,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC20",
@@ -10156,7 +11996,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F20: service_recreation injection point registered (no runtime hook in Step 22)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC21",
@@ -10173,7 +12016,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC22",
@@ -10190,7 +12036,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC23",
@@ -10207,7 +12056,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "FSEC24",
@@ -10224,7 +12076,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "F24 Not Applicable — Step 22 owns no rollback/recovery compensation path",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC01",
@@ -10241,7 +12096,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "CSEC02",
@@ -10258,7 +12116,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC03",
@@ -10275,7 +12136,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I11: service recreation — create on stack1, replay create on stack2 → same Trial id",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC04",
@@ -10292,7 +12156,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC05",
@@ -10309,7 +12176,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC06",
@@ -10326,7 +12196,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I14: provisioning handoff replay — create replay → platformTenant and commercial config counts unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC07",
@@ -10343,7 +12216,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC08",
@@ -10360,7 +12236,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC09",
@@ -10377,7 +12256,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I09: convert same idempotency key with different paid target → idempotency_conflict",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC10",
@@ -10394,7 +12276,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC11",
@@ -10411,7 +12296,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC12",
@@ -10428,7 +12316,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I12: process-local cache loss — new stack (new EER/durable) replay convert → same conversion; durable store is DB",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC13",
@@ -10445,7 +12336,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC14",
@@ -10462,7 +12356,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC15",
@@ -10479,7 +12376,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I15: lifecycle handoff replay — convert then replay → PlatformTenant stays ACTIVE once; trialEndsAt stays null",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC16",
@@ -10496,7 +12396,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC17",
@@ -10513,7 +12416,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC18",
@@ -10530,7 +12436,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I10: after_commit_before_response on CREATE then clear + new stack replay → committed result, no duplicate",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC19",
@@ -10547,7 +12456,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC20",
@@ -10564,7 +12476,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC21",
@@ -10581,7 +12496,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I13: multi-instance conversion same key concurrent — exactly one conversion; both observe same conversion id",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC22",
@@ -10598,7 +12516,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC23",
@@ -10615,7 +12536,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSEC24",
@@ -10632,7 +12556,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "I16: conversion-event replay — outbox count stays 1 on replay",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH01",
@@ -10648,15 +12575,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH13,AUTH18,BND01,HTTPSEC05",
+    "assertionAnchor": "mitigationIds=AUTH18,HTTPSEC05",
     "mitigationIds": [
-      "AUTH13",
       "AUTH18",
-      "BND01",
       "HTTPSEC05"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH02",
@@ -10672,15 +12600,17 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH01,AUTH21,BND02,HTTPSEC04",
+    "assertionAnchor": "mitigationIds=AUTH01,HTTPSEC04",
     "mitigationIds": [
       "AUTH01",
-      "AUTH21",
-      "BND02",
       "HTTPSEC04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH03",
@@ -10696,14 +12626,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=ISO03,ISO01,HTTPSEC23",
+    "assertionAnchor": "mitigationIds=ISO03,ISO01",
     "mitigationIds": [
       "ISO03",
-      "ISO01",
-      "HTTPSEC23"
+      "ISO01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "TH04",
@@ -10719,14 +12651,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH02,AUTH07,TENSA01",
+    "assertionAnchor": "mitigationIds=AUTH02,HTTPSEC49",
     "mitigationIds": [
       "AUTH02",
-      "AUTH07",
-      "TENSA01"
+      "HTTPSEC49"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "role-name-bypass-deny"
+    ]
   },
   {
     "id": "TH05",
@@ -10742,13 +12676,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH07,AUTH36",
+    "assertionAnchor": "mitigationIds=AUTH07,HTTPSEC50",
     "mitigationIds": [
       "AUTH07",
-      "AUTH36"
+      "HTTPSEC50"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "wildcard-permission-deny"
+    ]
   },
   {
     "id": "TH06",
@@ -10764,14 +12701,17 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=SES01,AUTH29,HTTPSEC07",
+    "assertionAnchor": "mitigationIds=AUTH30,AUTH29",
     "mitigationIds": [
-      "SES01",
-      "AUTH29",
-      "HTTPSEC07"
+      "AUTH30",
+      "AUTH29"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "expired-access-token",
+      "refresh-absolute-lifetime"
+    ]
   },
   {
     "id": "TH07",
@@ -10793,7 +12733,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "AUTH28"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH08",
@@ -10809,13 +12752,15 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=CSRF01,CSRF07",
+    "assertionAnchor": "mitigationIds=CSRF01",
     "mitigationIds": [
-      "CSRF01",
-      "CSRF07"
+      "CSRF01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH09",
@@ -10837,7 +12782,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "CORS02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Fixed"
+    "result": "Fixed",
+    "threatConceptTags": [
+      "cors-allowlist"
+    ]
   },
   {
     "id": "TH10",
@@ -10853,14 +12801,17 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=RL01,RL20,RLTEST01",
+    "assertionAnchor": "mitigationIds=RL20,RLTEST01",
     "mitigationIds": [
-      "RL01",
       "RL20",
       "RLTEST01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Fixed"
+    "result": "Fixed",
+    "threatConceptTags": [
+      "xff-trust-proxy",
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "TH11",
@@ -10876,13 +12827,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=PVSEC01,TENSA04",
+    "assertionAnchor": "mitigationIds=MA01,MA02",
     "mitigationIds": [
-      "PVSEC01",
-      "TENSA04"
+      "MA01",
+      "MA02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "mass-assignment"
+    ]
   },
   {
     "id": "TH12",
@@ -10898,13 +12852,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=OVR01,SG01",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
     "mitigationIds": [
-      "OVR01",
-      "SG01"
+      "API10",
+      "HTTPSEC48"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH13",
@@ -10920,13 +12877,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=OVR02,SG02",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
     "mitigationIds": [
-      "OVR02",
-      "SG02"
+      "API10",
+      "HTTPSEC48"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH14",
@@ -10942,13 +12902,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=BND03,SG03",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC49",
     "mitigationIds": [
-      "BND03",
-      "SG03"
+      "API10",
+      "HTTPSEC49"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH15",
@@ -10964,14 +12927,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=SG01,SG04,TENSA02",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
     "mitigationIds": [
-      "SG01",
-      "SG04",
-      "TENSA02"
+      "API10",
+      "HTTPSEC48"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH16",
@@ -10987,14 +12952,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=ER01,ER02,TENSA05",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC50",
     "mitigationIds": [
-      "ER01",
-      "ER02",
-      "TENSA05"
+      "API10",
+      "HTTPSEC50"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH17",
@@ -11010,13 +12977,15 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=CACHE01,CACHE02",
+    "assertionAnchor": "mitigationIds=AUTH11",
     "mitigationIds": [
-      "CACHE01",
-      "CACHE02"
+      "AUTH11"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "authz-cache-revision"
+    ]
   },
   {
     "id": "TH18",
@@ -11032,13 +13001,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=CACHE03,ISO02",
+    "assertionAnchor": "mitigationIds=ISO03,CACHE01",
     "mitigationIds": [
-      "CACHE03",
-      "ISO02"
+      "ISO03",
+      "CACHE01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "TH19",
@@ -11054,13 +13026,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=CACHE04,CACHE05",
+    "assertionAnchor": "mitigationIds=AUTH11,CACHE01",
     "mitigationIds": [
-      "CACHE04",
-      "CACHE05"
+      "AUTH11",
+      "CACHE01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "authz-cache-revision"
+    ]
   },
   {
     "id": "TH20",
@@ -11076,14 +13051,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=LIM03,LIM04,LIM01",
+    "assertionAnchor": "mitigationIds=LIM03,LIM04",
     "mitigationIds": [
       "LIM03",
-      "LIM04",
-      "LIM01"
+      "LIM04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "limit-fail-closed"
+    ]
   },
   {
     "id": "TH21",
@@ -11099,14 +13076,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=LIM02,LIM05,TENSA03",
+    "assertionAnchor": "mitigationIds=LIM03,LIM02",
     "mitigationIds": [
-      "LIM02",
-      "LIM05",
-      "TENSA03"
+      "LIM03",
+      "LIM02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "limit-fail-closed"
+    ]
   },
   {
     "id": "TH22",
@@ -11128,7 +13107,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "FF02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "feature-flag-not-entitlement"
+    ]
   },
   {
     "id": "TH23",
@@ -11144,13 +13126,17 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=ER03,API01",
+    "assertionAnchor": "mitigationIds=API01,HTTPSEC39",
     "mitigationIds": [
-      "ER03",
-      "API01"
+      "API01",
+      "HTTPSEC39"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary",
+      "provisioning-rbac"
+    ]
   },
   {
     "id": "TH24",
@@ -11166,13 +13152,22 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=HTTPSEC01,ISO03",
+    "assertionAnchor": "mitigationIds=API10,HTTPSEC48,HTTPSEC49,HTTPSEC50",
     "mitigationIds": [
-      "HTTPSEC01",
-      "ISO03"
+      "API10",
+      "HTTPSEC48",
+      "HTTPSEC49",
+      "HTTPSEC50"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "provisioning-rbac",
+      "provisioning-permission-deny",
+      "role-name-bypass-deny",
+      "wildcard-permission-deny"
+    ],
+    "semanticReviewNote": "Provisioning RBAC/permission/role-name/wildcard deny on provisioning HTTP surface"
   },
   {
     "id": "TH25",
@@ -11188,13 +13183,17 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=HTTPSEC08,AUTH10",
+    "assertionAnchor": "mitigationIds=AUTH10,HTTPSEC08",
     "mitigationIds": [
-      "HTTPSEC08",
-      "AUTH10"
+      "AUTH10",
+      "HTTPSEC08"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "suspended-user",
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH26",
@@ -11216,7 +13215,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "AUDSEC02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH27",
@@ -11232,13 +13234,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=LOG01,SEC01",
+    "assertionAnchor": "mitigationIds=IO02,LOG01",
     "mitigationIds": [
-      "LOG01",
-      "SEC01"
+      "IO02",
+      "LOG01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "output-neutralization"
+    ]
   },
   {
     "id": "TH28",
@@ -11254,13 +13259,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=PRIV01,PRIV02",
+    "assertionAnchor": "mitigationIds=PRIV01,PRIV04",
     "mitigationIds": [
       "PRIV01",
-      "PRIV02"
+      "PRIV04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "TH29",
@@ -11276,13 +13284,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=NOTSEC01,PRIV03",
+    "assertionAnchor": "mitigationIds=NOTSEC01,PRIV04",
     "mitigationIds": [
       "NOTSEC01",
-      "PRIV03"
+      "PRIV04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "TH30",
@@ -11298,13 +13309,20 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=IO01,PRIV04",
+    "assertionAnchor": "mitigationIds=IO02,PRIV03",
     "mitigationIds": [
-      "IO01",
-      "PRIV04"
+      "IO02",
+      "PRIV03"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "csv-formula-injection",
+      "export-sanitization",
+      "export-scope",
+      "output-neutralization"
+    ],
+    "semanticReviewNote": "CSV formula neutralization on audit/export surfaces"
   },
   {
     "id": "TH31",
@@ -11326,7 +13344,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "HTTPSEC23"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "tenant-isolation"
+    ]
   },
   {
     "id": "TH32",
@@ -11348,7 +13369,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "MA02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "mass-assignment",
+      "dto-whitelist"
+    ]
   },
   {
     "id": "TH33",
@@ -11364,13 +13389,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=MA03,API02",
+    "assertionAnchor": "mitigationIds=MA16",
     "mitigationIds": [
-      "MA03",
-      "API02"
+      "MA16"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "prototype-pollution",
+      "dangerous-object-key",
+      "dto-whitelist"
+    ],
+    "semanticReviewNote": "ValidationPipe strips __proto__/constructor object-key abuse"
   },
   {
     "id": "TH34",
@@ -11386,13 +13416,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=RL02,RLTEST02",
+    "assertionAnchor": "mitigationIds=RL20,RL02",
     "mitigationIds": [
-      "RL02",
-      "RLTEST02"
+      "RL20",
+      "RL02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "TH35",
@@ -11408,13 +13441,20 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=FSEC01,IO02",
+    "assertionAnchor": "mitigationIds=IO03,IO24",
     "mitigationIds": [
-      "FSEC01",
-      "IO02"
+      "IO03",
+      "IO24"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "path-traversal",
+      "absolute-path-redaction",
+      "file-path-containment",
+      "safe-file-resolution"
+    ],
+    "semanticReviewNote": "Absolute path redaction + storage-key path traversal rejection"
   },
   {
     "id": "TH36",
@@ -11436,7 +13476,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "DEP02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TH37",
@@ -11458,7 +13501,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "RLTEST01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "TH38",
@@ -11480,7 +13526,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "HOOK02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "TH39",
@@ -11502,7 +13551,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "NOTSEC03"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "TH40",
@@ -11524,7 +13576,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
       "CSEC01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
-    "result": "Pass"
+    "result": "Pass",
+    "threatConceptTags": [
+      "notification-privacy"
+    ]
   },
   {
     "id": "RLTEST01",
@@ -11541,7 +13596,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST01: NODE_ENV=production → bootstrap OK; bypass inactive without DI",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST02",
@@ -11558,7 +13616,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST02: NODE_ENV=development → bootstrap OK; bypass inactive",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST03",
@@ -11575,7 +13636,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST03: NODE_ENV=test bootstrap gate; NODE_ENV=test alone does not activate bypass",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST04",
@@ -11592,7 +13656,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST05",
@@ -11609,7 +13676,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST05: ALLOW alone without JEST_WORKER_ID → false; NODE_ENV=test alone → false",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST06",
@@ -11626,7 +13696,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST06: XFF ignored without TRUST_PROXY (enforce + sliding mock)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "xff-trust-proxy"
+    ]
   },
   {
     "id": "RLTEST07",
@@ -11643,7 +13716,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "RLTEST08",
@@ -11660,7 +13736,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "rate-limit-test-bypass"
+    ]
   },
   {
     "id": "TENSA01",
@@ -11677,7 +13756,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA01: PermissionGuard allows clinic JWT roles=[super_admin] same-tenant ordinary op",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA02",
@@ -11694,7 +13776,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA02: requireTenantScope cross-tenant read blocked",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA03",
@@ -11711,7 +13796,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA03: requireTenantScope cross-tenant mutation blocked (same util)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA04",
@@ -11728,7 +13816,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA04: JwtAuthGuard clinic claims on platform route → PLATFORM_PRINCIPAL_REQUIRED",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA05",
@@ -11745,7 +13836,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA05: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Plan mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA06",
@@ -11762,7 +13856,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA06: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Add-on mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA07",
@@ -11779,7 +13876,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA07: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Override mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA08",
@@ -11796,7 +13896,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA08: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (module entitlement mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA09",
@@ -11813,7 +13916,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA09: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (specialty entitlement mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA10",
@@ -11830,7 +13936,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA10: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (facility entitlement mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA11",
@@ -11847,7 +13956,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA11: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (limit entitlement mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA12",
@@ -11864,7 +13976,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA12: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Unlimited composition mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA13",
@@ -11881,7 +13996,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA13: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (PlanVersion mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA14",
@@ -11898,7 +14016,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA14: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Published PlanVersion immutability is Platform-owned)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA15",
@@ -11915,7 +14036,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA15: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Retired PlanVersion clone path is Platform-owned)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA16",
@@ -11932,7 +14056,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA16: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Catalog commercial mutations are Platform surfaces)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA17",
@@ -11949,7 +14076,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA17: Feature Flag cannot grant — permissionsForRoles empty; FF≠entitlement",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA18",
@@ -11966,7 +14096,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA18: managed EER LEGACY — NEVER_MANAGED / pending / terminal deny markers present",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA19",
@@ -11983,7 +14116,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA19: cache key includes tenantId — A ≠ B",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "TENSA20",
@@ -12000,7 +14136,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "TENSA20: provisioning is platform-auth — JwtAuthGuard rejects clinic on platform route",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP01",
@@ -12017,7 +14156,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP01: SUPER_ADMIN_CSP_POLICY is non-empty and includes default-src self",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP02",
@@ -12034,7 +14176,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP02: script-src is self-only (no unsafe-eval)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP03",
@@ -12051,7 +14196,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP03: style-src allows self + unsafe-inline + fonts.googleapis",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP04",
@@ -12068,7 +14216,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP04: font-src allows self + fonts.gstatic",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP05",
@@ -12085,7 +14236,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP05: img-src allows self + data:",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP06",
@@ -12102,7 +14256,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP06: frame-ancestors none",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP07",
@@ -12119,7 +14276,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP07: base-uri and form-action are self",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP08",
@@ -12136,7 +14296,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP09",
@@ -12153,7 +14316,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP09: vite.config.ts imports SUPER_ADMIN_CSP_POLICY SSOT",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP10",
@@ -12170,7 +14336,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP10: CSP_OWNERSHIP documents deployment-external production serving",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP11",
@@ -12187,7 +14356,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP11: Arabic/locale fonts not blocked — fonts.googleapis allowed in style-src",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP12",
@@ -12204,7 +14376,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP12: Arabic/locale fonts not blocked — fonts.gstatic allowed in font-src",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP13",
@@ -12221,7 +14396,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP13: parseCspDirectives round-trips directive names",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP14",
@@ -12238,7 +14416,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP14: connect-src includes local API and ws for dev; prod API origin is deploy-owned",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP15",
@@ -12255,7 +14436,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP15: vite Content-Security-Policy header value must use SSOT import",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   },
   {
     "id": "CSP16",
@@ -12272,7 +14456,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticEvidenceType": "exact",
     "assertionAnchor": "CSP16: no secrets in policy (no tokens, passwords, private keys)",
     "semanticReviewStatus": "EXACT",
-    "result": "Pass"
+    "result": "Pass",
+    "securityConceptTags": [
+      "http-passport-boundary"
+    ]
   }
 ] as MatrixEvidenceEntry[];
 }
@@ -12346,6 +14533,7 @@ export function assertMatrixEvidenceComplete(): void {
     /missing hook/i,
     /no dedicated test title/i,
   ];
+  const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
   for (const e of MATRIX_EVIDENCE) {
     if (!e.canonicalMeaning?.trim()) throw new Error(`Empty canonicalMeaning for ${e.id}`);
     if (/all pass/i.test(e.canonicalMeaning) || /all pass/i.test(e.expectedResult ?? '')) {
@@ -12366,6 +14554,17 @@ export function assertMatrixEvidenceComplete(): void {
       if (!e.testFile?.trim()) throw new Error(`Applicable entry ${e.id} missing testFile`);
       if (!e.testTitle?.trim()) throw new Error(`Applicable entry ${e.id} missing testTitle`);
     }
+    const exactErr = validateExactConceptTags(e);
+    if (exactErr) throw new Error(exactErr);
+    const threatErr = validateThreatMitigationConcepts(e, byId);
+    if (threatErr) throw new Error(threatErr);
+  }
+
+  const scan = scanCandidateSemanticMismatches(MATRIX_EVIDENCE);
+  if (scan.confirmed.length) {
+    throw new Error(
+      `Confirmed semantic mismatches remain: ${scan.confirmed.slice(0, 20).join(', ')}`,
+    );
   }
 
   const allCounts = { ...STEP28_CANONICAL_FAMILY_COUNTS, ...STEP28_CLOSURE_FAMILY_COUNTS };
