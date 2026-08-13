@@ -60,9 +60,9 @@ Disposition: **REUSE** / **IMPROVE** / **IMPLEMENT** / **DEFER**.
 | Notifications | Notification plane + `AppointmentReminderLog` | notifications module + scheduling | COMPLETE reminders / PARTIAL recall | Recall journey registry only |
 | Audit | Platform audit center | Step 21/28 modules | COMPLETE platform | Clinic price/service catalog audit PARTIAL |
 | Localization | UI i18n + `Tenant.locale` | `apps/clinic-dashboard/src/i18n`, `packages/i18n` | COMPLETE UI labels / PARTIAL data search | Service catalog bilingual incomplete |
-| Forms/consent library | — | Embedded plan consent fields; beauty notes | MISSING library | Versioned templates absent |
-| Recall operational | — | `packages/module-registry` journey packs only | MISSING | Docs aspirational (`INFORMATION_ARCHITECTURE.md`) |
-| Inventory batches | Inventory lot/expiry | inventory module | COMPLETE inventory | Not linked as injectable treatment usage SoR |
+| Forms/consent library | — | Embedded plan consent fields; beauty notes | MISSING library | Versioned templates absent (**P0-06**); photo/treatment consent coverage via same architecture (**P0-09**) |
+| Recall operational | — | `packages/module-registry` journey packs only | MISSING | Docs aspirational (`INFORMATION_ARCHITECTURE.md`); priority **P1-13** |
+| Inventory batches | Inventory lot/expiry | inventory module | COMPLETE inventory infra | Treatment-level injectable usage linkage MISSING (**P0-08**) |
 
 ---
 
@@ -77,7 +77,7 @@ Disposition: **REUSE** / **IMPROVE** / **IMPLEMENT** / **DEFER**.
 | 5 | Link to specialty | PARTIAL | P1 | IMPROVE | Platform specialties exist; appointments don't require specialty-service link |
 | 6 | Link to module/workflow | PARTIAL | P1 | IMPROVE | Module registry exists; booking types not module-bound |
 | 7 | Duration | PARTIAL | P0 | IMPROVE | Defaults in `SCHEDULING_SERVICE_TYPES`; templates have `durationMin` |
-| 8 | Provider qualification | MISSING | P0 | IMPLEMENT | No `ProviderServiceEligibility` |
+| 8 | Provider qualification / service-specific eligibility | MISSING | P0 | IMPLEMENT using existing User/provider/roles/schedules | Target SoR absent; generic provider identity/roles/schedules exist and are reusable — do not treat as PARTIAL for the eligibility target |
 | 9 | Chair/room/device requirement | PARTIAL | P0 | IMPROVE | Optional `resourceId`; type ROOM/EQUIPMENT only |
 | 10 | Variants without duplication | MISSING | P1 | IMPLEMENT | — |
 | 11 | Body-area variants | PARTIAL | P1 | IMPROVE | Beauty `zone` free-text |
@@ -208,28 +208,36 @@ Sources consulted (official product pages only; **do not copy UX/wording/impleme
 
 ## 8. Gap prioritization summary
 
-### P0 (must enter Enterprise QA closure design)
+### P0 (must enter Enterprise QA closure design — no DEFER)
 
-- Canonical clinical service catalog linked to booking
-- Appointment/service/price historical snapshot
-- Provider (+ resource) booking concurrency integrity
-- Provider eligibility for services
-- Treatment-plan ↔ appointment staging integrity
-- Versioned consent / clinical forms baseline
-- Price change audit + non-destructive history
-- Operational recall SoR (or explicit DEFER with risk acceptance)
+- P0-01 Canonical clinical service/procedure catalog linked to booking
+- P0-02 Appointment service/price historical snapshot
+- P0-03 Provider (+ resource) booking concurrency / hard double-book protection
+- P0-04 Service-specific provider eligibility (MISSING target SoR; reuse generic provider/roles/schedules)
+- P0-05 Treatment-plan ↔ appointment staging integrity
+- P0-06 Versioned clinical consent/forms baseline (single consent architecture)
+- P0-07 Price change audit + non-destructive history
+- P0-08 Injectable treatment batch/lot/expiry traceability (inventory batches EXIST; treatment-usage linkage MISSING)
+- P0-09 Treatment-specific + clinical-photo consent coverage **through P0-06** (no duplicate consent domain)
 
 ### P1
 
 - Branch pricing / service enablement
 - Pricing units / dental applicability on catalog
-- Aesthetic batch/lot/expiry on treatment record
 - Laser/device settings SoR
 - Course/package multi-session booking
 - Chair/operatory resource type
 - Arabic catalog search + RTL booking polish
 - Dermatology clinical depth beyond beauty
+- Dental laboratory case workflow
+- Pre/post-care instructions
+- Waitlist auto-fill
+- Holiday/leave availability
 - Accessibility + tablet reception flows
+- **Operational Recall SoR / professional recall workflow** (MISSING; IMPLEMENT reusing journey registry + reminders + notifications; Architecture Review may move to P2 only with explicit rationale)
+
+**Removed from P0:** operational recall (was invalidly `P0 + DEFER`).
+**Moved from P1 → P0:** injectable batch/lot/expiry on treatment record.
 
 ### P2 / P3
 
@@ -245,17 +253,19 @@ Sources consulted (official product pages only; **do not copy UX/wording/impleme
 | Free-text service drift | High | `Appointment.serviceType` VarChar | Scheduling | FK/snapshot to catalog |
 | Bilingual duplicate records | Med | Tenant-invented codes | Catalog/search | Stable keys + translations |
 | Unsafe price mutation | High | `ServicePrice` upsert overwrite | Billing | PriceVersion history |
-| Lost historical price | Critical | Invoice-from-appt `unitPrice: 0` | Completed care | AppointmentServiceSnapshot |
-| Double booking | Critical | Read-then-write conflict only | Scheduling | Transaction/exclusion + tests |
-| Resource conflict | High | App-level resource overlap | Rooms/equipment | Same as above + CHAIR type |
-| Stale availability | Med | Weekly hours model | Portal booking | Exception/holiday model IMPROVE |
-| Course inconsistency | High | No CourseSession SoR | Aesthetic packages | Course model IMPROVE/IMPLEMENT |
-| Treatment-plan disconnect | High | Plan items vs free appointment | Dental multi-visit | Link appointments to plan items |
+| Lost historical price | Critical (P0-02) | Invoice-from-appt `unitPrice: 0` | Completed care | AppointmentServiceSnapshot |
+| Double booking | Critical (P0-03) | Read-then-write conflict only | Scheduling | Transaction/exclusion + tests |
+| Resource conflict | High (P0-03 / P1 chair) | App-level resource overlap | Rooms/equipment | Same as above + CHAIR type |
+| Stale availability | Med (P1 holiday/leave) | Weekly hours model | Portal booking | Exception/holiday model IMPROVE |
+| Course inconsistency | High (P1) | No CourseSession SoR | Aesthetic packages | Course model IMPROVE/IMPLEMENT |
+| Treatment-plan disconnect | High (P0-05) | Plan items vs free appointment | Dental multi-visit | Link appointments to plan items |
 | Tooth/surface loss | Med | JSON + condition log | Clinical | Preserve + catalog applicability |
-| Photo privacy misuse | High | Media without photo-consent library | Aesthetic | Consent + ACL tests |
-| Injectable batch gaps | High | Inventory batches ≠ beauty annotation usage | Injectables | ProductBatchUsage link |
-| Laser parameter gaps | Med | Optional JSON parameters | Laser | DeviceTreatmentRecord |
-| Consent versioning gaps | Critical | Embedded timestamps only | All invasive care | ConsentTemplate/Version |
+| Photo privacy misuse | High (P0-09 via P0-06) | Media without photo-consent coverage | Aesthetic | Consent templates + ACL tests (single consent architecture) |
+| Injectable batch gaps | High/Critical workflow (P0-08) | Inventory batches ≠ beauty annotation usage | Injectables | ProductBatchUsage link on treatment |
+| Laser parameter gaps | Med (P1) | Optional JSON parameters | Laser | DeviceTreatmentRecord |
+| Consent versioning gaps | Critical (P0-06) | Embedded timestamps only | All invasive care | ConsentTemplate/Version |
+| Operational recall gap | Med–High continuity/competitive (P1-13) | Journey registry only; no operational SoR | Continuity of care | RecallRule IMPLEMENT; severity ≠ P0 clinical integrity failures |
+| Provider eligibility gap | High safety/integrity (P0-04) | Generic roles only; no service-specific SoR | Booking | ProviderServiceEligibility IMPLEMENT |
 | Contraindication screening | High | No structured screen SoR | Aesthetic/dental | Forms + gates |
 | Cross-tenant leakage | Critical if regress | RLS + tenantId | All | Keep Step 28 gates |
 | Branch isolation errors | High | Optional branchId | Multi-location | Branch permission tests |
@@ -267,6 +277,19 @@ Sources consulted (official product pages only; **do not copy UX/wording/impleme
 
 ---
 
-## 10. Proposed target concepts (Part 16)
+## 10. Proposed target concepts (Part 16) — normalized
 
-See discovery doc §5. Summary: **new models likely required** for ClinicalService catalog, PriceVersion/history, AppointmentServiceSnapshot, ConsentTemplate/Version, RecallRule; **improve** beauty annotations, treatment plans, SchedulingResource types, ServicePrice linkage; **reuse** Patient, Appointment, Media, Billing invoice lines, Dental charting, notifications plane.
+| Concept | Target exists? | Reusable infrastructure | New model required? | Priority |
+|---------|----------------|-------------------------|---------------------|----------|
+| ClinicalService / Procedure | NO | Hardcoded scheduling types + plan codes | YES | P0 |
+| ProviderServiceEligibility | **NO** (service-specific SoR) | YES — User/provider identity, roles, provider/staff schedules | YES | P0 |
+| AppointmentServiceSnapshot | NO | Invoice line items | YES | P0 |
+| TenantServicePrice / PriceVersion | PARTIAL flat price | `ServicePrice` | YES history | P0 |
+| ConsentTemplate / ConsentVersion | NO | Plan consent timestamps | YES | P0 |
+| Treatment/photo consent coverage | NO separate domain | Same as ConsentTemplate/Version | NO duplicate domain — P0-09 via P0-06 | P0 |
+| InjectionRecord / ProductBatchUsage | treatment linkage NO | Inventory lot/expiry + BeautyProcedureMaterial EXIST | YES linkage / IMPROVE | P0 |
+| RecallRule | NO operational SoR | Journey registry + appointment reminders + notifications plane | YES / IMPROVE+IMPLEMENT | **P1** |
+| DeviceTreatmentRecord | NO | Beauty annotation parameters JSON | YES | P1 |
+| PrePostCareInstruction | NO | — | YES | P1 |
+
+See also discovery doc §5. **Reuse** Patient, Appointment, Media, Billing invoice lines, Dental charting, inventory batches, notifications plane.

@@ -21,7 +21,7 @@
 | Category | Canonical services | Clinical workflow | Booking | Pricing | Tests | Gaps | Status | Priority |
 |----------|--------------------|-------------------|---------|---------|-------|------|--------|----------|
 | Examination & diagnostics | No catalog entries | Encounter + dental notes | Generic `consultation`/`imaging` | Plan estimates / ServicePrice codes ad-hoc | Limited dental unit | Need exam subtypes | PARTIAL | P0 |
-| Preventive | No catalog | Notes + recall aspirational | `cleaning` type only | Ad-hoc | Thin | Recall + fluoride/sealants catalog | PARTIAL | P0 |
+| Preventive | No catalog | Notes + recall aspirational (P1) | `cleaning` type only | Ad-hoc | Thin | Fluoride/sealants catalog (P0 service identity); operational recall = P1 | PARTIAL | P0 |
 | Restorative | Plan items + tooth conditions | Odontogram + plans | Generic `procedure` | `estimatedCost` | Thin | Surface-specific booking/price units | PARTIAL | P0 |
 | Cosmetic dentistry | No dedicated catalog | Plan/notes | Generic | Ad-hoc | Thin | Source req: معالجات تجميلية | PARTIAL | P1 |
 | Endodontics | Condition codes / plan codes | Multi-phase plans | Generic | Plan cost | Thin | Multi-visit booking link | PARTIAL | P0 |
@@ -67,7 +67,7 @@
 | Prescription | PARTIAL | Platform Rx if present; dental linkage thin | Verify in review |
 | Consent | PARTIAL | Plan `consentSignedAt/Method` | No versioned templates |
 | Lab work/referral | PARTIAL | Note type `referral`; lab case SoR MISSING | P1 |
-| Follow-up/recall | MISSING ops | Journey registry only | P0/P1 |
+| Follow-up/recall | MISSING ops | Journey registry only | P1 |
 
 **Specific investigations**
 
@@ -92,9 +92,9 @@
 EXCELLENT = odontogram/perio/treatment-plan core models
 COMPLETE = dental record, tooth conditions, ortho/implant cases, multi-phase plans
 PARTIAL = booking catalog linkage, plan-appointment staging, imaging/consent depth, pediatric specialization, lab
-MISSING = operational recall, versioned consent library, dental lab case SoR, professional service taxonomy seed
-P0 gaps = clinical service catalog; plan↔appointment; historical price; booking concurrency; emergency/preventive bookability with correct service identity
-P1 gaps = lab, prosthodontic workflows, cosmetic/ortho course UX, Arabic procedure taxonomy, note macros
+MISSING = operational recall SoR (P1), versioned consent library (P0), dental lab case SoR, professional service taxonomy seed
+P0 gaps = clinical service catalog; plan↔appointment; historical price; booking concurrency; emergency/preventive bookability with correct service identity; versioned consent
+P1 gaps = operational recall; lab; prosthodontic workflows; cosmetic/ortho course UX; Arabic procedure taxonomy; note macros
 ```
 
 ---
@@ -152,8 +152,8 @@ EXCELLENT = (none at global bar)
 COMPLETE = beauty record aggregate + annotation log foundation
 PARTIAL = injectables mapping, media, materials, free-text procedures
 MISSING = derm EMR, consent library, batch-on-treatment, patch test, contraindications, courses, pre/post care SoR
-P0 gaps = consent/forms; photo consent; treatment identity vs marketing free-text; batch traceability for injectables
-P1 gaps = device/laser settings; courses; derm depth; automated aftercare
+P0 gaps = versioned consent/forms (P0-06); treatment-specific + clinical-photo consent via same architecture (P0-09); treatment identity vs marketing free-text; injectable batch/lot/expiry on treatment (P0-08)
+P1 gaps = device/laser settings; courses; derm depth; automated aftercare; operational recall
 ```
 
 ---
@@ -252,9 +252,9 @@ No separate REQUESTED/WAITLISTED appointment status; waitlist is sibling entity.
 EXCELLENT = (none)
 COMPLETE = core appointment CRUD, statuses, branch hours, waitlist entity, reminders, portal entrypoint
 PARTIAL = conflicts, resources, recurrence, emergency, multi-visit, RTL depth
-MISSING = chair type, buffers, recall ops, forms gate, course packages, DB-level concurrency
-P0 = double-book races; service identity; price snapshot; plan-linked booking
-P1 = operatory; courses; recall; auto-waitlist; holiday/leave
+MISSING = chair type, buffers, operational recall SoR (P1), forms gate (P0), course packages, DB-level concurrency
+P0 = double-book races; service identity; price snapshot; plan-linked booking; service-specific provider eligibility
+P1 = operatory; courses; operational recall; auto-waitlist; holiday/leave
 ```
 
 ```text
@@ -263,7 +263,7 @@ resource/operatory protection = PARTIAL (ROOM/EQUIPMENT; no CHAIR)
 multi-location = COMPLETE (branch-scoped)
 online booking = COMPLETE foundation / PARTIAL vs global bar
 waitlist = COMPLETE basic / PARTIAL automation
-recall = MISSING operational
+recall = MISSING operational (P1 — not P0)
 multi-session/course booking = MISSING SoR
 multi-visit dental treatment booking = PARTIAL
 historical price snapshot = MISSING
@@ -349,39 +349,43 @@ Do **not** seed. Candidate bilingual categories:
 
 ---
 
-## I. P0 / P1 registers (Parts 14–15)
+## I. P0 / P1 registers (Parts 14–15) — normalized
 
-### P0
+**Taxonomy rules:** `P0 + DEFER = INVALID`. Coverage `MISSING` means the *target capability* has no adequate SoR even if reusable infrastructure exists.
 
-| ID | Capability | State | Evidence | Risk | Disposition | Next-stage |
-|----|------------|-------|----------|------|-------------|------------|
-| P0-01 | Clinical service catalog | MISSING | `service-types.ts` only | Free-text drift | IMPLEMENT | Architecture Review: catalog SoR |
-| P0-02 | Appointment price snapshot | MISSING | `create-invoice-from-appointment.handler.ts` unitPrice 0 | Revenue/history corruption | IMPLEMENT | Snapshot on book/complete |
-| P0-03 | Scheduling concurrency | PARTIAL | create-appointment conflict read-then-write | Double-book | IMPROVE | DB/tx + postgres race tests |
-| P0-04 | Provider eligibility | MISSING | No eligibility model | Unsafe booking | IMPLEMENT | Eligibility rules |
-| P0-05 | Plan↔appointment staging | PARTIAL | TreatmentPhase vs Appointment | Clinical disconnect | IMPROVE | Link items to appointments |
-| P0-06 | Consent template/version | MISSING | Plan consent timestamps only | Legal/clinical | IMPLEMENT | Forms module |
-| P0-07 | Price history/audit | MISSING | ServicePrice upsert | Silent mutation | IMPROVE/IMPLEMENT | PriceVersion |
-| P0-08 | Injectable batch on treatment | MISSING | Inventory ≠ BeautyAnnotation | Traceability | IMPROVE | Usage record |
-| P0-09 | Photo/treatment consent | MISSING | No consent library | Privacy | IMPLEMENT | With P0-06 |
-| P0-10 | Operational recall | MISSING | Journey registry only | Continuity gap | IMPLEMENT or DEFER with accepted risk | Review decision |
+### P0 (mandatory; no defer)
 
-### P1
+| ID | Capability | Coverage | Evidence | Risk | Disposition | Next-stage |
+|----|------------|----------|----------|------|-------------|------------|
+| P0-01 | Clinical service/procedure catalog | MISSING | `service-types.ts` only | Free-text drift | IMPLEMENT | Architecture Review: catalog SoR |
+| P0-02 | Appointment service/price historical snapshot | MISSING | `create-invoice-from-appointment.handler.ts` unitPrice 0 | Revenue/history corruption | IMPLEMENT | Snapshot on book/complete |
+| P0-03 | Scheduling concurrency / hard double-book protection | PARTIAL | create-appointment conflict read-then-write | Double-book | IMPROVE | DB/tx + postgres race tests |
+| P0-04 | Service-specific provider eligibility | MISSING | No eligibility SoR (generic User/roles/schedules exist and are reusable) | Unsafe booking | IMPLEMENT using existing provider infrastructure | Eligibility SoR + booking enforcement |
+| P0-05 | Treatment-plan ↔ appointment staging integrity | PARTIAL | TreatmentPhase vs Appointment | Clinical disconnect | IMPROVE | Link items to appointments |
+| P0-06 | Versioned clinical consent/forms baseline | MISSING | Plan consent timestamps only | Legal/clinical | IMPLEMENT | Single consent architecture |
+| P0-07 | Price history / non-destructive audit trail | MISSING | ServicePrice upsert overwrite | Silent mutation | IMPROVE/IMPLEMENT | PriceVersion |
+| P0-08 | Injectable treatment batch/lot/expiry traceability | MISSING (treatment-level linkage) | Inventory lot/expiry exists; not linked on BeautyAnnotation/treatment usage | Patient safety / product recall / adverse-event investigation | IMPROVE inventory/material infra + IMPLEMENT treatment-usage linkage | ProductBatchUsage on treatment |
+| P0-09 | Treatment-specific + clinical-photo consent coverage | MISSING | No consent library | Privacy / aesthetic safety | IMPLEMENT **through P0-06** (not a second consent domain) | Consent templates covering treatment + photography |
 
-| ID | Capability | State | Disposition |
-|----|------------|-------|-------------|
-| P1-01 | Branch price/enable | MISSING | IMPLEMENT |
+### P1 (launch-quality / competitive; sequenced after P0 unless Architecture Review relocates)
+
+| ID | Capability | Coverage | Disposition |
+|----|------------|----------|-------------|
+| P1-01 | Branch-specific service enablement/pricing | MISSING | IMPLEMENT |
 | P1-02 | Pricing units / dental applicability | MISSING | IMPLEMENT |
-| P1-03 | Chair/operatory type | MISSING | IMPROVE enum/resource |
-| P1-04 | Aesthetic courses | MISSING | IMPLEMENT |
-| P1-05 | Device/laser settings SoR | PARTIAL JSON | IMPROVE |
-| P1-06 | Dermatology EMR depth | MISSING | IMPLEMENT or DEFER |
-| P1-07 | Lab case workflow | MISSING | IMPLEMENT |
-| P1-08 | Arabic catalog search + RTL booking | PARTIAL | IMPROVE |
+| P1-03 | Chair / operatory first-class resource | MISSING | IMPROVE enum/resource |
+| P1-04 | Aesthetic treatment courses / multi-session booking | MISSING | IMPLEMENT |
+| P1-05 | Device / laser settings Source of Record | PARTIAL JSON | IMPROVE |
+| P1-06 | Dermatology clinical depth | MISSING | IMPLEMENT (Architecture Review may DEFER to P2 with rationale) |
+| P1-07 | Dental laboratory case workflow | MISSING | IMPLEMENT |
+| P1-08 | Arabic catalog search + RTL booking quality | PARTIAL | IMPROVE |
 | P1-09 | Pre/post-care instructions | MISSING | IMPLEMENT |
 | P1-10 | Waitlist auto-fill | PARTIAL | IMPROVE |
 | P1-11 | Holiday/leave availability | PARTIAL | IMPROVE |
 | P1-12 | Accessibility + tablet reception | PARTIAL | IMPROVE |
+| P1-13 | Operational Recall SoR / professional recall workflow | MISSING | IMPLEMENT (reuse journey registry + reminders + notifications plane); DEFER only if Architecture Review explicitly moves to P2 with rationale |
+
+**Operational recall rationale (not P0):** important continuity/competitive capability, but not equivalent in immediate safety/integrity severity to double-booking, historical price corruption, consent versioning, or injectable treatment traceability. Invalid prior `P0 + DEFER` combination removed.
 
 ### P2/P3 deferred (do not implement during P0/P1 closure by accident)
 

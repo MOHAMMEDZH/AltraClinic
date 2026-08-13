@@ -127,13 +127,16 @@ Phase 48 should **design** additional clinic onepass segments; not renumber as S
 
 ## 7. Recommended Phase 48 validation strategy (discovery proposal)
 
-1. **P0 integrity pack (new):** parallel appointment create races; resource conflicts; idempotent portal book; invoice-from-appointment snapshot assertions (once snapshot designed).
-2. **Catalog contract pack:** stable keys, AR/EN names, tenant enablement, historical appointment identity.
-3. **Pricing pack:** tenant A ≠ tenant B price; price change does not mutate historical snapshot; authz on upsert; audit events.
-4. **Clinical safety pack:** consent version required gates; injectable batch required for selected procedures; photo ACL.
-5. **Localization pack:** RTL booking E2E; Arabic search for catalog; currency/date formatting.
-6. **Reuse** existing Jest + DB validator + onepass patterns; **do not** invent a second CI philosophy.
-7. Keep platform Step 28/29 gates green as regression baselines when implementation starts (post Architecture Freeze).
+Aligned to normalized P0/P1 registers (see gap matrix §I and discovery §5A):
+
+1. **P0 integrity pack:** parallel appointment create races; resource conflicts; idempotent portal book; invoice-from-appointment snapshot assertions (once snapshot designed) — P0-02/P0-03.
+2. **Catalog contract pack:** stable keys, AR/EN names, tenant enablement, historical appointment identity — P0-01; service-specific provider eligibility enforcement — P0-04.
+3. **Pricing pack:** tenant A ≠ tenant B price; price change does not mutate historical snapshot; authz on upsert; audit events — P0-07.
+4. **Clinical safety pack:** consent version required gates (P0-06); treatment-specific + clinical-photo consent coverage via same architecture (P0-09); injectable batch/lot/expiry required on selected treatment records (P0-08); photo ACL.
+5. **Localization pack:** RTL booking E2E; Arabic search for catalog; currency/date formatting — P1-08.
+6. **P1 continuity pack (not P0):** operational recall workflow assertions once RecallRule designed — P1-13 (reuse journey registry + reminders + notifications).
+7. **Reuse** existing Jest + DB validator + onepass patterns; **do not** invent a second CI philosophy.
+8. Keep platform Step 28/29 gates green as regression baselines when implementation starts (post Architecture Freeze).
 
 ---
 
