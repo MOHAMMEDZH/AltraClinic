@@ -1,0 +1,17 @@
+validator file =
+apps/api/src/modules/security-hardening/tests/step29-release-readiness.unit.spec.ts
+
+executed by final runner = NO
+
+exact evidence =
+run-step29-final-onepass.mjs: no matches for 'step29-release-readiness' (Select-String count=0)
+run-step29-final-onepass.mjs: uses inline staticReleaseReadinessChecks() against docs/RELEASE_47_STEP29_RELEASE_READINESS.md; later jest patterns include only:
+  line 459: 'npx jest --config jest.config.cjs --runInBand --testPathPattern "step28-matrix-evidence.validation.unit.spec"',
+  line 465: 'npx jest --config jest.integration.config.cjs --runInBand --testPathPattern "audit-center-core.postgres.integration.spec" -t "A18 export creates exactly one success audit on first success|I05-I06 runtime SQL update/delete on audit_entries denied by trigger"',
+  line 469: 'npx jest --config jest.config.cjs --runInBand --testPathPattern "tracing-and-health.spec|observability-foundation.spec"',
+package.json: defines separate script test:step29-release-readiness-unit (not invoked by final one-pass):
+  line 92: "test:step29-release-readiness-unit": "jest --config jest.config.cjs --runInBand --testPathPattern step29-release-readiness.unit",
+package.json also defines test:step29-release-final-onepass = node scripts/run-step29-final-onepass.mjs
+
+conclusion =
+The Step 29 Jest static validator is not executed by run-step29-final-onepass.mjs; the runner performs its own inline static markdown checks and other unrelated jest patterns.

@@ -1,0 +1,15 @@
+diff --git a/apps/api/src/modules/security-hardening/tests/step29-release-readiness.unit.spec.ts b/apps/api/src/modules/security-hardening/tests/step29-release-readiness.unit.spec.ts
+index 17a4737..1091f5f 100644
+--- a/apps/api/src/modules/security-hardening/tests/step29-release-readiness.unit.spec.ts
++++ b/apps/api/src/modules/security-hardening/tests/step29-release-readiness.unit.spec.ts
+@@ -53,7 +53,9 @@ describe('Step 29 release readiness static gates', () => {
+ 
+   it('does not authorize Step 30 or mark Step 29 formally accepted', () => {
+     const text = fs.readFileSync(readinessPath, 'utf8');
+-    expect(text).toMatch(/acceptance pending external review/i);
++    expect(text).toMatch(/acceptance pending external/i);
+     expect(text).toMatch(/No Step 30/);
++    expect(text).toMatch(/Step 29 acceptance blockers\*\* \| \*\*0\*\*/);
++    expect(text).not.toMatch(/TO BE ASSIGNED BEFORE CUTOVER/);
+   });
+ });
