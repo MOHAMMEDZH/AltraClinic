@@ -50,6 +50,28 @@ export type OntologyConceptId =
   | 'stale-notification-prevention'
   | 'send-time-state-check'
   | 'converted-trial-no-expiry-send'
+  | 'stale-step-up-deny'
+  | 'mfa-step-up-enforcement'
+  | 'addon-platform-boundary'
+  | 'addon-unauthorized-mutation-deny'
+  | 'tenant-addon-self-grant-deny'
+  | 'override-platform-boundary'
+  | 'override-unauthorized-mutation-deny'
+  | 'override-sod-deny'
+  | 'subscription-platform-boundary'
+  | 'subscription-unauthorized-mutation-deny'
+  | 'tenant-self-grant-deny'
+  | 'platform-commercial-boundary'
+  | 'eer-resolver-bypass-deny'
+  | 'managed-eer-fail-closed'
+  | 'no-silent-legacy'
+  | 'eer-cache-stale-allow-deny'
+  | 'cache-invalidation-fail-safe'
+  | 'entitlement-cache-isolation'
+  | 'secrets-in-logs-deny'
+  | 'notification-secret-leakage-deny'
+  | 'idor-cross-tenant-deny'
+  | 'facility-specialty-compat-boundary'
   | 'generic-suite-anchor';
 
 export type OntologyConceptDef = {
@@ -227,7 +249,7 @@ export const STEP28_SECURITY_CONCEPT_ONTOLOGY: Record<OntologyConceptId, Ontolog
   'notification-privacy': {
     id: 'notification-privacy',
     humanMeaning: 'Notification/template privacy — no PHI/secrets in surfaces',
-    allowedFamilies: ['NOTSEC', 'PRIV', 'FSEC', 'CSEC'],
+    allowedFamilies: ['NOTSEC', 'PRIV', 'FSEC', 'CSEC', 'HTTPSEC'],
     forbiddenConcepts: [
       'ambiguous-delivery-state',
       'trial-state-revalidation',
@@ -343,6 +365,138 @@ export const STEP28_SECURITY_CONCEPT_ONTOLOGY: Record<OntologyConceptId, Ontolog
     allowedFamilies: ['NOTSEC', 'CSEC'],
     forbiddenConcepts: ['notification-privacy'],
   },
+  'stale-step-up-deny': {
+    id: 'stale-step-up-deny',
+    humanMeaning: 'Stale step-up tokens/sessions are rejected on privileged routes',
+    allowedFamilies: ['API', 'SES', 'HTTPSEC', 'AUTH'],
+    forbiddenConcepts: ['refresh-absolute-lifetime'],
+  },
+  'mfa-step-up-enforcement': {
+    id: 'mfa-step-up-enforcement',
+    humanMeaning: 'MFA/step-up freshness bound to current session',
+    allowedFamilies: ['SES', 'API', 'AUTH', 'HTTPSEC'],
+    forbiddenConcepts: [],
+  },
+  'addon-platform-boundary': {
+    id: 'addon-platform-boundary',
+    humanMeaning: 'Add-on mutations are Platform-only surfaces',
+    allowedFamilies: ['TENSA', 'OVR', 'SG'],
+    forbiddenConcepts: ['provisioning-permission-deny'],
+  },
+  'addon-unauthorized-mutation-deny': {
+    id: 'addon-unauthorized-mutation-deny',
+    humanMeaning: 'Unauthorized Add-on mutation denied',
+    allowedFamilies: ['TENSA', 'OVR', 'API'],
+    forbiddenConcepts: [],
+  },
+  'tenant-addon-self-grant-deny': {
+    id: 'tenant-addon-self-grant-deny',
+    humanMeaning: 'Tenant/clinic cannot self-grant Add-ons',
+    allowedFamilies: ['TENSA', 'SG'],
+    forbiddenConcepts: [],
+  },
+  'override-platform-boundary': {
+    id: 'override-platform-boundary',
+    humanMeaning: 'Override mutations are Platform-only surfaces',
+    allowedFamilies: ['TENSA', 'OVR'],
+    forbiddenConcepts: [],
+  },
+  'override-unauthorized-mutation-deny': {
+    id: 'override-unauthorized-mutation-deny',
+    humanMeaning: 'Unauthorized Override mutation denied',
+    allowedFamilies: ['TENSA', 'OVR'],
+    forbiddenConcepts: [],
+  },
+  'override-sod-deny': {
+    id: 'override-sod-deny',
+    humanMeaning: 'Override SoD prevents illicit self-approve',
+    allowedFamilies: ['OVR'],
+    forbiddenConcepts: [],
+  },
+  'subscription-platform-boundary': {
+    id: 'subscription-platform-boundary',
+    humanMeaning: 'Subscription mutations require Platform principal',
+    allowedFamilies: ['SG', 'TENSA', 'BND'],
+    forbiddenConcepts: [],
+  },
+  'subscription-unauthorized-mutation-deny': {
+    id: 'subscription-unauthorized-mutation-deny',
+    humanMeaning: 'Unauthorized subscription state/capability manipulation denied',
+    allowedFamilies: ['SG', 'TENSA'],
+    forbiddenConcepts: [],
+  },
+  'tenant-self-grant-deny': {
+    id: 'tenant-self-grant-deny',
+    humanMeaning: 'Tenant cannot self-grant commercial entitlements',
+    allowedFamilies: ['SG', 'TENSA'],
+    forbiddenConcepts: ['provisioning-permission-deny'],
+  },
+  'platform-commercial-boundary': {
+    id: 'platform-commercial-boundary',
+    humanMeaning: 'Commercial mutations stay on Platform boundary',
+    allowedFamilies: ['SG', 'TENSA', 'BND'],
+    forbiddenConcepts: [],
+  },
+  'eer-resolver-bypass-deny': {
+    id: 'eer-resolver-bypass-deny',
+    humanMeaning: 'EER resolver bypass / provenance fail-closed',
+    allowedFamilies: ['ER'],
+    forbiddenConcepts: ['provisioning-rbac', 'wildcard-permission-deny'],
+  },
+  'managed-eer-fail-closed': {
+    id: 'managed-eer-fail-closed',
+    humanMeaning: 'Managed EER fail-closed on invalid/missing provenance',
+    allowedFamilies: ['ER'],
+    forbiddenConcepts: [],
+  },
+  'no-silent-legacy': {
+    id: 'no-silent-legacy',
+    humanMeaning: 'No silent legacy entitlement resurrection',
+    allowedFamilies: ['ER'],
+    forbiddenConcepts: [],
+  },
+  'eer-cache-stale-allow-deny': {
+    id: 'eer-cache-stale-allow-deny',
+    humanMeaning: 'Stale EER allow cache cannot retain unauthorized access',
+    allowedFamilies: ['CACHE'],
+    forbiddenConcepts: ['authz-cache-revision'],
+  },
+  'cache-invalidation-fail-safe': {
+    id: 'cache-invalidation-fail-safe',
+    humanMeaning: 'Failed EER cache invalidation still denies after status change',
+    allowedFamilies: ['CACHE'],
+    forbiddenConcepts: [],
+  },
+  'entitlement-cache-isolation': {
+    id: 'entitlement-cache-isolation',
+    humanMeaning: 'EER cache keys isolate tenants',
+    allowedFamilies: ['CACHE'],
+    forbiddenConcepts: [],
+  },
+  'secrets-in-logs-deny': {
+    id: 'secrets-in-logs-deny',
+    humanMeaning: 'Secrets/PHI/tokens absent from logs and safe errors',
+    allowedFamilies: ['LOG', 'PRIV', 'HTTPSEC'],
+    forbiddenConcepts: ['csv-formula-injection'],
+  },
+  'notification-secret-leakage-deny': {
+    id: 'notification-secret-leakage-deny',
+    humanMeaning: 'Provider credentials absent from notification HTTP responses',
+    allowedFamilies: ['HTTPSEC', 'PRIV', 'NOTSEC'],
+    forbiddenConcepts: [],
+  },
+  'idor-cross-tenant-deny': {
+    id: 'idor-cross-tenant-deny',
+    humanMeaning: 'Cross-tenant IDOR / scope leak denied',
+    allowedFamilies: ['ISO', 'HTTPSEC', 'API', 'BND'],
+    forbiddenConcepts: [],
+  },
+  'facility-specialty-compat-boundary': {
+    id: 'facility-specialty-compat-boundary',
+    humanMeaning: 'Facility/specialty entitlement mutations remain Platform-owned',
+    allowedFamilies: ['TENSA', 'SG'],
+    forbiddenConcepts: [],
+  },
   'generic-suite-anchor': {
     id: 'generic-suite-anchor',
     humanMeaning: 'Generic suite anchor only — insufficient alone for EXACT/TH claims',
@@ -398,9 +552,9 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH07: {
     threatId: 'TH07',
-    requiredConcepts: ['http-passport-boundary'],
-    allowedMitigationFamilies: ['SES', 'AUTH', 'HTTPSEC'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['stale-step-up-deny', 'mfa-step-up-enforcement'],
+    allowedMitigationFamilies: ['API', 'SES', 'HTTPSEC', 'AUTH'],
+    forbiddenMitigationConcepts: ['refresh-absolute-lifetime'],
   },
   TH08: {
     threatId: 'TH08',
@@ -428,39 +582,39 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH12: {
     threatId: 'TH12',
-    requiredConcepts: ['provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH', 'OVR'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['addon-platform-boundary', 'addon-unauthorized-mutation-deny', 'tenant-addon-self-grant-deny'],
+    allowedMitigationFamilies: ['TENSA', 'OVR', 'SG'],
+    forbiddenMitigationConcepts: ['provisioning-permission-deny'],
   },
   TH13: {
     threatId: 'TH13',
-    requiredConcepts: ['provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH', 'OVR'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['override-platform-boundary', 'override-unauthorized-mutation-deny', 'override-sod-deny'],
+    allowedMitigationFamilies: ['OVR', 'TENSA'],
+    forbiddenMitigationConcepts: ['provisioning-permission-deny'],
   },
   TH14: {
     threatId: 'TH14',
-    requiredConcepts: ['provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH', 'SG'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['subscription-platform-boundary', 'subscription-unauthorized-mutation-deny', 'tenant-self-grant-deny'],
+    allowedMitigationFamilies: ['SG', 'TENSA', 'BND'],
+    forbiddenMitigationConcepts: ['provisioning-permission-deny'],
   },
   TH15: {
     threatId: 'TH15',
-    requiredConcepts: ['provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['tenant-self-grant-deny', 'platform-commercial-boundary'],
+    allowedMitigationFamilies: ['SG', 'TENSA', 'BND'],
+    forbiddenMitigationConcepts: ['provisioning-permission-deny'],
   },
   TH16: {
     threatId: 'TH16',
-    requiredConcepts: ['provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['eer-resolver-bypass-deny', 'managed-eer-fail-closed', 'no-silent-legacy'],
+    allowedMitigationFamilies: ['ER'],
+    forbiddenMitigationConcepts: ['provisioning-rbac', 'wildcard-permission-deny'],
   },
   TH17: {
     threatId: 'TH17',
-    requiredConcepts: ['authz-cache-revision'],
-    allowedMitigationFamilies: ['AUTH', 'CACHE'],
-    forbiddenMitigationConcepts: ['role-name-bypass-deny'],
+    requiredConcepts: ['eer-cache-stale-allow-deny', 'cache-invalidation-fail-safe', 'entitlement-cache-isolation'],
+    allowedMitigationFamilies: ['CACHE'],
+    forbiddenMitigationConcepts: ['authz-cache-revision', 'role-name-bypass-deny'],
   },
   TH18: {
     threatId: 'TH18',
@@ -494,8 +648,8 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH23: {
     threatId: 'TH23',
-    requiredConcepts: ['http-passport-boundary', 'provisioning-rbac'],
-    allowedMitigationFamilies: ['API', 'HTTPSEC', 'AUTH'],
+    requiredConcepts: ['facility-specialty-compat-boundary', 'platform-commercial-boundary'],
+    allowedMitigationFamilies: ['TENSA', 'SG'],
     forbiddenMitigationConcepts: [],
   },
   TH24: {
@@ -523,9 +677,9 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH27: {
     threatId: 'TH27',
-    requiredConcepts: ['output-neutralization'],
-    allowedMitigationFamilies: ['IO', 'LOG', 'PRIV'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: ['secrets-in-logs-deny', 'output-neutralization'],
+    allowedMitigationFamilies: ['LOG', 'PRIV', 'HTTPSEC'],
+    forbiddenMitigationConcepts: ['csv-formula-injection'],
   },
   TH28: {
     threatId: 'TH28',
@@ -535,8 +689,8 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH29: {
     threatId: 'TH29',
-    requiredConcepts: ['notification-privacy'],
-    allowedMitigationFamilies: ['PRIV', 'NOTSEC'],
+    requiredConcepts: ['notification-secret-leakage-deny', 'notification-privacy'],
+    allowedMitigationFamilies: ['HTTPSEC', 'PRIV', 'NOTSEC'],
     forbiddenMitigationConcepts: ['ambiguous-delivery-state'],
   },
   TH30: {
@@ -547,8 +701,8 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH31: {
     threatId: 'TH31',
-    requiredConcepts: ['tenant-isolation'],
-    allowedMitigationFamilies: ['ISO', 'HTTPSEC', 'API'],
+    requiredConcepts: ['idor-cross-tenant-deny', 'tenant-isolation'],
+    allowedMitigationFamilies: ['ISO', 'HTTPSEC', 'API', 'BND'],
     forbiddenMitigationConcepts: [],
   },
   TH32: {
@@ -687,6 +841,8 @@ export function validateThreatAgainstOntology(
   }
   return null;
 }
+
+// NOTE: direct-evidence preference validation is composed in step28-semantic-concepts.ts
 
 /** Detect concept-tag laundering / family-tag contradictions. */
 export function scanConceptLaundering(

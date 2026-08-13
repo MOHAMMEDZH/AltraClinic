@@ -11,10 +11,13 @@ import {
 import {
   ONTOLOGY_CONCEPT_COUNT,
   STEP28_SECURITY_CONCEPT_ONTOLOGY,
+  STEP28_TH_DIRECTNESS_PREFERENCES,
   TH_THREAT_CONCEPTS,
   rejectSharedTagWithoutOntologyApproval,
   scanCandidateSemanticMismatches,
   scanConceptLaundering,
+  scanDirectEvidenceMappings,
+  validateDirectEvidenceMapping,
   validateExactConceptTags,
   validateThreatMitigationConcepts,
 } from '../step28-semantic-concepts';
@@ -453,5 +456,80 @@ describe('Step 28 matrix evidence validation', () => {
     expect(TH_THREAT_CONCEPTS.TH36).toEqual(expect.arrayContaining(['dependency-audit']));
     expect(TH_THREAT_CONCEPTS.TH39).toEqual(expect.arrayContaining(['ambiguous-delivery-state']));
     expect(TH_THREAT_CONCEPTS.TH40).toEqual(expect.arrayContaining(['trial-state-revalidation']));
+  });
+
+  it('rejects TH07 SES02/AUTH28 without direct stale-step-up evidence', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH07',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['SES02', 'AUTH28'],
+    });
+    expect(err).toMatch(/TH07/);
+  });
+
+  it('rejects TH12 generic API10/HTTPSEC48 only', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH12',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['API10', 'HTTPSEC48'],
+    });
+    expect(err).toMatch(/TH12/);
+  });
+
+  it('rejects TH15 generic API10/HTTPSEC48 only', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH15',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['API10', 'HTTPSEC48'],
+    });
+    expect(err).toMatch(/TH15/);
+  });
+
+  it('rejects TH16 generic provisioning RBAC/wildcard evidence', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH16',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['API10', 'HTTPSEC50'],
+    });
+    expect(err).toMatch(/TH16/);
+  });
+
+  it('rejects TH17 AUTH11 authz cache only', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH17',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['AUTH11'],
+    });
+    expect(err).toMatch(/TH17/);
+  });
+
+  it('rejects generic ontology-compatible evidence when preferred direct mitigation exists', () => {
+    expect(STEP28_TH_DIRECTNESS_PREFERENCES.TH07.preferredMitigationIds).toEqual(
+      expect.arrayContaining(['API31']),
+    );
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH07',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH07,
+        mitigationIds: ['SES02', 'AUTH28'],
+      },
+      new Map([
+        ['SES02', { id: 'SES02', securityConceptTags: ['stale-step-up-deny'] }],
+        ['AUTH28', { id: 'AUTH28', securityConceptTags: ['mfa-step-up-enforcement'] }],
+      ]),
+    );
+    expect(err).toMatch(/TH07/);
+  });
+
+  it('direct-evidence mapping failures are zero after remaps', () => {
+    const scan = scanDirectEvidenceMappings(MATRIX_EVIDENCE);
+    expect(scan.confirmed).toEqual([]);
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    expect(byId.get('TH07')!.mitigationIds).toEqual(expect.arrayContaining(['API31', 'SES09']));
+    expect(byId.get('TH12')!.mitigationIds).toEqual(['TENSA06']);
+    expect(byId.get('TH15')!.mitigationIds).toEqual(expect.arrayContaining(['SG03']));
+    expect(byId.get('TH16')!.mitigationIds).toEqual(expect.arrayContaining(['ER16']));
+    expect(byId.get('TH17')!.mitigationIds).toEqual(expect.arrayContaining(['CACHE02']));
   });
 });

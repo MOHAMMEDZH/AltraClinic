@@ -6,6 +6,7 @@
 import {
   scanCandidateSemanticMismatches,
   scanConceptLaundering,
+  scanDirectEvidenceMappings,
   validateExactConceptTags,
   validateThreatMitigationConcepts,
 } from './step28-semantic-concepts';
@@ -1854,8 +1855,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "provisioning-rbac",
-      "http-passport-boundary"
+      "stale-step-up-deny",
+      "mfa-step-up-enforcement"
     ]
   },
   {
@@ -2484,7 +2485,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "sod-dual-control"
+      "override-sod-deny",
+      "override-unauthorized-mutation-deny",
+      "override-platform-boundary"
     ]
   },
   {
@@ -2824,7 +2827,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "subscription-unauthorized-mutation-deny",
+      "subscription-platform-boundary",
+      "tenant-self-grant-deny"
     ]
   },
   {
@@ -2844,7 +2849,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "tenant-self-grant-deny",
+      "subscription-platform-boundary",
+      "platform-commercial-boundary"
     ]
   },
   {
@@ -3444,7 +3451,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "suspended-user"
+      "managed-eer-fail-closed",
+      "no-silent-legacy",
+      "eer-resolver-bypass-deny"
     ]
   },
   {
@@ -3744,7 +3753,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "eer-resolver-bypass-deny",
+      "managed-eer-fail-closed",
+      "no-silent-legacy"
     ]
   },
   {
@@ -4324,7 +4335,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "authz-cache-revision",
+      "entitlement-cache-isolation",
+      "eer-cache-stale-allow-deny",
       "tenant-isolation"
     ]
   },
@@ -4345,7 +4357,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "suspended-user"
+      "eer-cache-stale-allow-deny",
+      "cache-invalidation-fail-safe",
+      "entitlement-cache-isolation"
     ]
   },
   {
@@ -4885,7 +4899,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "mfa-step-up-enforcement",
+      "stale-step-up-deny"
     ]
   },
   {
@@ -6641,6 +6656,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "secrets-in-logs-deny",
       "output-neutralization"
     ]
   },
@@ -6661,7 +6677,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "secrets-in-logs-deny",
+      "output-neutralization"
     ]
   },
   {
@@ -6961,7 +6978,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "notification-privacy"
+      "notification-privacy",
+      "notification-secret-leakage-deny"
     ]
   },
   {
@@ -8363,6 +8381,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "idor-cross-tenant-deny",
       "tenant-isolation"
     ]
   },
@@ -8383,6 +8402,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "idor-cross-tenant-deny",
       "tenant-isolation"
     ]
   },
@@ -11042,7 +11062,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "notification-secret-leakage-deny",
+      "notification-privacy"
     ]
   },
   {
@@ -12821,16 +12842,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=SES02,AUTH28",
+    "assertionAnchor": "mitigationIds=API31,SES09",
     "mitigationIds": [
-      "SES02",
-      "AUTH28"
+      "API31",
+      "SES09"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "http-passport-boundary"
-    ]
+      "stale-step-up-deny",
+      "mfa-step-up-enforcement"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH08",
@@ -12947,16 +12970,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
+    "assertionAnchor": "mitigationIds=TENSA06",
     "mitigationIds": [
-      "API10",
-      "HTTPSEC48"
+      "TENSA06"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "provisioning-rbac"
-    ]
+      "addon-platform-boundary",
+      "addon-unauthorized-mutation-deny",
+      "tenant-addon-self-grant-deny"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH13",
@@ -12972,16 +12997,19 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
+    "assertionAnchor": "mitigationIds=OVR01,TENSA07",
     "mitigationIds": [
-      "API10",
-      "HTTPSEC48"
+      "OVR01",
+      "TENSA07"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "provisioning-rbac"
-    ]
+      "override-platform-boundary",
+      "override-unauthorized-mutation-deny",
+      "override-sod-deny"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH14",
@@ -12997,16 +13025,19 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API10,HTTPSEC49",
+    "assertionAnchor": "mitigationIds=SG03,SG02",
     "mitigationIds": [
-      "API10",
-      "HTTPSEC49"
+      "SG03",
+      "SG02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "provisioning-rbac"
-    ]
+      "subscription-platform-boundary",
+      "subscription-unauthorized-mutation-deny",
+      "tenant-self-grant-deny"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH15",
@@ -13022,16 +13053,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API10,HTTPSEC48",
+    "assertionAnchor": "mitigationIds=SG03,TENSA04",
     "mitigationIds": [
-      "API10",
-      "HTTPSEC48"
+      "SG03",
+      "TENSA04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "provisioning-rbac"
-    ]
+      "tenant-self-grant-deny",
+      "platform-commercial-boundary"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH16",
@@ -13047,16 +13080,19 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API10,HTTPSEC50",
+    "assertionAnchor": "mitigationIds=ER16,ER01",
     "mitigationIds": [
-      "API10",
-      "HTTPSEC50"
+      "ER16",
+      "ER01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "provisioning-rbac"
-    ]
+      "eer-resolver-bypass-deny",
+      "managed-eer-fail-closed",
+      "no-silent-legacy"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH17",
@@ -13072,15 +13108,19 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH11",
+    "assertionAnchor": "mitigationIds=CACHE02,CACHE01",
     "mitigationIds": [
-      "AUTH11"
+      "CACHE02",
+      "CACHE01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "authz-cache-revision"
-    ]
+      "eer-cache-stale-allow-deny",
+      "cache-invalidation-fail-safe",
+      "entitlement-cache-isolation"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH18",
@@ -13121,10 +13161,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH11,CACHE01",
+    "assertionAnchor": "mitigationIds=AUTH11",
     "mitigationIds": [
-      "AUTH11",
-      "CACHE01"
+      "AUTH11"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
@@ -13221,17 +13260,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=API01,HTTPSEC39",
+    "assertionAnchor": "mitigationIds=TENSA09,TENSA10",
     "mitigationIds": [
-      "API01",
-      "HTTPSEC39"
+      "TENSA09",
+      "TENSA10"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "http-passport-boundary",
-      "provisioning-rbac"
-    ]
+      "facility-specialty-compat-boundary",
+      "platform-commercial-boundary"
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH24",
@@ -13329,16 +13369,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=IO02,LOG01",
+    "assertionAnchor": "mitigationIds=LOG01,LOG02",
     "mitigationIds": [
-      "IO02",
-      "LOG01"
+      "LOG01",
+      "LOG02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
+      "secrets-in-logs-deny",
       "output-neutralization"
-    ]
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH28",
@@ -13379,16 +13421,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=NOTSEC01,PRIV04",
+    "assertionAnchor": "mitigationIds=HTTPSEC28,PRIV01",
     "mitigationIds": [
-      "NOTSEC01",
-      "PRIV04"
+      "HTTPSEC28",
+      "PRIV01"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
+      "notification-secret-leakage-deny",
       "notification-privacy"
-    ]
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH30",
@@ -13432,16 +13476,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=ISO03,HTTPSEC23",
+    "assertionAnchor": "mitigationIds=ISO03,ISO04",
     "mitigationIds": [
       "ISO03",
-      "HTTPSEC23"
+      "ISO04"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
+      "idor-cross-tenant-deny",
       "tenant-isolation"
-    ]
+    ],
+    "semanticReviewNote": "Direct-evidence preferred mapping (Step 28 final directness closure)"
   },
   {
     "id": "TH32",
@@ -13920,7 +13966,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "platform-commercial-boundary",
+      "tenant-self-grant-deny"
     ]
   },
   {
@@ -13960,7 +14007,9 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "addon-platform-boundary",
+      "addon-unauthorized-mutation-deny",
+      "tenant-addon-self-grant-deny"
     ]
   },
   {
@@ -13980,7 +14029,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "override-platform-boundary",
+      "override-unauthorized-mutation-deny"
     ]
   },
   {
@@ -14020,7 +14070,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "facility-specialty-compat-boundary",
+      "platform-commercial-boundary"
     ]
   },
   {
@@ -14040,7 +14091,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "facility-specialty-compat-boundary",
+      "platform-commercial-boundary"
     ]
   },
   {
@@ -14672,6 +14724,12 @@ export function assertMatrixEvidenceComplete(): void {
   if (laundering.confirmed.length) {
     throw new Error(
       `Concept-laundering defects remain: ${laundering.confirmed.slice(0, 20).join(', ')}`,
+    );
+  }
+  const directness = scanDirectEvidenceMappings(MATRIX_EVIDENCE);
+  if (directness.confirmed.length) {
+    throw new Error(
+      `Direct-evidence mapping failures remain: ${directness.confirmed.slice(0, 20).join(', ')}`,
     );
   }
 

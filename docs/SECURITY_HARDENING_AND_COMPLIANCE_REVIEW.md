@@ -4,7 +4,7 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress / Acceptance Pending External Review** — final concept-ontology / threat-mapping closure complete (evidence/validator/test-only; anti-laundering ontology authoritative); Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent re-review of the regenerated evidence pack. No product/security/runtime change during this ontology closure. |
+| **Status** | **In Progress / Acceptance Pending External Review** — final direct-evidence TH mapping closure complete (evidence/validator/test-only); Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent re-review of the regenerated evidence pack. No product/security/runtime change during this direct-evidence closure. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |

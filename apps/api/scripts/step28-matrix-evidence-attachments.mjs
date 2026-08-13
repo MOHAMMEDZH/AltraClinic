@@ -173,6 +173,42 @@ function computeThreatSemanticMismatchCount(records) {
   return count;
 }
 
+function scanDirectEvidencePack(records) {
+  const prefs = {
+    TH07: { preferred: ['API31', 'SES09'], rejected: [['SES02', 'AUTH28']] },
+    TH12: { preferred: ['TENSA06'], rejected: [['API10', 'HTTPSEC48']] },
+    TH13: { preferred: ['OVR01', 'TENSA07'], rejected: [['API10', 'HTTPSEC48']] },
+    TH14: { preferred: ['SG03', 'SG02'], rejected: [['API10', 'HTTPSEC49']] },
+    TH15: { preferred: ['SG03', 'TENSA04'], rejected: [['API10', 'HTTPSEC48']] },
+    TH16: { preferred: ['ER16', 'ER01'], rejected: [['API10', 'HTTPSEC50']] },
+    TH17: { preferred: ['CACHE02', 'CACHE01'], rejected: [['AUTH11']] },
+    TH23: { preferred: ['TENSA09', 'TENSA10'], rejected: [['API01', 'HTTPSEC39']] },
+    TH27: { preferred: ['LOG01', 'LOG02'], rejected: [['IO02', 'LOG01']] },
+    TH29: { preferred: ['HTTPSEC28', 'PRIV01'], rejected: [['NOTSEC01', 'PRIV04']] },
+    TH31: { preferred: ['ISO03', 'ISO04'], rejected: [['ISO03', 'HTTPSEC23']] },
+  };
+  const candidates = [];
+  const confirmed = [];
+  const same = (a, b) => {
+    if (a.length !== b.length) return false;
+    const sa = [...a].sort();
+    const sb = [...b].sort();
+    return sa.every((x, i) => x === sb[i]);
+  };
+  for (const [th, pref] of Object.entries(prefs)) {
+    candidates.push(th);
+    const e = records.find((r) => r.id === th);
+    if (!e) {
+      confirmed.push(`${th}:missing`);
+      continue;
+    }
+    const mids = e.mitigationIds || [];
+    if (pref.rejected.some((bad) => same(mids, bad))) confirmed.push(`${th}:indirect`);
+    else if (!mids.some((id) => pref.preferred.includes(id))) confirmed.push(`${th}:indirect`);
+  }
+  return { candidates: [...new Set(candidates)], confirmed: [...new Set(confirmed)] };
+}
+
 function scanConceptLaunderingPack(records) {
   const byId = new Map(records.map((e) => [e.id, e]));
   const candidates = [];
@@ -514,6 +550,8 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`conceptLaunderingCandidates=${summary.conceptLaunderingCandidates}`);
   lines.push(`conceptLaunderingDefects=${summary.conceptLaunderingDefects}`);
   lines.push(`ontologyValidationFailures=${summary.ontologyValidationFailures}`);
+  lines.push(`directEvidenceCandidates=${summary.directEvidenceCandidates}`);
+  lines.push(`directEvidenceMappingFailures=${summary.directEvidenceMappingFailures}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -635,6 +673,7 @@ function main() {
   const threatSemanticMismatchCount = computeThreatSemanticMismatchCount(records);
   const semanticScan = scanConfirmedSemanticMismatches(records);
   const laundering = scanConceptLaunderingPack(records);
+  const directness = scanDirectEvidencePack(records);
   const ontologyValidationFailures = threatSemanticMismatchCount + laundering.confirmed.length;
 
   const summary = {
@@ -664,6 +703,8 @@ function main() {
     conceptLaunderingCandidates: laundering.candidates.length,
     conceptLaunderingDefects: laundering.confirmed.length,
     ontologyValidationFailures,
+    directEvidenceCandidates: directness.candidates.length,
+    directEvidenceMappingFailures: directness.confirmed.length,
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -683,7 +724,8 @@ function main() {
       threatSemanticMismatchCount === 0 &&
       semanticScan.confirmed.length === 0 &&
       laundering.confirmed.length === 0 &&
-      ontologyValidationFailures === 0,
+      ontologyValidationFailures === 0 &&
+      directness.confirmed.length === 0,
   };
 
   const jsonPath = path.join(outDir, 'step28-matrix-evidence-complete.json');
@@ -753,6 +795,7 @@ function main() {
       summary.confirmedSemanticMismatchScanCount === 0 &&
       summary.conceptLaunderingDefects === 0 &&
       summary.ontologyValidationFailures === 0 &&
+      summary.directEvidenceMappingFailures === 0 &&
       summary.brokenExecutableLinkage === 0,
   };
 

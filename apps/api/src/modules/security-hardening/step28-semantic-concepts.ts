@@ -9,6 +9,10 @@ import {
   scanConceptLaundering,
   validateThreatAgainstOntology,
 } from './step28-security-concept-ontology';
+import {
+  scanDirectEvidenceMappings,
+  validateDirectEvidenceMapping,
+} from './step28-direct-evidence-preferences';
 
 export type SecurityConceptTag = OntologyConceptId;
 export type ThreatConceptTag = SecurityConceptTag;
@@ -25,6 +29,12 @@ export {
   scanConceptLaundering,
   validateThreatAgainstOntology,
 } from './step28-security-concept-ontology';
+
+export {
+  STEP28_TH_DIRECTNESS_PREFERENCES,
+  scanDirectEvidenceMappings,
+  validateDirectEvidenceMapping,
+} from './step28-direct-evidence-preferences';
 
 /** Intentional bad mappings used by negative validator regressions. */
 export const FORBIDDEN_EXACT_EXAMPLES = [
@@ -149,7 +159,7 @@ export function validateExactConceptTags(entry: {
 }
 
 /**
- * TH mitigation validation — ontology authoritative.
+ * TH mitigation validation — ontology + direct-evidence preferences authoritative.
  * Shared self-declared tags without ontology approval are rejected.
  */
 export function validateThreatMitigationConcepts(
@@ -161,7 +171,9 @@ export function validateThreatMitigationConcepts(
   },
   byId: Map<string, { id: string; semanticEvidenceType?: string; securityConceptTags?: string[] }>,
 ): string | null {
-  return validateThreatAgainstOntology(entry, byId);
+  const ontologyErr = validateThreatAgainstOntology(entry, byId);
+  if (ontologyErr) return ontologyErr;
+  return validateDirectEvidenceMapping(entry);
 }
 
 /** Heuristic candidate scan for remaining overclaims + concept laundering. */
@@ -228,6 +240,10 @@ export function scanCandidateSemanticMismatches(
   const laundering = scanConceptLaundering(entries);
   candidates.push(...laundering.candidates);
   confirmed.push(...laundering.confirmed);
+
+  const directness = scanDirectEvidenceMappings(entries);
+  candidates.push(...directness.candidates.map((id) => `${id}:directness-candidate`));
+  confirmed.push(...directness.confirmed);
 
   return { candidates: [...new Set(candidates)], confirmed: [...new Set(confirmed)] };
 }
