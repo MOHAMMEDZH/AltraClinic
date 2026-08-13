@@ -4,12 +4,12 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress / Acceptance Pending External Review** — final TH26 audit omission/tampering direct-evidence closure complete (evidence/validator/test-only); Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent re-review of the regenerated evidence pack. No product/security/runtime change during this TH26 closure. |
+| **Status** | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`); final repository checkpoint `2a332be`. TH19/TH26 direct-evidence closures included. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |
 | **Steps 01–27 + U01** | Accepted / Complete |
-| **Step 29** | Not Authorized |
+| **Step 29** | Authorized — see `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` (acceptance pending external review) |
 
 **Case C Attempt 3:** frozen `booking_test`, commit `6dafb4498819a4c0cd5d91dd3704eca3b9a0fb59`, duration ~56.3 min, all counters 0, `exitCode=0`. Per-ID evidence: `apps/api/src/modules/security-hardening/step28-matrix-evidence.ts` — canonical families AUTH–TH = **660** IDs; closure-only RLTEST+TENSA+CSP = **44** IDs; catalog total **704**. Validator: `step28-matrix-evidence.validation.unit.spec.ts`. Export tooling: `apps/api/scripts/step28-matrix-evidence-export.mjs`. Temporary exports deleted after reviewability delivery. N/A IDs: CSRF07, HDR15 (rigorous). Attempt 3 remains authoritative after evidence-extraction closure (docs/tests/metadata only).
 

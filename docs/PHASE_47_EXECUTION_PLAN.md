@@ -29,8 +29,8 @@
 | Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md` |
 | Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md` |
 | Flexible Step **27** — Notifications and Templates | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T17:30:45.723Z`, SHA `bd7f35a`); Attempt 2 invalidated (C07 + Strategy B product fixes). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md` |
-| Flexible Step **28** — Security Hardening and Compliance Review | **In Progress / Acceptance Pending External Review** — Case C Attempt 3 authoritative (`booking_test`, SHA `6dafb44`); final TH26 audit omission/tampering direct-evidence closure complete; awaiting independent re-review of regenerated evidence pack. Contract: `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md` |
-| Flexible Step **29** | **Not Authorized** |
+| Flexible Step **28** — Security Hardening and Compliance Review | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, executable freeze `6dafb44`); final repository checkpoint `2a332be`. Contract: `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md` |
+| Flexible Step **29** — Release Readiness and Operational Handover | **In Progress / Acceptance Pending External Review** — branch `cursor/step29-release-readiness-operational-handover`; contract: `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -1668,19 +1668,19 @@ Security-only commits; split by gap ID.
 CI for super-admin; deploy notes; rollback drills; limitations; deferred backlog; G-09.
 
 ### Prerequisites
-28 green.
+28 green (**Accepted / Complete**; checkpoint `2a332be`).
 
 ### In Scope
-CI/CD updates; runbooks; access review; smoke; D-17 topology documentation.
+CI/CD updates; runbooks; access review; smoke; D-17 topology documentation; release acceptance matrix; final release-readiness runner.
 
 ### Non-Goals
-New product scope.
+New product scope. No Step 30.
 
 ### Tests
-Ops smoke; rollback verification ST-36 equivalent.
+Ops smoke; rollback documentation/tooling verification; Step 29 final one-pass (`test:step29-release-final-onepass`).
 
 ### Rollback
-Deployment rollback.
+Deployment rollback + DB restore/compensation per `docs/RELEASE_47_STEP29_RELEASE_READINESS.md`.
 
 ### Gates
 G-09.
@@ -1692,7 +1692,13 @@ Production.
 28.
 
 ### Commit Boundary
-Ops/CI/docs; no feature code.
+Ops/CI/docs/test-runner; no feature code.
+
+### Contract
+`docs/RELEASE_47_STEP29_RELEASE_READINESS.md`
+
+### Status
+**In Progress / Acceptance Pending External Review**
 
 ---
 

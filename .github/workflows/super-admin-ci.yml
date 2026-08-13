@@ -1,0 +1,41 @@
+name: Super Admin CI (Step 29)
+
+# Build/typecheck/test for Super Admin app. Does not deploy and does not use production databases.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/super-admin/**'
+      - 'packages/design-tokens/**'
+      - 'packages/i18n/**'
+      - '.github/workflows/super-admin-ci.yml'
+
+jobs:
+  super-admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/super-admin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install workspace
+        working-directory: .
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
