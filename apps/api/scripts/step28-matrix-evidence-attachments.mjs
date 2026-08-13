@@ -149,7 +149,9 @@ function computeThreatSemanticMismatchCount(records) {
   let count = 0;
   for (const e of records) {
     if (e.semanticEvidenceType !== 'docs-control-map') continue;
-    const threatTags = e.threatConceptTags?.length ? e.threatConceptTags : [];
+    // Ontology-required concepts are authoritative; ignore self-declared threat tags for pass/fail.
+    // Attachment packager mirrors validator: family allowlist + required concept overlap.
+    const threatTags = e.threatConceptTags || [];
     if (!threatTags.length || !e.mitigationIds?.length) {
       count += 1;
       continue;
@@ -169,6 +171,54 @@ function computeThreatSemanticMismatchCount(records) {
     if (bad) count += 1;
   }
   return count;
+}
+
+function scanConceptLaunderingPack(records) {
+  const byId = new Map(records.map((e) => [e.id, e]));
+  const candidates = [];
+  const confirmed = [];
+  for (const e of records) {
+    const fam = String(e.id).match(/^[A-Z]+/)?.[0] || 'UNKNOWN';
+    const tags = e.securityConceptTags || [];
+    if (fam === 'DEP' && tags.includes('http-passport-boundary')) {
+      candidates.push(`${e.id}:dep-http-laundering`);
+      confirmed.push(`${e.id}:dep-http-laundering`);
+    }
+    if (fam === 'PVSEC' && (tags.includes('mass-assignment') || tags.includes('http-passport-boundary'))) {
+      candidates.push(`${e.id}:pvsec-wrong-tag`);
+      confirmed.push(`${e.id}:pvsec-wrong-tag`);
+    }
+    if (e.id === 'TH11' && (e.mitigationIds || []).some((id) => String(id).startsWith('MA'))) {
+      candidates.push('TH11:mass-assignment-laundering');
+      confirmed.push('TH11:mass-assignment-laundering');
+    }
+    if (e.id === 'TH36') {
+      for (const mid of e.mitigationIds || []) {
+        const m = byId.get(mid);
+        if (m?.securityConceptTags?.includes('http-passport-boundary')) {
+          candidates.push('TH36:http-passport-laundering');
+          confirmed.push('TH36:http-passport-laundering');
+        }
+      }
+    }
+    if (e.id === 'TH39' || e.id === 'TH40') {
+      const privacyOnly = (e.mitigationIds || []).every((id) => {
+        const m = byId.get(id);
+        const t = m?.securityConceptTags || [];
+        return t.includes('notification-privacy') && !t.some((x) =>
+          /ambiguous|resend|retry|trial|stale|send-time|converted/.test(x),
+        );
+      });
+      if (privacyOnly && (e.mitigationIds || []).length) {
+        candidates.push(`${e.id}:privacy-only-laundering`);
+        confirmed.push(`${e.id}:privacy-only-laundering`);
+      }
+    }
+  }
+  return {
+    candidates: [...new Set(candidates)],
+    confirmed: [...new Set(confirmed)],
+  };
 }
 
 function scanConfirmedSemanticMismatches(records) {
@@ -461,6 +511,9 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`threatSemanticMismatchCount=${summary.threatSemanticMismatchCount}`);
   lines.push(`candidateSemanticMismatchScanCount=${summary.candidateSemanticMismatchScanCount}`);
   lines.push(`confirmedSemanticMismatchScanCount=${summary.confirmedSemanticMismatchScanCount}`);
+  lines.push(`conceptLaunderingCandidates=${summary.conceptLaunderingCandidates}`);
+  lines.push(`conceptLaunderingDefects=${summary.conceptLaunderingDefects}`);
+  lines.push(`ontologyValidationFailures=${summary.ontologyValidationFailures}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -581,6 +634,8 @@ function main() {
   ).length;
   const threatSemanticMismatchCount = computeThreatSemanticMismatchCount(records);
   const semanticScan = scanConfirmedSemanticMismatches(records);
+  const laundering = scanConceptLaunderingPack(records);
+  const ontologyValidationFailures = threatSemanticMismatchCount + laundering.confirmed.length;
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -606,6 +661,9 @@ function main() {
     threatSemanticMismatchCount,
     candidateSemanticMismatchScanCount: semanticScan.candidates.length,
     confirmedSemanticMismatchScanCount: semanticScan.confirmed.length,
+    conceptLaunderingCandidates: laundering.candidates.length,
+    conceptLaunderingDefects: laundering.confirmed.length,
+    ontologyValidationFailures,
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -623,7 +681,9 @@ function main() {
       semanticMismatch === 0 &&
       threatMappingsWithoutMitigation === 0 &&
       threatSemanticMismatchCount === 0 &&
-      semanticScan.confirmed.length === 0,
+      semanticScan.confirmed.length === 0 &&
+      laundering.confirmed.length === 0 &&
+      ontologyValidationFailures === 0,
   };
 
   const jsonPath = path.join(outDir, 'step28-matrix-evidence-complete.json');
@@ -691,6 +751,8 @@ function main() {
       summary.threatMappingsWithoutMitigation === 0 &&
       summary.threatSemanticMismatchCount === 0 &&
       summary.confirmedSemanticMismatchScanCount === 0 &&
+      summary.conceptLaunderingDefects === 0 &&
+      summary.ontologyValidationFailures === 0 &&
       summary.brokenExecutableLinkage === 0,
   };
 

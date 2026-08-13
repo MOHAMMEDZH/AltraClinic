@@ -379,4 +379,11 @@ describe('Step 28 semantic targeted proofs', () => {
       await rm(basePath, { recursive: true, force: true });
     }
   });
+
+  it('TH39: Strategy B classifyFailure marks provider_accept_then_ack_loss as ambiguous (no blind resend class)', () => {
+    const { classifyFailure } = require('../../notifications/delivery/delivery-job.service');
+    expect(classifyFailure(new Error('provider_accept_then_ack_loss'), 1, 5)).toBe('ambiguous');
+    expect(classifyFailure(new Error('after_provider_before_ack'), 1, 5)).toBe('ambiguous');
+    expect(classifyFailure(new Error('timeout'), 1, 5)).toBe('retryable');
+  });
 });

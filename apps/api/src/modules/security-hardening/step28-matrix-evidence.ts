@@ -5,6 +5,7 @@
 
 import {
   scanCandidateSemanticMismatches,
+  scanConceptLaundering,
   validateExactConceptTags,
   validateThreatMitigationConcepts,
 } from './step28-semantic-concepts';
@@ -682,8 +683,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "refresh-absolute-lifetime",
-      "expired-access-token"
+      "refresh-absolute-lifetime"
     ]
   },
   {
@@ -1958,6 +1958,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -1978,6 +1979,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -1998,6 +2000,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2018,6 +2021,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2038,6 +2042,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2058,6 +2063,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2078,6 +2084,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2098,6 +2105,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2118,6 +2126,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2138,6 +2147,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2158,6 +2168,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2178,6 +2189,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "mass-assignment",
       "dto-whitelist"
     ]
   },
@@ -2220,7 +2232,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2240,7 +2253,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2260,7 +2274,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2280,7 +2295,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2300,7 +2316,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2320,7 +2337,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2340,7 +2358,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2360,7 +2379,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2380,7 +2400,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2400,7 +2421,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2420,7 +2442,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -2440,7 +2463,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -3220,7 +3244,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3240,7 +3264,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3260,7 +3284,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3280,7 +3304,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3300,7 +3324,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3320,7 +3344,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3340,7 +3364,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3360,7 +3384,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3380,7 +3404,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3400,7 +3424,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "feature-flag-not-entitlement"
     ]
   },
   {
@@ -3900,7 +3924,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -3980,7 +4004,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4000,7 +4024,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4020,7 +4044,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4040,7 +4064,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4060,7 +4084,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4080,7 +4104,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4100,7 +4124,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4120,7 +4144,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4140,7 +4164,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4160,7 +4184,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4180,7 +4204,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4200,7 +4224,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4220,7 +4244,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4240,7 +4264,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4260,7 +4284,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -4280,7 +4304,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "limit-fail-closed"
     ]
   },
   {
@@ -6979,7 +7003,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "securityConceptTags": [
       "csv-formula-injection",
       "export-sanitization",
-      "notification-privacy"
+      "output-neutralization"
     ]
   },
   {
@@ -7344,7 +7368,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7364,7 +7391,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7384,7 +7414,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7404,7 +7437,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7424,7 +7460,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7444,7 +7483,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7464,7 +7506,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7484,7 +7529,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7504,7 +7552,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7524,7 +7575,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7544,7 +7598,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7564,7 +7621,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7584,7 +7644,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7604,7 +7667,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7624,7 +7690,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7644,7 +7713,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7664,7 +7736,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7684,7 +7759,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7704,7 +7782,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -7724,7 +7805,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -9559,7 +9643,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9579,7 +9663,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9599,7 +9683,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9619,7 +9703,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9639,7 +9723,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9659,7 +9743,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9679,7 +9763,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9699,7 +9783,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9719,7 +9803,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9739,7 +9823,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9759,7 +9843,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9779,7 +9863,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9799,7 +9883,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9819,7 +9903,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "http-passport-boundary"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -9844,82 +9928,92 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
   },
   {
     "id": "NOTSEC02",
-    "canonicalMeaning": "Step 27 notification security regression case NOTSEC02",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
-    "routeModuleControl": "platform-notifications Strategy B + C07",
+    "canonicalMeaning": "Strategy B durable ambiguous delivery; no automatic resend (I16)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-idempotency.postgres.integration.spec.ts",
+    "testTitle": "I16: provider_accept_then_ack_loss → durable ambiguous; no auto-resend (Strategy B)",
+    "routeModuleControl": "platform-notifications Strategy B ambiguous delivery",
     "principalSetup": "platform notification operators",
-    "attackOrFailure": "surface freeze break / PHI in templates",
-    "expectedResult": "no Step 28 surface leak; privacy holds",
+    "attackOrFailure": "provider_accept_then_ack_loss ambiguous state then blind auto-resend",
+    "expectedResult": "status=ambiguous; automatic providerΔ=0",
     "evidenceType": "integration",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "assertionAnchor": "I16: provider_accept_then_ack_loss → durable ambiguous; no auto-resend (Strategy B)",
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "notification-privacy"
+      "ambiguous-delivery-state",
+      "no-blind-resend",
+      "notification-idempotency-safety"
     ]
   },
   {
     "id": "NOTSEC03",
-    "canonicalMeaning": "Step 27 notification security regression case NOTSEC03",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-failure.postgres.integration.spec.ts",
-    "testTitle": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
-    "routeModuleControl": "platform-notifications Strategy B + C07",
+    "canonicalMeaning": "Explicit manual retry required to requeue dead-lettered notification job (R16)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-retry.postgres.integration.spec.ts",
+    "testTitle": "R16: Operations-policy manual retry (permission + reason) requeues a dead-lettered job and completes it",
+    "routeModuleControl": "platform-notifications explicit manual retry",
     "principalSetup": "platform notification operators",
-    "attackOrFailure": "surface freeze break / PHI in templates",
-    "expectedResult": "no Step 28 surface leak; privacy holds",
+    "attackOrFailure": "blind automatic resend without explicit manual retry",
+    "expectedResult": "only explicit manual retry requeues; no blind auto-resend",
     "evidenceType": "integration",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
+    "assertionAnchor": "R16: Operations-policy manual retry (permission + reason) requeues a dead-lettered job and completes it",
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "notification-privacy"
+      "explicit-manual-retry",
+      "no-blind-resend",
+      "notification-idempotency-safety"
     ]
   },
   {
     "id": "NOTSEC04",
-    "canonicalMeaning": "Step 27 notification security regression case NOTSEC04",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-privacy.postgres.integration.spec.ts",
-    "testTitle": "P19: no Step 28 security-report data",
-    "routeModuleControl": "platform-notifications Strategy B + C07",
+    "canonicalMeaning": "C07 send-time Trial revalidation suppresses expiry email after conversion",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-concurrency.postgres.integration.spec.ts",
+    "testTitle": "C07-B: queued ACTIVE intent; convert; send-time revalidation suppresses (emailΔ=0)",
+    "routeModuleControl": "platform-notifications C07 send-time Trial revalidation",
     "principalSetup": "platform notification operators",
-    "attackOrFailure": "surface freeze break / PHI in templates",
-    "expectedResult": "no Step 28 surface leak; privacy holds",
+    "attackOrFailure": "stale trialExpiry send after Trial CONVERTED",
+    "expectedResult": "send-time suppress; emailΔ=0; trial_obsolete:CONVERTED",
     "evidenceType": "integration",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "P19: no Step 28 security-report data",
+    "assertionAnchor": "C07-B: queued ACTIVE intent; convert; send-time revalidation suppresses (emailΔ=0)",
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "notification-privacy"
+      "trial-state-revalidation",
+      "stale-notification-prevention",
+      "send-time-state-check",
+      "converted-trial-no-expiry-send"
     ]
   },
   {
     "id": "NOTSEC05",
-    "canonicalMeaning": "Step 27 notification security regression case NOTSEC05",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
-    "routeModuleControl": "platform-notifications Strategy B + C07",
+    "canonicalMeaning": "C07 converted Trial obsolete-suppress prevents expiry intent/email",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-concurrency.postgres.integration.spec.ts",
+    "testTitle": "C07-A: convert first; trialExpiry adapter obsolete-suppress → intentΔ=0, emailΔ=0",
+    "routeModuleControl": "platform-notifications C07 converted-trial obsolete suppress",
     "principalSetup": "platform notification operators",
-    "attackOrFailure": "surface freeze break / PHI in templates",
-    "expectedResult": "no Step 28 surface leak; privacy holds",
+    "attackOrFailure": "trialExpiry after CONVERTED still emits expiry notification",
+    "expectedResult": "adapter obsolete-suppress; intentΔ=0 emailΔ=0",
     "evidenceType": "integration",
     "applicability": "applicable",
     "linkageMode": "exact-title",
     "semanticEvidenceType": "exact",
-    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "assertionAnchor": "C07-A: convert first; trialExpiry adapter obsolete-suppress → intentΔ=0, emailΔ=0",
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "notification-privacy"
+      "trial-state-revalidation",
+      "stale-notification-prevention",
+      "converted-trial-no-expiry-send",
+      "send-time-state-check"
     ]
   },
   {
@@ -12827,15 +12921,16 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=MA01,MA02",
+    "assertionAnchor": "mitigationIds=PVSEC01,PVSEC02",
     "mitigationIds": [
-      "MA01",
-      "MA02"
+      "PVSEC01",
+      "PVSEC02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "mass-assignment"
+      "published-plan-version-immutability",
+      "plan-version-mutation-deny"
     ]
   },
   {
@@ -13319,7 +13414,6 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "threatConceptTags": [
       "csv-formula-injection",
       "export-sanitization",
-      "export-scope",
       "output-neutralization"
     ],
     "semanticReviewNote": "CSV formula neutralization on audit/export surfaces"
@@ -13397,8 +13491,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "result": "Pass",
     "threatConceptTags": [
       "prototype-pollution",
-      "dangerous-object-key",
-      "dto-whitelist"
+      "dangerous-object-key"
     ],
     "semanticReviewNote": "ValidationPipe strips __proto__/constructor object-key abuse"
   },
@@ -13478,7 +13571,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "http-passport-boundary"
+      "dependency-audit",
+      "supply-chain-risk",
+      "critical-high-vulnerability-gate",
+      "dependency-classification"
     ]
   },
   {
@@ -13553,7 +13649,10 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "notification-privacy"
+      "ambiguous-delivery-state",
+      "no-blind-resend",
+      "explicit-manual-retry",
+      "notification-idempotency-safety"
     ]
   },
   {
@@ -13570,15 +13669,18 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=NOTSEC04,CSEC01",
+    "assertionAnchor": "mitigationIds=NOTSEC04,NOTSEC05",
     "mitigationIds": [
       "NOTSEC04",
-      "CSEC01"
+      "NOTSEC05"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "notification-privacy"
+      "trial-state-revalidation",
+      "stale-notification-prevention",
+      "send-time-state-check",
+      "converted-trial-no-expiry-send"
     ]
   },
   {
@@ -13698,7 +13800,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
-      "xff-trust-proxy"
+      "rate-limit-test-bypass"
     ]
   },
   {
@@ -14564,6 +14666,12 @@ export function assertMatrixEvidenceComplete(): void {
   if (scan.confirmed.length) {
     throw new Error(
       `Confirmed semantic mismatches remain: ${scan.confirmed.slice(0, 20).join(', ')}`,
+    );
+  }
+  const laundering = scanConceptLaundering(MATRIX_EVIDENCE);
+  if (laundering.confirmed.length) {
+    throw new Error(
+      `Concept-laundering defects remain: ${laundering.confirmed.slice(0, 20).join(', ')}`,
     );
   }
 

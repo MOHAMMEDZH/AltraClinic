@@ -9,8 +9,12 @@ import {
   matrixFamilyOf,
 } from '../step28-matrix-evidence';
 import {
+  ONTOLOGY_CONCEPT_COUNT,
+  STEP28_SECURITY_CONCEPT_ONTOLOGY,
   TH_THREAT_CONCEPTS,
+  rejectSharedTagWithoutOntologyApproval,
   scanCandidateSemanticMismatches,
+  scanConceptLaundering,
   validateExactConceptTags,
   validateThreatMitigationConcepts,
 } from '../step28-semantic-concepts';
@@ -227,6 +231,19 @@ describe('Step 28 matrix evidence validation', () => {
     expect(byId.get('TH30')!.mitigationIds).toEqual(expect.arrayContaining(['IO02', 'PRIV03']));
     expect(byId.get('TH33')!.mitigationIds).toEqual(expect.arrayContaining(['MA16']));
     expect(byId.get('TH35')!.mitigationIds).toEqual(expect.arrayContaining(['IO03', 'IO24']));
+
+    expect(byId.get('TH11')!.mitigationIds).toEqual(expect.arrayContaining(['PVSEC01', 'PVSEC02']));
+    expect(byId.get('TH11')!.threatConceptTags).toEqual(
+      expect.arrayContaining(['published-plan-version-immutability']),
+    );
+    expect(byId.get('DEP01')!.securityConceptTags).toEqual(
+      expect.arrayContaining(['dependency-audit']),
+    );
+    expect(byId.get('DEP01')!.securityConceptTags).not.toContain('http-passport-boundary');
+    expect(byId.get('TH39')!.mitigationIds).toEqual(expect.arrayContaining(['NOTSEC02', 'NOTSEC03']));
+    expect(byId.get('NOTSEC02')!.testTitle).toMatch(/Strategy B|ambiguous|no auto-resend/i);
+    expect(byId.get('TH40')!.mitigationIds).toEqual(expect.arrayContaining(['NOTSEC04', 'NOTSEC05']));
+    expect(byId.get('NOTSEC04')!.testTitle).toMatch(/C07-B|send-time revalidation/i);
   });
 
   it('rejects RL20 XFF claim linked to DI bypass test', () => {
@@ -340,5 +357,101 @@ describe('Step 28 matrix evidence validation', () => {
     expect(threatSemanticMismatchCount).toBe(0);
     const scan = scanCandidateSemanticMismatches(MATRIX_EVIDENCE);
     expect(scan.confirmed).toEqual([]);
+    const laundering = scanConceptLaundering(MATRIX_EVIDENCE);
+    expect(laundering.confirmed).toEqual([]);
+  });
+
+  it('rejects TH11 mass-assignment as Plan Version immutability mitigation', () => {
+    const byId = new Map([
+      ['MA01', { id: 'MA01', securityConceptTags: ['mass-assignment', 'dto-whitelist'] }],
+      ['MA02', { id: 'MA02', securityConceptTags: ['mass-assignment', 'dto-whitelist'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH11',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: ['mass-assignment'],
+        mitigationIds: ['MA01', 'MA02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH11/);
+  });
+
+  it('rejects TH36 DEP records tagged http-passport-boundary', () => {
+    const byId = new Map([
+      ['DEP01', { id: 'DEP01', securityConceptTags: ['http-passport-boundary'] }],
+      ['DEP02', { id: 'DEP02', securityConceptTags: ['http-passport-boundary'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH36',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: ['http-passport-boundary'],
+        mitigationIds: ['DEP01', 'DEP02'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH36/);
+  });
+
+  it('rejects TH39 privacy-only notification mitigations', () => {
+    const byId = new Map([
+      ['NOTSEC02', { id: 'NOTSEC02', securityConceptTags: ['notification-privacy'] }],
+      ['NOTSEC03', { id: 'NOTSEC03', securityConceptTags: ['notification-privacy'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH39',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: ['notification-privacy'],
+        mitigationIds: ['NOTSEC02', 'NOTSEC03'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH39/);
+  });
+
+  it('rejects TH40 privacy-only stale-trial mitigations', () => {
+    const byId = new Map([
+      ['NOTSEC04', { id: 'NOTSEC04', securityConceptTags: ['notification-privacy'] }],
+      ['CSEC01', { id: 'CSEC01', securityConceptTags: ['notification-privacy'] }],
+    ]);
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH40',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: ['notification-privacy'],
+        mitigationIds: ['NOTSEC04', 'CSEC01'],
+      },
+      byId,
+    );
+    expect(err).toMatch(/TH40/);
+  });
+
+  it('rejects same manually declared tag without ontology approval', () => {
+    const err = rejectSharedTagWithoutOntologyApproval({
+      threatId: 'TH11',
+      sharedTag: 'mass-assignment',
+      mitigationId: 'MA01',
+      mitigationTags: ['mass-assignment'],
+    });
+    expect(err).toMatch(/TH11/);
+  });
+
+  it('frozen ontology is static and authoritative', () => {
+    expect(ONTOLOGY_CONCEPT_COUNT).toBeGreaterThan(30);
+    expect(STEP28_SECURITY_CONCEPT_ONTOLOGY['published-plan-version-immutability'].allowedFamilies).toEqual([
+      'PVSEC',
+    ]);
+    expect(STEP28_SECURITY_CONCEPT_ONTOLOGY['dependency-audit'].forbiddenConcepts).toEqual(
+      expect.arrayContaining(['http-passport-boundary']),
+    );
+    expect(TH_THREAT_CONCEPTS.TH11).toEqual(
+      expect.arrayContaining(['published-plan-version-immutability']),
+    );
+    expect(TH_THREAT_CONCEPTS.TH36).toEqual(expect.arrayContaining(['dependency-audit']));
+    expect(TH_THREAT_CONCEPTS.TH39).toEqual(expect.arrayContaining(['ambiguous-delivery-state']));
+    expect(TH_THREAT_CONCEPTS.TH40).toEqual(expect.arrayContaining(['trial-state-revalidation']));
   });
 });
