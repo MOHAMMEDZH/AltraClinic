@@ -127,15 +127,25 @@ function enrich(e) {
     whyNoEquivalentSurfaceExists: e.whyNoEquivalentSurfaceExists || (na ? 'MISSING' : 'N/A'),
     linkageMode: e.linkageMode || (na ? 'N/A' : 'N/A'),
     suiteAnchorNote: e.suiteAnchorNote || 'N/A',
+    semanticEvidenceType: e.semanticEvidenceType || (na ? 'na' : 'exact'),
+    assertionAnchor: e.assertionAnchor || e.testTitle || 'N/A',
+    mitigationIds: e.mitigationIds || [],
+    semanticReviewStatus: e.semanticReviewStatus || (na ? 'N/A' : 'EXACT'),
+    semanticReviewNote: e.semanticReviewNote || 'N/A',
     result: e.result,
   };
 }
 
 function extractTitles(text) {
   const titles = [];
-  const re = /\b(?:it|test|describe)\(\s*(['"`])([\s\S]*?)\1/g;
+  const re = /\b(?:it|test|describe|it\.skip|test\.skip)\(\s*(['"`])([\s\S]*?)\1/g;
   let m;
   while ((m = re.exec(text))) {
+    const title = m[2].replace(/\s+/g, ' ').trim();
+    if (title) titles.push(title);
+  }
+  const re2 = /\?\s*it\s*:\s*it\.skip\)\(\s*(['"`])([\s\S]*?)\1/g;
+  while ((m = re2.exec(text))) {
     const title = m[2].replace(/\s+/g, ' ').trim();
     if (title) titles.push(title);
   }
@@ -361,6 +371,13 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`duplicates=${summary.duplicates}`);
   lines.push(`unknown=${summary.unknown}`);
   lines.push(`semanticMismatches=${summary.semanticMismatches}`);
+  lines.push(`semanticExact=${summary.semanticExact}`);
+  lines.push(`semanticPartial=${summary.semanticPartial}`);
+  lines.push(`semanticMismatch=${summary.semanticMismatch}`);
+  lines.push(`docsOnly=${summary.docsOnly}`);
+  lines.push(`na=${summary.semanticNa}`);
+  lines.push(`brokenExecutableLinkage=${summary.brokenExecutableLinkage}`);
+  lines.push(`threatMappingsWithoutMitigation=${summary.threatMappingsWithoutMitigation}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -469,6 +486,17 @@ function main() {
   const canonicalActual = records.filter((e) => CANONICAL_FAMILIES[e.family]).length;
   const closureActual = records.filter((e) => CLOSURE_FAMILIES[e.family]).length;
 
+  const semanticExact = records.filter((e) => e.semanticReviewStatus === 'EXACT').length;
+  const semanticPartial = records.filter((e) => e.semanticReviewStatus === 'PARTIAL').length;
+  const semanticMismatch = records.filter((e) => e.semanticReviewStatus === 'MISMATCH').length;
+  const docsOnly = records.filter((e) => e.semanticReviewStatus === 'DOCS_ONLY').length;
+  const semanticNa = records.filter((e) => e.semanticReviewStatus === 'N/A').length;
+  const threatMappingsWithoutMitigation = records.filter(
+    (e) =>
+      e.semanticEvidenceType === 'docs-control-map' &&
+      (!Array.isArray(e.mitigationIds) || e.mitigationIds.length === 0),
+  ).length;
+
   const summary = {
     generatedAt: new Date().toISOString(),
     authoritativeSource: SOURCE_REL,
@@ -482,7 +510,14 @@ function main() {
     missing: errors.filter((e) => e.startsWith('missing ')).length,
     duplicates: errors.filter((e) => e.startsWith('duplicate ')).length,
     unknown: errors.filter((e) => e.startsWith('unknown ')).length,
-    semanticMismatches: errors.filter((e) => e.includes('duplicate meaning')).length,
+    semanticMismatches: semanticMismatch,
+    semanticExact,
+    semanticPartial,
+    semanticMismatch,
+    docsOnly,
+    semanticNa,
+    brokenExecutableLinkage: linkage.brokenTestTitleLinks.length + linkage.missingReferencedTestFiles.length,
+    threatMappingsWithoutMitigation,
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -495,7 +530,10 @@ function main() {
       errors.length === 0 &&
       canonicalActual === 660 &&
       closureActual === 44 &&
-      records.length === 704,
+      records.length === 704 &&
+      semanticPartial === 0 &&
+      semanticMismatch === 0 &&
+      threatMappingsWithoutMitigation === 0,
   };
 
   const jsonPath = path.join(outDir, 'step28-matrix-evidence-complete.json');
@@ -557,7 +595,11 @@ function main() {
       linkage.ok &&
       secretHits.length === 0 &&
       phiHits.length === 0 &&
-      recordCountInTxt === 704,
+      recordCountInTxt === 704 &&
+      summary.semanticPartial === 0 &&
+      summary.semanticMismatch === 0 &&
+      summary.threatMappingsWithoutMitigation === 0 &&
+      summary.brokenExecutableLinkage === 0,
   };
 
   console.log(JSON.stringify(result, null, 2));

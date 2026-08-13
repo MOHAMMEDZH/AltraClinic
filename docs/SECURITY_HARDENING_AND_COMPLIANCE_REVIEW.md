@@ -4,7 +4,7 @@
 |-------|--------|
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | Flexible Step 28 — Security Hardening and Compliance Review |
-| **Status** | **In Progress / Acceptance Pending External Review** — product/security gates and Case C Attempt 3 remain green (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent review of the complete 704-record attached matrix evidence. Attempt 3 remains authoritative. No product/security/runtime change during this evidence-attachment gate. |
+| **Status** | **In Progress / Acceptance Pending External Review** — semantic evidence-map correction gate in progress; Case C Attempt 3 remains authoritative (`booking_test`, freeze `2026-08-12T22:25:39.061Z`, SHA `6dafb44`). Final acceptance awaits independent review of the corrected 704-record attached matrix evidence. No product/security/runtime change during this semantic-correction gate. |
 | **Branch** | `cursor/step28-security-hardening-compliance-review` |
 | **Base** | Step 27 HEAD `8aefd462e8bf6697459c4cad5d21077181f67b5a` |
 | **Catalog invariant** | `68 / 136 / 68 / 13` |

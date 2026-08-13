@@ -6,6 +6,11 @@
 export type MatrixEvidenceType = 'jest' | 'script' | 'unit' | 'integration' | 'docs';
 export type MatrixApplicability = 'applicable' | 'na';
 export type MatrixEvidenceResult = 'Pass' | 'Fixed' | 'N/A' | 'Residual';
+export type MatrixSemanticEvidenceType =
+  | 'exact'
+  | 'docs-control-map'
+  | 'na';
+export type MatrixSemanticReviewStatus = 'EXACT' | 'DOCS_ONLY' | 'N/A' | 'PARTIAL' | 'MISMATCH';
 
 export type MatrixEvidenceEntry = {
   id: string;
@@ -31,6 +36,14 @@ export type MatrixEvidenceEntry = {
    */
   linkageMode?: 'exact-title' | 'id-tag' | 'suite-anchor' | 'script-file';
   suiteAnchorNote?: string;
+  /** Semantic evidence classification after independent review correction. */
+  semanticEvidenceType?: MatrixSemanticEvidenceType;
+  /** Exact assertion/title/id-tag anchor supporting canonicalMeaning. */
+  assertionAnchor?: string;
+  /** For docs-control-map (TH*): concrete executable mitigation matrix IDs. */
+  mitigationIds?: string[];
+  semanticReviewStatus?: MatrixSemanticReviewStatus;
+  semanticReviewNote?: string;
   result: MatrixEvidenceResult;
 };
 
@@ -90,22 +103,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH02",
     "canonicalMeaning": "Legacy clinic super_admin role name grants zero platform permissions",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "does not grant permissions for legacy super_admin role name",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "does not grant permissions for legacy super_admin role name",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH03",
@@ -118,428 +137,521 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "super_admin role name grants nothing without permissions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH04",
     "canonicalMeaning": "Missing authentication yields Unauthorized on platform permission guard",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH04: missing authentication yields Unauthorized on platform permission guard",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "missing request.user / unauthenticated platform guard context",
+    "attackOrFailure": "invoke PlatformPermissionGuard without authentication",
+    "expectedResult": "UnauthorizedException; zero permission evaluation success",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH04: missing authentication yields Unauthorized on platform permission guard",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH05",
     "canonicalMeaning": "Empty role set after authz revision bump denies previously allowed permission",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH05: empty role set after authz revision bump denies previously allowed permission",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH05: empty role set after authz revision bump denies previously allowed permission",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH06",
     "canonicalMeaning": "Unknown permission keys never grant (fail-closed catalog)",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH07",
     "canonicalMeaning": "Wildcard permission keys forbidden by catalog assertNoWildcards",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
+    "testTitle": "has no wildcard grants and keeps auditors read-only",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH08",
     "canonicalMeaning": "Auditor role cannot invite platform users",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
+    "testTitle": "has no wildcard grants and keeps auditors read-only",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH09",
     "canonicalMeaning": "Sales representative cannot invite platform users",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH09: sales representative cannot invite platform users",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH09: sales representative cannot invite platform users",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH10",
     "canonicalMeaning": "Suspended platform user denied even with structurally valid session",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH10: suspended platform user denied even with structurally valid session",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "structurally valid platform JWT for suspended user",
+    "attackOrFailure": "assertPermission while user status=suspended",
+    "expectedResult": "ForbiddenException; no effective permission grant",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH10: suspended platform user denied even with structurally valid session",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH11",
     "canonicalMeaning": "Authz cache invalidated on revision bump",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH11: authz cache invalidated on revision bump",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "platform user with cached authz permissions",
+    "attackOrFailure": "role change without bump leaves stale cache; bump invalidates",
+    "expectedResult": "cache refresh only after authzRevision bump",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH11: authz cache invalidated on revision bump",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH12",
     "canonicalMeaning": "SoD constraints enforced for dual-control sensitive actions",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "enforces SoD for self-elevation, last owner, and MFA reset parties",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
+    "principalSetup": "SoD actor/approver/target principals",
+    "attackOrFailure": "self-approve / last-owner removal / MFA reset party collision",
+    "expectedResult": "ForbiddenException on SoD violations",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces SoD for self-elevation, last owner, and MFA reset parties",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH13",
     "canonicalMeaning": "Platform principal required metadata separates clinic JWT audience",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "clinic tokens keep clinic audience and are not platform",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "clinic tokens keep clinic audience and are not platform",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH14",
     "canonicalMeaning": "Permission denial produces zero authorization side effects",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH14: permission denial produces zero authorization side effects",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH14: permission denial produces zero authorization side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH15",
     "canonicalMeaning": "Role inheritance never elevates beyond catalog grants",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
+    "testTitle": "does not grant unknown or super-admin role names",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "does not grant unknown or super-admin role names",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH16",
     "canonicalMeaning": "Inactive permission lifecycle never authorizes",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH16: inactive permission lifecycle never authorizes",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH16: inactive permission lifecycle never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH17",
     "canonicalMeaning": "Platform session class required for platform permission evaluation",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "role name alone does not establish platform principal",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "role name alone does not establish platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH18",
     "canonicalMeaning": "Clinic aud token rejected before permission evaluation",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "rejects clinic token on platform route and platform token on tenant route",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH19",
     "canonicalMeaning": "Direct permission string spoof in JWT ignored",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH20",
     "canonicalMeaning": "Platform RBAC is authoritative for /platform sensitive routes",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "denies tenant/staff tokens and allows platform permission path",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH21",
     "canonicalMeaning": "PlatformPermissionGuard rejects patient-session principals",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "patient tokens keep patient-portal audience",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "patient tokens keep patient-portal audience",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH22",
     "canonicalMeaning": "Invite permission requires exact catalog key platform-user.invite",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH22: invite permission requires exact catalog key platform-user.invite",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH22: invite permission requires exact catalog key platform-user.invite",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH23",
     "canonicalMeaning": "View permission does not imply mutate permission",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
+    "testTitle": "has no wildcard grants and keeps auditors read-only",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH24",
     "canonicalMeaning": "Mutate permission does not imply approve permission",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH24: mutate permission does not imply approve permission",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH24: mutate permission does not imply approve permission",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH25",
     "canonicalMeaning": "Approve permission does not imply revoke permission",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH25: approve permission does not imply revoke permission",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH25: approve permission does not imply revoke permission",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH26",
     "canonicalMeaning": "Security administrator cannot self-escalate beyond catalog",
     "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testTitle": "prevents self-elevation and last-owner removal",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "prevents self-elevation and last-owner removal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH27",
     "canonicalMeaning": "Platform owner still subject to SoD where configured",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "enforces SoD for self-elevation, last owner, and MFA reset parties",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces SoD for self-elevation, last owner, and MFA reset parties",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH28",
     "canonicalMeaning": "Preauth audience never satisfies platform permission routes",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "issues a preauth token that is REJECTED by the access-token verifier and by type checks",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "issues a preauth token that is REJECTED by the access-token verifier and by type checks",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH29",
     "canonicalMeaning": "Revoked JTI never evaluates permissions",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "logout revokes session and blacklists jti; me returns safe metadata",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "logout revokes session and blacklists jti; me returns safe metadata",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH30",
     "canonicalMeaning": "Expired access token never evaluates permissions",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
-    "testTitle": "does not grant unknown or super-admin role names",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "rejects refresh when the session breached the absolute lifetime",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH31",
     "canonicalMeaning": "Tenant-scoped custom roles never map into platform catalog",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH32",
     "canonicalMeaning": "Clinic PermissionGuard bypass does not apply on platform routes",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH32: Clinic PermissionGuard bypass does not apply on platform routes",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH32: Clinic PermissionGuard bypass does not apply on platform routes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH33",
     "canonicalMeaning": "PlatformAuthorizationService assertPermission fail-closed",
     "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
+    "testTitle": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "unknown permission fails closed; tenant permission keys do not satisfy platform keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH34",
@@ -552,54 +664,15 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "does not grant unknown or super-admin role names",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH35",
     "canonicalMeaning": "Empty permissionsForRoles for unknown role keys",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
-    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
-    "evidenceType": "jest",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "AUTH36",
-    "canonicalMeaning": "Catalog assertNoWildcards runs at module load",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
-    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
-    "evidenceType": "jest",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "AUTH37",
-    "canonicalMeaning": "Platform permission metadata decorator wires guard key",
-    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
-    "testTitle": "denies tenant/staff tokens and allows platform permission path",
-    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
-    "principalSetup": "platform JWT vs clinic/staff JWT",
-    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
-    "expectedResult": "deny unless catalog permission present for platform principal",
-    "evidenceType": "jest",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "AUTH38",
-    "canonicalMeaning": "Deny path does not leak whether permission exists",
     "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
     "testTitle": "does not grant unknown or super-admin role names",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
@@ -608,36 +681,96 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "does not grant unknown or super-admin role names",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "AUTH36",
+    "canonicalMeaning": "Catalog assertNoWildcards runs at module load",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac.spec.ts",
+    "testTitle": "has no wildcard grants and keeps auditors read-only",
+    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
+    "principalSetup": "platform JWT vs clinic/staff JWT",
+    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
+    "expectedResult": "deny unless catalog permission present for platform principal",
+    "evidenceType": "jest",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "has no wildcard grants and keeps auditors read-only",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "AUTH37",
+    "canonicalMeaning": "Platform permission metadata decorator wires guard key",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "guard metadata key is required for permission enforcement",
+    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
+    "principalSetup": "platform JWT vs clinic/staff JWT",
+    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
+    "expectedResult": "deny unless catalog permission present for platform principal",
+    "evidenceType": "jest",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "guard metadata key is required for permission enforcement",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "AUTH38",
+    "canonicalMeaning": "Deny path does not leak whether permission exists",
+    "testFile": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts",
+    "testTitle": "returns indistinguishable errors for unknown account and wrong password",
+    "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
+    "principalSetup": "platform JWT vs clinic/staff JWT",
+    "attackOrFailure": "role-name bypass / missing permission / wrong principal",
+    "expectedResult": "deny unless catalog permission present for platform principal",
+    "evidenceType": "jest",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "returns indistinguishable errors for unknown account and wrong password",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH39",
     "canonicalMeaning": "Effective permissions sorted deterministically",
-    "testFile": "apps/api/src/modules/platform-plans/tests/platform-plans.authorization.spec.ts",
-    "testTitle": "super_admin role name grants nothing without permissions",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "AUTH39: effective permissions sorted deterministically",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "AUTH39: effective permissions sorted deterministically",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUTH40",
     "canonicalMeaning": "Platform RBAC security integration covers deny-then-allow path",
-    "testFile": "apps/api/src/modules/platform-admin/tests/platform-admin-permission.guard.spec.ts",
-    "testTitle": "rejects non-super-admin roles",
+    "testFile": "apps/api/src/modules/auth/tests/platform-rbac-security-integration.spec.ts",
+    "testTitle": "denies tenant/staff tokens and allows platform permission path",
     "routeModuleControl": "PlatformPermissionGuard + platform-rbac.catalog",
     "principalSetup": "platform JWT vs clinic/staff JWT",
     "attackOrFailure": "role-name bypass / missing permission / wrong principal",
     "expectedResult": "deny unless catalog permission present for platform principal",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies tenant/staff tokens and allows platform permission path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND01",
@@ -650,8 +783,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND02",
@@ -664,8 +800,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND03",
@@ -678,8 +817,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong issuer, audience, principal boundary, revoked JTI, and tenant-bearing platform token",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND04",
@@ -692,8 +834,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong issuer, audience, principal, revoked JTI, tenant-bearing platform token",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND05",
@@ -706,8 +851,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects clinic token on platform tenant-directory routes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND06",
@@ -720,8 +868,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "POST refresh handler inherits platform-auth route metadata from the controller class",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND07",
@@ -734,8 +885,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects missing/Clinic/patient/pre-auth; accepts Platform JWT",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND08",
@@ -748,8 +902,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong principal boundary (platform sessionClass without platform principal)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND09",
@@ -762,8 +919,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects clinic token on platform route and platform token on tenant route",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND10",
@@ -776,8 +936,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND11",
@@ -790,8 +953,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong issuer, audience, principal boundary, revoked JTI, and tenant-bearing platform token",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND12",
@@ -804,8 +970,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong issuer, audience, principal, revoked JTI, tenant-bearing platform token",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND13",
@@ -818,8 +987,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects clinic token on platform tenant-directory routes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND14",
@@ -832,8 +1004,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "POST refresh handler inherits platform-auth route metadata from the controller class",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND15",
@@ -846,8 +1021,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects missing/Clinic/patient/pre-auth; accepts Platform JWT",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "BND16",
@@ -860,23 +1038,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "PLATFORM_PRINCIPAL_REQUIRED or PLATFORM_TOKEN_REJECTED_ON_TENANT_API",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects wrong principal boundary (platform sessionClass without platform principal)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API01",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #1",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H01: valid Platform principal with required permission (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H01: valid Platform principal with required permission (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API02",
@@ -889,9 +1072,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API03",
@@ -904,23 +1089,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API04",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #4",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H04: tenant principal rejected (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H04: tenant principal rejected (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API05",
@@ -933,9 +1123,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H21: passive read does not extend session activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API06",
@@ -948,23 +1140,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API07",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #7",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H07: expired session or token (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H07: expired session or token (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API08",
@@ -977,9 +1174,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API09",
@@ -992,23 +1191,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API10",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #10",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H10: missing permission (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H10: missing permission (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API11",
@@ -1021,9 +1225,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H21: passive read does not extend session activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API12",
@@ -1036,23 +1242,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API13",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #13",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H13: direct-link UI authorization denial (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: direct-link UI authorization denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API14",
@@ -1065,9 +1276,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API15",
@@ -1080,23 +1293,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API16",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #16",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H16: service not called after authorization denial (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H16: service not called after authorization denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API17",
@@ -1109,9 +1327,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H21: passive read does not extend session activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API18",
@@ -1124,23 +1344,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API19",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #19",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H19: safe error body (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H19: safe error body (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API20",
@@ -1153,9 +1378,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API21",
@@ -1168,23 +1395,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API22",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #22",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H22: pagination and bounds enforced (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H22: pagination and bounds enforced (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API23",
@@ -1197,9 +1429,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H21: passive read does not extend session activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API24",
@@ -1212,23 +1446,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API25",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #25",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H25: required idempotency key missing (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H25: required idempotency key missing (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API26",
@@ -1241,9 +1480,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API27",
@@ -1256,23 +1497,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API28",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #28",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H28: expected rowVersion missing when required (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H28: expected rowVersion missing when required (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API29",
@@ -1285,9 +1531,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H21: passive read does not extend session activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API30",
@@ -1300,23 +1548,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API31",
     "canonicalMeaning": "Direct API manipulation / authz denial matrix case #31",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H31: stale step-up rejected (${route.key})",
     "routeModuleControl": "HTTP passport matrices",
     "principalSetup": "missing/wrong/clinic/platform principals",
     "attackOrFailure": "direct route invocation without privilege",
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: stale step-up rejected (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "API32",
@@ -1329,9 +1582,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "401/403 with zero privileged side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "R01 H22: invalid cursor",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA01",
@@ -1344,8 +1599,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA02",
@@ -1358,8 +1616,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA03",
@@ -1372,8 +1633,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA04",
@@ -1386,8 +1650,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA05",
@@ -1400,8 +1667,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA06",
@@ -1414,8 +1684,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA07",
@@ -1428,8 +1701,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA08",
@@ -1442,8 +1718,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA09",
@@ -1456,8 +1735,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA10",
@@ -1470,8 +1752,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA11",
@@ -1484,8 +1769,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA12",
@@ -1498,8 +1786,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA13",
@@ -1512,8 +1803,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA14",
@@ -1526,8 +1820,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA15",
@@ -1540,8 +1837,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "MA16",
@@ -1554,8 +1854,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unknown fields stripped; DTO-only shape retained",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC01",
@@ -1568,8 +1871,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC02",
@@ -1582,8 +1888,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC03",
@@ -1596,8 +1905,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces Plan and Version lifecycle transitions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC04",
@@ -1610,8 +1922,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC05",
@@ -1624,8 +1939,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC06",
@@ -1638,8 +1956,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces Plan and Version lifecycle transitions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC07",
@@ -1652,8 +1973,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC08",
@@ -1666,8 +1990,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC09",
@@ -1680,8 +2007,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces Plan and Version lifecycle transitions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC10",
@@ -1694,8 +2024,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects Limit as entitlement and rejects Published mutation",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC11",
@@ -1708,8 +2041,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Published and Retired child mutations rejected; parent version and fingerprint unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PVSEC12",
@@ -1722,8 +2058,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "mutation rejected; fingerprint unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces Plan and Version lifecycle transitions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR01",
@@ -1736,8 +2075,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR02",
@@ -1750,8 +2092,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GOV06: creator equals approver is rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR03",
@@ -1764,8 +2109,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "exposes all expected Add-on and Override handlers",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR04",
@@ -1778,8 +2126,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR05",
@@ -1792,8 +2143,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GOV06: creator equals approver is rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR06",
@@ -1806,8 +2160,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "exposes all expected Add-on and Override handlers",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR07",
@@ -1820,8 +2177,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR08",
@@ -1834,8 +2194,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GOV06: creator equals approver is rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR09",
@@ -1848,8 +2211,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "exposes all expected Add-on and Override handlers",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR10",
@@ -1862,8 +2228,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR11",
@@ -1876,8 +2245,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GOV06: creator equals approver is rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR12",
@@ -1890,8 +2262,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "exposes all expected Add-on and Override handlers",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR13",
@@ -1904,8 +2279,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR14",
@@ -1918,8 +2296,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GOV06: creator equals approver is rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR15",
@@ -1932,8 +2313,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "exposes all expected Add-on and Override handlers",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "OVR16",
@@ -1946,8 +2330,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SoD deny or authz deny; no illicit grant",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG01",
@@ -1960,8 +2347,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG02",
@@ -1974,8 +2364,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG03",
@@ -1988,8 +2381,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG04",
@@ -2002,8 +2398,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG05",
@@ -2016,8 +2415,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG06",
@@ -2030,8 +2432,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG07",
@@ -2044,8 +2449,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG08",
@@ -2058,8 +2466,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG09",
@@ -2072,8 +2483,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG10",
@@ -2086,8 +2500,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG11",
@@ -2100,8 +2517,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG12",
@@ -2114,8 +2534,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG13",
@@ -2128,8 +2551,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG14",
@@ -2142,8 +2568,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG15",
@@ -2156,8 +2585,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG16",
@@ -2170,8 +2602,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG17",
@@ -2184,8 +2619,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG18",
@@ -2198,8 +2636,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant headers cannot satisfy PlatformAuthRoute without Platform principal",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG19",
@@ -2212,8 +2653,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "override submit, SoD self-approve fail, approve success, revoke",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SG20",
@@ -2226,8 +2670,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "denied or surface absent",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "no Step 16 subscription/tenant assignment mutation APIs in Step 15 services",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF01",
@@ -2240,8 +2687,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "entitlement deny + flag allow => deny",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF02",
@@ -2254,8 +2704,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF03",
@@ -2268,9 +2721,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "settings route is available for Step 20",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF04",
@@ -2283,8 +2738,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "entitlement deny + flag allow => deny",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF05",
@@ -2297,8 +2755,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF06",
@@ -2311,9 +2772,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "renders operational banner and empty flags without restricted flash",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF07",
@@ -2326,8 +2789,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "entitlement deny + flag allow => deny",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF08",
@@ -2340,8 +2806,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF09",
@@ -2354,9 +2823,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "settings route is available for Step 20",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF10",
@@ -2369,8 +2840,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "entitlement deny + flag allow => deny",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF11",
@@ -2383,8 +2857,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FF12",
@@ -2397,9 +2874,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "entitlement_denied prevails",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "renders operational banner and empty flags without restricted flash",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER01",
@@ -2412,8 +2891,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER02",
@@ -2426,8 +2908,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER03",
@@ -2440,8 +2925,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER04",
@@ -2454,9 +2942,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "fail-closes on unsupported schema",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER05",
@@ -2469,8 +2959,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER06",
@@ -2483,8 +2976,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER07",
@@ -2497,8 +2993,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER08",
@@ -2511,9 +3010,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "trims and accepts stable keys; rejects empty / whitespace-bearing",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER09",
@@ -2526,8 +3027,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER10",
@@ -2540,8 +3044,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER11",
@@ -2554,8 +3061,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER12",
@@ -2568,9 +3078,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "namespaces keys under resolver schema and isolates tenant/provenance/source/snapshot/fingerprint",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER13",
@@ -2583,8 +3095,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER14",
@@ -2597,8 +3112,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER15",
@@ -2611,8 +3129,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER16",
@@ -2625,9 +3146,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "fail-closes on fingerprint mismatch (no silent legacy)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER17",
@@ -2640,8 +3163,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER18",
@@ -2654,8 +3180,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER19",
@@ -2668,8 +3197,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER20",
@@ -2682,9 +3214,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects duplicate addon / override ids",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER21",
@@ -2697,8 +3231,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "Suspended deny; cancel zero-current → TERMINAL deny (no legacy resurrection)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER22",
@@ -2711,8 +3248,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI01: after_composition failure — no DB mutation, safe deny-style throw path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER23",
@@ -2725,8 +3265,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "NEVER_MANAGED when all history absent",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ER24",
@@ -2739,9 +3282,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed deny; NEVER_MANAGED only when truly unmanaged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SET_UNLIMITED override is distinct from absent limit",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM01",
@@ -2750,12 +3295,15 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM02",
@@ -2764,156 +3312,185 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM03",
     "canonicalMeaning": "U01 limit semantics case #3 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
+    "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
+    "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM04",
     "canonicalMeaning": "U01 limit semantics case #4 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
-    "testTitle": "denies UNCONFIGURED fail-closed",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM05",
     "canonicalMeaning": "U01 limit semantics case #5 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
-    "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
+    "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM06",
     "canonicalMeaning": "U01 limit semantics case #6 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
+    "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
+    "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM07",
     "canonicalMeaning": "U01 limit semantics case #7 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
-    "testTitle": "denies UNCONFIGURED fail-closed",
+    "testFile": "apps/api/src/modules/platform-plans/tests/plan-entitlements.unit.spec.ts",
+    "testTitle": "seeds typed Limits with Unlimited only for -1 sentinel",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM08",
     "canonicalMeaning": "U01 limit semantics case #8 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
-    "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM09",
     "canonicalMeaning": "U01 limit semantics case #9 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
-    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
-    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
-    "evidenceType": "unit",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "LIM10",
-    "canonicalMeaning": "U01 limit semantics case #10 (UNCONFIGURED is not Unlimited)",
     "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
     "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "LIM11",
-    "canonicalMeaning": "U01 limit semantics case #11 (UNCONFIGURED is not Unlimited)",
+    "id": "LIM10",
+    "canonicalMeaning": "U01 limit semantics case #10 (UNCONFIGURED is not Unlimited)",
     "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
     "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "LIM11",
+    "canonicalMeaning": "U01 limit semantics case #11 (UNCONFIGURED is not Unlimited)",
+    "testFile": "apps/api/src/modules/platform-plans/tests/plan-entitlements.unit.spec.ts",
+    "testTitle": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
+    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
+    "evidenceType": "unit",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM12",
     "canonicalMeaning": "U01 limit semantics case #12 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM13",
@@ -2922,12 +3499,15 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM14",
@@ -2936,98 +3516,117 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM15",
     "canonicalMeaning": "U01 limit semantics case #15 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
+    "testFile": "apps/api/src/modules/platform-plans/tests/plan-entitlements.unit.spec.ts",
+    "testTitle": "seeds typed Limits with Unlimited only for -1 sentinel",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM16",
     "canonicalMeaning": "U01 limit semantics case #16 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
-    "testTitle": "denies UNCONFIGURED fail-closed",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LIM17",
     "canonicalMeaning": "U01 limit semantics case #17 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
-    "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
-    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
-    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
-    "evidenceType": "unit",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "LIM18",
-    "canonicalMeaning": "U01 limit semantics case #18 (UNCONFIGURED is not Unlimited)",
-    "testFile": "apps/api/src/modules/usage-metering/tests/usage-metering.flags.unit.spec.ts",
-    "testTitle": "ingestion disabled → no observation created (isUsageMeteringIngestionEnabled false)",
-    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
-    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
-    "evidenceType": "unit",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "LIM19",
-    "canonicalMeaning": "U01 limit semantics case #19 (UNCONFIGURED is not Unlimited)",
     "testFile": "apps/api/src/modules/usage-metering/tests/usage-enforcement.unit.spec.ts",
     "testTitle": "denies UNCONFIGURED fail-closed",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies UNCONFIGURED fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "LIM20",
-    "canonicalMeaning": "U01 limit semantics case #20 (UNCONFIGURED is not Unlimited)",
+    "id": "LIM18",
+    "canonicalMeaning": "U01 limit semantics case #18 (UNCONFIGURED is not Unlimited)",
     "testFile": "apps/api/src/modules/effective-entitlement-runtime/tests/snapshot-validation.unit.spec.ts",
     "testTitle": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
     "routeModuleControl": "usage-metering + EER EffectiveLimit states",
     "principalSetup": "tenant under configured/unconfigured/unlimited limits",
-    "attackOrFailure": "treat missing/unconfigured as unlimited",
-    "expectedResult": "fail-closed deny unless explicit UNLIMITED composition",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "treats unlimited composition as UNLIMITED and missing value as UNCONFIGURED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "LIM19",
+    "canonicalMeaning": "U01 limit semantics case #19 (UNCONFIGURED is not Unlimited)",
+    "testFile": "apps/api/src/modules/platform-plans/tests/plan-entitlements.unit.spec.ts",
+    "testTitle": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
+    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
+    "evidenceType": "unit",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "seeds typed Limits with Unlimited only for -1 sentinel",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "LIM20",
+    "canonicalMeaning": "U01 limit semantics case #20 (UNCONFIGURED is not Unlimited)",
+    "testFile": "apps/api/src/modules/security-hardening/tests/step28-semantic-targeted.unit.spec.ts",
+    "testTitle": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "routeModuleControl": "usage-metering + EER EffectiveLimit states",
+    "principalSetup": "tenant under configured/unconfigured/unlimited limits",
+    "attackOrFailure": "treat missing/unconfigured limit as Unlimited",
+    "expectedResult": "fail-closed UNCONFIGURED deny; UNLIMITED only when explicit",
+    "evidenceType": "unit",
+    "applicability": "applicable",
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "LIM03: U01 UNCONFIGURED is not Unlimited (fail-closed)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE01",
@@ -3040,8 +3639,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE02",
@@ -3054,8 +3656,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE03",
@@ -3068,8 +3673,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE04",
@@ -3082,8 +3690,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE05",
@@ -3096,8 +3707,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE06",
@@ -3110,8 +3724,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE07",
@@ -3124,8 +3741,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE08",
@@ -3138,8 +3758,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE09",
@@ -3152,8 +3775,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE10",
@@ -3166,8 +3792,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE11",
@@ -3180,8 +3809,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE12",
@@ -3194,8 +3826,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE13",
@@ -3208,8 +3843,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE14",
@@ -3222,8 +3860,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE15",
@@ -3236,8 +3877,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE16",
@@ -3250,8 +3894,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE17",
@@ -3264,8 +3911,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE18",
@@ -3278,8 +3928,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activation invalidates / changes cache key identity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE19",
@@ -3292,8 +3945,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CACHE20",
@@ -3306,8 +3962,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "keys differ by tenant; stale allow prevented",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "G01 warmed allow cache + failed invalidation still denies after PlatformTenant SUSPENDED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES01",
@@ -3320,8 +3979,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES02",
@@ -3334,8 +3996,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES03",
@@ -3348,9 +4013,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never stores the plaintext TOTP secret — only an AES-GCM envelope",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES04",
@@ -3363,8 +4030,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES05",
@@ -3377,8 +4047,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES06",
@@ -3391,9 +4064,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects an invalid TOTP code and increments failedMfaCount",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES07",
@@ -3406,8 +4081,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES08",
@@ -3420,8 +4098,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES09",
@@ -3434,9 +4115,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step-up verify binds freshness to the CURRENT session only",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES10",
@@ -3449,8 +4132,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES11",
@@ -3463,8 +4149,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES12",
@@ -3477,9 +4166,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "PlatformSessionPolicyService rejects and revokes idle/absolute-expired sessions",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES13",
@@ -3492,8 +4183,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES14",
@@ -3506,8 +4200,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES15",
@@ -3520,9 +4217,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "session-list and step-up-status polling do not extend idle activity",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES16",
@@ -3535,8 +4234,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES17",
@@ -3549,8 +4251,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects refresh when the session breached the absolute lifetime",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SES18",
@@ -3563,9 +4268,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no access token without MFA; step-up required where frozen",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "activity after idle or absolute expiry is rejected and never changes absolute expiry",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF01",
@@ -3578,8 +4285,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF02",
@@ -3592,8 +4302,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF03",
@@ -3606,8 +4319,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF04",
@@ -3620,8 +4336,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF05",
@@ -3634,8 +4353,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF06",
@@ -3648,8 +4370,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF07",
@@ -3665,6 +4390,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "naReason": "Bearer-only non-browser-ambient platform API mutations — classic CSRF N/A after transport inspection",
     "repositoryEvidence": "apps/api/src/modules/auth/tests/platform-auth.boundary.spec.ts (cookie/CSRF helpers); platform mutation routes authenticate via Authorization Bearer, not ambient cookie session",
     "whyNoEquivalentSurfaceExists": "Classic browser CSRF targets cookie-ambient authenticated requests. Platform API mutations use Bearer tokens; cookie CSRF remains applicable only to the platform refresh-cookie path covered by other CSRF IDs. No equivalent classic CSRF surface exists for Bearer-only mutations.",
+    "semanticEvidenceType": "na",
+    "semanticReviewStatus": "N/A",
     "result": "N/A"
   },
   {
@@ -3678,8 +4405,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF09",
@@ -3692,8 +4422,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF10",
@@ -3706,8 +4439,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF11",
@@ -3720,8 +4456,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSRF12",
@@ -3734,8 +4473,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "CSRF/Origin rejection",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "parses cookies and enforces exact origins",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS01",
@@ -3748,8 +4490,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Fixed",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Fixed"
   },
   {
     "id": "CORS02",
@@ -3762,8 +4507,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS02: wildcard in CORS_ORIGINS throws",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS03",
@@ -3776,8 +4524,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS04",
@@ -3790,8 +4541,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS05",
@@ -3804,8 +4558,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS06",
@@ -3818,8 +4575,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS07",
@@ -3832,8 +4592,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS02: wildcard in CORS_ORIGINS throws",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS08",
@@ -3846,8 +4609,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS09",
@@ -3860,8 +4626,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CORS10",
@@ -3874,8 +4643,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "wildcard rejected; unlisted origin denied",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR01",
@@ -3888,8 +4660,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Fixed",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Fixed"
   },
   {
     "id": "HDR02",
@@ -3902,8 +4677,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR03",
@@ -3916,8 +4694,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR04",
@@ -3930,8 +4711,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR05",
@@ -3944,8 +4728,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR06",
@@ -3958,9 +4745,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR07",
@@ -3973,8 +4762,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR08",
@@ -3987,8 +4779,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR09",
@@ -4001,8 +4796,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR10",
@@ -4015,8 +4813,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR11",
@@ -4029,8 +4830,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR12",
@@ -4043,9 +4847,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR13",
@@ -4058,8 +4864,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR14",
@@ -4072,8 +4881,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HDR15: HSTS only when ENABLE_HSTS=true",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HDR15",
@@ -4089,6 +4901,8 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "naReason": "Always-on production HSTS is deployment/TLS-edge owned; app emits HSTS only when ENABLE_HSTS=true",
     "repositoryEvidence": "apps/api/src/common/security/security-headers.middleware.ts; apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts (HDR15: HSTS only when ENABLE_HSTS=true)",
     "whyNoEquivalentSurfaceExists": "This repository does not terminate TLS for production. Always-on HSTS belongs to the deployment edge/reverse-proxy owner. The app-layer control is intentionally opt-in (ENABLE_HSTS) and is proven by unit evidence; it is not an always-on HSTS surface.",
+    "semanticEvidenceType": "na",
+    "semanticReviewStatus": "N/A",
     "result": "N/A"
   },
   {
@@ -4102,8 +4916,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "baseline headers present; platform no-store",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sets baseline security headers and no-store on platform paths",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL01",
@@ -4116,8 +4933,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL02",
@@ -4130,8 +4950,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "throws 429 when tenant limit exceeded",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL03",
@@ -4144,8 +4967,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies when limit is exceeded",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL04",
@@ -4158,8 +4984,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL05",
@@ -4172,9 +5001,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS06: gateway source must not hardcode origin *",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL06",
@@ -4187,8 +5018,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants with different keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL07",
@@ -4201,8 +5035,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "clears the rate limit counter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL08",
@@ -4215,9 +5052,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL09",
@@ -4230,9 +5069,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL10",
@@ -4245,9 +5086,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants with different keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL11",
@@ -4260,8 +5103,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "clears the rate limit counter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL12",
@@ -4274,9 +5120,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL13",
@@ -4289,8 +5137,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL14",
@@ -4303,8 +5154,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "throws 429 when tenant limit exceeded",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL15",
@@ -4317,8 +5171,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "denies when limit is exceeded",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL16",
@@ -4331,8 +5188,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL17",
@@ -4345,9 +5205,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL18",
@@ -4360,8 +5222,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "isolates tenants with different keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL19",
@@ -4374,8 +5239,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "clears the rate limit counter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RL20",
@@ -4388,9 +5256,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "429 when exceeded; spoof resisted without TRUST_PROXY",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Fixed",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Fixed"
   },
   {
     "id": "SEC01",
@@ -4403,9 +5273,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC02",
@@ -4418,8 +5290,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC03",
@@ -4432,8 +5307,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC04",
@@ -4446,9 +5324,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC05",
@@ -4461,8 +5341,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC06",
@@ -4475,8 +5358,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC07",
@@ -4489,9 +5375,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC08",
@@ -4504,8 +5392,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC09",
@@ -4518,8 +5409,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC10",
@@ -4532,9 +5426,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC11",
@@ -4547,8 +5443,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC12",
@@ -4561,8 +5460,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC13",
@@ -4575,9 +5477,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC14",
@@ -4590,8 +5494,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC15",
@@ -4604,8 +5511,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC16",
@@ -4618,9 +5528,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC17",
@@ -4633,8 +5545,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC18",
@@ -4647,8 +5562,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never returns an access token when MFA is not enabled",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC19",
@@ -4661,9 +5579,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-secrets-scan.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "SEC20",
@@ -4676,8 +5596,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "scan fail on patterns; ciphertext ≠ plaintext",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG01",
@@ -4690,8 +5613,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG02",
@@ -4704,8 +5630,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG03",
@@ -4718,9 +5647,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "generates and validates correlation IDs; rejects malformed inbound",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG04",
@@ -4733,9 +5664,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H04: wrong issuer rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG05",
@@ -4748,9 +5681,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HTTP middleware binds correlation when active and sets response header",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG06",
@@ -4763,8 +5698,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG07",
@@ -4777,8 +5715,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG08",
@@ -4791,8 +5732,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG09",
@@ -4805,9 +5749,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG10",
@@ -4820,9 +5766,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H10: authorized preference read returns the caller-scoped preference list",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG11",
@@ -4835,9 +5783,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "enforces tenant isolation on query",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG12",
@@ -4850,8 +5800,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG13",
@@ -4864,8 +5817,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects PHI / forbidden attributes fail-closed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG14",
@@ -4878,8 +5834,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG15",
@@ -4892,9 +5851,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "is dormant when flags are OFF and write fails open",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "LOG16",
@@ -4907,9 +5868,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "fail-closed sanitization; safe client errors",
     "evidenceType": "jest",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV01",
@@ -4922,8 +5885,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV02",
@@ -4936,9 +5902,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV03",
@@ -4951,8 +5919,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV04",
@@ -4965,8 +5936,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV05",
@@ -4979,9 +5953,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects correlationId containing patientId",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV06",
@@ -4994,8 +5970,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV07",
@@ -5008,8 +5987,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV08",
@@ -5022,9 +6004,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV09",
@@ -5037,8 +6021,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV10",
@@ -5051,8 +6038,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV11",
@@ -5065,9 +6055,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects correlationId containing patientId",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV12",
@@ -5080,8 +6072,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV13",
@@ -5094,8 +6089,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV14",
@@ -5108,9 +6106,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV15",
@@ -5123,8 +6123,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV16",
@@ -5137,8 +6140,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV17",
@@ -5151,9 +6157,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "rejects correlationId containing patientId",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV18",
@@ -5166,8 +6174,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV19",
@@ -5180,8 +6191,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01: no patient identifiers in templates",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "PRIV20",
@@ -5194,9 +6208,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no patient identifiers; redaction holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "documents: no free-form observation payload keys (patientId etc.) exist on the contract",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP01",
@@ -5209,9 +6225,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP02",
@@ -5224,9 +6242,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP03",
@@ -5239,9 +6259,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP04",
@@ -5254,9 +6276,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP05",
@@ -5269,9 +6293,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP06",
@@ -5284,9 +6310,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP07",
@@ -5299,9 +6327,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP08",
@@ -5314,9 +6344,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP09",
@@ -5329,9 +6361,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP10",
@@ -5344,9 +6378,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP11",
@@ -5359,9 +6395,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP12",
@@ -5374,9 +6412,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP13",
@@ -5389,9 +6429,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP14",
@@ -5404,9 +6446,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP15",
@@ -5419,9 +6463,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP16",
@@ -5434,9 +6480,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP17",
@@ -5449,9 +6497,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP18",
@@ -5464,9 +6514,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP19",
@@ -5479,9 +6531,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-audit.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "DEP20",
@@ -5494,9 +6548,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "gate fails on runtime Critical/High or unclassified",
     "evidenceType": "script",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "script-file",
-    "suiteAnchorNote": "Deterministic script-file linkage: referenced Node script exists and is the executable evidence source for this ID (no Jest it() titles)."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "step28-dep-classify.mjs executable evidence gate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO01",
@@ -5509,8 +6565,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO02",
@@ -5523,8 +6582,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO03",
@@ -5537,9 +6599,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redacts absolute filesystem paths from job metadata",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO04",
@@ -5552,8 +6616,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO05",
@@ -5566,8 +6633,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO06",
@@ -5580,9 +6650,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sanitizes metadata copies without mutating source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO07",
@@ -5595,8 +6667,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO08",
@@ -5609,8 +6684,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO09",
@@ -5623,9 +6701,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redacts absolute filesystem paths from job metadata",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO10",
@@ -5638,8 +6718,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO11",
@@ -5652,8 +6735,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO12",
@@ -5666,9 +6752,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sanitizes metadata copies without mutating source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO13",
@@ -5681,8 +6769,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO14",
@@ -5695,8 +6786,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO15",
@@ -5709,9 +6803,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redacts absolute filesystem paths from job metadata",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO16",
@@ -5724,8 +6820,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO17",
@@ -5738,8 +6837,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO18",
@@ -5752,9 +6854,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sanitizes metadata copies without mutating source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO19",
@@ -5767,8 +6871,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO20",
@@ -5781,8 +6888,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO21",
@@ -5795,9 +6905,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redacts absolute filesystem paths from job metadata",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO22",
@@ -5810,8 +6922,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "strips protected fields not declared on DTO (whitelist)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO23",
@@ -5824,8 +6939,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "E08 CSV formula neutralized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "IO24",
@@ -5838,24 +6956,28 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "whitelist strip; neutralized/safe outputs",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "sanitizes metadata copies without mutating source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO01",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO01",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO02",
@@ -5868,42 +6990,66 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO03",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO03",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance — tenant A cannot read tenant B patients under RLS",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO04",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO04",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO05",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO05",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
+    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
+    "principalSetup": "tenant A vs tenant B",
+    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
+    "expectedResult": "no cross-tenant data leak",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "ISO06",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO06",
     "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
     "testTitle": "never queries without tenantId on findById",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
@@ -5912,86 +7058,66 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "ISO06",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO06",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
-    "principalSetup": "tenant A vs tenant B",
-    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
-    "expectedResult": "no cross-tenant data leak",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO07",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO07",
     "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO08",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO08",
-    "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
-    "testTitle": "never queries without tenantId on findById",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO09",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO09",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO10",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO10",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
-    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
-    "principalSetup": "tenant A vs tenant B",
-    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
-    "expectedResult": "no cross-tenant data leak",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "ISO11",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO11",
     "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
     "testTitle": "never queries without tenantId on findById",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
@@ -6000,38 +7126,62 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "ISO11",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO11",
+    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
+    "principalSetup": "tenant A vs tenant B",
+    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
+    "expectedResult": "no cross-tenant data leak",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO12",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO12",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO13",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO13",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO14",
@@ -6044,42 +7194,66 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO15",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO15",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO16",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO16",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO17",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO17",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
+    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
+    "principalSetup": "tenant A vs tenant B",
+    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
+    "expectedResult": "no cross-tenant data leak",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "ISO18",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO18",
     "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
     "testTitle": "never queries without tenantId on findById",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
@@ -6088,86 +7262,66 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "ISO18",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO18",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
-    "principalSetup": "tenant A vs tenant B",
-    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
-    "expectedResult": "no cross-tenant data leak",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO19",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO19",
     "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO20",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO20",
-    "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
-    "testTitle": "never queries without tenantId on findById",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO21",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO21",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO22",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO22",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
-    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
-    "principalSetup": "tenant A vs tenant B",
-    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
-    "expectedResult": "no cross-tenant data leak",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "ISO23",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO23",
     "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
     "testTitle": "never queries without tenantId on findById",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
@@ -6176,38 +7330,62 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "ISO23",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO23",
+    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
+    "principalSetup": "tenant A vs tenant B",
+    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
+    "expectedResult": "no cross-tenant data leak",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO24",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO24",
     "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO25",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO25",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO26",
@@ -6220,42 +7398,66 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO27",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO27",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO28",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO28",
-    "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO29",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO29",
+    "testFile": "apps/api/src/common/tests/tenant-isolation.postgres.integration.spec.ts",
+    "testTitle": "tenant A cannot read tenant B patients under RLS",
+    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
+    "principalSetup": "tenant A vs tenant B",
+    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
+    "expectedResult": "no cross-tenant data leak",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "tenant A cannot read tenant B patients under RLS",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "ISO30",
+    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO30",
     "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
     "testTitle": "never queries without tenantId on findById",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
@@ -6264,52 +7466,45 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "ISO30",
-    "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO30",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
-    "principalSetup": "tenant A vs tenant B",
-    "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
-    "expectedResult": "no cross-tenant data leak",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never queries without tenantId on findById",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO31",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO31",
     "testFile": "apps/api/src/modules/platform-tenants/tests/platform-tenants-sentinel-isolation.postgres.integration.spec.ts",
-    "testTitle": "Platform tenants audit sentinel isolation (postgres)",
+    "testTitle": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "suite-anchor",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "keeps Dashboard and Directory identical before/after concurrent sentinel upserts",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "ISO32",
     "canonicalMeaning": "Tenant isolation / IDOR resistance case ISO32",
-    "testFile": "apps/api/src/common/tests/tenant-isolation.repositories.spec.ts",
-    "testTitle": "never queries without tenantId on findById",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H23: tenant/request scope cannot leak another tenant (${route.key})",
     "routeModuleControl": "tenant filters + sentinel isolation + HTTP scope",
     "principalSetup": "tenant A vs tenant B",
     "attackOrFailure": "cross-tenant IDOR / sentinel pollution",
     "expectedResult": "no cross-tenant data leak",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: tenant/request scope cannot leak another tenant (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC01",
@@ -6322,8 +7517,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC02",
@@ -6336,8 +7534,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC03",
@@ -6350,9 +7551,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC04",
@@ -6365,8 +7568,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC05",
@@ -6379,8 +7585,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC06",
@@ -6393,9 +7602,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC07",
@@ -6408,8 +7619,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC08",
@@ -6422,8 +7636,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC09",
@@ -6436,9 +7653,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC10",
@@ -6451,8 +7670,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC11",
@@ -6465,8 +7687,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC12",
@@ -6479,9 +7704,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC13",
@@ -6494,8 +7721,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC14",
@@ -6508,8 +7738,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC15",
@@ -6522,9 +7755,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC16",
@@ -6537,8 +7772,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC17",
@@ -6551,8 +7789,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC18",
@@ -6565,9 +7806,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC19",
@@ -6580,8 +7823,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC20",
@@ -6594,8 +7840,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC21",
@@ -6608,9 +7857,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC22",
@@ -6623,8 +7874,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC23",
@@ -6637,8 +7891,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC24",
@@ -6651,9 +7908,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC25",
@@ -6666,8 +7925,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC26",
@@ -6680,8 +7942,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC27",
@@ -6694,9 +7959,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "covers create/update/assign/addons/overrides/dates/schedule/activate/suspend/resume/cancel/supersede/renew with clean details",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC28",
@@ -6709,8 +7976,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC29",
@@ -6723,8 +7993,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC30",
@@ -6737,9 +8010,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redactSubscriptionAuditDetails strips non-allowlisted fields",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC31",
@@ -6752,8 +8027,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "A18 export creates exactly one success audit on first success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "AUDSEC32",
@@ -6766,8 +8044,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "exactly-once success audit; deny with zero side effects",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "GET /platform/audit/entries — missing audit.view denied with zero side effects",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK01",
@@ -6780,8 +8061,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK02",
@@ -6794,8 +8078,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK03",
@@ -6808,8 +8095,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK04",
@@ -6822,8 +8112,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK05",
@@ -6836,8 +8129,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK06",
@@ -6850,8 +8146,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK07",
@@ -6864,8 +8163,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK08",
@@ -6878,8 +8180,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK09",
@@ -6892,8 +8197,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK10",
@@ -6906,8 +8214,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK11",
@@ -6920,8 +8231,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK12",
@@ -6934,8 +8248,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK13",
@@ -6948,8 +8265,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK14",
@@ -6962,8 +8282,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P01 production ignores EER adapter injection — no false deny/allow",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK15",
@@ -6976,8 +8299,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HOOK16",
@@ -6990,8 +8316,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "hooks inert without NODE_ENV=test AND selector",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC01",
@@ -7004,8 +8333,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P19: no Step 28 security-report data",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC02",
@@ -7018,8 +8350,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC03",
@@ -7032,8 +8367,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC04",
@@ -7046,8 +8384,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P19: no Step 28 security-report data",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC05",
@@ -7060,8 +8401,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC06",
@@ -7074,8 +8418,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC07",
@@ -7088,8 +8435,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P19: no Step 28 security-report data",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC08",
@@ -7102,8 +8452,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC09",
@@ -7116,8 +8469,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC10",
@@ -7130,8 +8486,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "P19: no Step 28 security-report data",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC11",
@@ -7144,8 +8503,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "NOTSEC12",
@@ -7158,8 +8520,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "no Step 28 surface leak; privacy holds",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F25: provisioning_source — provisioning operation source failure aborts the provisioning notification",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC01",
@@ -7172,8 +8537,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC02",
@@ -7186,8 +8554,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC03",
@@ -7200,8 +8571,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC04",
@@ -7214,9 +8588,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "redirects an in-progress MFA session away from ordinary protected routes back to the MFA step",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC05",
@@ -7229,8 +8605,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC06",
@@ -7243,8 +8622,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC07",
@@ -7257,8 +8639,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC08",
@@ -7271,9 +8656,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "routes a returning account through the MFA challenge page and signs in on success",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC09",
@@ -7286,8 +8673,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC10",
@@ -7300,8 +8690,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC11",
@@ -7314,8 +8707,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC12",
@@ -7328,9 +8724,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "completes enrollment, shows one-time recovery codes, and only continues after acknowledgement",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC13",
@@ -7343,8 +8741,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "never grants access via role-name bypass, even for role keys that look like \"super admin\"",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC14",
@@ -7357,8 +8758,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "hides Platform users navigation without permission and routes direct access to unauthorized",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC15",
@@ -7371,8 +8775,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "UISEC16",
@@ -7385,905 +8792,1031 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "UI hides/denies; API remains authoritative",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "routes a brand-new account through MFA enrollment after login, without touching browser storage",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HTTPSEC01",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC01 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC01 (H01 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H01: authorized template catalog read — platform_administrator gets the full code-defined catalog",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H01 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H01: authorized template catalog read — platform_administrator gets the full code-defined catalog",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HTTPSEC02",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC02 (passport H-family)",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC02 (H02 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H02: unauthenticated request is rejected (401, no catalog leak)",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H02 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H02: unauthenticated request is rejected (401, no catalog leak)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HTTPSEC03",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC03 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC04",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC04 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC05",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC05 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H05: wrong audience rejected",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "HTTPSEC06",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC06 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC07",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC07 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC08",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC08 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H08: suspended Platform user is denied even with a structurally valid JWT (authz re-reads PlatformUser.canAuthenticate; documented actual = 403)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC09",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC09 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC10",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC10 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC11",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC11 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H11: authorized preference mutation persists an optional-category change",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC12",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC12 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC13",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC13 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC14",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC14 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H14: wildcard-intent bypass denied → N/A — no wildcard permission exists; the guard requires the exact dotted permission keys",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC15",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC15 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC16",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC16 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC17",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC17 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H17: delivery list authorized — dispatched Step 27 intents are listed with their template key",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC18",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC18 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC19",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC19 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC20",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC20 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H20: retry reason is required (blank reason → 4xx, no requeue)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC21",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC21 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC22",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC22 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC23",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC23 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H23: deterministic pagination — repeated identical page requests return identical ordered ids",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC24",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC24 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H24: oversized date range",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "HTTPSEC25",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC25 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC26",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC26 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC27",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC27 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC28",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC28 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC29",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC29 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H29: passive read preserves session state (no rotation, revocation or authzRevision bump)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC30",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC30 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC31",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC31 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC32",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC32 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H44: preferences cannot cross principal scope (mutating another platform user is denied)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC33",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC33 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC34",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC34 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC35",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC35 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H47: unknown locale is handled safely (deterministic en-US fallback, no renderer crash)",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC36",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC36 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC37",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC37 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC38",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC38 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "H04: wrong issuer rejected",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
-  },
-  {
-    "id": "HTTPSEC39",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC39 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC40",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC40 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC41",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC41 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "HTTP locale: ar-SY preview renders the Arabic catalog entry",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC42",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC42 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC43",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC43 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC44",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC44 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
-    "testTitle": "HTTP empty state: an authorized deliveries read with no data returns a deterministic empty page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC45",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC45 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC46",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC46 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
-    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
-    "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
-    "evidenceType": "integration",
-    "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
-  },
-  {
-    "id": "HTTPSEC47",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC47 (passport H-family)",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC03 (H03 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H03: Clinic principal denied on the Platform notifications surface",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H03 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H03: Clinic principal denied on the Platform notifications surface",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC48",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC48 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
+    "id": "HTTPSEC04",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC04 (H04 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H04: wrong issuer rejected",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H04 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H04: wrong issuer rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC49",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC49 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "id": "HTTPSEC05",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC05 (H05 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H05: wrong audience rejected",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H05 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H05: wrong audience rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC50",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC50 (passport H-family)",
+    "id": "HTTPSEC06",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC06 (H06 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H06: expired token rejected (401)",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H06 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H06: expired token rejected (401)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC51",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC51 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
+    "id": "HTTPSEC07",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC07 (H07 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H07: revoked session (blacklisted JTI) rejected",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H07 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H07: revoked session (blacklisted JTI) rejected",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC52",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC52 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "id": "HTTPSEC08",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC08 (H08 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H08: suspended Platform user is denied even with a structurally valid JWT (authz re-reads PlatformUser.canAuthenticate; documented actual = 403)",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H08 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H08: suspended Platform user is denied even with a structurally valid JWT (authz re-reads PlatformUser.canAuthenticate; documented actual = 403)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC53",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC53 (passport H-family)",
+    "id": "HTTPSEC09",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC09 (H09 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H09: missing permission denied — an authenticated platform role without notification permissions gets 403",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H09 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H09: missing permission denied — an authenticated platform role without notification permissions gets 403",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC54",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC54 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
+    "id": "HTTPSEC10",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC10 (H10 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H10: authorized preference read returns the caller-scoped preference list",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H10 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H10: authorized preference read returns the caller-scoped preference list",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC55",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC55 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "id": "HTTPSEC11",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC11 (H11 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H11: authorized preference mutation persists an optional-category change",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H11 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H11: authorized preference mutation persists an optional-category change",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC56",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC56 (passport H-family)",
+    "id": "HTTPSEC12",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC12 (H12 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H12: mandatory-notification disable attempt denied (403, nothing persisted)",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H12 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H12: mandatory-notification disable attempt denied (403, nothing persisted)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC57",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC57 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R01 H23: oversized page",
+    "id": "HTTPSEC13",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC13 (H13 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H13 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: role-name bypass denied — role membership without notification permissions never authorizes",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC58",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC58 (passport H-family)",
-    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
-    "testTitle": "containment OFF — disabled routes return tenant_provisioning_disabled",
+    "id": "HTTPSEC14",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC14 (H14 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H14: wildcard-intent bypass denied → N/A — no wildcard permission exists; the guard requires the exact dotted permission keys",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H14 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H14: wildcard-intent bypass denied → N/A — no wildcard permission exists; the guard requires the exact dotted permission keys",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
-    "id": "HTTPSEC59",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC59 (passport H-family)",
+    "id": "HTTPSEC15",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC15 (H15 passport/JWT/session/RBAC)",
     "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
     "testTitle": "H15: template preview authorized for templates.view (no separate manage permission)",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H15 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H15: template preview authorized for templates.view (no separate manage permission)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC16",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC16 (H16 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H16 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H16: preview uses safe synthetic data only (sample_ variables, no PHI/secret markers, no intent created)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC17",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC17 (H17 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H17: delivery list authorized — dispatched Step 27 intents are listed with their template key",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H17 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H17: delivery list authorized — dispatched Step 27 intents are listed with their template key",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC18",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC18 (H18 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H18: delivery direct-ID read is scope-enforced (own Step 27 intent 200; anything outside that scope 404)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H18 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H18: delivery direct-ID read is scope-enforced (own Step 27 intent 200; anything outside that scope 404)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC19",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC19 (H19 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H19: retry authorized with reason + Idempotency-Key",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H19 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H19: retry authorized with reason + Idempotency-Key",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC20",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC20 (H20 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H20: retry reason is required (blank reason → 4xx, no requeue)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H20 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H20: retry reason is required (blank reason → 4xx, no requeue)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC21",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC21 (H21 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H21: step-up required → N/A — no Step 27 route declares a step-up/MFA re-auth requirement (permission + Idempotency-Key only)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H21 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H21: step-up required → N/A — no Step 27 route declares a step-up/MFA re-auth requirement (permission + Idempotency-Key only)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC22",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC22 (H22 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H22: OCC conflict on preference mutation returns 409 for a stale expectedRowVersion",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H22 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H22: OCC conflict on preference mutation returns 409 for a stale expectedRowVersion",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC23",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC23 (H23 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H23: deterministic pagination — repeated identical page requests return identical ordered ids",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H23 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H23: deterministic pagination — repeated identical page requests return identical ordered ids",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC24",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC24 (H24 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H24: bounded filtering — pageSize is clamped and the status filter never widens the result set",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H24 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H24: bounded filtering — pageSize is clamped and the status filter never widens the result set",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC25",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC25 (H25 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H25: no existence oracle — an unauthorized caller gets the same 403 for an existing and a missing delivery id",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H25 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H25: no existence oracle — an unauthorized caller gets the same 403 for an existing and a missing delivery id",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC26",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC26 (H26 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H26 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H26: infrastructure error is reported safely (no stack trace, driver text or connection string)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC27",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC27 (H27 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H27: no PHI / secrets / tokens in any authorized response body",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H27 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H27: no PHI / secrets / tokens in any authorized response body",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC28",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC28 (H28 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H28: provider credentials are absent from every response (no SMTP host / API key / sender secret)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H28 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H28: provider credentials are absent from every response (no SMTP host / API key / sender secret)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC29",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC29 (H29 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H29: passive read preserves session state (no rotation, revocation or authzRevision bump)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H29 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H29: passive read preserves session state (no rotation, revocation or authzRevision bump)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC30",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC30 (H30 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H30: the application service is never invoked after an authorization denial",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H30 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H30: the application service is never invoked after an authorization denial",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC31",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC31 (H31 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H31 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H31: zero business side effects after a denial (no SoR mutation, no preference row, no intent)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC32",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC32 (H44 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H44: preferences cannot cross principal scope (mutating another platform user is denied)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H44 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H44: preferences cannot cross principal scope (mutating another platform user is denied)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC33",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC33 (H45 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H45: retry does not duplicate the logical delivery (same intent, same single email)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H45 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H45: retry does not duplicate the logical delivery (same intent, same single email)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC34",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC34 (H46 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H46: missing template / unknown key fails safely (4xx, no catalog enumeration in the error)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H46 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H46: missing template / unknown key fails safely (4xx, no catalog enumeration in the error)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC35",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC35 (H47 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H47: unknown locale is handled safely (deterministic en-US fallback, no renderer crash)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H47 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H47: unknown locale is handled safely (deterministic en-US fallback, no renderer crash)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC36",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC36 (H48 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H48: no raw message secret in the delivery response (rendered body carries no credentials or raw tokens)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H48 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H48: no raw message secret in the delivery response (rendered body carries no credentials or raw tokens)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC37",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC37 (H49 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H49 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H49: no Step 28 endpoint or surface is exposed by the Step 27 controller",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC38",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC38 (H50 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/platform-notifications/tests/platform-notifications-http.postgres.integration.spec.ts",
+    "testTitle": "H50: error bodies are safe and shaped (statusCode/code/message only, no stack or internals)",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H50 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H50: error bodies are safe and shaped (statusCode/code/message only, no stack or internals)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC39",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC39 (H01 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H01: valid Platform principal with required permission (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H01 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H01: valid Platform principal with required permission (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC40",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC40 (H02 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H02: missing authentication (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H02 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H02: missing authentication (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC41",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC41 (H03 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H03: clinic principal rejected (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H03 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H03: clinic principal rejected (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC42",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC42 (H04 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H04: tenant principal rejected (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H04 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H04: tenant principal rejected (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC43",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC43 (H05 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H05: wrong issuer (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H05 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H05: wrong issuer (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC44",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC44 (H06 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H06: wrong audience (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H06 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H06: wrong audience (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC45",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC45 (H07 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H07: expired session or token (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H07 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H07: expired session or token (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC46",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC46 (H08 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H08: revoked session (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H08 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H08: revoked session (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC47",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC47 (H09 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H09: suspended Platform user (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H09 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H09: suspended Platform user (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC48",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC48 (H10 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H10: missing permission (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H10 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H10: missing permission (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC49",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC49 (H11 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H11: role-name-only bypass denied (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H11 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H11: role-name-only bypass denied (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC50",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC50 (H12 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H12: wildcard permission bypass denied (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H12 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H12: wildcard permission bypass denied (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC51",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC51 (H13 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H13: direct-link UI authorization denial (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H13 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H13: direct-link UI authorization denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC52",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC52 (H14 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H14: actual route rate limit returns 429 (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H14 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H14: actual route rate limit returns 429 (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC53",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC53 (H15 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H15: service not called after authentication denial (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H15 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H15: service not called after authentication denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC54",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC54 (H16 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H16: service not called after authorization denial (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H16 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H16: service not called after authorization denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC55",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC55 (H17 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H17: service not called after rate-limit denial (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H17 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H17: service not called after rate-limit denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC56",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC56 (H18 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H18: zero side effects after denial (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H18 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H18: zero side effects after denial (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC57",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC57 (H19 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H19: safe error body (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H19 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H19: safe error body (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC58",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC58 (H20 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H20: Cache-Control private no-store (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H20 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H20: Cache-Control private no-store (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
+  },
+  {
+    "id": "HTTPSEC59",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC59 (H21 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H21: passive read does not extend Platform session activity (${route.key})",
+    "routeModuleControl": "domain HTTP security matrices Steps 19–27",
+    "principalSetup": "platform/clinic/missing/expired/revoked",
+    "attackOrFailure": "H21 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
+    "evidenceType": "integration",
+    "applicability": "applicable",
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H21: passive read does not extend Platform session activity (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "HTTPSEC60",
-    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC60 (passport H-family)",
-    "testFile": "apps/api/src/modules/platform-audit-center/tests/audit-center-http-exhaustive.postgres.integration.spec.ts",
-    "testTitle": "R03 correlation timeline bounded / unrelated inaccessible shape",
+    "canonicalMeaning": "Real HTTP security matrix case HTTPSEC60 (H22 passport/JWT/session/RBAC)",
+    "testFile": "apps/api/src/modules/tenant-provisioning/tests/tenant-provisioning-http-security.postgres.integration.spec.ts",
+    "testTitle": "H22: pagination and bounds enforced (${route.key})",
     "routeModuleControl": "domain HTTP security matrices Steps 19–27",
     "principalSetup": "platform/clinic/missing/expired/revoked",
-    "attackOrFailure": "full HTTP abuse matrix",
-    "expectedResult": "route-specific deny/allow per H01–Hnn",
+    "attackOrFailure": "H22 HTTP abuse / auth boundary",
+    "expectedResult": "route-specific deny/allow per passport H-family assertion",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "H22: pagination and bounds enforced (${route.key})",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC01",
@@ -8296,8 +9829,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC02",
@@ -8310,8 +9846,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC03",
@@ -8324,8 +9863,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC04",
@@ -8338,9 +9880,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F04: backup_adapter injection fails listBackups",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC05",
@@ -8353,8 +9897,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC06",
@@ -8367,8 +9914,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC07",
@@ -8381,8 +9931,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC08",
@@ -8395,9 +9948,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F08: after_idempotency_claim injection fails before proceed",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC09",
@@ -8410,8 +9965,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC10",
@@ -8424,8 +9982,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC11",
@@ -8438,8 +9999,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC12",
@@ -8452,9 +10016,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F12: after_commit_before_response injection after successful retry commit",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC13",
@@ -8467,8 +10033,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC14",
@@ -8481,8 +10050,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC15",
@@ -8495,8 +10067,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC16",
@@ -8509,9 +10084,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F16 Not Applicable — no subscription_expiry_retry action in Step 22",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC17",
@@ -8524,8 +10101,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC18",
@@ -8538,8 +10118,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC19",
@@ -8552,8 +10135,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC20",
@@ -8566,9 +10152,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F20: service_recreation injection point registered (no runtime hook in Step 22)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC21",
@@ -8581,8 +10169,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F01: template_lookup — catalog lookup failure aborts dispatch before any intent exists",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC22",
@@ -8595,8 +10186,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "FI02: after_fingerprint_validation failure — no silent legacy",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC23",
@@ -8609,8 +10203,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F15 EER adapter failure — fail-closed; entitlement/lifecycle/kill-switch denials preserved",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "FSEC24",
@@ -8623,9 +10220,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "abort before mutation; safe deny",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "F24 Not Applicable — Step 22 owns no rollback/recovery compensation path",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC01",
@@ -8638,8 +10237,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC02",
@@ -8652,8 +10254,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC03",
@@ -8666,9 +10271,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I11: service recreation — create on stack1, replay create on stack2 → same Trial id",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC04",
@@ -8681,8 +10288,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC05",
@@ -8695,8 +10305,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC06",
@@ -8709,9 +10322,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I14: provisioning handoff replay — create replay → platformTenant and commercial config counts unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC07",
@@ -8724,8 +10339,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC08",
@@ -8738,8 +10356,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC09",
@@ -8752,9 +10373,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I09: convert same idempotency key with different paid target → idempotency_conflict",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC10",
@@ -8767,8 +10390,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC11",
@@ -8781,8 +10407,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC12",
@@ -8795,9 +10424,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I12: process-local cache loss — new stack (new EER/durable) replay convert → same conversion; durable store is DB",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC13",
@@ -8810,8 +10441,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC14",
@@ -8824,8 +10458,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC15",
@@ -8838,9 +10475,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I15: lifecycle handoff replay — convert then replay → PlatformTenant stays ACTIVE once; trialEndsAt stays null",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC16",
@@ -8853,8 +10492,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC17",
@@ -8867,8 +10509,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC18",
@@ -8881,9 +10526,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I10: after_commit_before_response on CREATE then clear + new stack replay → committed result, no duplicate",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC19",
@@ -8896,8 +10543,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC20",
@@ -8910,8 +10560,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC21",
@@ -8924,9 +10577,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I13: multi-instance conversion same key concurrent — exactly one conversion; both observe same conversion id",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC22",
@@ -8939,8 +10594,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C01: same event duplicate enqueue — two concurrent identical dispatches converge to one intent and one email",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC23",
@@ -8953,8 +10611,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "C11 flag mutation versus EER evaluation — entitlement deny unchanged",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSEC24",
@@ -8967,595 +10628,903 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "converge safely; entitlement deny unchanged",
     "evidenceType": "integration",
     "applicability": "applicable",
-    "result": "Pass",
     "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "I16: conversion-event replay — outbox count stays 1 on replay",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TH01",
-    "canonicalMeaning": "Threat-model control mapping TH01",
+    "canonicalMeaning": "Platform token accepted by tenant endpoint",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Platform token accepted by tenant endpoint",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
     "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=AUTH13,AUTH18,BND01,HTTPSEC05",
+    "mitigationIds": [
+      "AUTH13",
+      "AUTH18",
+      "BND01",
+      "HTTPSEC05"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH02",
-    "canonicalMeaning": "Threat-model control mapping TH02",
+    "canonicalMeaning": "Tenant/Clinic token accepted by Platform endpoint",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS02: wildcard in CORS_ORIGINS throws",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Tenant/Clinic token accepted by Platform endpoint",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
     "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=AUTH01,AUTH21,BND02,HTTPSEC04",
+    "mitigationIds": [
+      "AUTH01",
+      "AUTH21",
+      "BND02",
+      "HTTPSEC04"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH03",
-    "canonicalMeaning": "Threat-model control mapping TH03",
+    "canonicalMeaning": "Cross-tenant direct-ID access",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Cross-tenant direct-ID access",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=ISO03,ISO01,HTTPSEC23",
+    "mitigationIds": [
+      "ISO03",
+      "ISO01",
+      "HTTPSEC23"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH04",
-    "canonicalMeaning": "Threat-model control mapping TH04",
+    "canonicalMeaning": "Role-name authorization bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Role-name authorization bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=AUTH02,AUTH07,TENSA01",
+    "mitigationIds": [
+      "AUTH02",
+      "AUTH07",
+      "TENSA01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH05",
-    "canonicalMeaning": "Threat-model control mapping TH05",
+    "canonicalMeaning": "Wildcard permission bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS06: gateway source must not hardcode origin *",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Wildcard permission bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=AUTH07,AUTH36",
+    "mitigationIds": [
+      "AUTH07",
+      "AUTH36"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH06",
-    "canonicalMeaning": "Threat-model control mapping TH06",
+    "canonicalMeaning": "Stale/revoked session use",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "sets baseline security headers and no-store on platform paths",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Stale/revoked session use",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=SES01,AUTH29,HTTPSEC07",
+    "mitigationIds": [
+      "SES01",
+      "AUTH29",
+      "HTTPSEC07"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH07",
-    "canonicalMeaning": "Threat-model control mapping TH07",
+    "canonicalMeaning": "MFA / step-up bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "MFA / step-up bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=SES02,AUTH28",
+    "mitigationIds": [
+      "SES02",
+      "AUTH28"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH08",
-    "canonicalMeaning": "Threat-model control mapping TH08",
+    "canonicalMeaning": "CSRF on cookie platform refresh path",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "strips protected fields not declared on DTO (whitelist)",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "CSRF on cookie platform refresh path",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=CSRF01,CSRF07",
+    "mitigationIds": [
+      "CSRF01",
+      "CSRF07"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH09",
-    "canonicalMeaning": "Threat TH09: CORS credential abuse / realtime wildcard (Fixed)",
+    "canonicalMeaning": "CORS credential abuse",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "CORS credential abuse",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Fixed",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=CORS01,CORS02",
+    "mitigationIds": [
+      "CORS01",
+      "CORS02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Fixed"
   },
   {
     "id": "TH10",
-    "canonicalMeaning": "Threat TH10: Rate-limit XFF spoof resistance (Fixed)",
+    "canonicalMeaning": "Rate-limit bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Rate-limit bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Fixed",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=RL01,RL20,RLTEST01",
+    "mitigationIds": [
+      "RL01",
+      "RL20",
+      "RLTEST01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Fixed"
   },
   {
     "id": "TH11",
-    "canonicalMeaning": "Threat-model control mapping TH11",
+    "canonicalMeaning": "Published Plan Version mutation",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Published Plan Version mutation",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=PVSEC01,TENSA04",
+    "mitigationIds": [
+      "PVSEC01",
+      "TENSA04"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH12",
-    "canonicalMeaning": "Threat-model control mapping TH12",
+    "canonicalMeaning": "Unauthorized Add-on",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Unauthorized Add-on",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=OVR01,SG01",
+    "mitigationIds": [
+      "OVR01",
+      "SG01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH13",
-    "canonicalMeaning": "Threat-model control mapping TH13",
+    "canonicalMeaning": "Unauthorized Override",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Unauthorized Override",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=OVR02,SG02",
+    "mitigationIds": [
+      "OVR02",
+      "SG02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH14",
-    "canonicalMeaning": "Threat-model control mapping TH14",
+    "canonicalMeaning": "Subscription manipulation",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
     "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Subscription manipulation",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=BND03,SG03",
+    "mitigationIds": [
+      "BND03",
+      "SG03"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH15",
-    "canonicalMeaning": "Threat-model control mapping TH15",
+    "canonicalMeaning": "Tenant self-grant",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS02: wildcard in CORS_ORIGINS throws",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Tenant self-grant",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=SG01,SG04,TENSA02",
+    "mitigationIds": [
+      "SG01",
+      "SG04",
+      "TENSA02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH16",
-    "canonicalMeaning": "Threat-model control mapping TH16",
+    "canonicalMeaning": "Entitlement resolver bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Entitlement resolver bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=ER01,ER02,TENSA05",
+    "mitigationIds": [
+      "ER01",
+      "ER02",
+      "TENSA05"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH17",
-    "canonicalMeaning": "Threat-model control mapping TH17",
+    "canonicalMeaning": "Stale EER cache authorization",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Stale EER cache authorization",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=CACHE01,CACHE02",
+    "mitigationIds": [
+      "CACHE01",
+      "CACHE02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH18",
-    "canonicalMeaning": "Threat-model control mapping TH18",
+    "canonicalMeaning": "Cache key tenant collision",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS06: gateway source must not hardcode origin *",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Cache key tenant collision",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=CACHE03,ISO02",
+    "mitigationIds": [
+      "CACHE03",
+      "ISO02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH19",
-    "canonicalMeaning": "Threat-model control mapping TH19",
+    "canonicalMeaning": "Cache poisoning",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Cache poisoning",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=CACHE04,CACHE05",
+    "mitigationIds": [
+      "CACHE04",
+      "CACHE05"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH20",
-    "canonicalMeaning": "Threat-model control mapping TH20",
+    "canonicalMeaning": "Missing / UNCONFIGURED treated as Unlimited",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "HDR15: HSTS only when ENABLE_HSTS=true",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Missing / UNCONFIGURED treated as Unlimited",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=LIM03,LIM04,LIM01",
+    "mitigationIds": [
+      "LIM03",
+      "LIM04",
+      "LIM01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH21",
-    "canonicalMeaning": "Threat-model control mapping TH21",
+    "canonicalMeaning": "U01 limit bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "strips protected fields not declared on DTO (whitelist)",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "U01 limit bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=LIM02,LIM05,TENSA03",
+    "mitigationIds": [
+      "LIM02",
+      "LIM05",
+      "TENSA03"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH22",
-    "canonicalMeaning": "Threat-model control mapping TH22",
+    "canonicalMeaning": "Feature Flag used as entitlement grant",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Feature Flag used as entitlement grant",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=FF01,FF02",
+    "mitigationIds": [
+      "FF01",
+      "FF02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH23",
-    "canonicalMeaning": "Threat-model control mapping TH23",
+    "canonicalMeaning": "Compatibility bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "resolves auth and export policies with bounded windows",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Compatibility bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=ER03,API01",
+    "mitigationIds": [
+      "ER03",
+      "API01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH24",
-    "canonicalMeaning": "Threat-model control mapping TH24",
+    "canonicalMeaning": "Provisioning privilege escalation",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "SEC05: MFA secret encrypt/decrypt round-trip; ciphertext ≠ plaintext",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Provisioning privilege escalation",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=HTTPSEC01,ISO03",
+    "mitigationIds": [
+      "HTTPSEC01",
+      "ISO03"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH25",
-    "canonicalMeaning": "Threat-model control mapping TH25",
+    "canonicalMeaning": "Lifecycle bypass",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Lifecycle bypass",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=HTTPSEC08,AUTH10",
+    "mitigationIds": [
+      "HTTPSEC08",
+      "AUTH10"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH26",
-    "canonicalMeaning": "Threat-model control mapping TH26",
+    "canonicalMeaning": "Audit omission / tampering",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Audit omission / tampering",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=AUDSEC01,AUDSEC02",
+    "mitigationIds": [
+      "AUDSEC01",
+      "AUDSEC02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH27",
-    "canonicalMeaning": "Threat-model control mapping TH27",
+    "canonicalMeaning": "Secrets in logs / errors",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
     "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Secrets in logs / errors",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=LOG01,SEC01",
+    "mitigationIds": [
+      "LOG01",
+      "SEC01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH28",
-    "canonicalMeaning": "Threat-model control mapping TH28",
+    "canonicalMeaning": "PHI leakage",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "PHI leakage",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=PRIV01,PRIV02",
+    "mitigationIds": [
+      "PRIV01",
+      "PRIV02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH29",
-    "canonicalMeaning": "Threat-model control mapping TH29",
+    "canonicalMeaning": "Notification secret leakage",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS03/CORS04: realtime rejects unlisted origin; allows listed",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Notification secret leakage",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=NOTSEC01,PRIV03",
+    "mitigationIds": [
+      "NOTSEC01",
+      "PRIV03"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH30",
-    "canonicalMeaning": "Threat-model control mapping TH30",
+    "canonicalMeaning": "CSV / export injection or widening",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "CORS05: realtimeCorsOriginOption does not reflect arbitrary Origin",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "CSV / export injection or widening",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=IO01,PRIV04",
+    "mitigationIds": [
+      "IO01",
+      "PRIV04"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH31",
-    "canonicalMeaning": "Threat-model control mapping TH31",
+    "canonicalMeaning": "IDOR",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "IDOR",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=ISO03,HTTPSEC23",
+    "mitigationIds": [
+      "ISO03",
+      "HTTPSEC23"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH32",
-    "canonicalMeaning": "Threat-model control mapping TH32",
+    "canonicalMeaning": "Mass assignment",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "sets baseline security headers and no-store on platform paths",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Mass assignment",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=MA01,MA02",
+    "mitigationIds": [
+      "MA01",
+      "MA02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH33",
-    "canonicalMeaning": "Threat-model control mapping TH33",
+    "canonicalMeaning": "Prototype / object key abuse",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "HDR15: HSTS only when ENABLE_HSTS=true",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Prototype / object key abuse",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=MA03,API02",
+    "mitigationIds": [
+      "MA03",
+      "API02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH34",
-    "canonicalMeaning": "Threat-model control mapping TH34",
+    "canonicalMeaning": "Resource exhaustion",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Resource exhaustion",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=RL02,RLTEST02",
+    "mitigationIds": [
+      "RL02",
+      "RLTEST02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH35",
-    "canonicalMeaning": "Threat-model control mapping TH35",
+    "canonicalMeaning": "Unsafe file / path handling",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "RL20: ignores X-Forwarded-For unless TRUST_PROXY enabled",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Unsafe file / path handling",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=FSEC01,IO02",
+    "mitigationIds": [
+      "FSEC01",
+      "IO02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH36",
-    "canonicalMeaning": "Threat-model control mapping TH36",
+    "canonicalMeaning": "Dependency / supply-chain risk",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "resolves auth and export policies with bounded windows",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Dependency / supply-chain risk",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=DEP01,DEP02",
+    "mitigationIds": [
+      "DEP01",
+      "DEP02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH37",
-    "canonicalMeaning": "Threat-model control mapping TH37",
+    "canonicalMeaning": "Debug / test hook exposure",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Debug / test hook exposure",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=HOOK01,RLTEST01",
+    "mitigationIds": [
+      "HOOK01",
+      "RLTEST01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH38",
-    "canonicalMeaning": "Threat-model control mapping TH38",
+    "canonicalMeaning": "Production fallback to test behavior",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "HOOK01: failure-injection helpers require NODE_ENV===test pattern in source",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Production fallback to test behavior",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=RLTEST01,HOOK02",
+    "mitigationIds": [
+      "RLTEST01",
+      "HOOK02"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH39",
-    "canonicalMeaning": "Threat-model control mapping TH39",
+    "canonicalMeaning": "Ambiguous notification resend regression",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Ambiguous notification resend regression",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title",
-    "suiteAnchorNote": "Deterministic suite-anchor: testFile is the security suite for this control family; title is titles[(idSeq-1)%n]. Canonical meaning remains the per-ID assertion."
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=NOTSEC02,NOTSEC03",
+    "mitigationIds": [
+      "NOTSEC02",
+      "NOTSEC03"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "TH40",
-    "canonicalMeaning": "Threat-model control mapping TH40",
+    "canonicalMeaning": "Stale Trial notification regression",
     "testFile": "apps/api/src/modules/security-hardening/tests/step28-security-hardening.unit.spec.ts",
-    "testTitle": "includes every required Step 28 matrix ID",
-    "routeModuleControl": "docs threat model + matrix completeness",
-    "principalSetup": "reviewer / CI matrix gate",
-    "attackOrFailure": "documented threat class",
-    "expectedResult": "Pass/Fixed with evidence linkage",
-    "evidenceType": "unit",
+    "testTitle": "CORS01: HTTP allowlist never includes wildcard with credentials policy",
+    "routeModuleControl": "docs threat model + executable mitigation IDs",
+    "principalSetup": "reviewer threat-control map",
+    "attackOrFailure": "Stale Trial notification regression",
+    "expectedResult": "mitigated by linked executable Step 28 IDs",
+    "evidenceType": "docs",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "suite-anchor",
+    "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
+    "semanticEvidenceType": "docs-control-map",
+    "assertionAnchor": "mitigationIds=NOTSEC04,CSEC01",
+    "mitigationIds": [
+      "NOTSEC04",
+      "CSEC01"
+    ],
+    "semanticReviewStatus": "DOCS_ONLY",
+    "result": "Pass"
   },
   {
     "id": "RLTEST01",
@@ -9568,8 +11537,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST01: NODE_ENV=production → bootstrap OK; bypass inactive without DI",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST02",
@@ -9582,8 +11554,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST02: NODE_ENV=development → bootstrap OK; bypass inactive",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST03",
@@ -9596,8 +11571,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST03: NODE_ENV=test bootstrap gate; NODE_ENV=test alone does not activate bypass",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST04",
@@ -9610,8 +11588,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST04: DI testBypass=true → enforce returns unlimited without calling rateLimiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST05",
@@ -9624,8 +11605,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST05: ALLOW alone without JEST_WORKER_ID → false; NODE_ENV=test alone → false",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST06",
@@ -9638,8 +11622,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST06: XFF ignored without TRUST_PROXY (enforce + sliding mock)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST07",
@@ -9652,8 +11639,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST07: authz hooks are dual-gated; ApiRateLimitService enforce has no NODE_ENV===test alone skip",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "RLTEST08",
@@ -9666,8 +11656,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "bypass only via DI true or Jest dual-gate",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "RLTEST08: without DI and without dual-gate, enforce calls rate limiter",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA01",
@@ -9680,8 +11673,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA01: PermissionGuard allows clinic JWT roles=[super_admin] same-tenant ordinary op",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA02",
@@ -9694,8 +11690,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA02: requireTenantScope cross-tenant read blocked",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA03",
@@ -9708,8 +11707,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA03: requireTenantScope cross-tenant mutation blocked (same util)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA04",
@@ -9722,8 +11724,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA04: JwtAuthGuard clinic claims on platform route → PLATFORM_PRINCIPAL_REQUIRED",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA05",
@@ -9736,8 +11741,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA05: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Plan mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA06",
@@ -9750,8 +11758,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA06: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Add-on mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA07",
@@ -9764,8 +11775,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA07: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Override mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA08",
@@ -9778,8 +11792,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA08: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (module entitlement mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA09",
@@ -9792,8 +11809,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA09: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (specialty entitlement mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA10",
@@ -9806,8 +11826,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA10: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (facility entitlement mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA11",
@@ -9820,8 +11843,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA11: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (limit entitlement mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA12",
@@ -9834,8 +11860,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA12: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Unlimited composition mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA13",
@@ -9848,8 +11877,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA13: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (PlanVersion mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA14",
@@ -9862,8 +11894,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA14: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Published PlanVersion immutability is Platform-owned)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA15",
@@ -9876,8 +11911,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA15: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Retired PlanVersion clone path is Platform-owned)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA16",
@@ -9890,8 +11928,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "id-tag"
+    "linkageMode": "id-tag",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA16: permissionsForRoles(['super_admin']) empty; clinic principal denied on Platform (Catalog commercial mutations are Platform surfaces)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA17",
@@ -9904,8 +11945,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA17: Feature Flag cannot grant — permissionsForRoles empty; FF≠entitlement",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA18",
@@ -9918,8 +11962,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA18: managed EER LEGACY — NEVER_MANAGED / pending / terminal deny markers present",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA19",
@@ -9932,8 +11979,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA19: cache key includes tenantId — A ≠ B",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "TENSA20",
@@ -9946,8 +11996,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "unauthorized capability gain = 0; platform surfaces deny clinic",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "TENSA20: provisioning is platform-auth — JwtAuthGuard rejects clinic on platform route",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP01",
@@ -9960,8 +12013,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP01: SUPER_ADMIN_CSP_POLICY is non-empty and includes default-src self",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP02",
@@ -9974,8 +12030,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP02: script-src is self-only (no unsafe-eval)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP03",
@@ -9988,8 +12047,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP03: style-src allows self + unsafe-inline + fonts.googleapis",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP04",
@@ -10002,8 +12064,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP04: font-src allows self + fonts.gstatic",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP05",
@@ -10016,8 +12081,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP05: img-src allows self + data:",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP06",
@@ -10030,8 +12098,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP06: frame-ancestors none",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP07",
@@ -10044,8 +12115,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP07: base-uri and form-action are self",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP08",
@@ -10058,8 +12132,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP08: index.html meta CSP content equals SUPER_ADMIN_CSP_POLICY",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP09",
@@ -10072,8 +12149,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP09: vite.config.ts imports SUPER_ADMIN_CSP_POLICY SSOT",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP10",
@@ -10086,8 +12166,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP10: CSP_OWNERSHIP documents deployment-external production serving",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP11",
@@ -10100,8 +12183,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP11: Arabic/locale fonts not blocked — fonts.googleapis allowed in style-src",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP12",
@@ -10114,8 +12200,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP12: Arabic/locale fonts not blocked — fonts.gstatic allowed in font-src",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP13",
@@ -10128,8 +12217,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP13: parseCspDirectives round-trips directive names",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP14",
@@ -10142,8 +12234,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP14: connect-src includes local API and ws for dev; prod API origin is deploy-owned",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP15",
@@ -10156,8 +12251,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP15: vite Content-Security-Policy header value must use SSOT import",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   },
   {
     "id": "CSP16",
@@ -10170,8 +12268,11 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "expectedResult": "SSOT/html/vite consistent; fonts allowed; no secrets",
     "evidenceType": "unit",
     "applicability": "applicable",
-    "result": "Pass",
-    "linkageMode": "exact-title"
+    "linkageMode": "exact-title",
+    "semanticEvidenceType": "exact",
+    "assertionAnchor": "CSP16: no secrets in policy (no tokens, passwords, private keys)",
+    "semanticReviewStatus": "EXACT",
+    "result": "Pass"
   }
 ] as MatrixEvidenceEntry[];
 }

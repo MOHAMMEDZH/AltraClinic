@@ -110,4 +110,90 @@ describe('Step 28 matrix evidence validation', () => {
       expect(e.expectedResult).not.toMatch(/^all pass$/i);
     }
   });
+
+  it('semantic review status has no PARTIAL or MISMATCH', () => {
+    const bad = MATRIX_EVIDENCE.filter(
+      (e) => e.semanticReviewStatus === 'PARTIAL' || e.semanticReviewStatus === 'MISMATCH',
+    ).map((e) => e.id);
+    expect(bad).toEqual([]);
+  });
+
+  it('TH docs-control-map records have executable mitigationIds (no circular docs-only)', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    const th = MATRIX_EVIDENCE.filter((e) => e.id.startsWith('TH'));
+    expect(th).toHaveLength(40);
+    for (const e of th) {
+      expect(e.semanticEvidenceType).toBe('docs-control-map');
+      expect(e.semanticReviewStatus).toBe('DOCS_ONLY');
+      expect(e.mitigationIds?.length ?? 0).toBeGreaterThan(0);
+      expect(e.testTitle).not.toMatch(/includes every required Step 28 matrix ID/i);
+      for (const mid of e.mitigationIds ?? []) {
+        const m = byId.get(mid);
+        expect(m).toBeTruthy();
+        expect(m!.semanticEvidenceType).not.toBe('docs-control-map');
+        expect(String(m!.id).startsWith('TH')).toBe(false);
+      }
+    }
+  });
+
+  it('reviewer-flagged IDs have exact semantic proofs', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    const auth04 = byId.get('AUTH04')!;
+    expect(auth04.testTitle).toMatch(/AUTH04|missing authentication|Unauthorized/i);
+    expect(auth04.semanticReviewStatus).toBe('EXACT');
+
+    const auth10 = byId.get('AUTH10')!;
+    expect(auth10.testTitle).toMatch(/AUTH10|suspended/i);
+    expect(auth10.semanticReviewStatus).toBe('EXACT');
+
+    const auth11 = byId.get('AUTH11')!;
+    expect(auth11.testTitle).toMatch(/AUTH11|cache|revision bump/i);
+    expect(auth11.semanticReviewStatus).toBe('EXACT');
+
+    const auth12 = byId.get('AUTH12')!;
+    expect(auth12.testTitle).toMatch(/SoD/i);
+    expect(auth12.semanticReviewStatus).toBe('EXACT');
+
+    const lim03 = byId.get('LIM03')!;
+    expect(lim03.testTitle).toMatch(/UNCONFIGURED|LIM03/i);
+    expect(lim03.testTitle).not.toMatch(/ingestion disabled/i);
+    expect(lim03.semanticReviewStatus).toBe('EXACT');
+
+    const iso03 = byId.get('ISO03')!;
+    expect(iso03.testTitle).toMatch(/tenant A cannot read tenant B|cannot leak another tenant/i);
+    expect(iso03.testTitle).not.toMatch(/containment OFF/i);
+    expect(iso03.semanticReviewStatus).toBe('EXACT');
+
+    const th01 = byId.get('TH01')!;
+    expect(th01.semanticEvidenceType).toBe('docs-control-map');
+    expect(th01.testTitle).not.toMatch(/includes every required Step 28 matrix ID/i);
+    expect(th01.mitigationIds?.length ?? 0).toBeGreaterThan(0);
+
+    const http01 = byId.get('HTTPSEC01')!;
+    expect(http01.testTitle).toMatch(/^H01:|H01:/);
+    expect(http01.testTitle).not.toMatch(/containment OFF/i);
+    expect(http01.semanticReviewStatus).toBe('EXACT');
+  });
+
+  it('forbidden reused titles are not used for unrelated high-risk claims', () => {
+    const forbidden = [
+      {
+        title: /containment OFF — disabled routes return tenant_provisioning_disabled/i,
+        families: ['ISO', 'HTTPSEC', 'AUTH'],
+      },
+      {
+        title: /includes every required Step 28 matrix ID/i,
+        families: ['TH', 'AUTH', 'LIM', 'ISO', 'HTTPSEC'],
+      },
+    ];
+    for (const rule of forbidden) {
+      const hits = MATRIX_EVIDENCE.filter(
+        (e) =>
+          rule.families.some((f) => e.id.startsWith(f)) &&
+          rule.title.test(e.testTitle) &&
+          e.semanticEvidenceType !== 'docs-control-map',
+      ).map((e) => e.id);
+      expect(hits).toEqual([]);
+    }
+  });
 });
