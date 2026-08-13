@@ -503,6 +503,47 @@ describe('Step 28 matrix evidence validation', () => {
     expect(err).toMatch(/TH17/);
   });
 
+  it('rejects TH19 AUTH11 authzRevision cache as EER cache-poisoning evidence', () => {
+    const err = validateDirectEvidenceMapping({
+      id: 'TH19',
+      semanticEvidenceType: 'docs-control-map',
+      mitigationIds: ['AUTH11'],
+    });
+    expect(err).toMatch(/TH19/);
+    expect(err).toMatch(
+      /authzRevision cache invalidation is not EER cache-poisoning resistance/,
+    );
+    expect(err).toMatch(/preferred=CACHE01,CACHE02/);
+  });
+
+  it('rejects TH19 generic non-CACHE authz evidence', () => {
+    const err = validateThreatMitigationConcepts(
+      {
+        id: 'TH19',
+        semanticEvidenceType: 'docs-control-map',
+        threatConceptTags: TH_THREAT_CONCEPTS.TH19,
+        mitigationIds: ['AUTH11'],
+      },
+      new Map([['AUTH11', { id: 'AUTH11', securityConceptTags: ['authz-cache-revision'] }]]),
+    );
+    expect(err).toMatch(/TH19/);
+  });
+
+  it('accepts TH19 CACHE01,CACHE02 direct EER cache-poisoning evidence', () => {
+    const byId = new Map(MATRIX_EVIDENCE.map((e) => [e.id, e]));
+    const th19 = byId.get('TH19')!;
+    expect(th19.mitigationIds).toEqual(['CACHE01', 'CACHE02']);
+    expect(validateThreatMitigationConcepts(th19, byId)).toBeNull();
+    expect(validateDirectEvidenceMapping(th19)).toBeNull();
+    expect(th19.threatConceptTags).toEqual(
+      expect.arrayContaining([
+        'cache-poisoning-resistance',
+        'entitlement-cache-isolation',
+        'eer-cache-stale-allow-deny',
+      ]),
+    );
+  });
+
   it('rejects generic ontology-compatible evidence when preferred direct mitigation exists', () => {
     expect(STEP28_TH_DIRECTNESS_PREFERENCES.TH07.preferredMitigationIds).toEqual(
       expect.arrayContaining(['API31']),

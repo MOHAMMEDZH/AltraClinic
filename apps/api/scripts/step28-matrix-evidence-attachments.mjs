@@ -182,6 +182,7 @@ function scanDirectEvidencePack(records) {
     TH15: { preferred: ['SG03', 'TENSA04'], rejected: [['API10', 'HTTPSEC48']] },
     TH16: { preferred: ['ER16', 'ER01'], rejected: [['API10', 'HTTPSEC50']] },
     TH17: { preferred: ['CACHE02', 'CACHE01'], rejected: [['AUTH11']] },
+    TH19: { preferred: ['CACHE01', 'CACHE02'], rejected: [['AUTH11']] },
     TH23: { preferred: ['TENSA09', 'TENSA10'], rejected: [['API01', 'HTTPSEC39']] },
     TH27: { preferred: ['LOG01', 'LOG02'], rejected: [['IO02', 'LOG01']] },
     TH29: { preferred: ['HTTPSEC28', 'PRIV01'], rejected: [['NOTSEC01', 'PRIV04']] },
@@ -552,6 +553,7 @@ function formatValidation(summary, linkage, secrets, phi, depClassify) {
   lines.push(`ontologyValidationFailures=${summary.ontologyValidationFailures}`);
   lines.push(`directEvidenceCandidates=${summary.directEvidenceCandidates}`);
   lines.push(`directEvidenceMappingFailures=${summary.directEvidenceMappingFailures}`);
+  lines.push(`TH19DirectEvidenceFailure=${summary.TH19DirectEvidenceFailure}`);
   lines.push(`naCount=${summary.naCount}`);
   lines.push(`passCount=${summary.passCount}`);
   lines.push(`fixedCount=${summary.fixedCount}`);
@@ -705,6 +707,16 @@ function main() {
     ontologyValidationFailures,
     directEvidenceCandidates: directness.candidates.length,
     directEvidenceMappingFailures: directness.confirmed.length,
+    TH19DirectEvidenceFailure: (() => {
+      const th19 = records.find((r) => r.id === 'TH19');
+      const mids = th19?.mitigationIds || [];
+      const ok =
+        mids.includes('CACHE01') &&
+        mids.includes('CACHE02') &&
+        !mids.every((id) => id === 'AUTH11') &&
+        mids.length > 0;
+      return ok ? 0 : 1;
+    })(),
     naCount: records.filter((e) => e.result === 'N/A').length,
     passCount: records.filter((e) => e.result === 'Pass').length,
     fixedCount: records.filter((e) => e.result === 'Fixed').length,
@@ -725,7 +737,12 @@ function main() {
       semanticScan.confirmed.length === 0 &&
       laundering.confirmed.length === 0 &&
       ontologyValidationFailures === 0 &&
-      directness.confirmed.length === 0,
+      directness.confirmed.length === 0 &&
+      (() => {
+        const th19 = records.find((r) => r.id === 'TH19');
+        const mids = th19?.mitigationIds || [];
+        return mids.includes('CACHE01') && mids.includes('CACHE02');
+      })(),
   };
 
   const jsonPath = path.join(outDir, 'step28-matrix-evidence-complete.json');
@@ -796,6 +813,7 @@ function main() {
       summary.conceptLaunderingDefects === 0 &&
       summary.ontologyValidationFailures === 0 &&
       summary.directEvidenceMappingFailures === 0 &&
+      summary.TH19DirectEvidenceFailure === 0 &&
       summary.brokenExecutableLinkage === 0,
   };
 

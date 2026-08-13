@@ -83,6 +83,13 @@ export const STEP28_TH_DIRECTNESS_PREFERENCES: Record<string, DirectnessPreferen
     rejectedMitigationSets: [['AUTH11']],
     classificationHint: 'ACCEPTABLE COMPOSITE',
   },
+  TH19: {
+    threatId: 'TH19',
+    preferredMitigationIds: ['CACHE01', 'CACHE02'],
+    preferredEvidenceFamilies: ['CACHE'],
+    rejectedMitigationSets: [['AUTH11'], ['AUTH11', 'AUTH28'], ['SES02', 'AUTH11']],
+    classificationHint: 'ACCEPTABLE COMPOSITE',
+  },
   TH23: {
     threatId: 'TH23',
     preferredMitigationIds: ['TENSA09', 'TENSA10'],
@@ -152,6 +159,9 @@ export function validateDirectEvidenceMapping(entry: {
 
   for (const bad of pref.rejectedMitigationSets) {
     if (sameIdSet(mids, bad)) {
+      if (entry.id === 'TH19' && sameIdSet(bad, ['AUTH11'])) {
+        return `${entry.id}: authzRevision cache invalidation is not EER cache-poisoning resistance; preferred=${pref.preferredMitigationIds.join(',')}`;
+      }
       return `${entry.id}: generic/indirect mitigation set rejected; preferred=${pref.preferredMitigationIds.join(',')}`;
     }
   }

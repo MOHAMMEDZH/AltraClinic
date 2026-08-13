@@ -4335,6 +4335,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "cache-poisoning-resistance",
       "entitlement-cache-isolation",
       "eer-cache-stale-allow-deny",
       "tenant-isolation"
@@ -4357,6 +4358,7 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "semanticReviewStatus": "EXACT",
     "result": "Pass",
     "securityConceptTags": [
+      "cache-poisoning-resistance",
       "eer-cache-stale-allow-deny",
       "cache-invalidation-fail-safe",
       "entitlement-cache-isolation"
@@ -13161,15 +13163,20 @@ function buildMatrixEvidenceEntries(): MatrixEvidenceEntry[] {
     "linkageMode": "suite-anchor",
     "suiteAnchorNote": "DOCS_ONLY threat-control map: executable proof is via mitigationIds, not matrix completeness.",
     "semanticEvidenceType": "docs-control-map",
-    "assertionAnchor": "mitigationIds=AUTH11",
+    "assertionAnchor": "mitigationIds=CACHE01,CACHE02",
     "mitigationIds": [
-      "AUTH11"
+      "CACHE01",
+      "CACHE02"
     ],
     "semanticReviewStatus": "DOCS_ONLY",
     "result": "Pass",
     "threatConceptTags": [
-      "authz-cache-revision"
-    ]
+      "cache-poisoning-resistance",
+      "entitlement-cache-isolation",
+      "eer-cache-stale-allow-deny",
+      "cache-invalidation-fail-safe"
+    ],
+    "semanticReviewNote": "Direct EER CACHE poisoning evidence (CACHE01 isolation + CACHE02 failed-invalidation fail-safe); AUTH11 authzRevision is not sufficient"
   },
   {
     "id": "TH20",

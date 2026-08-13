@@ -68,6 +68,7 @@ export type OntologyConceptId =
   | 'eer-cache-stale-allow-deny'
   | 'cache-invalidation-fail-safe'
   | 'entitlement-cache-isolation'
+  | 'cache-poisoning-resistance'
   | 'secrets-in-logs-deny'
   | 'notification-secret-leakage-deny'
   | 'idor-cross-tenant-deny'
@@ -473,6 +474,12 @@ export const STEP28_SECURITY_CONCEPT_ONTOLOGY: Record<OntologyConceptId, Ontolog
     allowedFamilies: ['CACHE'],
     forbiddenConcepts: [],
   },
+  'cache-poisoning-resistance': {
+    id: 'cache-poisoning-resistance',
+    humanMeaning: 'EER cache poisoning / cross-tenant reuse resistance',
+    allowedFamilies: ['CACHE'],
+    forbiddenConcepts: ['authz-cache-revision'],
+  },
   'secrets-in-logs-deny': {
     id: 'secrets-in-logs-deny',
     humanMeaning: 'Secrets/PHI/tokens absent from logs and safe errors',
@@ -624,9 +631,14 @@ export const STEP28_TH_ONTOLOGY_REQUIREMENTS: Record<string, ThreatOntologyRequi
   },
   TH19: {
     threatId: 'TH19',
-    requiredConcepts: ['authz-cache-revision'],
-    allowedMitigationFamilies: ['AUTH', 'CACHE'],
-    forbiddenMitigationConcepts: [],
+    requiredConcepts: [
+      'cache-poisoning-resistance',
+      'entitlement-cache-isolation',
+      'eer-cache-stale-allow-deny',
+      'cache-invalidation-fail-safe',
+    ],
+    allowedMitigationFamilies: ['CACHE'],
+    forbiddenMitigationConcepts: ['authz-cache-revision'],
   },
   TH20: {
     threatId: 'TH20',
