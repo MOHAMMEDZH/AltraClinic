@@ -1,17 +1,19 @@
-# Release 47 — Flexible Step 29  
+# Release 47 — Flexible Step 29
 ## Release Readiness and Operational Handover
 
 | Field | Value |
 |-------|--------|
 | **Step** | Flexible Step 29 — Release Readiness and Operational Handover |
-| **Status** | Implementation/validation complete; acceptance pending external review |
+| **Status** | Implementation/validation/handover complete; acceptance pending external final review |
 | **Authority** | Healthcare ERP SaaS — Flexible Super Admin Implementation Playbook v4 |
 | **Steps 01–28 + U01** | Accepted / Complete |
 | **Step 28 Case C** | Attempt 3 authoritative; executable freeze `6dafb4498819a4c0cd5d91dd3704eca3b9a0fb59` |
 | **Step 28 checkpoint** | `2a332beafe8a1b6d767cb87b45c6b1eed647b673` |
 | **Branch** | `cursor/step29-release-readiness-operational-handover` |
-| **Final runner** | `apps/api/scripts/run-step29-final-onepass.mjs` |
+| **Final runner** | `apps/api/scripts/run-step29-final-onepass.mjs` (PASS; freeze `ea076b044b0fd601193e56cfbc0a74d45960c688`) |
 | **Test DB** | `booking_test` @ `localhost:5433` |
+| **Step 29 acceptance blockers** | **0** |
+| **Production cutover gates pending execution** | **YES** (must pass at deploy time; failure blocks production) |
 
 ---
 
@@ -133,164 +135,333 @@ Authority docs: `docs/SUPER_ADMIN_HEALTHCARE_CATALOG_AND_CAPABILITY_MODEL.md`, `
 9. Escalate: Platform Security on-call → Eng lead → Release Manager (`SECURITY_RUNBOOKS.md`).
 
 ### Forbidden operator actions
-- Tenant self-grant / manual capability injection  
-- Direct DB entitlement edits as normal support  
-- Mutating published Plan Versions  
-- Treating missing limit as Unlimited  
-- Bypassing managed EER via legacy fallback  
+- Tenant self-grant / manual capability injection
+- Direct DB entitlement edits as normal support
+- Mutating published Plan Versions
+- Treating missing limit as Unlimited
+- Bypassing managed EER via legacy fallback
 
 ---
 
-## 7. Deployment and rollback checklist
+## 7. Blocker model (acceptance vs cutover)
 
-### Pre-deploy
-- [ ] Step 28 checkpoint `2a332be` verified ancestor  
-- [ ] Step 29 release SHA recorded  
-- [ ] Working tree clean  
-- [ ] Migrations reviewed (`prisma migrate status`)  
-- [ ] Backup confirmed (operator)  
-- [ ] Secrets/config validated  
-- [ ] Least-privilege prod access confirmed (manual)  
-- [ ] Dependency critical/high = 0  
-- [ ] Edge CSP/header validation (deployment-owned)  
-- [ ] Notification real-delivery policy confirmed  
-- [ ] Runbook owners confirmed  
+Three distinct states — do not conflate:
+
+| State | Meaning | Blocks Step 29 acceptance? | Blocks production deploy? |
+|-------|---------|----------------------------|---------------------------|
+| **A. Step 29 acceptance blocker** | Missing procedure, missing accountable role, or product/security defect | YES | YES |
+| **B. Production cutover gate** | Procedure + accountable role defined; action still must run at deploy time | NO | YES if unmet |
+| **C. Accepted limitation / deferred** | Explicit non-blocking residual or out-of-scope | NO | NO (unless separately gated) |
+
+**Authoritative semantics:**
+
+```text
+Step 29 acceptance blockers = 0
+Production cutover gates pending execution = YES
+Production cutover may proceed without satisfying those gates = NO
+```
+
+Step 29 can be formally accepted because operational procedures and accountable roles are defined.
+
+Production deployment is **NOT** automatically authorized by Step 29 acceptance.
+
+The listed production cutover gates must still be executed successfully at deployment time.
+
+---
+
+## 8. Authoritative cutover ownership matrix (Form B roles)
+
+Sources: `docs/SECURITY_RUNBOOKS.md` (Release Manager; Platform Security on-call → Eng lead → Release Manager), `docs/PHASE_47_EXECUTION_PLAN.md` (Ops + Platform Admin + Security), `docs/DISASTER_RECOVERY.md`, `docs/PRODUCTION_MIGRATION_WORKFLOW.md`.
+
+No named individuals appear in repository evidence; accountable **roles** below are the handover assignments.
+
+### 8.1 Backup / restore
+
+| Field | Assignment |
+|-------|------------|
+| **Accountable role** | Database/Backup Operator (Platform Operations) |
+| Backup execution | Database/Backup Operator runs `backup-postgres.ps1` / `.sh` immediately before migrate/deploy |
+| Backup verification | Database/Backup Operator runs `verify-backup.sh` (checksum + integrity) |
+| Restore authorization | **Release Manager** |
+| Restore execution | Database/Backup Operator using `restore-postgres.sh` to approved target |
+| Pre-cutover confirmation | Signed checklist: backup completed, verified, restore procedure available, restore validation target confirmed |
+| Escalation | Platform Operations → Platform Engineering lead → **Release Manager** |
+| Evidence location | This doc §9; `docs/DISASTER_RECOVERY.md`; scripts under `apps/api/scripts/` |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover gate | **YES** — unmet backup/verify **blocks cutover** |
+
+### 8.2 Deployment / topology / edge CSP
+
+| Field | Assignment |
+|-------|------------|
+| **Accountable role** | Platform Operations (Deploy) |
+| Topology validation (D-17) | Platform Operations documents and confirms actual prod topology before cutover |
+| Edge CSP / security-header validation | Platform Operations + Platform Security per `SECURITY_RUNBOOKS.md` §11 (manual HTML/header fetch) |
+| Deployment artifact responsibility | Platform Operations |
+| Pre-cutover confirmation | Topology recorded; edge CSP/header check evidence attached; failure = **block cutover** |
+| Escalation | Platform Operations → Platform Security → **Release Manager** |
+| Evidence location | This doc §10; `SECURITY_RUNBOOKS.md` §11; PHASE_47 D-17 |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover gate | **YES** |
+
+### 8.3 Monitoring / alerts / on-call
+
+| Field | Assignment |
+|-------|------------|
+| **Accountable role** | On-Call Incident Owner = **Platform Security on-call** (primary); Platform Operations (metrics scrape) |
+| Required signals | `/health/live`, `/health/ready`, `/metrics`; auth/rate-limit/EER/provision/audit/notification failure logs |
+| Validation method | Post-deploy curl health; confirm scrape job if configured; confirm alert route reaches on-call |
+| On-call responsibility | Platform Security on-call |
+| Incident escalation | Platform Security on-call → Platform Engineering lead → **Release Manager** (`SECURITY_RUNBOOKS.md`) |
+| Pre-cutover confirmation | On-call coverage active; alert path tested or explicitly waived only by Release Manager in writing |
+| Evidence location | This doc §11; observability docs; `SECURITY_RUNBOOKS.md` |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover gate | **YES** |
+
+### 8.4 Rollback authorization
+
+| Field | Assignment |
+|-------|------------|
+| **Rollback decision authority** | **Release Manager** |
+| Application rollback executor | Platform Operations |
+| Database restore / compensation owner | Database/Backup Operator (under Release Manager authorization) |
+| Cache invalidation owner | Platform Operations (with Platform Security if cross-tenant risk) |
+| Post-rollback verification owner | Platform Operations + Platform Security |
+| Escalation | Immediate **Release Manager**; Platform Security for leakage/audit risk |
+| Evidence location | This doc §12; `PRODUCTION_MIGRATION_WORKFLOW.md` |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover gate | **YES** (decision/authority exercised at incident/deploy time) |
+
+### 8.5 Production access / least privilege
+
+| Field | Assignment |
+|-------|------------|
+| **Access approval owner** | **Production Access Approver** = **Release Manager** (with Platform Security concurrence for privileged elevation) |
+| Deploy access owner | Platform Operations |
+| Database privileged access owner | Database/Backup Operator |
+| Secrets access owner | Platform Security |
+| Break-glass review owner | Platform Security + Release Manager |
+| Pre-cutover access review confirmation | Least-privilege review completed; break-glass path known; evidence filed |
+| Evidence location | This doc §13; `SUPER_ADMIN_RBAC_AND_PLATFORM_USERS.md`; `SECURITY_RUNBOOKS.md` |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover gate | **YES** |
+
+---
+
+## 9. Backup / restore checklist (cutover gate)
+
+**Accountable role:** Database/Backup Operator (Platform Operations)
+**Authorize restore:** Release Manager
+
+Before production cutover, **all** must be true or cutover is **BLOCKED**:
+
+- [ ] Pre-deploy backup completed (`backup-postgres.ps1` / `.sh`)
+- [ ] Backup verification completed (`verify-backup.sh`)
+- [ ] Restore procedure available (`restore-postgres.sh` + `DISASTER_RECOVERY.md`)
+- [ ] Restore target / validation procedure confirmed (non-prod clone smoke)
+- [ ] Accountable Database/Backup Operator acknowledged
+- [ ] Offsite/PITR status confirmed if used (external) — absence without Release Manager waiver **blocks cutover**
+
+```text
+Step 29 acceptance blocker = NO
+production cutover gate = YES
+production deployment blocking if unmet = YES
+```
+
+---
+
+## 10. Deployment / topology / edge CSP checklist (cutover gate)
+
+**Accountable role:** Platform Operations (Deploy)
+**Security concurrence:** Platform Security (CSP/headers)
+
+Before production cutover:
+
+- [ ] Production deployment topology validated and recorded (D-17)
+- [ ] Deployment artifact identity recorded
+- [ ] Edge CSP / security-header validation performed (manual fetch; `SECURITY_RUNBOOKS.md` §11)
+- [ ] Evidence attached to release record
+- [ ] Failure behavior acknowledged: **block cutover**
+
+```text
+Step 29 acceptance blocker = NO
+production cutover gate = YES
+production deployment blocking if unmet = YES
+```
+
+Do not invent topology; record the actual external topology at cutover.
+
+---
+
+## 11. Monitoring / alerts / on-call checklist (cutover gate)
+
+**Accountable roles:** Platform Operations (health/metrics scrape); On-Call Incident Owner = Platform Security on-call
+
+Required signals: `/health/live`, `/health/ready`, `/metrics`; failure classes for auth, rate-limit, EER, provisioning, audit, notifications, migrations.
+
+Before production cutover:
+
+- [ ] Health endpoints validated post-deploy
+- [ ] Metrics scrape path confirmed or explicitly marked external-not-configured with Release Manager acknowledgment of residual risk
+- [ ] Alert routing / on-call coverage confirmed for Platform Security on-call
+- [ ] Escalation path confirmed: on-call → Eng lead → Release Manager
+- [ ] Failure of signal/on-call confirmation **blocks cutover**
+
+```text
+Step 29 acceptance blocker = NO
+production cutover gate = YES
+production deployment blocking if unmet = YES
+```
+
+Do not claim external APM/SIEM is configured unless cutover evidence proves it.
+
+---
+
+## 12. Deployment and rollback checklist
+
+### Pre-deploy (production cutover gates — all required)
+
+- [ ] Step 28 checkpoint `2a332be` verified ancestor — Platform Operations
+- [ ] Step 29 release SHA recorded — Platform Operations
+- [ ] Working tree / release artifact clean — Platform Operations
+- [ ] Migrations reviewed (`prisma migrate status`) — Database/Backup Operator
+- [ ] §9 backup/verify complete — Database/Backup Operator
+- [ ] Secrets/config validated — Platform Security
+- [ ] §13 least-privilege access review — Release Manager + Platform Security
+- [ ] Dependency critical/high = 0 — Platform Security
+- [ ] §10 topology + edge CSP validated — Platform Operations + Platform Security
+- [ ] Notification real-delivery policy confirmed — Platform Operations
+- [ ] §11 on-call/alerts confirmed — Platform Security on-call
 
 ### Deploy
-- [ ] `db:migrate:deploy` → `db:rls:apply` → `db:triggers:apply`  
-- [ ] Application deploy (external topology)  
-- [ ] `/health/live` + `/health/ready` green  
-- [ ] Smoke: auth boundary, EER explain, one limit path, audit write  
-- [ ] No real external notifications unless authorized  
+
+- [ ] `db:migrate:deploy` → `db:rls:apply` → `db:triggers:apply` — Database/Backup Operator
+- [ ] Application deploy — Platform Operations
+- [ ] `/health/live` + `/health/ready` green — Platform Operations
+- [ ] Smoke: auth boundary, EER explain, one limit path, audit write — Platform Operations + Platform Security
+- [ ] No real external notifications unless Release Manager authorized
 
 ### Post-deploy
-- [ ] Scenario smoke (dental/general/limit/unauthorized)  
-- [ ] Monitoring scrape of `/metrics` if configured  
-- [ ] Audit append verified  
-- [ ] Support owner confirmation  
+
+- [ ] Scenario smoke (dental/general/limit/unauthorized) — Platform Operations
+- [ ] Monitoring scrape / alert path check — Platform Operations + Platform Security on-call
+- [ ] Audit append verified — Platform Security
+- [ ] Support/handover confirmation — Platform Admin + Platform Operations
 
 ### Rollback
-- [ ] Decision: Release Manager  
-- [ ] App rollback to previous artifact  
-- [ ] DB: restore from pre-deploy backup (preferred) or documented forward-fix  
-- [ ] Re-apply RLS/triggers after restore if required  
-- [ ] Invalidate entitlement caches  
-- [ ] Preserve audit history (append-only; do not delete)  
-- [ ] Notification: no blind resend of ambiguous deliveries  
-- [ ] Re-verify health + smoke  
+
+- [ ] Decision: **Release Manager**
+- [ ] App rollback: Platform Operations
+- [ ] DB restore/compensation: Database/Backup Operator (authorized by Release Manager)
+- [ ] Re-apply RLS/triggers after restore if required — Database/Backup Operator
+- [ ] Invalidate entitlement caches — Platform Operations
+- [ ] Preserve audit history (append-only) — Platform Security
+- [ ] Notification: no blind resend of ambiguous deliveries — Platform Operations
+- [ ] Post-rollback verification — Platform Operations + Platform Security
+
+```text
+Step 29 acceptance blocker = NO
+production cutover gate = YES (authority exercised at deploy/incident time)
+```
 
 ---
 
-## 8. Backup / restore checklist
+## 13. Production access / least privilege
 
-| Item | Detail |
-|------|--------|
-| Repository scripts | `backup-postgres.ps1` / `.sh`, `verify-backup.sh`, `restore-postgres.sh` |
-| When | Immediately before migrate/deploy |
-| What | Full Postgres dump of target DB + checksum |
-| Offsite/PITR | **external/deployment-owned** — operator must confirm |
-| Restore validation | `verify-backup` then restore to non-prod clone; app boot + tenant smoke |
-| Owner | Ops (named human **TO BE ASSIGNED BEFORE CUTOVER**) |
-| Cutover blocker if backup unconfirmed | **YES** |
+| Gate | Accountable role | Status |
+|------|------------------|--------|
+| Platform RBAC (in-repo) | Platform Security | PASS (Steps 08/28) — `SUPER_ADMIN_RBAC_AND_PLATFORM_USERS.md` |
+| Access approval | Release Manager (+ Platform Security for elevation) | Production cutover gate |
+| Deploy access | Platform Operations | Production cutover gate |
+| DB privileged access | Database/Backup Operator | Production cutover gate |
+| Secrets access | Platform Security | Production cutover gate |
+| Break-glass review | Platform Security + Release Manager | Production cutover gate |
+| MFA / step-up | Platform Security (repo-enforced) | PASS |
 
----
+```text
+Step 29 acceptance blocker = NO
+production cutover gate = YES
+production deployment blocking if unmet = YES
+```
 
-## 9. Monitoring and alerts checklist
-
-| Signal | Ownership | Validation |
-|--------|-----------|------------|
-| Liveness `/health/live` | repository | Unit + post-deploy curl |
-| Readiness `/health/ready` | repository | Unit + post-deploy curl |
-| Metrics `/metrics` | repository (scrape = external) | Restrict network; confirm scrape job |
-| Auth failures | app logs / metrics | External SIEM if used |
-| Rate-limit / EER / provision / audit / notification failures | repository metrics + logs | Alert routing **external** |
-| Migration failure | deploy pipeline | CI/deploy owner |
-| CSP/edge headers | **external** | Manual fetch HTML/headers |
-| On-call | **external** | Owner **TO BE ASSIGNED BEFORE CUTOVER** |
+External IAM execution is **not** claimed complete by Step 29; confirmation is required at cutover.
 
 ---
 
-## 10. Production access / least privilege
+## 14. Support / domain ownership matrix (accountable roles)
 
-| Gate | Status |
-|------|--------|
-| Platform RBAC (in-repo) | Verified by Step 08/28 suites — `docs/SUPER_ADMIN_RBAC_AND_PLATFORM_USERS.md` |
-| Deploy access | external — least privilege; named humans **TO BE ASSIGNED BEFORE CUTOVER** |
-| DB admin access | external — break-glass only |
-| Secrets access | external — vault/least privilege |
-| MFA / step-up | repository-enforced for sensitive platform actions |
-| Access review cadence | organizational — manual cutover confirmation |
+| Domain | Accountable role | Escalation |
+|--------|------------------|------------|
+| Catalog governance | Platform Admin | Release Manager |
+| Plan/version operations | Platform Admin | Release Manager |
+| Subscriptions / add-ons / overrides | Platform Admin | Release Manager |
+| Provisioning / tenant lifecycle | Platform Operations + Platform Admin | Release Manager |
+| EER / entitlements / limits | Platform Admin + Platform Security | Release Manager |
+| Feature flags | Platform Operations | Release Manager |
+| Audit | Platform Security | Release Manager |
+| Operations console | Platform Operations | Release Manager |
+| Security / rate-limit / edge CSP | Platform Security + Platform Operations | Release Manager |
+| Notifications | Platform Operations + Platform Admin | Release Manager |
+| Sales / trials | Platform Admin (Sales Ops coordination) | Release Manager |
+| Migrations / backups / restore | Database/Backup Operator (Platform Operations) | Release Manager |
+| Monitoring / alerts / on-call | Platform Security on-call + Platform Operations | Release Manager |
+| Incident / release-block decisions | Release Manager | — |
 
-Result: **repository RBAC PASS**; **production host/DB/secrets access = manual cutover gate**.
-
----
-
-## 11. Support / ownership handover matrix
-
-| Domain | Owner (role) | Named human |
-|--------|--------------|-------------|
-| Catalog governance | Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| Plan/version operations | Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| Subscriptions / add-ons / overrides | Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| Provisioning / tenant lifecycle | Ops + Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| EER / entitlements / limits | Platform Admin + Security | TO BE ASSIGNED BEFORE CUTOVER |
-| Feature flags | Ops | TO BE ASSIGNED BEFORE CUTOVER |
-| Audit | Security | TO BE ASSIGNED BEFORE CUTOVER |
-| Operations console | Ops | TO BE ASSIGNED BEFORE CUTOVER |
-| Security / rate-limit / CSP edge | Security + Deploy | TO BE ASSIGNED BEFORE CUTOVER |
-| Notifications | Ops + Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| Sales / trials | Sales Ops + Platform Admin | TO BE ASSIGNED BEFORE CUTOVER |
-| Migrations / backups / restore | Ops | TO BE ASSIGNED BEFORE CUTOVER |
-| Monitoring / alerts | Ops + Security | TO BE ASSIGNED BEFORE CUTOVER |
-| Incident escalation | Platform Security on-call → Eng lead → Release Manager | TO BE ASSIGNED BEFORE CUTOVER |
-
-Named-human assignment is a **cutover manual gate**, not an in-repo product defect.
+```text
+unresolved acceptance-critical owner placeholders = 0
+```
 
 ---
 
-## 12. Migration readiness
+## 15. Migration readiness
 
 | Item | Value |
 |------|--------|
 | Path | Prisma migrate deploy → RLS apply → triggers apply |
 | New Step 29 schema migration | **NO** |
-| Rollback tested (isolated) | Documented + tooling present; full prod drill = manual |
-| Rollback documented | YES (`PRODUCTION_MIGRATION_WORKFLOW.md`, this doc) |
+| Rollback tested (isolated) | Documented + tooling present; full prod drill = production cutover gate |
+| Rollback documented | YES |
 | Compensation | Forward-fix preferred; restore from backup for destructive failure |
-| Backup prerequisite | YES before migrate |
-| Remaining blocker | None in-repo; operator backup confirmation at cutover |
+| Backup prerequisite | YES — §9 cutover gate |
+| Step 29 acceptance blocker | **NO** |
+| Production cutover blocking if unmet | **YES** (backup/migrate confirmation) |
 
 ---
 
-## 13. Known limitations and deferred backlog
+## 16. Known limitations and deferred backlog
 
-| Item | Classification | Release blocking | Follow-up |
-|------|----------------|------------------|-----------|
-| Prod deploy topology (D-17) not in repo | deployment-owned manual validation | Cutover yes / Step 29 docs no | Document topology before prod |
-| Edge CSP headers | deployment-owned manual validation | Cutover yes | SECURITY_RUNBOOKS §11 |
-| Offsite backup / PITR | deployment-owned manual validation | Cutover yes | Confirm before migrate |
-| Named on-call humans | deployment-owned manual validation | Cutover yes | Assign before cutover |
-| F-TENANT-SA residual (tenant legacy super_admin) | accepted limitation (Step 28) | NO | Future hardening |
-| G-RLS-01 hybrid app-filter | accepted limitation (Step 28) | NO | Explicit release note |
-| No commercial APM/SIEM in repo | accepted limitation | NO | Optional external |
-| HIPAA/GDPR certification | out-of-scope | NO | Never claim |
-| Billing processors beyond R47 | out-of-scope / deferred | NO | Future release |
-| Step 30+ product scope | out-of-scope | NO | Do not invent |
-
----
-
-## 14. Launch checklist (summary)
-
-See §7–§10. All pre-deploy/deploy/post-deploy items must be checked by Ops before production cutover. In-repo Step 29 runner PASS is necessary but not sufficient without external cutover gates.
+| Item | Classification | Step 29 acceptance blocking | Production deployment blocking if unmet | Follow-up |
+|------|----------------|----------------------------|----------------------------------------|-----------|
+| Prod deploy topology (D-17) not in repo | deployment-owned **production cutover gate** | **NO** | **YES** | Platform Operations records topology at cutover |
+| Edge CSP headers | deployment-owned **production cutover gate** | **NO** | **YES** | SECURITY_RUNBOOKS §11 validation |
+| Offsite backup / PITR | deployment-owned **production cutover gate** | **NO** | **YES** (or Release Manager written waiver) | Database/Backup Operator confirms |
+| External APM/SIEM optional | accepted limitation | **NO** | **NO** (health/on-call gate still applies) | Optional |
+| F-TENANT-SA residual | accepted limitation (Step 28) | **NO** | **NO** | Future hardening |
+| G-RLS-01 hybrid app-filter | accepted limitation (Step 28) | **NO** | **NO** | Explicit release note |
+| HIPAA/GDPR certification | out-of-scope | **NO** | **NO** | Never claim |
+| Billing beyond R47 | out-of-scope / deferred | **NO** | **NO** | Future release |
+| Step 30+ product scope | out-of-scope | **NO** | **NO** | Do not invent |
 
 ---
 
-## 15. Global Definition of Done (explicit)
+## 17. Launch checklist (summary)
+
+Execute §9–§13 at production cutover. In-repo Step 29 runner PASS is necessary but **not sufficient**.
+
+```text
+Step 29 acceptance blockers = 0
+Production cutover gates pending execution = YES
+Production may proceed if a cutover gate fails = NO
+```
+
+---
+
+## 18. Global Definition of Done (explicit)
 
 | Requirement | Proof | Result |
 |-------------|-------|--------|
 | Conventions + changed files reported | This doc + final Cursor report | PASS (at external review) |
-| Build/typecheck/unit/integration/relevant e2e | Step 29 runner | Runner counters |
+| Build/typecheck/unit/integration/relevant e2e | Step 29 runner | PASS (freeze `ea076b0`) |
 | Server-side auth deny-by-default | Step 28 closure focused | PASS |
 | Sensitive actions reason/audit/step-up | Audit + MFA suites | PASS |
 | No PHI/secrets in logs/fixtures/frontend | secrets scan + Step 28 | PASS |
@@ -300,12 +471,12 @@ See §7–§10. All pre-deploy/deploy/post-deploy items must be checked by Ops b
 | EER explainable, isolated, authoritative | EER DB + cache unit | PASS |
 | Limits never overclaim | U01 docs + metering DB | PASS |
 | Stable catalog keys; no destructive remove | catalog DB + invariant | PASS |
-| Docs/runbooks updated | This doc + PHASE_47 | PASS |
+| Docs/runbooks + cutover ownership | This doc §§7–14 | PASS |
 | No accidental future rewrite | Scope = handover only | PASS |
 
 ---
 
-## 16. Related documents
+## 19. Related documents
 
 - `docs/PHASE_47_EXECUTION_PLAN.md`
 - `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md`

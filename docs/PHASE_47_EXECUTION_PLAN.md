@@ -30,7 +30,7 @@
 | Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md` |
 | Flexible Step **27** — Notifications and Templates | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T17:30:45.723Z`, SHA `bd7f35a`); Attempt 2 invalidated (C07 + Strategy B product fixes). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md` |
 | Flexible Step **28** — Security Hardening and Compliance Review | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, executable freeze `6dafb44`); final repository checkpoint `2a332be`. Contract: `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md` |
-| Flexible Step **29** — Release Readiness and Operational Handover | **In Progress / Acceptance Pending External Review** — branch `cursor/step29-release-readiness-operational-handover`; contract: `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
+| Flexible Step **29** — Release Readiness and Operational Handover | **Handover complete / Acceptance Pending External Final Review** — freeze `ea076b0`; acceptance blockers = 0; production cutover gates assigned in `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -94,24 +94,24 @@ Security foundation (05–09)
 
 ## 5. Non-Negotiable Constraints
 
-1. Security foundation precedes protected commercial administration.  
-2. Catalog → Plan Versions → Entitlements/Limits → Add-ons/Overrides → Subscriptions → Provisioning.  
-3. Commercial SoR modeling precedes enforcement cutover.  
-4. Existing licensing enforcement remains operational until resolver verified.  
-5. Published Plan Versions are immutable.  
-6. Feature Flags MUST NOT grant commercial access.  
-7. Tenant configuration MUST NOT grant license-denied capability.  
-8. Tenant APIs MUST NOT self-grant Plans, Versions, Add-ons, Overrides, Specialties, Modules, Features, or commercial Limits.  
-9. No display-name-based authorization.  
-10. No fourth independent Plan vocabulary.  
-11. No universal `super_admin` bypass on **new** platform paths.  
-12. Cross-tenant ops require explicit platform authorization and audit.  
-13. PHI excluded from ordinary Super Admin workflows.  
-14. Risky migrations MUST have rollback/compensation.  
-15. Every step MUST preserve previously passing release behavior.  
-16. No later domain MAY be pulled into an earlier step.  
-17. Schema migrations MUST be additive until verified cutover.  
-18. `ClinicSubscription` remains out of SaaS SoR.  
+1. Security foundation precedes protected commercial administration.
+2. Catalog → Plan Versions → Entitlements/Limits → Add-ons/Overrides → Subscriptions → Provisioning.
+3. Commercial SoR modeling precedes enforcement cutover.
+4. Existing licensing enforcement remains operational until resolver verified.
+5. Published Plan Versions are immutable.
+6. Feature Flags MUST NOT grant commercial access.
+7. Tenant configuration MUST NOT grant license-denied capability.
+8. Tenant APIs MUST NOT self-grant Plans, Versions, Add-ons, Overrides, Specialties, Modules, Features, or commercial Limits.
+9. No display-name-based authorization.
+10. No fourth independent Plan vocabulary.
+11. No universal `super_admin` bypass on **new** platform paths.
+12. Cross-tenant ops require explicit platform authorization and audit.
+13. PHI excluded from ordinary Super Admin workflows.
+14. Risky migrations MUST have rollback/compensation.
+15. Every step MUST preserve previously passing release behavior.
+16. No later domain MAY be pulled into an earlier step.
+17. Schema migrations MUST be additive until verified cutover.
+18. `ClinicSubscription` remains out of SaaS SoR.
 
 ---
 
@@ -148,10 +148,10 @@ Security foundation (05–09)
                                               Phase 28 guards until cutover
 ```
 
-- **Reuse:** Tenant, platform-admin lifecycle, licensing engine, module-registry, audit, notifications, observability, backup, RLS for tenant data  
-- **Extend:** Auth (platform principal), RBAC, PlatformSubscription, privileged access enforcement  
-- **New:** Super Admin app, catalog, Plan/Plan Version, Add-on, Override, sales MVP entities, explainable resolver  
-- **Bridge:** Plan aliases, `Tenant.features`, static `LICENSED_*`, FE matrices  
+- **Reuse:** Tenant, platform-admin lifecycle, licensing engine, module-registry, audit, notifications, observability, backup, RLS for tenant data
+- **Extend:** Auth (platform principal), RBAC, PlatformSubscription, privileged access enforcement
+- **New:** Super Admin app, catalog, Plan/Plan Version, Add-on, Override, sales MVP entities, explainable resolver
+- **Bridge:** Plan aliases, `Tenant.features`, static `LICENSED_*`, FE matrices
 
 ---
 
@@ -240,7 +240,7 @@ Security foundation (05–09)
                                                      28 → 29
 ```
 
-**Safe parallel after 09:** Steps 10 and 11 (read-only).  
+**Safe parallel after 09:** Steps 10 and 11 (read-only).
 **Unsafe to parallelize:** 12∥13, 13∥14, 15∥16, 16∥18, 06∥ protected commercial APIs, 18 enforcement∥ unverified bridge.
 
 ---
@@ -675,19 +675,19 @@ Step 29 delivers: deploy topology notes; least-privilege prod access; alert runb
 
 ## 33. Global Definition of Done
 
-- Conventions followed; changed files reported  
-- Build, lint, typecheck, unit, integration, relevant e2e pass  
-- RLS + authz + migration tests pass where applicable  
-- Rollback tested or documented  
-- No unresolved Critical/High security blocker  
-- No PHI/secrets in logs/fixtures/analytics/notifications/FE config  
-- Deny-by-default server authz; platform principal enforced  
-- Tenant isolation verified; published Plan Versions immutable  
-- No display-name authz; tenant self-grant prevented  
-- Flags ≠ entitlements; entitlements explainable; cache tenant-isolated  
-- Phase 28 licensing regression passes; Patient Portal unaffected  
-- Audit for sensitive actions; runbooks updated  
-- Deferred scope + limitations documented; least-privilege prod access  
+- Conventions followed; changed files reported
+- Build, lint, typecheck, unit, integration, relevant e2e pass
+- RLS + authz + migration tests pass where applicable
+- Rollback tested or documented
+- No unresolved Critical/High security blocker
+- No PHI/secrets in logs/fixtures/analytics/notifications/FE config
+- Deny-by-default server authz; platform principal enforced
+- Tenant isolation verified; published Plan Versions immutable
+- No display-name authz; tenant self-grant prevented
+- Flags ≠ entitlements; entitlements explainable; cache tenant-isolated
+- Phase 28 licensing regression passes; Patient Portal unaffected
+- Audit for sensitive actions; runbooks updated
+- Deferred scope + limitations documented; least-privilege prod access
 
 ---
 
@@ -1698,7 +1698,8 @@ Ops/CI/docs/test-runner; no feature code.
 `docs/RELEASE_47_STEP29_RELEASE_READINESS.md`
 
 ### Status
-**In Progress / Acceptance Pending External Review**
+**Implementation/validation/handover complete; acceptance pending external final review.**
+Executable freeze `ea076b0` remains authoritative. Step 29 acceptance blockers = 0. Production cutover gates remain mandatory at deploy time (`docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §§7–14).
 
 ---
 

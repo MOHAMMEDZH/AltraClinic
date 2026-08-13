@@ -9,7 +9,9 @@
 
 **Rules:** Never paste real secrets, tokens, MFA seeds, connection strings, or PHI into tickets, chat, or this document. Use redaction and secret-manager references only.
 
-**Ownership default:** Platform Security on-call → escalate to Platform Engineering lead → Release Manager for release-blocking decisions. Step 29 handover does not authorize itself from these runbooks.
+**Ownership default:** Platform Security on-call → escalate to Platform Engineering lead → Release Manager for release-blocking decisions.
+
+**Step 29 cutover ownership:** Accountable operational roles for backup/restore, deploy topology/edge CSP, monitoring/on-call, rollback authorization, and production access are defined in `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §§7–14. Step 29 acceptance does **not** authorize production cutover; unmet cutover gates **block** production deployment.
 
 ---
 
