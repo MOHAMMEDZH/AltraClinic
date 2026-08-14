@@ -117,6 +117,7 @@ export const PLATFORM_PERMISSIONS: readonly PlatformPermissionDefinition[] = [
   p('limit.manage', 'Manage limits', 'medium'),
   p('compatibility-rule.view', 'View compatibility rules', 'low'),
   p('compatibility-rule.manage', 'Manage compatibility rules', 'medium'),
+  p('clinical_catalog.admin', 'Manage canonical clinical service catalog (Wave A)', 'medium'),
 
   // Plans / commercial (Step 13)
   p('plan.view', 'View plans', 'low'),
@@ -237,6 +238,7 @@ const CATALOG_MANAGE = [
   'limit.manage',
   'compatibility-rule.view',
   'compatibility-rule.manage',
+  'clinical_catalog.admin',
 ] as const;
 
 const PLATFORM_USER_SECURITY = [

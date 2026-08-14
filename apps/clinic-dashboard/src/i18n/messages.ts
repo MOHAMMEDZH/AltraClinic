@@ -15,6 +15,7 @@ import { workflowMessagesAr, workflowMessagesEn } from './workflow-messages';
 import { aiMessagesAr, aiMessagesEn } from './ai-messages';
 import { subscriptionMessagesAr, subscriptionMessagesEn } from './subscription-messages';
 import { settingsMessagesAr, settingsMessagesEn } from './settings-messages';
+import { clinicalCatalogMessagesAr, clinicalCatalogMessagesEn } from './clinical-catalog-messages';
 
 export const messages = {
 
@@ -458,6 +459,7 @@ export const messages = {
     beauty: beautyMessagesAr,
     inventory: inventoryMessagesAr,
     billing: billingMessagesAr,
+    clinicalCatalog: clinicalCatalogMessagesAr,
     reports: reportsMessagesAr,
 
     pages: {
@@ -924,6 +926,7 @@ export const messages = {
     beauty: beautyMessagesEn,
     inventory: inventoryMessagesEn,
     billing: billingMessagesEn,
+    clinicalCatalog: clinicalCatalogMessagesEn,
     reports: reportsMessagesEn,
 
     pages: {

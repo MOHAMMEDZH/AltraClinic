@@ -492,8 +492,43 @@
         { "method": "POST", "path": "/billing/payment-plans",                   "action": "create"  },
         { "method": "POST", "path": "/billing/service-prices",                  "action": "manage"  },
         { "method": "POST", "path": "/billing/invoices/mark-overdue",           "action": "manage"  },
+        { "method": "GET",  "path": "/clinical-catalog/prices",                 "action": "view"    },
+        { "method": "GET",  "path": "/clinical-catalog/prices/lookup",          "action": "view"    },
+        { "method": "POST", "path": "/clinical-catalog/prices/drafts",          "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/publish",     "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/supersede",   "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/inactivate",  "action": "manage"  },
         { "method": "GET",  "path": "/billing/invoices/:invoiceId",             "action": "view"    },
         { "method": "GET",  "path": "/billing/invoices",                        "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.clinical-catalog",
+      "kind": "api",
+      "name": "Clinical Catalog API",
+      "description": "Canonical clinical services, tenant configuration, and Wave A catalog foundation.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager", "doctor", "dentist", "specialist", "receptionist", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager", "branch_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET",  "path": "/clinical-catalog/services",              "action": "view"   },
+        { "method": "GET",  "path": "/clinical-catalog/services/:id",        "action": "view"   },
+        { "method": "POST", "path": "/clinical-catalog/services",            "action": "create" },
+        { "method": "PATCH","path": "/clinical-catalog/services/:id",        "action": "update" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/publish",   "action": "manage" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/deprecate", "action": "manage" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/inactivate","action": "manage" },
+        { "method": "GET",  "path": "/clinical-catalog/configs",             "action": "view"   },
+        { "method": "GET",  "path": "/clinical-catalog/configs/effective",   "action": "view"   },
+        { "method": "PUT",  "path": "/clinical-catalog/configs",             "action": "update" },
+        { "method": "PATCH","path": "/clinical-catalog/configs/:id/enabled", "action": "manage" }
       ]
     },
 

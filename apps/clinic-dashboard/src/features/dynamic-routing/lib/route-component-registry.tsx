@@ -157,6 +157,10 @@ import {
   LazyCommissionRulesPage,
 } from '@/features/billing/lazy-billing-routes';
 import {
+  LazyClinicalPricingPage,
+  LazyClinicalServicesPage,
+} from '@/features/clinical-catalog/lazy-clinical-catalog-routes';
+import {
   LazySubscriptionLayout,
   LazySubscriptionDashboardPage,
   LazySubscriptionPlansPage,
@@ -235,6 +239,8 @@ const PAGE_COMPONENTS: Record<string, RouteComponent> = {
   'page.billingUnbilled': LazyUnbilledPage,
   'page.billingCashbox': LazyCashboxPage,
   'page.billingPricing': LazyPricingPage,
+  'page.billingClinicalPricing': LazyClinicalPricingPage,
+  'page.clinicalServices': LazyClinicalServicesPage,
   'page.billingPos': LazyPosCheckoutPage,
   'page.billingReports': LazyBillingReportsPage,
   'page.billingReceipt': LazyReceiptPrintPage,

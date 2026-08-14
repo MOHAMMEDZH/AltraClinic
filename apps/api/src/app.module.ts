@@ -36,6 +36,7 @@ import { ObservabilityModule } from './modules/observability/observability.modul
 import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
 import { PlatformTenantsModule } from './modules/platform-tenants/platform-tenants.module';
 import { PlatformHealthcareCatalogModule } from './modules/platform-healthcare-catalog/platform-healthcare-catalog.module';
+import { ClinicalCatalogModule } from './modules/clinical-catalog/clinical-catalog.module';
 import { PlatformPlansModule } from './modules/platform-plans/platform-plans.module';
 import { PlatformAddonsModule } from './modules/platform-addons/platform-addons.module';
 import { PlatformSubscriptionsModule } from './modules/platform-subscriptions/platform-subscriptions.module';
@@ -106,6 +107,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     PlatformDashboardModule,
     PlatformTenantsModule,
     PlatformHealthcareCatalogModule,
+    ClinicalCatalogModule,
     PlatformPlansModule,
     PlatformAddonsModule,
     PlatformSubscriptionsModule,

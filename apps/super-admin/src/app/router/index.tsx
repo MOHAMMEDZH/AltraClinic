@@ -32,6 +32,7 @@ import {
   TenantOnboardingPage,
 } from '../../pages/TenantOnboardingPage';
 import { CatalogPage } from '../../pages/CatalogPage';
+import { ClinicalCatalogPage } from '../../pages/ClinicalCatalogPage';
 import { PlansPage } from '../../pages/PlansPage';
 import { PlanCreatePage } from '../../pages/plans/PlanCreatePage';
 import { PlanDetailPage } from '../../pages/plans/PlanDetailPage';
@@ -220,6 +221,14 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('catalog').policy}>
               <CatalogPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('clinical-catalog')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('clinical-catalog').policy}>
+              <ClinicalCatalogPage />
             </RequirePermissionPolicy>
           }
         />

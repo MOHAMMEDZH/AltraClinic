@@ -27,6 +27,7 @@ export type SuperAdminRouteId =
   | 'tenant-onboarding'
   | 'tenant-onboarding-detail'
   | 'catalog'
+  | 'clinical-catalog'
   | 'plans'
   | 'plans-new'
   | 'plans-legacy'
@@ -248,6 +249,20 @@ export const SUPER_ADMIN_ROUTES: readonly SuperAdminRouteDefinition[] = [
         'compatibility-rule.view',
       ],
     },
+    showInNav: true,
+    layout: 'app',
+    step: 12,
+    status: 'available',
+  },
+  {
+    id: 'clinical-catalog',
+    path: '/clinical-catalog',
+    titleKey: 'routes.clinicalCatalog.title',
+    descriptionKey: 'routes.clinicalCatalog.description',
+    navLabelKey: 'nav.clinicalCatalog',
+    navGroup: 'platform',
+    icon: 'stethoscope',
+    policy: { type: 'permission', permission: 'clinical_catalog.admin' },
     showInNav: true,
     layout: 'app',
     step: 12,

@@ -202,10 +202,19 @@
       "operations": [
         { "method": "GET",  "path": "/queue/board",           "action": "view"   },
         { "method": "GET",  "path": "/queue/metrics/summary", "action": "view"   },
+        { "method": "GET",  "path": "/queue/analytics",       "action": "view"   },
+        { "method": "GET",  "path": "/queue/export",          "action": "export" },
         { "method": "GET",  "path": "/queue/waiting",         "action": "view"   },
+        { "method": "GET",  "path": "/queue/history",         "action": "view"   },
+        { "method": "PATCH","path": "/queue/:id/room",        "action": "update" },
+        { "method": "POST", "path": "/queue/walk-in",         "action": "create" },
         { "method": "POST", "path": "/queue/check-in",        "action": "update" },
         { "method": "POST", "path": "/queue/call-next",       "action": "update" },
-        { "method": "PATCH","path": "/queue/:id/status",      "action": "update" }
+        { "method": "POST", "path": "/queue/reorder",         "action": "manage" },
+        { "method": "PATCH","path": "/queue/:id/status",      "action": "update" },
+        { "method": "PATCH","path": "/queue/:id/transfer",    "action": "manage" },
+        { "method": "PATCH","path": "/queue/:id/priority",    "action": "update" },
+        { "method": "DELETE","path": "/queue/:id",            "action": "delete" }
       ]
     },
 
@@ -224,14 +233,40 @@
         "manage":  ["super_admin", "owner", "general_manager"]
       },
       "operations": [
-        { "method": "GET",  "path": "/emr/encounters/metrics/summary", "action": "view"   },
-        { "method": "GET",  "path": "/emr/encounters/clinical-inventory/items", "action": "view" },
-        { "method": "GET",  "path": "/emr/encounters",                  "action": "view"   },
-        { "method": "POST", "path": "/emr/encounters",                  "action": "create" },
-        { "method": "GET",  "path": "/emr/encounters/:id/materials",    "action": "view"   },
-        { "method": "POST", "path": "/emr/encounters/:id/materials",    "action": "update" },
-        { "method": "GET",  "path": "/emr/encounters/:id",              "action": "view"   },
-        { "method": "PATCH","path": "/emr/encounters/:id",              "action": "update" }
+        { "method": "GET",  "path": "/emr/dashboard",                              "action": "view"   },
+        { "method": "GET",  "path": "/emr/search",                                 "action": "view"   },
+        { "method": "GET",  "path": "/emr/patients/:patientId/problems",           "action": "view"   },
+        { "method": "POST", "path": "/emr/patients/:patientId/problems",           "action": "update" },
+        { "method": "GET",  "path": "/emr/patients/:patientId/prescriptions/history", "action": "view"   },
+        { "method": "GET",  "path": "/emr/patients/:patientId/lab-results",           "action": "view"   },
+        { "method": "POST", "path": "/emr/patients/:patientId/lab-results",           "action": "update" },
+        { "method": "GET",  "path": "/emr/patients/:patientId/treatment-plans",       "action": "view"   },
+        { "method": "GET",  "path": "/emr/note-templates",                            "action": "view"   },
+        { "method": "POST", "path": "/emr/note-templates",                            "action": "update" },
+        { "method": "PATCH","path": "/emr/note-templates/:id",                        "action": "update" },
+        { "method": "DELETE","path": "/emr/note-templates/:id",                       "action": "update" },
+        { "method": "PATCH","path": "/emr/problems/:problemId/resolve",            "action": "update" },
+        { "method": "GET",  "path": "/emr/encounters/metrics/summary",             "action": "view"   },
+        { "method": "GET",  "path": "/emr/encounters/clinical-inventory/items",    "action": "view"   },
+        { "method": "GET",  "path": "/emr/encounters",                             "action": "view"   },
+        { "method": "POST", "path": "/emr/encounters",                             "action": "create" },
+        { "method": "GET",  "path": "/emr/encounters/:id",                         "action": "view"   },
+        { "method": "PATCH","path": "/emr/encounters/:id",                         "action": "update" },
+        { "method": "GET",  "path": "/emr/encounters/:id/audit",                   "action": "view"   },
+        { "method": "GET",  "path": "/emr/encounters/:id/materials",               "action": "view"   },
+        { "method": "POST", "path": "/emr/encounters/:id/materials",               "action": "update" },
+        { "method": "POST", "path": "/emr/encounters/:id/complete",                "action": "update" },
+        { "method": "POST", "path": "/emr/encounters/:id/sign",                     "action": "approve" },
+        { "method": "POST", "path": "/emr/encounters/:id/vitals",                   "action": "update" },
+        { "method": "PATCH","path": "/emr/encounters/:id/soap",                     "action": "update" },
+        { "method": "PATCH","path": "/emr/encounters/:id/structured-notes",         "action": "update" },
+        { "method": "POST", "path": "/emr/encounters/:id/refill",                   "action": "update" },
+        { "method": "GET",  "path": "/emr/encounters/:id/billing",                  "action": "view"   },
+        { "method": "POST", "path": "/emr/encounters/:id/co-sign",                  "action": "approve" },
+        { "method": "POST", "path": "/emr/drug-interactions/check",                 "action": "view"   },
+        { "method": "POST", "path": "/emr/patients/:patientId/treatment-plans",     "action": "update" },
+        { "method": "PATCH","path": "/emr/treatment-plans/:planId",                 "action": "update" },
+        { "method": "PATCH","path": "/emr/treatment-plans/:planId/items/:itemId/status", "action": "update" }
       ]
     },
 
@@ -250,18 +285,40 @@
         "manage":  ["super_admin", "owner", "general_manager"]
       },
       "operations": [
-        { "method": "GET",  "path": "/dental/metrics/summary",        "action": "view"   },
-        { "method": "GET",  "path": "/dental/overview",               "action": "view"   },
-        { "method": "GET",  "path": "/dental/procedure-materials", "action": "view" },
-        { "method": "POST", "path": "/dental/procedure-materials", "action": "manage" },
-        { "method": "GET",  "path": "/dental/clinical-inventory/items", "action": "view" },
-        { "method": "POST", "path": "/dental/chart",                  "action": "create" },
-        { "method": "GET",  "path": "/dental/chart/:patientId",       "action": "view"   },
-        { "method": "GET",  "path": "/dental/chart/:patientId/materials", "action": "view" },
-        { "method": "POST", "path": "/dental/chart/:patientId/materials", "action": "update" },
-        { "method": "POST", "path": "/dental/chart/:patientId/materials/batch", "action": "update" },
-        { "method": "PATCH","path": "/dental/chart/:patientId/teeth", "action": "update" },
-        { "method": "POST", "path": "/dental/treatment",              "action": "create" }
+        { "method": "GET",  "path": "/dental/metrics/summary",                              "action": "view"   },
+        { "method": "GET",  "path": "/dental/dashboard",                                    "action": "view"   },
+        { "method": "GET",  "path": "/dental/overview",                                     "action": "view"   },
+        { "method": "POST", "path": "/dental/chart",                                        "action": "create" },
+        { "method": "GET",  "path": "/dental/chart/:patientId",                             "action": "view"   },
+        { "method": "PATCH","path": "/dental/chart/:patientId/teeth",                       "action": "update" },
+        { "method": "POST", "path": "/dental/treatment",                                    "action": "create" },
+        { "method": "GET",  "path": "/dental/treatment-plans/analytics",                    "action": "view"   },
+        { "method": "GET",  "path": "/dental/treatment-plans",                              "action": "view"   },
+        { "method": "GET",  "path": "/dental/treatment-plans/:planId",                      "action": "view"   },
+        { "method": "POST", "path": "/dental/treatment-plans",                              "action": "create" },
+        { "method": "PATCH","path": "/dental/treatment-plans/:planId",                      "action": "update" },
+        { "method": "POST", "path": "/dental/treatment-plans/:planId/submit",               "action": "update" },
+        { "method": "POST", "path": "/dental/treatment-plans/:planId/approve",              "action": "approve" },
+        { "method": "POST", "path": "/dental/treatment-plans/:planId/consent",              "action": "update" },
+        { "method": "PATCH","path": "/dental/treatment-plans/:planId/items/:itemId/status", "action": "update" },
+        { "method": "GET",  "path": "/dental/perio/:patientId/exams",                     "action": "view"   },
+        { "method": "GET",  "path": "/dental/perio/:patientId/progress",                   "action": "view"   },
+        { "method": "GET",  "path": "/dental/perio/exams/compare",                       "action": "view"   },
+        { "method": "GET",  "path": "/dental/perio/exams/:examId",                         "action": "view"   },
+        { "method": "POST", "path": "/dental/perio/:patientId/exams",                      "action": "create" },
+        { "method": "PATCH","path": "/dental/perio/exams/:examId",                         "action": "update" },
+        { "method": "GET",  "path": "/dental/patients/:patientId/summary",               "action": "view"   },
+        { "method": "GET",  "path": "/dental/patients/:patientId/timeline",              "action": "view"   },
+        { "method": "PATCH","path": "/dental/chart/:patientId/mode",                     "action": "update" },
+        { "method": "GET",  "path": "/dental/ortho/:patientId/cases",                    "action": "view"   },
+        { "method": "POST", "path": "/dental/ortho/cases",                               "action": "create" },
+        { "method": "PATCH","path": "/dental/ortho/cases/:caseId",                       "action": "update" },
+        { "method": "GET",  "path": "/dental/implants/:patientId",                       "action": "view"   },
+        { "method": "POST", "path": "/dental/implants",                                  "action": "create" },
+        { "method": "PATCH","path": "/dental/implants/:implantId",                       "action": "update" },
+        { "method": "GET",  "path": "/dental/notes/:patientId",                          "action": "view"   },
+        { "method": "POST", "path": "/dental/notes",                                     "action": "create" },
+        { "method": "POST", "path": "/dental/treatment-plans/:planId/invoice",           "action": "update" }
       ]
     },
 
@@ -283,6 +340,11 @@
         { "method": "GET",   "path": "/beauty/metrics/summary",                 "action": "view"   },
         { "method": "GET",   "path": "/beauty/overview",                        "action": "view"   },
         { "method": "GET",   "path": "/beauty/analytics",                       "action": "view"   },
+        { "method": "GET",   "path": "/beauty/dashboard",                       "action": "view"   },
+        { "method": "GET",   "path": "/beauty/patients/:patientId/summary",     "action": "view"   },
+        { "method": "GET",   "path": "/beauty/patients/:patientId/timeline",    "action": "view"   },
+        { "method": "PATCH", "path": "/beauty/annotations/:annotationId",       "action": "update" },
+        { "method": "POST",  "path": "/beauty/annotations/:annotationId/delete", "action": "delete" },
         { "method": "GET",   "path": "/beauty/record/:patientId",               "action": "view"   },
         { "method": "POST",  "path": "/beauty/record",                          "action": "create" },
         { "method": "PATCH", "path": "/beauty/record/:patientId",               "action": "update" },
@@ -337,10 +399,37 @@
         { "method": "POST", "path": "/inventory/stock-requests/:requestId/cancel", "action": "update" },
         { "method": "POST", "path": "/inventory/stock-requests/lines/:lineId/fulfill", "action": "update" },
         { "method": "GET",  "path": "/inventory/movements",              "action": "view"   },
-        { "method": "GET",  "path": "/inventory/consumptions",           "action": "view"   },
         { "method": "POST", "path": "/inventory/item/:itemId/adjust",    "action": "update" },
         { "method": "GET",  "path": "/inventory/summary",              "action": "view"   },
         { "method": "GET",  "path": "/inventory/analytics",            "action": "view"   },
+        { "method": "GET",  "path": "/inventory/analytics/export",     "action": "export" },
+        { "method": "GET",  "path": "/inventory/reorder/preview",      "action": "view"   },
+        { "method": "POST", "path": "/inventory/reorder/run",          "action": "create" },
+        { "method": "POST", "path": "/inventory/stock-requests/:requestId/convert-to-po", "action": "create" },
+        { "method": "GET",  "path": "/inventory/warehouses",           "action": "view"   },
+        { "method": "POST", "path": "/inventory/warehouses",           "action": "manage" },
+        { "method": "GET",  "path": "/inventory/warehouses/stock",     "action": "view"   },
+        { "method": "GET",  "path": "/inventory/warehouses/:warehouseId", "action": "view" },
+        { "method": "PATCH", "path": "/inventory/warehouses/:warehouseId", "action": "manage" },
+        { "method": "POST", "path": "/inventory/warehouses/:warehouseId/deactivate", "action": "manage" },
+        { "method": "POST", "path": "/inventory/warehouses/:warehouseId/reactivate", "action": "manage" },
+        { "method": "POST", "path": "/inventory/warehouses/:warehouseId/set-default", "action": "manage" },
+        { "method": "GET",  "path": "/inventory/stock-transfers",      "action": "view"   },
+        { "method": "POST", "path": "/inventory/stock-transfers",      "action": "update" },
+        { "method": "GET",  "path": "/inventory/stock-transfers/:transferId", "action": "view" },
+        { "method": "POST", "path": "/inventory/stock-transfers/:transferId/ship", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-transfers/:transferId/cancel", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-transfers/lines/:lineId/receive", "action": "update" },
+        { "method": "GET",  "path": "/inventory/stock-counts",         "action": "view"   },
+        { "method": "POST", "path": "/inventory/stock-counts",           "action": "update" },
+        { "method": "GET",  "path": "/inventory/stock-counts/:countId", "action": "view" },
+        { "method": "POST", "path": "/inventory/stock-counts/:countId/start", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-counts/:countId/submit", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-counts/:countId/approve", "action": "approve" },
+        { "method": "POST", "path": "/inventory/stock-counts/:countId/cancel", "action": "update" },
+        { "method": "POST", "path": "/inventory/stock-counts/lines/:lineId/count", "action": "update" },
+        { "method": "GET",  "path": "/inventory/item/:itemId/warehouse-stock", "action": "view" },
+        { "method": "GET",  "path": "/inventory/consumptions",         "action": "view"   },
         { "method": "GET",  "path": "/inventory/expiry/summary",       "action": "view"   },
         { "method": "GET",  "path": "/inventory/batches",              "action": "view"   },
         { "method": "GET",  "path": "/inventory/item/:itemId/batches", "action": "view"   },
@@ -374,15 +463,72 @@
         "manage":  ["super_admin", "owner", "general_manager"]
       },
       "operations": [
+        { "method": "GET",  "path": "/billing/summary",                         "action": "view"    },
+        { "method": "GET",  "path": "/billing/analytics",                       "action": "view"    },
+        { "method": "GET",  "path": "/billing/invoices/export",                 "action": "export"  },
+        { "method": "GET",  "path": "/billing/invoices/next-number",            "action": "create"  },
+        { "method": "GET",  "path": "/billing/refunds",                         "action": "view"    },
+        { "method": "GET",  "path": "/billing/credit-notes",                    "action": "view"    },
+        { "method": "GET",  "path": "/billing/cash-sessions",                   "action": "view"    },
+        { "method": "GET",  "path": "/billing/cash-sessions/active",            "action": "view"    },
+        { "method": "GET",  "path": "/billing/payment-plans",                   "action": "view"    },
+        { "method": "GET",  "path": "/billing/service-prices",                  "action": "view"    },
+        { "method": "GET",  "path": "/billing/receipts/:receiptNumber",         "action": "view"    },
+        { "method": "GET",  "path": "/billing/invoices/:invoiceId/receipts",    "action": "view"    },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/insurance",   "action": "update"  },
         { "method": "POST", "path": "/billing/invoices",                        "action": "create"  },
         { "method": "POST", "path": "/scheduling/appointments/:id/invoice",     "action": "create"  },
         { "method": "POST", "path": "/billing/invoices/bill-consumptions",       "action": "create"  },
         { "method": "POST", "path": "/billing/invoices/:invoiceId/line-items",  "action": "update"  },
         { "method": "POST", "path": "/billing/invoices/:invoiceId/issue",       "action": "update"  },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/credit-notes", "action": "update" },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/write-off",   "action": "manage"  },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/refunds",     "action": "approve" },
+        { "method": "POST", "path": "/billing/invoices/:invoiceId/split-payments", "action": "approve" },
         { "method": "POST", "path": "/billing/invoices/:invoiceId/payments",    "action": "approve" },
         { "method": "POST", "path": "/billing/invoices/:invoiceId/cancel",      "action": "delete"  },
+        { "method": "POST", "path": "/billing/cash-sessions/open",              "action": "approve" },
+        { "method": "POST", "path": "/billing/cash-sessions/:sessionId/close",  "action": "approve" },
+        { "method": "POST", "path": "/billing/payment-plans",                   "action": "create"  },
+        { "method": "POST", "path": "/billing/service-prices",                  "action": "manage"  },
+        { "method": "POST", "path": "/billing/invoices/mark-overdue",           "action": "manage"  },
+        { "method": "GET",  "path": "/clinical-catalog/prices",                 "action": "view"    },
+        { "method": "GET",  "path": "/clinical-catalog/prices/lookup",          "action": "view"    },
+        { "method": "POST", "path": "/clinical-catalog/prices/drafts",          "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/publish",     "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/supersede",   "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/inactivate",  "action": "manage"  },
         { "method": "GET",  "path": "/billing/invoices/:invoiceId",             "action": "view"    },
         { "method": "GET",  "path": "/billing/invoices",                        "action": "view"    }
+      ]
+    },
+
+    {
+      "id": "api.clinical-catalog",
+      "kind": "api",
+      "name": "Clinical Catalog API",
+      "description": "Canonical clinical services, tenant configuration, and Wave A catalog foundation.",
+      "permissions": {
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager", "doctor", "dentist", "specialist", "receptionist", "accountant"],
+        "create":  ["super_admin", "owner", "general_manager"],
+        "update":  ["super_admin", "owner", "general_manager", "branch_manager"],
+        "delete":  ["super_admin", "owner"],
+        "approve": ["super_admin", "owner", "general_manager"],
+        "export":  ["super_admin", "owner", "general_manager"],
+        "manage":  ["super_admin", "owner", "general_manager"]
+      },
+      "operations": [
+        { "method": "GET",  "path": "/clinical-catalog/services",              "action": "view"   },
+        { "method": "GET",  "path": "/clinical-catalog/services/:id",        "action": "view"   },
+        { "method": "POST", "path": "/clinical-catalog/services",            "action": "create" },
+        { "method": "PATCH","path": "/clinical-catalog/services/:id",        "action": "update" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/publish",   "action": "manage" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/deprecate", "action": "manage" },
+        { "method": "POST", "path": "/clinical-catalog/services/:id/inactivate","action": "manage" },
+        { "method": "GET",  "path": "/clinical-catalog/configs",             "action": "view"   },
+        { "method": "GET",  "path": "/clinical-catalog/configs/effective",   "action": "view"   },
+        { "method": "PUT",  "path": "/clinical-catalog/configs",             "action": "update" },
+        { "method": "PATCH","path": "/clinical-catalog/configs/:id/enabled", "action": "manage" }
       ]
     },
 
@@ -402,7 +548,9 @@
       },
       "operations": [
         { "method": "POST", "path": "/commissions/calculate",              "action": "create"  },
+        { "method": "POST", "path": "/commissions/calculate-from-invoices", "action": "create"  },
         { "method": "POST", "path": "/commissions/rules",                  "action": "manage"  },
+        { "method": "GET",  "path": "/commissions/rules/list",             "action": "view"    },
         { "method": "POST", "path": "/commissions/:commissionId/approve",  "action": "approve" },
         { "method": "POST", "path": "/commissions/:commissionId/pay",      "action": "approve" },
         { "method": "POST", "path": "/commissions/:commissionId/dispute",  "action": "update"  },
@@ -429,12 +577,7 @@
         { "method": "POST", "path": "/subscriptions",                       "action": "create" },
         { "method": "POST", "path": "/subscriptions/:subscriptionId/cancel","action": "delete" },
         { "method": "GET",  "path": "/subscriptions/:subscriptionId",       "action": "view"   },
-        { "method": "GET",  "path": "/subscriptions",                       "action": "view"   },
-        { "method": "GET",  "path": "/tenant/subscription",                 "action": "view"   },
-        { "method": "GET",  "path": "/tenant/subscription/plans",           "action": "view"   },
-        { "method": "GET",  "path": "/tenant/subscription/usage",           "action": "view"   },
-        { "method": "GET",  "path": "/tenant/subscription/payments",       "action": "view"   },
-        { "method": "POST", "path": "/tenant/subscription/plan-change",     "action": "manage" }
+        { "method": "GET",  "path": "/subscriptions",                       "action": "view"   }
       ]
     },
 
@@ -677,17 +820,7 @@
         { "method": "GET",   "path": "/patient-portal/me/providers",                                    "action": "view"    },
         { "method": "GET",   "path": "/patient-portal/me/availability",                                 "action": "view"    },
         { "method": "POST",  "path": "/patient-portal/me/appointments",                                 "action": "create"  },
-        { "method": "PATCH", "path": "/patient-portal/me/appointments/:appointmentId",                  "action": "update"  },
-        { "method": "GET",   "path": "/patient-portal/me/profile",                                      "action": "view"    },
-        { "method": "GET",   "path": "/patient-portal/me/preferences",                                  "action": "view"    },
-        { "method": "PATCH", "path": "/patient-portal/me/preferences",                                 "action": "update"  },
-        { "method": "GET",   "path": "/patient-portal/me/results/gate",                                 "action": "view"    },
-        { "method": "GET",   "path": "/patient-portal/me/caregivers",                                   "action": "view"    },
-        { "method": "POST",  "path": "/patient-portal/me/caregivers",                                   "action": "create"  },
-        { "method": "POST",  "path": "/patient-portal/me/caregivers/:grantId/revoke",                   "action": "update"  },
-        { "method": "POST",  "path": "/patient-portal/me/caregiver-invitations/accept",                 "action": "update"  },
-        { "method": "POST",  "path": "/patient-portal/me/caregiver-invitations/decline",                "action": "update"  },
-        { "method": "GET",   "path": "/patient-portal/me/delegated-patients",                           "action": "view"    }
+        { "method": "PATCH", "path": "/patient-portal/me/appointments/:appointmentId",                  "action": "update"  }
       ]
     },
 
@@ -712,8 +845,6 @@
         { "method": "POST",  "path": "/platform/tenants/:platformTenantId/resume",                                "action": "approve" },
         { "method": "POST",  "path": "/platform/tenants/:platformTenantId/archive",                               "action": "delete"  },
         { "method": "PATCH", "path": "/platform/tenants/:platformTenantId/plan",                                  "action": "manage"  },
-        { "method": "PATCH", "path": "/tenant/subscription/platform-tenants/:platformTenantId/entitlements",      "action": "manage"  },
-        { "method": "POST",  "path": "/tenant/subscription/platform-tenants/:platformTenantId/trial",             "action": "manage"  },
         { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access",                     "action": "create"  },
         { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access/:grantId/approve",    "action": "approve" },
         { "method": "POST",  "path": "/platform/tenants/:platformTenantId/privileged-access/:grantId/reject",     "action": "approve" },
@@ -727,10 +858,10 @@
       "id": "api.media",
       "kind": "api",
       "name": "Media & Attachments API",
-      "description": "Patient attachments, medical documents, dental images, beauty before/after photos.",
+      "description": "Patient attachments, medical documents, dental images, beauty before/after, invoice attachments.",
       "permissions": {
-        "view":    ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
-        "create":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
+        "view":    ["super_admin", "owner", "general_manager", "accountant", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
+        "create":  ["super_admin", "owner", "general_manager", "accountant", "doctor", "dentist", "specialist", "nurse", "assistant", "receptionist"],
         "update":  ["super_admin", "owner", "general_manager", "doctor", "dentist", "specialist", "nurse", "assistant"],
         "delete":  ["super_admin", "owner", "general_manager"],
         "approve": ["super_admin", "owner", "general_manager"],
@@ -794,6 +925,7 @@
         { "method": "PATCH", "path": "/settings/billing/sequences", "action": "manage" },
         { "method": "GET",   "path": "/settings/status", "action": "view" },
         { "method": "POST",  "path": "/settings/integrations/webhooks/test", "action": "manage" },
+        { "method": "GET",   "path": "/settings/developer/api-keys", "action": "manage" },
         { "method": "POST",  "path": "/settings/developer/api-keys", "action": "manage" },
         { "method": "DELETE","path": "/settings/developer/api-keys/:keyId", "action": "manage" }
       ]
@@ -803,24 +935,23 @@
       "id": "api.importExport",
       "kind": "api",
       "name": "Import / Export Center API",
-      "description": "Import/Export Center orchestration platform (foundation). Business adapters remain in owning modules.",
+      "description": "Phase 42a foundation permissions. Logical names: read→view, download→export. No business import/export execution in 42a.",
       "permissions": {
-        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
-        "create":  ["super_admin", "owner", "general_manager"],
-        "update":  ["super_admin", "owner", "general_manager"],
-        "delete":  ["super_admin", "owner"],
-        "approve": ["super_admin", "owner"],
-        "export":  ["super_admin", "owner", "general_manager", "branch_manager"],
-        "manage":  ["super_admin", "owner"]
+        "view":    ["super_admin", "owner", "general_manager", "branch_manager", "accountant", "inventory_manager", "hr"],
+        "create":  ["super_admin", "owner", "general_manager", "branch_manager", "accountant", "inventory_manager", "hr"],
+        "export":  ["super_admin", "owner", "general_manager", "branch_manager", "accountant", "inventory_manager", "hr"],
+        "manage":  ["super_admin", "owner", "general_manager"]
       },
-      "operations": []
+      "operations": [
+        { "method": "GET", "path": "/import-export/health", "action": "view" }
+      ]
     },
 
     {
       "id": "api.backupRestore",
       "kind": "api",
       "name": "Backup / Restore Center API",
-      "description": "Phase 43a Backup & Restore Center foundation. No backup/restore execution.",
+      "description": "Phase 43a foundation permissions. Logical: policy/job read→view, job.run→create, policy.write/verify→update, artifact.download→export, restore.approve→approve, restore.execute/manage→manage. No backup/restore execution in 43a.",
       "permissions": {
         "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
         "create":  ["super_admin", "owner", "general_manager"],
@@ -851,31 +982,6 @@
       },
       "operations": [
         { "method": "GET", "path": "/integrations/health", "action": "view" }
-      ]
-    },
-
-    {
-      "id": "api.observability",
-      "kind": "api",
-      "name": "Observability Center API",
-      "description": "Phase 45a Observability Center foundation. view=read, update=acknowledge, export=export, manage=rules/config, approve=cross_tenant. No metrics/tracing/alerting pipelines in 45a.",
-      "permissions": {
-        "view":    ["super_admin", "owner", "general_manager", "branch_manager"],
-        "create":  ["super_admin", "owner", "general_manager"],
-        "update":  ["super_admin", "owner", "general_manager"],
-        "delete":  ["super_admin", "owner"],
-        "approve": ["super_admin", "owner"],
-        "export":  ["super_admin", "owner", "general_manager"],
-        "manage":  ["super_admin", "owner"]
-      },
-      "operations": [
-        { "method": "GET", "path": "/observability/health", "action": "view" },
-        { "method": "GET", "path": "/observability/metrics/catalog", "action": "view" },
-        { "method": "GET", "path": "/observability/metrics/query", "action": "view" },
-        { "method": "GET", "path": "/observability/metrics/diagnostics", "action": "view" },
-        { "method": "GET", "path": "/observability/logs/query", "action": "view" },
-        { "method": "GET", "path": "/observability/logs/diagnostics", "action": "view" },
-        { "method": "GET", "path": "/metrics", "action": "view" }
       ]
     }
   ]

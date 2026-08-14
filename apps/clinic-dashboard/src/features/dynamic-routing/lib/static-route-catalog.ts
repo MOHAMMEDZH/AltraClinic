@@ -106,6 +106,12 @@ export const STATIC_ROUTE_CATALOG: RouteCatalogEntry[] = [
   { id: 'billing-unbilled', path: 'billing/unbilled', moduleId: 'billing', componentKey: 'page.billingUnbilled' },
   { id: 'billing-cashbox', path: 'billing/cashbox', moduleId: 'billing', componentKey: 'page.billingCashbox' },
   { id: 'billing-pricing', path: 'billing/pricing', moduleId: 'billing', componentKey: 'page.billingPricing' },
+  {
+    id: 'billing-clinical-pricing',
+    path: 'billing/clinical-pricing',
+    moduleId: 'billing',
+    componentKey: 'page.billingClinicalPricing',
+  },
   { id: 'billing-pos', path: 'billing/pos', moduleId: 'billing', componentKey: 'page.billingPos' },
   { id: 'billing-reports', path: 'billing/reports', moduleId: 'billing', componentKey: 'page.billingReports' },
   {
@@ -302,6 +308,12 @@ export const STATIC_ROUTE_CATALOG: RouteCatalogEntry[] = [
           { id: 'settings-branches', path: 'branches', moduleId: 'settings', componentKey: 'page.settingsBranches' },
           { id: 'settings-search', path: 'search', moduleId: 'settings', componentKey: 'page.settingsSearch' },
           { id: 'settings-billing', path: 'billing', moduleId: 'settings', componentKey: 'page.settingsBilling' },
+          {
+            id: 'settings-clinical-services',
+            path: 'clinical-services',
+            moduleId: 'settings',
+            componentKey: 'page.clinicalServices',
+          },
           { id: 'settings-inventory', path: 'inventory', moduleId: 'settings', componentKey: 'page.settingsInventory' },
           { id: 'settings-reports', path: 'reports', moduleId: 'settings', componentKey: 'page.settingsReports' },
           {

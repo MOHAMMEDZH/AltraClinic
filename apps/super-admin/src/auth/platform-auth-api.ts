@@ -71,6 +71,45 @@ export interface PlatformPrincipal {
   authzRevision: number;
 }
 
+/** Phase 48 Wave A — platform clinical procedure catalog. */
+export interface ClinicalCatalogTranslation {
+  locale: string;
+  displayName: string;
+  shortDescription?: string | null;
+  longDescription?: string | null;
+}
+
+export interface ClinicalCatalogServiceDetail {
+  id: string;
+  stableKey: string;
+  provenance: string;
+  domain: string;
+  categoryKey: string | null;
+  defaultDurationMin: number | null;
+  lifecycle: string;
+  tenantId: string | null;
+  translations: ClinicalCatalogTranslation[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateClinicalCatalogServiceDraftRequest {
+  provenance: 'SYSTEM_CANONICAL';
+  stableKey: string;
+  domain?: string;
+  categoryKey?: string | null;
+  defaultDurationMin?: number | null;
+  translations: ClinicalCatalogTranslation[];
+}
+
+export interface UpdateClinicalCatalogServiceDraftRequest {
+  stableKey?: string;
+  domain?: string;
+  categoryKey?: string | null;
+  defaultDurationMin?: number | null;
+  translations?: ClinicalCatalogTranslation[];
+}
+
 export interface HealthcareCatalogItemDetail {
   id: string;
   canonicalKey: string;
@@ -1326,6 +1365,71 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         method: 'GET',
         accessToken,
       });
+    },
+
+    listClinicalCatalogServices(
+      accessToken: string,
+      query: { lifecycle?: string; provenance?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      const qs = params.toString();
+      return request<ClinicalCatalogServiceDetail[]>(
+        `/platform/clinical-catalog/services${qs ? `?${qs}` : ''}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    createClinicalCatalogServiceDraft(
+      accessToken: string,
+      body: CreateClinicalCatalogServiceDraftRequest,
+    ) {
+      return request<ClinicalCatalogServiceDetail>('/platform/clinical-catalog/services', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateClinicalCatalogServiceDraft(
+      accessToken: string,
+      id: string,
+      body: UpdateClinicalCatalogServiceDraftRequest,
+    ) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}`,
+        { method: 'PATCH', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    publishClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/publish`,
+        { method: 'POST', accessToken },
+      );
+    },
+
+    deprecateClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/deprecate`,
+        { method: 'POST', accessToken },
+      );
+    },
+
+    inactivateClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/inactivate`,
+        { method: 'POST', accessToken },
+      );
     },
 
     listPlatformUsers(

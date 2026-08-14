@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Clock, CreditCard, FileText, LayoutDashboard, Package, Percent, Plus, Tags, Wallet } from 'lucide-react';
+import { BarChart3, Clock, CreditCard, FileText, LayoutDashboard, Package, Percent, Plus, Stethoscope, Tags, Wallet } from 'lucide-react';
 import { useI18n } from '@booking/i18n/react';
 import type { BillingWorkspaceMode } from '../config/billing-config';
 import styles from '../billing-layout.module.css';
@@ -22,6 +22,7 @@ const ITEMS: NavItem[] = [
   { id: 'pos', path: '/billing/pos', labelKey: 'billing.nav.pos', icon: CreditCard, modes: ['finance', 'reception', 'management'] },
   { id: 'cashbox', path: '/billing/cashbox', labelKey: 'billing.nav.cashbox', icon: Wallet, modes: ['finance', 'reception', 'management'] },
   { id: 'pricing', path: '/billing/pricing', labelKey: 'billing.nav.pricing', icon: Tags, modes: ['finance', 'management'] },
+  { id: 'clinical-pricing', path: '/billing/clinical-pricing', labelKey: 'billing.nav.clinicalPricing', icon: Stethoscope, modes: ['finance', 'management'] },
   { id: 'commissions', path: '/billing/commissions', labelKey: 'billing.nav.commissions', icon: Percent, modes: ['finance', 'management'] },
   { id: 'unbilled', path: '/billing/unbilled', labelKey: 'billing.nav.unbilled', icon: Package, modes: ALL_MODES },
   { id: 'reports', path: '/billing/reports', labelKey: 'billing.nav.reports', icon: BarChart3, modes: ['finance', 'management'] },

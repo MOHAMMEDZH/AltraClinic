@@ -487,6 +487,12 @@ model Tenant {
   invoiceWriteOffs     InvoiceWriteOff[]
   paymentPlans         PaymentPlan[]
   servicePrices        ServicePrice[]
+  clinicalServiceDefinitions CanonicalClinicalServiceDefinition[]
+  clinicalServiceConfigs     TenantServiceConfiguration[]
+  clinicalPriceVersions      ClinicalServicePriceVersion[]
+  clinicalServicePresentationOverrides TenantServicePresentationOverride[]
+  legacyClinicalServiceMappings LegacyClinicalServiceMapping[]
+  legacyClinicalPriceMappings   LegacyClinicalPriceMapping[]
   paymentReceipts      PaymentReceipt[]
   billingSequences     TenantBillingSequence[]
   commissionRules      CommissionRule[]
@@ -577,6 +583,8 @@ model Branch {
   region      Region?   @relation(fields: [regionId], references: [id], onDelete: SetNull)
   departments Department[]
   userBranchAccess UserBranchAccess[]
+  clinicalServiceConfigs TenantServiceConfiguration[]
+  clinicalPriceVersions  ClinicalServicePriceVersion[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -2701,10 +2709,249 @@ model ServicePrice {
   updatedAt     DateTime @updatedAt
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  legacyPriceMappings LegacyClinicalPriceMapping[]
 
   @@unique([tenantId, serviceCode])
   @@index([tenantId, isActive])
   @@map("service_prices")
+}
+
+/// Phase 48 Wave A — Clinical procedure / service Source of Record (NOT HealthcareCatalog).
+enum ClinicalServiceProvenance {
+  SYSTEM_CANONICAL
+  TENANT_CUSTOM
+}
+
+enum ClinicalServiceLifecycle {
+  DRAFT
+  PUBLISHED
+  DEPRECATED
+  INACTIVE
+}
+
+enum ClinicalServiceDomain {
+  GENERAL
+  DENTAL
+  AESTHETIC
+  DIAGNOSTIC
+  OTHER
+}
+
+/// Wave A extensible pricing-unit vocabulary (full P1-02 validation deferred).
+enum ClinicalPricingUnit {
+  PER_VISIT
+  PER_PROCEDURE
+  PER_TOOTH
+  PER_SESSION
+  PER_UNIT
+  OTHER
+}
+
+enum ClinicalPriceVersionStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+  INACTIVE
+}
+
+enum LegacyClinicalMappingStatus {
+  MAPPED
+  LEGACY_UNMAPPED
+  AMBIGUOUS
+}
+
+model CanonicalClinicalServiceDefinition {
+  id              String                     @id @default(uuid()) @db.Uuid
+  /// SYSTEM_CANONICAL: null. TENANT_CUSTOM: owning tenant.
+  tenantId        String?                    @db.Uuid
+  provenance      ClinicalServiceProvenance
+  /// canonical.<domain>.<key> | tenant.<tenantId>.custom.<key>
+  stableKey       String                     @db.VarChar(200)
+  domain          ClinicalServiceDomain      @default(GENERAL)
+  categoryKey     String?                    @db.VarChar(100)
+  lifecycle       ClinicalServiceLifecycle   @default(DRAFT)
+  defaultDurationMin Int?
+  publishedAt     DateTime?
+  publishedBy     String?                    @db.Uuid
+  deprecatedAt    DateTime?
+  deprecatedBy    String?                    @db.Uuid
+  inactivatedAt   DateTime?
+  inactivatedBy   String?                    @db.Uuid
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  tenant          Tenant?                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  translations    ClinicalServiceTranslation[]
+  aliases         ClinicalServiceAlias[]
+  tenantConfigs   TenantServiceConfiguration[]
+  priceVersions   ClinicalServicePriceVersion[]
+  presentationOverrides TenantServicePresentationOverride[]
+  legacyServiceMappings LegacyClinicalServiceMapping[]
+  legacyPriceMappings   LegacyClinicalPriceMapping[]
+
+  @@unique([stableKey])
+  @@index([provenance, lifecycle])
+  @@index([tenantId, lifecycle])
+  @@index([domain, lifecycle])
+  @@map("canonical_clinical_service_definitions")
+}
+
+model ClinicalServiceTranslation {
+  id              String   @id @default(uuid()) @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  displayName     String   @db.VarChar(255)
+  shortDescription String? @db.VarChar(500)
+  longDescription String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([clinicalServiceId, locale])
+  @@index([locale, displayName])
+  @@map("clinical_service_translations")
+}
+
+/// Search/marketing only — never identity-bearing.
+model ClinicalServiceAlias {
+  id              String   @id @default(uuid()) @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  aliasText       String   @db.VarChar(255)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([clinicalServiceId, locale])
+  @@index([locale, aliasText])
+  @@map("clinical_service_aliases")
+}
+
+/// Display-only tenant override — never changes stableKey / identity.
+model TenantServicePresentationOverride {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  displayNameOverride String? @db.VarChar(255)
+  shortDescriptionOverride String? @db.VarChar(500)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, locale])
+  @@index([tenantId, clinicalServiceId])
+  @@map("tenant_service_presentation_overrides")
+}
+
+model TenantServiceConfiguration {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  clinicalServiceId String @db.Uuid
+  /// null = tenant default; non-null = branch override
+  branchId        String?  @db.Uuid
+  enabled         Boolean  @default(true)
+  defaultDurationOverride Int?
+  /// Foundation-only JSON array of resource type keys (Wave B behavior not activated).
+  requiresResourceTypes Json @default("[]")
+  bookingVisibleOnPortal Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, branchId])
+  @@index([clinicalServiceId, enabled])
+  @@map("tenant_service_configurations")
+}
+
+model ClinicalServicePriceVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  /// null = tenant default; non-null = branch override
+  branchId        String?  @db.Uuid
+  clinicalServiceId String @db.Uuid
+  /// P1-02 variant foundation reserved — null in Wave A.
+  serviceVariantId String? @db.Uuid
+  pricingUnit     ClinicalPricingUnit @default(PER_VISIT)
+  currency        String   @db.VarChar(3)
+  unitPrice       Decimal  @db.Decimal(18, 4)
+  taxPercent      Decimal  @default(0) @db.Decimal(5, 2)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  status          ClinicalPriceVersionStatus @default(DRAFT)
+  publishedAt     DateTime?
+  publishedBy     String?  @db.Uuid
+  supersededAt    DateTime?
+  supersededByVersionId String? @db.Uuid
+  inactivatedAt   DateTime?
+  inactivatedBy   String?  @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, clinicalServiceId, status, effectiveFrom])
+  @@index([tenantId, branchId, clinicalServiceId, status])
+  @@index([clinicalServiceId, status])
+  @@map("clinical_service_price_versions")
+}
+
+model LegacyClinicalServiceMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String?  @db.Uuid
+  sourceSystem    String   @db.VarChar(64)
+  sourceCode      String   @db.VarChar(100)
+  sourceLabelEn   String?  @db.VarChar(255)
+  sourceLabelAr   String?  @db.VarChar(255)
+  status          LegacyClinicalMappingStatus
+  clinicalServiceId String? @db.Uuid
+  decisionNote    String?  @db.VarChar(500)
+  decidedBy       String?  @db.Uuid
+  decidedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([sourceSystem, sourceCode])
+  @@index([status])
+  @@index([clinicalServiceId])
+  @@map("legacy_clinical_service_mappings")
+}
+
+model LegacyClinicalPriceMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  servicePriceId  String   @db.Uuid
+  status          LegacyClinicalMappingStatus
+  clinicalServiceId String? @db.Uuid
+  priceVersionId  String?  @db.Uuid
+  decisionNote    String?  @db.VarChar(500)
+  decidedBy       String?  @db.Uuid
+  decidedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  servicePrice    ServicePrice @relation(fields: [servicePriceId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([servicePriceId])
+  @@index([tenantId, status])
+  @@index([clinicalServiceId])
+  @@map("legacy_clinical_price_mappings")
 }
 
 model PaymentReceipt {
