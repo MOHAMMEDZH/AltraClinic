@@ -12,8 +12,10 @@ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
 import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { ClinicalCatalogService } from '../application/clinical-catalog.service';
 import { ClinicalPriceVersionService } from '../application/clinical-price-version.service';
-import type {
+import {
   CreateClinicalPriceDraftDto,
+  ListClinicalPricesQueryDto,
+  LookupClinicalPriceQueryDto,
   PublishClinicalPriceDto,
 } from '../application/dto/clinical-catalog.dto';
 
@@ -29,13 +31,14 @@ export class ClinicalCatalogPricesController {
   @Header('Cache-Control', 'private, no-store')
   async listPrices(
     @CurrentUser() user: JwtClaimsVO,
-    @Query() query: { clinicalServiceId?: string; branchId?: string; status?: string },
+    @Query() query: ListClinicalPricesQueryDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
     return this.prices.listVersions(actor, {
       clinicalServiceId: query.clinicalServiceId,
+      scope: query.scope,
       branchId: query.branchId,
-      status: query.status as never,
+      status: query.status,
     });
   }
 
@@ -44,11 +47,20 @@ export class ClinicalCatalogPricesController {
   @Header('Cache-Control', 'private, no-store')
   async lookup(
     @CurrentUser() user: JwtClaimsVO,
-    @Query('clinicalServiceId') clinicalServiceId: string,
-    @Query('branchId') branchId?: string,
+    @Query() query: LookupClinicalPriceQueryDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
-    return this.prices.lookupActivePrice(actor, clinicalServiceId, branchId ?? null);
+    return this.prices.lookupActivePrice(
+      actor,
+      query.clinicalServiceId,
+      query.branchId ?? null,
+      {
+        pricingUnit: query.pricingUnit,
+        currency: query.currency,
+        serviceVariantId: query.serviceVariantId ?? null,
+        at: query.at ? new Date(query.at) : undefined,
+      },
+    );
   }
 
   @Post('drafts')
@@ -74,19 +86,23 @@ export class ClinicalCatalogPricesController {
     return this.prices.publish(actor, id, body.reason);
   }
 
-  @Post(':id/supersede')
-  @RequirePermission('api.billing', 'manage')
-  @Header('Cache-Control', 'private, no-store')
-  async supersede(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
-    const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
-    return this.prices.supersede(actor, id);
-  }
-
   @Post(':id/inactivate')
   @RequirePermission('api.billing', 'manage')
   @Header('Cache-Control', 'private, no-store')
   async inactivate(@CurrentUser() user: JwtClaimsVO, @Param('id') id: string) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
     return this.prices.inactivate(actor, id);
+  }
+
+  @Post(':id/replace-scheduled')
+  @RequirePermission('api.billing', 'manage')
+  @Header('Cache-Control', 'private, no-store')
+  async replaceScheduled(
+    @CurrentUser() user: JwtClaimsVO,
+    @Param('id') id: string,
+    @Body() body: { replacementDraftId: string },
+  ) {
+    const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+    return this.prices.replaceScheduled(actor, id, body.replacementDraftId);
   }
 }

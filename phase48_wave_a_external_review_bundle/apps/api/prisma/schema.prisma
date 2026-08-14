@@ -2749,7 +2749,10 @@ enum ClinicalPricingUnit {
 
 enum ClinicalPriceVersionStatus {
   DRAFT
+  /// Published and currently in the ACTIVE commercial schedule (non-overlapping ranges).
   ACTIVE
+  /// Published for a future effectiveFrom; not ACTIVE until its boundary (AR-04).
+  SCHEDULED
   SUPERSEDED
   INACTIVE
 }

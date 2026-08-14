@@ -45,8 +45,8 @@
 | GET | `/clinical-catalog/prices/lookup` | api.billing view (fail closed) |
 | POST | `/clinical-catalog/prices/drafts` | api.billing manage |
 | POST | `/clinical-catalog/prices/:id/publish` | manage |
-| POST | `/clinical-catalog/prices/:id/supersede` | manage |
 | POST | `/clinical-catalog/prices/:id/inactivate` | manage |
+| POST | `/clinical-catalog/prices/:id/replace-scheduled` | manage |
 
 ## Hard-delete
 

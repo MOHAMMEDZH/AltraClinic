@@ -11,6 +11,7 @@ import { ClinicalPriceVersionService } from './application/clinical-price-versio
 import { AuditTrailClinicalCatalogAuditLog } from './infrastructure/audit-trail-clinical-catalog-audit-log';
 import { CLINICAL_CATALOG_AUDIT_LOG } from './application/ports/clinical-catalog-audit-log.port';
 import { WaveABackfillService } from './migration/wave-a-backfill.service';
+import { ClinicalPriceScheduleActivator } from './infrastructure/clinical-price-schedule.activator';
 
 @Module({
   imports: [forwardRef(() => AuthModule), AuditModule],
@@ -24,6 +25,7 @@ import { WaveABackfillService } from './migration/wave-a-backfill.service';
     ClinicalCatalogService,
     TenantServiceConfigService,
     ClinicalPriceVersionService,
+    ClinicalPriceScheduleActivator,
     WaveABackfillService,
     {
       provide: CLINICAL_CATALOG_AUDIT_LOG,

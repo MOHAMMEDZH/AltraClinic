@@ -9,8 +9,10 @@ import {
   publishClinicalPriceVersion,
   publishClinicalService,
   upsertTenantServiceConfig,
+  type ClinicalCatalogListScope,
   type CreateClinicalPriceDraftInput,
   type CreateTenantClinicalServiceInput,
+  type UpsertTenantServiceConfigInput,
 } from '../api/clinical-catalog-api';
 
 function authKeys(user: { tenantId?: string } | null) {
@@ -31,15 +33,23 @@ export function useClinicalServices(enabled = true) {
   });
 }
 
-export function useTenantServiceConfigs(enabled = true) {
+export function useTenantServiceConfigs(
+  enabled = true,
+  query: { scope: ClinicalCatalogListScope; branchId?: string | null } = { scope: 'all' },
+) {
   const { getValidAccessToken, user } = useAuth();
+  const branchKey =
+    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
   return useQuery({
-    queryKey: ['clinical-catalog', 'configs', ...authKeys(user)],
-    enabled: enabled && Boolean(user?.tenantId),
+    queryKey: ['clinical-catalog', 'configs', query.scope, branchKey, ...authKeys(user)],
+    enabled: enabled && Boolean(user?.tenantId) && (query.scope !== 'branch' || Boolean(query.branchId)),
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fetchTenantServiceConfigs(token, user.tenantId);
+      return fetchTenantServiceConfigs(token, user.tenantId, {
+        scope: query.scope,
+        branchId: query.branchId,
+      });
     },
     staleTime: 30_000,
   });
@@ -77,7 +87,7 @@ export function useUpsertTenantServiceConfig() {
   const { getValidAccessToken, user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { clinicalServiceId: string; enabled: boolean }) => {
+    mutationFn: async (body: UpsertTenantServiceConfigInput) => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return upsertTenantServiceConfig(token, user.tenantId, body);
@@ -87,16 +97,37 @@ export function useUpsertTenantServiceConfig() {
   });
 }
 
-export function useClinicalPriceVersions(enabled = true, clinicalServiceId?: string) {
+export function useClinicalPriceVersions(
+  enabled = true,
+  query: {
+    clinicalServiceId?: string;
+    scope: ClinicalCatalogListScope;
+    branchId?: string | null;
+  } = { scope: 'tenant' },
+) {
   const { getValidAccessToken, user } = useAuth();
+  const branchKey =
+    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
   return useQuery({
-    queryKey: ['clinical-catalog', 'prices', clinicalServiceId ?? 'all', ...authKeys(user)],
-    enabled: enabled && Boolean(user?.tenantId),
+    queryKey: [
+      'clinical-catalog',
+      'prices',
+      query.scope,
+      branchKey,
+      query.clinicalServiceId ?? 'all-services',
+      ...authKeys(user),
+    ],
+    enabled:
+      enabled &&
+      Boolean(user?.tenantId) &&
+      (query.scope !== 'branch' || Boolean(query.branchId)),
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return fetchClinicalPriceVersions(token, user.tenantId, {
-        clinicalServiceId,
+        clinicalServiceId: query.clinicalServiceId,
+        scope: query.scope,
+        branchId: query.branchId,
       });
     },
     staleTime: 30_000,

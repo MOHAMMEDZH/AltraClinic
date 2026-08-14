@@ -3,9 +3,10 @@
 | Field | Value |
 |-------|--------|
 | **SSOT** | `docs/PHASE_48_ARCHITECTURE_FREEZE.md` |
-| **Status** | Architecture Freeze **ACCEPTED AND COMPLETE**; Implementation **AUTHORIZED**; **Wave A = CURRENT AUTHORIZED IMPLEMENTATION WAVE** |
-| **Waves B–I** | **NOT YET AUTHORIZED** |
+| Status | Architecture Freeze **ACCEPTED AND COMPLETE**; Implementation **AUTHORIZED**; **Wave A Production Acceptance = ACCEPTED**; **Wave B = AUTHORIZED CURRENT IMPLEMENTATION WAVE**; **Wave C–I = NOT YET AUTHORIZED** |
+| **Waves C–I** | **NOT YET AUTHORIZED** |
 | **Phase 49** | **NOT AUTHORIZED** |
+| **Step 30** | **NOT AUTHORIZED** |
 | **Evidence** | `docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md` |
 
 ---
@@ -46,6 +47,14 @@ Implementation may not reorder in a way that violates dependencies.
 P1-01 implementation wave = A
 P1-01 deferred = NO
 P1-01 moved to P2 = NO
+
+PA-04 Freeze Amendment = ACCEPTED AND FROZEN (Option B)
+PA-04 implementation = AUTHORIZED NEXT
+PA-04 implementation performed = NO
+PA-04 acceptance tests required = T1–T44
+  (docs/PHASE_48_WAVE_A_PA04_POST_AMENDMENT_ACCEPTANCE_TEST_PLAN.md)
+PA-04 tests executed = NO
+PA-04 Production Acceptance = NO (still open after implementation + evidence)
 ```
 
 ### Wave B — Booking Integrity

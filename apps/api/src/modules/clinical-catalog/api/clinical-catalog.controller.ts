@@ -12,8 +12,9 @@ import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
 import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { ClinicalCatalogService } from '../application/clinical-catalog.service';
-import type {
+import {
   CreateClinicalServiceDraftDto,
+  ListClinicalServicesQueryDto,
   UpdateClinicalServiceDraftDto,
 } from '../application/dto/clinical-catalog.dto';
 
@@ -26,7 +27,7 @@ export class ClinicalCatalogController {
   @Header('Cache-Control', 'private, no-store')
   async listServices(
     @CurrentUser() user: JwtClaimsVO,
-    @Query() query: { lifecycle?: string; provenance?: string; search?: string },
+    @Query() query: ListClinicalServicesQueryDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
     return this.catalog.listServices(actor, query);

@@ -5,7 +5,6 @@ import {
   Header,
   Param,
   Patch,
-  Post,
   Put,
   Query,
 } from '@nestjs/common';
@@ -14,7 +13,12 @@ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
 import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { ClinicalCatalogService } from '../application/clinical-catalog.service';
 import { TenantServiceConfigService } from '../application/tenant-service-config.service';
-import type { UpsertTenantServiceConfigDto } from '../application/dto/clinical-catalog.dto';
+import {
+  EffectiveTenantServiceConfigQueryDto,
+  ListTenantServiceConfigsQueryDto,
+  SetTenantServiceConfigEnabledDto,
+  UpsertTenantServiceConfigDto,
+} from '../application/dto/clinical-catalog.dto';
 
 @Controller('clinical-catalog/configs')
 export class ClinicalCatalogConfigsController {
@@ -28,7 +32,7 @@ export class ClinicalCatalogConfigsController {
   @Header('Cache-Control', 'private, no-store')
   async listConfigs(
     @CurrentUser() user: JwtClaimsVO,
-    @Query() query: { clinicalServiceId?: string; branchId?: string },
+    @Query() query: ListTenantServiceConfigsQueryDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
     return this.configs.listConfigs(actor, query);
@@ -39,11 +43,14 @@ export class ClinicalCatalogConfigsController {
   @Header('Cache-Control', 'private, no-store')
   async effectiveConfig(
     @CurrentUser() user: JwtClaimsVO,
-    @Query('clinicalServiceId') clinicalServiceId: string,
-    @Query('branchId') branchId?: string,
+    @Query() query: EffectiveTenantServiceConfigQueryDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
-    return this.configs.getEffectiveConfig(actor, clinicalServiceId, branchId ?? null);
+    return this.configs.getEffectiveConfig(
+      actor,
+      query.clinicalServiceId,
+      query.branchId ?? null,
+    );
   }
 
   @Put()
@@ -63,7 +70,7 @@ export class ClinicalCatalogConfigsController {
   async setEnabled(
     @CurrentUser() user: JwtClaimsVO,
     @Param('id') id: string,
-    @Body() body: { enabled: boolean },
+    @Body() body: SetTenantServiceConfigEnabledDto,
   ) {
     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
     return this.configs.setEnabled(actor, id, body.enabled);

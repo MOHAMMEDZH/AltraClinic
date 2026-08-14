@@ -52,7 +52,11 @@ export class ClinicalCatalogService {
 
   async listServices(
     actor: ClinicalCatalogActorContext,
-    query: { lifecycle?: string; provenance?: string; search?: string } = {},
+    query: {
+      lifecycle?: ClinicalServiceLifecycle;
+      provenance?: ClinicalServiceProvenance;
+      search?: string;
+    } = {},
   ) {
     const where = this.buildListWhere(actor, query);
     return this.prisma.withPlatformBypass(async (client) =>
@@ -306,15 +310,19 @@ export class ClinicalCatalogService {
 
   private buildListWhere(
     actor: ClinicalCatalogActorContext,
-    query: { lifecycle?: string; provenance?: string; search?: string },
+    query: {
+      lifecycle?: ClinicalServiceLifecycle;
+      provenance?: ClinicalServiceProvenance;
+      search?: string;
+    },
   ): Prisma.CanonicalClinicalServiceDefinitionWhereInput {
     const where: Prisma.CanonicalClinicalServiceDefinitionWhereInput = {};
 
     if (query.lifecycle) {
-      where.lifecycle = query.lifecycle as ClinicalServiceLifecycle;
+      where.lifecycle = query.lifecycle;
     }
     if (query.provenance) {
-      where.provenance = query.provenance as ClinicalServiceProvenance;
+      where.provenance = query.provenance;
     }
     if (query.search?.trim()) {
       where.OR = [

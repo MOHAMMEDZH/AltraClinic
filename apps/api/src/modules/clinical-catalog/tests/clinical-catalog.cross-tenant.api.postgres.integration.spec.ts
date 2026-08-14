@@ -14,6 +14,7 @@ import {
   INestApplication,
   Injectable,
   UnauthorizedException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
@@ -159,6 +160,30 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
         })
       ).id;
 
+      await client.tenantServiceConfiguration.create({
+        data: {
+          tenantId: tenantA,
+          clinicalServiceId: canonicalId,
+          branchId: null,
+          enabled: true,
+        },
+      });
+
+      await client.clinicalServicePriceVersion.create({
+        data: {
+          tenantId: tenantA,
+          branchId: null,
+          clinicalServiceId: canonicalId,
+          pricingUnit: 'PER_VISIT',
+          currency: 'SYP',
+          unitPrice: 40,
+          taxPercent: 0,
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          status: 'ACTIVE',
+          publishedAt: new Date(),
+        },
+      });
+
       priceBId = (
         await client.clinicalServicePriceVersion.create({
           data: {
@@ -238,6 +263,13 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
 
     // Bridge: TestClinicAuthGuard sets user; wrap PermissionGuard path and tenant context.
     app = moduleRef.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: false,
+      }),
+    );
     app.use((
       req: { headers: Record<string, string>; user?: JwtClaimsVO },
       _res: unknown,
@@ -360,13 +392,75 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
   });
 
   it('Tenant A config list does not include Tenant B configs', async () => {
-    const res = await http('GET', '/clinical-catalog/configs', {
+    const res = await http('GET', '/clinical-catalog/configs?scope=all', {
       principal: principal({ sub: actorA, tenantId: tenantA }),
     });
     expect(res.status).toBe(200);
     const rows = res.json as Array<{ id: string; tenantId: string }>;
     expect(rows.every((r) => r.tenantId === tenantA)).toBe(true);
     expect(rows.some((r) => r.id === configBId)).toBe(false);
+  });
+
+  it('PA-05 — tenant-default price history excludes branch rows', async () => {
+    const wrapper = createClinicalPrismaWrapper(prisma);
+    await wrapper.withPlatformBypass(async (client) => {
+      await client.clinicalServicePriceVersion.create({
+        data: {
+          tenantId: tenantA,
+          branchId: branchA,
+          clinicalServiceId: canonicalId,
+          pricingUnit: 'PER_PROCEDURE',
+          currency: 'SYP',
+          unitPrice: 77,
+          taxPercent: 0,
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          status: 'ACTIVE',
+          publishedAt: new Date(),
+        },
+      });
+    });
+    const res = await http(
+      'GET',
+      `/clinical-catalog/prices?scope=tenant&clinicalServiceId=${canonicalId}`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect(res.status).toBe(200);
+    const rows = res.json as Array<{ branchId: string | null; unitPrice: string }>;
+    expect(rows.every((r) => r.branchId === null)).toBe(true);
+    expect(rows.some((r) => Number(r.unitPrice) === 77)).toBe(false);
+  });
+
+  it('PA-05 — branch history contains only selected branch', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/prices?scope=branch&branchId=${branchA}&clinicalServiceId=${canonicalId}`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect(res.status).toBe(200);
+    const rows = res.json as Array<{ branchId: string | null }>;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.branchId === branchA)).toBe(true);
+  });
+
+  it('PA-05 — omitted scope rejected', async () => {
+    const res = await http('GET', '/clinical-catalog/prices', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+    });
+    expect([400, 422]).toContain(res.status);
+  });
+
+  it('PA-08 — invalid lifecycle query rejected', async () => {
+    const res = await http('GET', '/clinical-catalog/services?lifecycle=NOT_A_LIFECYCLE', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+    });
+    expect([400, 422]).toContain(res.status);
+  });
+
+  it('PA-08 — invalid provenance query rejected', async () => {
+    const res = await http('GET', '/clinical-catalog/services?provenance=FAKE', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+    });
+    expect([400, 422]).toContain(res.status);
   });
 
   it('Tenant A cannot enable Tenant B config by id', async () => {
@@ -394,7 +488,7 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
   });
 
   it('Tenant A cannot read Tenant B price history', async () => {
-    const res = await http('GET', `/clinical-catalog/prices?clinicalServiceId=${customBId}`, {
+    const res = await http('GET', `/clinical-catalog/prices?scope=all&clinicalServiceId=${customBId}`, {
       principal: principal({ sub: actorA, tenantId: tenantA }),
     });
     expect(res.status).toBe(200);
@@ -465,5 +559,95 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
       principal: principal({ sub: actorB, tenantId: tenantB }),
     });
     expect(res.status).toBe(200);
+  });
+
+  it('PA-06 — foreign branch effective config lookup denied', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/configs/effective?clinicalServiceId=${canonicalId}&branchId=${branchB}`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect([403, 404, 422]).toContain(res.status);
+  });
+
+  it('PA-06 — foreign branch effective price lookup denied', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}&branchId=${branchB}&pricingUnit=PER_VISIT&currency=SYP`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect([403, 404, 422]).toContain(res.status);
+  });
+
+  it('PA-06 — own branch without override falls back to tenant default config', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/configs/effective?clinicalServiceId=${canonicalId}&branchId=${branchA}`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect(res.status).toBe(200);
+    const body = res.json as { scope: string; config: { branchId: string | null } };
+    expect(body.scope).toBe('tenant');
+    expect(body.config.branchId).toBeNull();
+  });
+
+  it('PA-06 — own branch without price override falls back to tenant default price', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}&branchId=${branchA}&pricingUnit=PER_VISIT&currency=SYP`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect(res.status).toBe(200);
+    const body = res.json as { scope: string; price: { branchId: string | null } };
+    expect(body.scope).toBe('tenant');
+    expect(body.price.branchId).toBeNull();
+  });
+
+  it('PA-08 — negative unitPrice draft rejected', async () => {
+    const res = await http('POST', '/clinical-catalog/prices/drafts', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+      body: {
+        clinicalServiceId: canonicalId,
+        currency: 'SYP',
+        unitPrice: -5,
+        effectiveFrom: new Date('2026-11-01T00:00:00.000Z').toISOString(),
+        pricingUnit: 'PER_VISIT',
+      },
+    });
+    expect([400, 422]).toContain(res.status);
+  });
+
+  it('PA-08 — invalid currency / pricingUnit rejected', async () => {
+    const badCurrency = await http('POST', '/clinical-catalog/prices/drafts', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+      body: {
+        clinicalServiceId: canonicalId,
+        currency: 'SY',
+        unitPrice: 1,
+        effectiveFrom: new Date('2026-11-02T00:00:00.000Z').toISOString(),
+      },
+    });
+    expect([400, 422]).toContain(badCurrency.status);
+
+    const badUnit = await http('POST', '/clinical-catalog/prices/drafts', {
+      principal: principal({ sub: actorA, tenantId: tenantA }),
+      body: {
+        clinicalServiceId: canonicalId,
+        currency: 'SYP',
+        unitPrice: 1,
+        pricingUnit: 'PER_HOUR',
+        effectiveFrom: new Date('2026-11-03T00:00:00.000Z').toISOString(),
+      },
+    });
+    expect([400, 422]).toContain(badUnit.status);
+  });
+
+  it('PA-07 — lookup without commercial dimensions rejected', async () => {
+    const res = await http(
+      'GET',
+      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}`,
+      { principal: principal({ sub: actorA, tenantId: tenantA }) },
+    );
+    expect([400, 422]).toContain(res.status);
   });
 });

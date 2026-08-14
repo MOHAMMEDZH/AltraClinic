@@ -16,8 +16,10 @@
 
 - `docs/PHASE_48_FROZEN_DOMAIN_CONTRACT_MATRIX.md`
 - `docs/PHASE_48_FROZEN_IMPLEMENTATION_AND_QA_PLAN.md`
+- `docs/PHASE_48_ARCHITECTURE_FREEZE_AMENDMENT_PA04_PROPOSAL.md` (**ACCEPTED AND FROZEN** — PA-04 PriceVersion Scheduling / Option B)
 
-**Accepted inputs:** Discovery, Architecture Review, Inventory/Commission Addendum (INV-B01/B02 closed).
+**Accepted inputs:** Discovery, Architecture Review, Inventory/Commission Addendum (INV-B01/B02 closed),
+**PA-04 Freeze Amendment (Option B) externally accepted**.
 
 ---
 
@@ -74,7 +76,13 @@ No silent architecture drift.
 
 | Allowed without freeze amendment | Requires freeze amendment |
 |----------------------------------|---------------------------|
-| Implementation detail, naming, indexes, SQL, files, API/UI names, perf preserving invariants | Competing SoR; canonical ownership change; tenant duplicates of standard services; snapshot lock boundary; fail-closed eligibility; concurrency model; anonymous stock usage; second inventory usage ledger; commission historical semantics; refund/reversal model; destructive migration; moving P0/P1 out of Phase 48; removing mandatory QA pack |
+| Implementation detail, naming, indexes, SQL, files, API/UI names, perf preserving invariants | Competing SoR; canonical ownership change; tenant duplicates of standard services; snapshot lock boundary; fail-closed eligibility; concurrency model; anonymous stock usage; second inventory usage ledger; commission historical semantics; refund/reversal model; destructive migration; moving P0/P1 out of Phase 48; removing mandatory QA pack; **any change to accepted PA-04 PriceVersion lifecycle / commercial interval / terminal classification / due activation / historical derivation / commercial key / pricing concurrency / interval validation** |
+
+### Accepted freeze amendments
+
+| Amendment | Decision | Status | Implementation |
+|-----------|----------|--------|----------------|
+| PA-04 PriceVersion Scheduling (Option B) | First-class `SCHEDULED`; due-activation gate; 0..1 ACTIVE; historical commercialEnd; FC terminal/interval rules | **ACCEPTED AND FROZEN** | **AUTHORIZED NEXT** (Wave A PA-04); Production Acceptance still open |
 
 ---
 
@@ -85,7 +93,7 @@ No silent architecture drift.
 | AR-01 | Shared CanonicalClinicalServiceDefinition + TENANT_CUSTOM | CanonicalClinicalServiceDefinition | platform shared + tenant custom | platform catalog / tenant catalog | stableKey immutable after publish | Clinic A==Clinic B for SYSTEM_CANONICAL | map known→canonical; no clones | Catalog | A | **FROZEN** |
 | AR-02 | One identity + AR/EN translations/aliases + display-only override | ClinicalServiceTranslation/Alias | follows definition | catalog admin | snapshots freeze display | no language-row duplicates | — | Catalog / RTL | A/H | **FROZEN** |
 | AR-03 | Tenant/branch config only | TenantServiceConfiguration | tenant/branch | catalog/branch admin | soft | enable without copying definition | config separate from definition | Catalog | A | **FROZEN** |
-| AR-04 | Append-only PriceVersion | PriceVersion | tenant/branch | billing.price.admin | never overwrite published | A≠B price on same canonical | map ServicePrice→versions | Pricing/Snapshot | A | **FROZEN** |
+| AR-04 | Append-only PriceVersion + SCHEDULED future publish (PA-04 Option B) | PriceVersion | tenant/branch | billing.price.admin | never overwrite published; commercialEnd deterministic | A≠B price on same canonical; commercial key full dims | map ServicePrice→versions | Pricing/Snapshot | A | **AMENDED AND FROZEN** |
 | AR-05 | Append-only snapshot revisions; lock=CONFIRMED | AppointmentServiceSnapshotRevision | appointment | system | no in-place identity/price mutate | global lock not tenant-configurable | synthetic/LEGACY snapshots | Pricing/Snapshot | B | **FROZEN** |
 | AR-06 | Advisory locks + sorted keys + overlap re-check | Appointment + SchedulingResource | tenant | scheduling | soft-delete aware | EXCLUDE optional depth only | — | Concurrency | B | **FROZEN** |
 | AR-07 | Fail-closed eligibility when ON | ProviderServiceEligibility | tenant/branch | staffing.admin | effective dates | zero rows=DENY | flag OFF legacy only | Eligibility | B | **FROZEN** |
@@ -168,7 +176,7 @@ P1 freeze blockers = 0
 |------|-----------------|
 | Canonical Service | CanonicalClinicalServiceDefinition SYSTEM_CANONICAL + TENANT_CUSTOM; HealthcareCatalog ≠ clinical catalog |
 | Tenant Service Config | TenantServiceConfiguration enable/duration/resources/portal; no definition clone for price |
-| Price | Append-only PriceVersion tenant/branch |
+| Price | Append-only PriceVersion tenant/branch; statuses DRAFT\|SCHEDULED\|ACTIVE\|SUPERSEDED\|INACTIVE; due SCHEDULED reconcile before live success; 0..1 ACTIVE; interval-valid live return; same-key advisory lock (PA-04 Option B **ACCEPTED AND FROZEN**) |
 | Appointment Snapshot | Append-only revisions; lock=CONFIRMED; invoice uses effective revision |
 | Concurrency | Advisory locks + sorted keys + overlap re-check; EXCLUDE optional depth |
 | Provider Eligibility | Fail-closed when ON; zero rows=DENY |

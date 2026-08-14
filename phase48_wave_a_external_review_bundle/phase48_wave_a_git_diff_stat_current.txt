@@ -1,0 +1,27 @@
+ apps/api/prisma/schema.prisma                      |   3 +
+ .../scripts/validate-phase48-wave-a-upgrade.mjs    |  30 ++-
+ .../api/clinical-catalog-configs.controller.ts     |  21 +-
+ .../api/clinical-catalog-prices.controller.ts      |  24 +-
+ .../api/clinical-catalog.controller.ts             |   5 +-
+ .../api/platform-clinical-catalog.controller.ts    |   5 +-
+ .../application/clinical-catalog.service.ts        |  16 +-
+ .../application/clinical-price-version.service.ts  | 230 +++++++++++++++----
+ .../application/dto/clinical-catalog.dto.ts        | 248 +++++++++++++++++++--
+ .../application/tenant-service-config.service.ts   |  41 +++-
+ ...g.cross-tenant.api.postgres.integration.spec.ts | 188 +++++++++++++++-
+ ...-price.concurrency.postgres.integration.spec.ts | 193 +++++++++++++++-
+ .../tests/clinical-price.unit.spec.ts              | 230 +++++++++++++++++--
+ .../clinical-catalog/ClinicalPricingPage.tsx       | 105 ++++++++-
+ .../clinical-catalog/ClinicalServicesPage.tsx      |  94 ++++++--
+ .../clinical-catalog/api/clinical-catalog-api.ts   | 133 +++++++++--
+ .../clinical-catalog/clinical-catalog.spec.tsx     | 157 +++++++++++--
+ .../clinical-catalog/hooks/useClinicalCatalog.ts   |  49 +++-
+ apps/clinic-dashboard/src/i18n/billing-messages.ts |  20 ++
+ .../src/i18n/clinical-catalog-messages.ts          |  14 ++
+ ...ASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md |  48 +---
+ ...VE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md |  56 +++--
+ ...HASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md |  58 ++---
+ docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md       |  40 ++--
+ docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md      |  25 ++-
+ ...SE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md |  70 ++----
+ 26 files changed, 1752 insertions(+), 351 deletions(-)

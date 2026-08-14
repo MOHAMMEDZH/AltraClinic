@@ -29,6 +29,13 @@ export const clinicalCatalogMessagesEn = {
   enable: 'Enable',
   disable: 'Disable',
   notConfigured: 'Not configured',
+  scope: {
+    label: 'Configuration scope',
+    tenantDefault: 'Tenant default',
+    current: 'Current scope',
+    inherited: 'Inherited from tenant default',
+    override: 'Branch override',
+  },
 };
 
 export const clinicalCatalogMessagesAr = {
@@ -62,4 +69,11 @@ export const clinicalCatalogMessagesAr = {
   enable: 'تفعيل',
   disable: 'تعطيل',
   notConfigured: 'غير مهيأ',
+  scope: {
+    label: 'نطاق الإعداد',
+    tenantDefault: 'الافتراضي للمستأجر',
+    current: 'النطاق الحالي',
+    inherited: 'موروث من الافتراضي للمستأجر',
+    override: 'تجاوز للفرع',
+  },
 };

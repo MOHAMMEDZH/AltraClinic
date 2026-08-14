@@ -1,8 +1,12 @@
 /**
- * Wave A clinical price — precedence, fail-closed, append-only semantics (mocked prisma).
+ * PA-04 frozen Option B — unit coverage for formulas, validation helpers, and lookup gate basics.
  */
 import { ClinicalPriceVersionService } from '../application/clinical-price-version.service';
-import { ClinicalPriceLookupFailClosedError, ClinicalCatalogValidationError } from '../domain/clinical-catalog.errors';
+import {
+  ClinicalPriceLookupFailClosedError,
+  ClinicalCatalogValidationError,
+  ClinicalCatalogConflictError,
+} from '../domain/clinical-catalog.errors';
 import { FakeClinicalCatalogAuditLog } from './support/fake-clinical-catalog-audit-log';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
@@ -17,127 +21,212 @@ const actor = {
   isPlatform: false,
 };
 
+const DEFAULT_DIMS = {
+  pricingUnit: 'PER_VISIT' as const,
+  currency: 'SYP',
+  serviceVariantId: null as string | null,
+};
+
 function buildPriceService(clientImpl: Record<string, unknown>) {
   const audit = new FakeClinicalCatalogAuditLog();
   const prisma = {
     withPlatformBypass: jest.fn(async (fn: (c: unknown) => Promise<unknown>) => fn(clientImpl)),
   };
-  return new ClinicalPriceVersionService(prisma as never, audit as never);
+  return { service: new ClinicalPriceVersionService(prisma as never, audit as never), audit };
 }
 
-describe('ClinicalPriceVersionService overlap + lock key', () => {
-  const service = buildPriceService({});
+function activeRow(partial: Record<string, unknown>) {
+  return {
+    id: 'p1',
+    tenantId: TENANT,
+    branchId: null,
+    clinicalServiceId: SERVICE,
+    pricingUnit: 'PER_VISIT',
+    currency: 'SYP',
+    serviceVariantId: null,
+    unitPrice: 10,
+    taxPercent: 0,
+    status: 'ACTIVE',
+    effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+    effectiveTo: null,
+    publishedAt: new Date('2026-01-01T00:00:00.000Z'),
+    publishedBy: ACTOR,
+    supersededAt: null,
+    supersededByVersionId: null,
+    inactivatedAt: null,
+    inactivatedBy: null,
+    ...partial,
+  };
+}
 
-  it('detects overlapping effective ranges', () => {
-    const from = new Date('2026-01-01T00:00:00.000Z');
-    const mid = new Date('2026-06-01T00:00:00.000Z');
-    const to = new Date('2026-12-31T00:00:00.000Z');
+describe('PA-04 helpers — commercialEnd / never-effective / interval', () => {
+  const { service } = buildPriceService({});
 
-    expect(service.rangesOverlap(from, to, mid, null)).toBe(true);
-    expect(service.rangesOverlap(from, mid, to, null)).toBe(false);
+  it('T37/T38 — commercialEnd uses earliest of explicitTo, next From, inactivatedAt', () => {
+    const v1 = {
+      id: 'v1',
+      effectiveFrom: new Date('2026-01-01'),
+      effectiveTo: null as Date | null,
+      inactivatedAt: null as Date | null,
+      status: 'SUPERSEDED' as const,
+    };
+    const v2 = {
+      id: 'v2',
+      effectiveFrom: new Date('2026-06-01'),
+      effectiveTo: null,
+      inactivatedAt: null,
+      status: 'ACTIVE' as const,
+    };
+    expect(service.commercialEnd(v1, [v1, v2])?.toISOString()).toBe(
+      new Date('2026-06-01').toISOString(),
+    );
+
+    const withdrawn = {
+      ...v1,
+      status: 'INACTIVE' as const,
+      inactivatedAt: new Date('2026-03-01'),
+    };
+    expect(service.commercialEnd(withdrawn, [withdrawn])?.toISOString()).toBe(
+      new Date('2026-03-01').toISOString(),
+    );
   });
 
-  it('builds deterministic commercial lock key', () => {
-    const key = service.commercialLockKey({
-      tenantId: TENANT,
-      branchId: null,
-      clinicalServiceId: SERVICE,
-      pricingUnit: 'PER_VISIT',
-      currency: 'syp',
-      serviceVariantId: null,
+  it('T21 — canceled-never-effective when inactivatedAt < effectiveFrom', () => {
+    expect(
+      service.isNeverEffective({
+        effectiveFrom: new Date('2026-06-01'),
+        inactivatedAt: new Date('2026-05-01'),
+      }),
+    ).toBe(true);
+    expect(
+      service.isNeverEffective({
+        effectiveFrom: new Date('2026-01-01'),
+        inactivatedAt: new Date('2026-05-01'),
+      }),
+    ).toBe(false);
+  });
+
+  it('T34 — ACTIVE outside explicit effectiveTo is not interval-valid', () => {
+    const row = activeRow({
+      effectiveTo: new Date('2026-05-01T00:00:00.000Z'),
     });
-    expect(key).toBe(
-      `clinical-price|${TENANT}|default|${SERVICE}|PER_VISIT|SYP|`,
-    );
+    expect(service.isIntervalValidAt(row as never, new Date('2026-06-01'))).toBe(false);
+    expect(service.isIntervalValidAt(row as never, new Date('2026-04-01'))).toBe(true);
   });
 });
 
-describe('ClinicalPriceVersionService lookup precedence', () => {
-  it('returns branch ACTIVE before tenant default', async () => {
-    const branchPrice = {
-      id: 'price-branch',
-      tenantId: TENANT,
-      branchId: BRANCH,
-      clinicalServiceId: SERVICE,
-      status: 'ACTIVE',
-      effectiveFrom: new Date('2026-01-01'),
-      effectiveTo: null,
-    };
+describe('PA-04 lookup — ACTIVE-only after reconcile gate', () => {
+  it('T1 — returns single interval-valid ACTIVE', async () => {
+    const match = activeRow({ id: 'price-match' });
+    const findMany = jest
+      .fn()
+      // loadPublishedScheduleMembers during reconcile
+      .mockResolvedValueOnce([match])
+      // loadActiveRows after reconcile
+      .mockResolvedValueOnce([match])
+      // loadActiveRows again inside resolve path — actually flow:
+      // resolve: lock, reconcile (loadPublished once at start of expire loop, then members, due), loadActive
+      .mockResolvedValue([match]);
 
     const client = {
+      $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
       clinicalServicePriceVersion: {
-        findMany: jest
-          .fn()
-          .mockResolvedValueOnce([branchPrice])
-          .mockResolvedValueOnce([]),
+        findMany,
+        findUniqueOrThrow: jest.fn(),
+        update: jest.fn(),
       },
     };
 
-    const service = buildPriceService(client);
-    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH);
-    expect(result.scope).toBe('branch');
-    expect(result.price.id).toBe('price-branch');
-  });
-
-  it('falls back to tenant default when branch missing', async () => {
-    const tenantPrice = {
-      id: 'price-tenant',
-      tenantId: TENANT,
-      branchId: null,
-      clinicalServiceId: SERVICE,
-      status: 'ACTIVE',
-      effectiveFrom: new Date('2026-01-01'),
-      effectiveTo: null,
-    };
-
-    const client = {
-      clinicalServicePriceVersion: {
-        findMany: jest
-          .fn()
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([tenantPrice]),
-      },
-    };
-
-    const service = buildPriceService(client);
-    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH);
+    const { service } = buildPriceService(client);
+    const result = await service.lookupActivePrice(actor, SERVICE, null, DEFAULT_DIMS);
+    expect(result.price.id).toBe('price-match');
     expect(result.scope).toBe('tenant');
-    expect(result.price.id).toBe('price-tenant');
   });
 
-  it('fail-closed when no ACTIVE price exists', async () => {
+  it('T27 — zero ACTIVE fails closed', async () => {
     const client = {
+      $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
       clinicalServicePriceVersion: {
         findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
       },
     };
-    const service = buildPriceService(client);
-    await expect(service.lookupActivePrice(actor, SERVICE, BRANCH)).rejects.toBeInstanceOf(
-      ClinicalPriceLookupFailClosedError,
-    );
+    const { service } = buildPriceService(client);
+    await expect(
+      service.lookupActivePrice(actor, SERVICE, null, DEFAULT_DIMS),
+    ).rejects.toBeInstanceOf(ClinicalPriceLookupFailClosedError);
+  });
+
+  it('T28 — multiple ACTIVE fails closed', async () => {
+    const a = activeRow({ id: 'a' });
+    const b = activeRow({ id: 'b', effectiveFrom: new Date('2026-02-01') });
+    const client = {
+      $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+      clinicalServicePriceVersion: {
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce([a, b]) // reconcile published
+          .mockResolvedValueOnce([a, b]) // after expire refresh
+          .mockResolvedValueOnce([a, b]), // loadActiveRows
+        update: jest.fn(),
+      },
+    };
+    const { service } = buildPriceService(client);
+    await expect(
+      service.lookupActivePrice(actor, SERVICE, null, DEFAULT_DIMS),
+    ).rejects.toBeInstanceOf(ClinicalCatalogConflictError);
+  });
+
+  it('rejects invalid commercial dims', async () => {
+    const { service } = buildPriceService({});
+    await expect(
+      service.lookupActivePrice(actor, SERVICE, null, {
+        pricingUnit: 'NOPE' as never,
+        currency: 'SYP',
+      }),
+    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+  });
+
+  it('PA-06 foreign branch fail-closed before lookup', async () => {
+    const client = {
+      branch: { findFirst: jest.fn().mockResolvedValue(null) },
+      $executeRawUnsafe: jest.fn(),
+      clinicalServicePriceVersion: { findMany: jest.fn() },
+    };
+    const { service } = buildPriceService(client);
+    await expect(
+      service.lookupActivePrice(actor, SERVICE, BRANCH, DEFAULT_DIMS),
+    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+  });
+
+  it('PA04-AT-04 — future at rejected', async () => {
+    const { service } = buildPriceService({});
+    await expect(
+      service.lookupActivePrice(actor, SERVICE, null, {
+        ...DEFAULT_DIMS,
+        at: new Date(Date.now() + 86400000),
+      }),
+    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+  });
+
+  it('PA04-IMP-02 — manual supersede method removed', () => {
+    const { service } = buildPriceService({});
+    expect((service as { supersede?: unknown }).supersede).toBeUndefined();
   });
 });
 
-describe('ClinicalPriceVersionService append-only publish', () => {
-  it('rejects publish when version is not DRAFT', async () => {
-    const client = {
-      clinicalServicePriceVersion: {
-        findFirst: jest.fn(async () => ({
-          id: 'pv-1',
-          tenantId: TENANT,
-          branchId: null,
-          clinicalServiceId: SERVICE,
-          pricingUnit: 'PER_VISIT',
-          currency: 'SYP',
-          serviceVariantId: null,
-          status: 'ACTIVE',
-          effectiveFrom: new Date(),
-          effectiveTo: null,
-        })),
-      },
-    };
-
-    const service = buildPriceService(client);
-    await expect(service.publish(actor, 'pv-1')).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+describe('PA-04 lock key', () => {
+  it('builds deterministic commercial lock key', () => {
+    const { service } = buildPriceService({});
+    expect(
+      service.commercialLockKey({
+        tenantId: TENANT,
+        branchId: null,
+        clinicalServiceId: SERVICE,
+        pricingUnit: 'PER_VISIT',
+        currency: 'syp',
+        serviceVariantId: null,
+      }),
+    ).toBe(`clinical-price|${TENANT}|default|${SERVICE}|PER_VISIT|SYP|`);
   });
 });

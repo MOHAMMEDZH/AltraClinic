@@ -37,8 +37,8 @@ const WAVE_A_PRICE_OPS = [
   ['GET', '/clinical-catalog/prices/lookup', 'view'],
   ['POST', '/clinical-catalog/prices/drafts', 'manage'],
   ['POST', '/clinical-catalog/prices/:id/publish', 'manage'],
-  ['POST', '/clinical-catalog/prices/:id/supersede', 'manage'],
   ['POST', '/clinical-catalog/prices/:id/inactivate', 'manage'],
+  ['POST', '/clinical-catalog/prices/:id/replace-scheduled', 'manage'],
 ];
 
 function load(p) {

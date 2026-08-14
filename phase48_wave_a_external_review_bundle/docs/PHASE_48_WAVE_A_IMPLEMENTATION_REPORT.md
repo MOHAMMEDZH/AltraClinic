@@ -5,11 +5,12 @@
 | **Wave** | A — Foundation |
 | **Scope** | P0-01, P0-07, P1-01 / AR-01, AR-02, AR-03, AR-04, AR-18 |
 | **Branch** | `cursor/phase48-wave-a-foundation` |
-| **HEAD** | `daf15c8bf1303f09780685ff5cf7df50da2f13ec` (working tree uncommitted) |
-| **Status** | **COMPLETE FOR WAVE A** — Production Acceptance blockers PA-01/02/03 closed in evidence; formal external acceptance PENDING |
+| **HEAD (committed)** | `089a309` (includes PA-01/02/03 closure). Implementation commit `416c098`. |
+| **Worktree** | Uncommitted PA-04..PA-08 narrow Production Acceptance corrections |
+| **Status** | **COMPLETE FOR WAVE A IMPLEMENTATION** — PA-04..PA-08 closed in worktree evidence; formal external acceptance PENDING |
 | **Phase 49** | NOT AUTHORIZED |
 | **Step 30** | NOT CREATED |
-| **Governance note** | Early implementation commit `416c098` occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. Blocker-closure changes left uncommitted. |
+| **Governance note** | Early implementation commit/push occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. |
 
 ---
 
@@ -248,7 +249,7 @@ clinic dashboard UI tests = PASS
 
 ---
 
-## 13. Scope integrity
+## 13. Scope integrity / governance chronology
 
 ```text
 Wave B–I implementation = 0
@@ -257,8 +258,20 @@ Step 30 created = NO
 Step 29 runner rerun = NO
 Step 28 Case C rerun = NO
 production database touched = NO
-commit created = NO
-push performed = NO
+
+Original implementation workflow intended:
+  commit before external PA = prohibited
+  push before external PA = prohibited
+
+Actual history (not rewritten):
+  implementation commit = 416c098
+  later docs/evidence commits = 90c813a, f91478e, 089a309
+  push status = historically pushed to origin/cursor/phase48-wave-a-foundation
+
+Current PA-04..PA-08 correction task:
+  additional commit created = NO
+  push performed = NO
+  history rewritten = NO
 ```
 
 ---

@@ -5,12 +5,13 @@
 | **Wave** | A — Foundation |
 | **Scope** | P0-01, P0-07, P1-01 / AR-01, AR-02, AR-03, AR-04, AR-18 |
 | **Branch** | `cursor/phase48-wave-a-foundation` |
-| **HEAD** | Implementation commit `416c098`; branch tip `f91478e` (+ uncommitted PA-01/02/03 closure worktree) |
-| **Status** | **COMPLETE FOR WAVE A** — Production Acceptance blockers PA-01/02/03 closed in evidence; formal external acceptance PENDING |
+| **HEAD (committed)** | `089a309` (includes PA-01/02/03 closure). Implementation commit `416c098`. |
+| **Worktree** | Wave A Production Acceptance = ACCEPTED; acceptance checkpoint commit authorized before Wave B |
+| **Status** | **WAVE A PRODUCTION ACCEPTANCE = ACCEPTED**; PA-01..PA-08 + EVIDENCE-PA-01 = CLOSED; PA-04 = CLOSED / ACCEPTED; Wave A blocker count = 0; **Wave B = AUTHORIZED**; Phase 49 = NOT AUTHORIZED; Step 30 = NOT AUTHORIZED |
 | **Phase 49** | NOT AUTHORIZED |
-| **Step 30** | NOT CREATED |
-| **Governance note** | Early implementation commit `416c098` occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. Blocker-closure changes left uncommitted. |
-
+| **Step 30** | NOT AUTHORIZED |
+| **Governance note** | Early implementation commit/push occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. External Production Acceptance now granted. |
+| **PA-04 evidence** | `docs/PHASE_48_WAVE_A_PA04_IMPLEMENTATION_EVIDENCE.md` |
 ---
 
 ## 1. Governance baseline
@@ -21,9 +22,13 @@ Phase 48 Architecture Review = ACCEPTED AND COMPLETE
 Phase 48 Architecture Review Addendum = ACCEPTED AND COMPLETE
 Phase 48 Architecture Freeze = ACCEPTED AND COMPLETE (external)
 Phase 48 Implementation = AUTHORIZED
-current wave = A
-Waves B–I = NOT YET AUTHORIZED
+WAVE A PRODUCTION ACCEPTANCE = ACCEPTED
+Wave A blocker count = 0
+PA-04 = CLOSED / ACCEPTED
+current authorized wave = B
+Wave C–I = NOT YET AUTHORIZED
 Phase 49 = NOT AUTHORIZED
+Step 30 = NOT AUTHORIZED
 ```
 
 Governance docs updated (status only):
@@ -118,7 +123,14 @@ transaction-scoped deterministic pg_advisory_xact_lock(hashtext(commercialKey))
 
 - `/clinical-catalog/services` — list/get/create TENANT_CUSTOM/update/publish/deprecate/inactivate
 - `/clinical-catalog/configs` — list/effective/upsert/enable
-- `/clinical-catalog/prices` — list/lookup/draft/publish/supersede/inactivate
+- Tenant price public surface (current):
+  - `GET  /clinical-catalog/prices`
+  - `GET  /clinical-catalog/prices/lookup`
+  - `POST /clinical-catalog/prices/drafts`
+  - `POST /clinical-catalog/prices/:id/publish`
+  - `POST /clinical-catalog/prices/:id/inactivate`
+  - `POST /clinical-catalog/prices/:id/replace-scheduled`
+  - no public manual supersede endpoint (SUPERSEDED is successor-driven only)
 
 ---
 
@@ -171,28 +183,33 @@ P1-08 fully implemented = NO
 
 ## 10. Test commands and results
 
+### Current PA-04 closure results (authoritative)
+
+Normalized from `docs/PHASE_48_WAVE_A_PA04_IMPLEMENTATION_EVIDENCE.md` (no new test rerun for FINAL-DOC-01).
+
 | Command | Result |
 |---------|--------|
-| `npx prisma validate` (apps/api) | PASS |
-| `npx jest --runInBand src/modules/clinical-catalog/tests/*.unit.spec.ts` | PASS (15) |
-| `node scripts/validate-phase48-wave-a-clean.mjs` | PASS |
-| `node scripts/validate-phase48-wave-a-upgrade.mjs` | PASS |
-| Super Admin `clinical-catalog.spec.tsx` | PASS (3) |
-| Clinic `clinical-catalog.spec.tsx` | PASS (2) |
-| Step 29 onepass | NOT RUN |
-| Step 28 Case C | NOT RUN |
+| jest clinical-price.unit.spec.ts | PASS / 11 |
+| jest tenant-service-config.unit.spec.ts | PASS / 3 |
+| jest clinical-price.pa04.acceptance.postgres.integration.spec | PASS / 53 |
+| jest clinical-price.concurrency.postgres.integration.spec | PASS / 10 |
+| jest clinical-catalog.cross-tenant.api.postgres.integration.spec | PASS / 28 |
+| vitest run src/features/clinical-catalog (clinic feature) | PASS / 16 |
+| validate-phase48-wave-a-clean.mjs | PASS |
+| validate-phase48-wave-a-upgrade.mjs | PASS |
+| validate-phase48-wave-a-permission-routes.mjs | PASS |
+| npx prisma validate (apps/api) | PASS |
+| Step 29 onepass | NOT RUN / NOT REQUIRED FOR PA-04 FOCUSED CLOSURE |
 
 ```text
 schema validation = PASS
 clean migration validator = PASS
 upgrade migration validator = PASS
-catalog integrity pack = PASS (unit)
-price/config pack = PASS (unit)
-tenant isolation = PASS (unit assertReadable / cross-tenant deny)
-permission/authz = PASS (matrix + platform RBAC wired; controller guards)
-audit = PASS (audit port wired on catalog/config/price mutations)
-super admin UI tests = PASS
-clinic dashboard UI tests = PASS
+permission-route validator = PASS
+PA-04 acceptance PostgreSQL = PASS / 53
+concurrency PostgreSQL = PASS / 10
+cross-tenant PostgreSQL = PASS / 28
+clinic clinical-catalog Vitest = PASS / 16
 ```
 
 ---
@@ -248,7 +265,7 @@ clinic dashboard UI tests = PASS
 
 ---
 
-## 13. Scope integrity
+## 13. Scope integrity / governance chronology
 
 ```text
 Wave B–I implementation = 0
@@ -257,8 +274,20 @@ Step 30 created = NO
 Step 29 runner rerun = NO
 Step 28 Case C rerun = NO
 production database touched = NO
-commit created = NO
-push performed = NO
+
+Original implementation workflow intended:
+  commit before external PA = prohibited
+  push before external PA = prohibited
+
+Actual history (not rewritten):
+  implementation commit = 416c098
+  later docs/evidence commits = 90c813a, f91478e, 089a309
+  push status = historically pushed to origin/cursor/phase48-wave-a-foundation
+
+Current PA-04..PA-08 correction task:
+  additional commit created = NO
+  push performed = NO
+  history rewritten = NO
 ```
 
 ---
@@ -266,7 +295,9 @@ push performed = NO
 ## 14. External review readiness
 
 ```text
-ready for external Phase 48 Wave A Production Acceptance review = YES
+WAVE A PRODUCTION ACCEPTANCE = ACCEPTED
+Wave A blocker count = 0
+Wave B = AUTHORIZED
+Phase 49 = NOT AUTHORIZED
+Step 30 = NOT AUTHORIZED
 ```
-
-Do not start Wave B without external Wave A Production Acceptance.

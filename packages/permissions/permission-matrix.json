@@ -496,8 +496,8 @@
         { "method": "GET",  "path": "/clinical-catalog/prices/lookup",          "action": "view"    },
         { "method": "POST", "path": "/clinical-catalog/prices/drafts",          "action": "manage"  },
         { "method": "POST", "path": "/clinical-catalog/prices/:id/publish",     "action": "manage"  },
-        { "method": "POST", "path": "/clinical-catalog/prices/:id/supersede",   "action": "manage"  },
         { "method": "POST", "path": "/clinical-catalog/prices/:id/inactivate",  "action": "manage"  },
+        { "method": "POST", "path": "/clinical-catalog/prices/:id/replace-scheduled", "action": "manage"  },
         { "method": "GET",  "path": "/billing/invoices/:invoiceId",             "action": "view"    },
         { "method": "GET",  "path": "/billing/invoices",                        "action": "view"    }
       ]

@@ -2,11 +2,14 @@
 
 | Field | Value |
 |-------|--------|
-| **Stage** | Architecture Review only |
-| **Companion** | `docs/PHASE_48_ARCHITECTURE_REVIEW.md` · Freeze SSOT: `docs/PHASE_48_ARCHITECTURE_FREEZE.md` |
-| **Implementation** | NOT AUTHORIZED |
+| **Stage** | Target Domain Architecture — architecture-review artifact promoted under accepted Freeze SSOT |
+| **Historical origin** | Authored during Architecture Review (companion: `docs/PHASE_48_ARCHITECTURE_REVIEW.md`) |
+| **Current authority** | Governed by Freeze SSOT: `docs/PHASE_48_ARCHITECTURE_FREEZE.md` (this document is **not** a competing SSOT) |
+| **Implementation** | GOVERNED BY FREEZE SSOT — Wave A authorized; Waves B–I not yet authorized; PA-04 Option B ACCEPTED AND FROZEN; PA-04 implementation AUTHORIZED NEXT |
+| **Phase 49** | NOT AUTHORIZED |
 
 Conceptual models only. Exact Prisma names may vary at Freeze/implementation.
+Does **not** claim PA-04 implementation complete, tests complete, or Production Acceptance.
 
 ---
 
@@ -137,16 +140,36 @@ PriceVersion
   currency
   unitPrice
   taxPercent?
-  effectiveFrom
-  effectiveTo?
-  status                     # DRAFT | ACTIVE | SUPERSEDED | INACTIVE
-  publishedAt
-  publishedBy
+  effectiveFrom              # authoritative commercial start
+  effectiveTo?               # optional immutable explicit terminal bound
+  status                     # DRAFT | SCHEDULED | ACTIVE | SUPERSEDED | INACTIVE
+  publishedAt?
+  publishedBy?
+  supersededAt?              # operational evidence; NOT commercial boundary
+  inactivatedAt?             # ACTIVE→INACTIVE commercial withdrawal boundary
+  # activation evidence: audit-backed / operational (activatedAt conceptual);
+  # physical column not required by freeze if audit trail proves first ACTIVE entry
 ```
 
-**Overlap prevention:** no two ACTIVE versions for same (tenant, branch?, service, variant?, unit) with overlapping effective ranges.  
-**Lookup:** branch override → tenant default → fail closed if none.  
+**Commercial key:** tenantId + branchId/default + clinicalServiceId + pricingUnit + currency + serviceVariantId/default.
+
+**ACTIVE cardinality:** persisted 0..1 per commercial key; successful live resolution requires exactly one interval-valid ACTIVE after due/terminal reconciliation.
+
+**SCHEDULED:** published immutable future commitment; not live before reconciliation; due SCHEDULED must reconcile before successful live commercial price return; stale predecessor success after successor.effectiveFrom = FORBIDDEN.
+
+**Overlap / interval validation:** no two ACTIVE overlapping ranges; explicit finite published intervals non-overlapping; bidirectional / insertion-order-independent validation (predecessor + successor); contiguous boundaries allowed; uncontrolled duplicate effectiveFrom rejected (controlled replace under lock only).
+
+**Historical commercialEnd:** earliest applicable among {explicit effectiveTo, next effectiveTimelineMember.effectiveFrom, inactivatedAt}; canceled-never-effective does not contribute; published commercial fields never rewritten.
+
+**Terminal cause:** successor → SUPERSEDED; explicitTo expiry without successor or ACTIVE→INACTIVE → INACTIVE-after-effective (semantic subclass of INACTIVE); canceled-before-effective → INACTIVE-never-effective.
+
+**Concurrency:** same-key `pg_advisory_xact_lock` + post-lock re-read for publish/schedule/cancel/replace/reconcile.
+
+**Lookup:** branch override → tenant default → fail closed if none (after due/terminal reconciliation; ACTIVE status alone insufficient).
+
 **Clinic A ≠ Clinic B price:** different tenant PriceVersions on the **same** SYSTEM_CANONICAL `clinicalServiceId`.
+
+**PA-04 Option B:** ACCEPTED AND FROZEN (`docs/PHASE_48_ARCHITECTURE_FREEZE_AMENDMENT_PA04_PROPOSAL.md`).
 
 ---
 

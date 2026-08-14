@@ -4,7 +4,8 @@ import { useI18n } from '@booking/i18n/react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { AuthAlert } from '@/features/auth/components/AuthAlert';
 import { AuthButton } from '@/features/auth/components/AuthButton';
-import type { ClinicalCatalogService } from './api/clinical-catalog-api';
+import { useSettingsBranches } from '@/features/settings/hooks/useSettings';
+import type { ClinicalCatalogService, TenantServiceConfig } from './api/clinical-catalog-api';
 import {
   useClinicalServices,
   useCreateTenantClinicalService,
@@ -14,8 +15,32 @@ import {
 } from './hooks/useClinicalCatalog';
 import styles from '../billing/billing-layout.module.css';
 
+/** Empty string = tenant default scope. */
+export const TENANT_DEFAULT_SCOPE = '';
+
 function tr(service: ClinicalCatalogService, locale: string): string {
   return service.translations.find((t) => t.locale === locale)?.displayName ?? service.stableKey;
+}
+
+function resolveConfigForScope(
+  configs: TenantServiceConfig[] | undefined,
+  clinicalServiceId: string,
+  branchId: string | null,
+): { config: TenantServiceConfig | null; inherited: boolean } {
+  const items = configs ?? [];
+  if (branchId) {
+    const override = items.find(
+      (c) => c.clinicalServiceId === clinicalServiceId && c.branchId === branchId,
+    );
+    if (override) return { config: override, inherited: false };
+  }
+  const tenantDefault = items.find(
+    (c) => c.clinicalServiceId === clinicalServiceId && c.branchId === null,
+  );
+  return {
+    config: tenantDefault ?? null,
+    inherited: Boolean(branchId && tenantDefault),
+  };
 }
 
 export function ClinicalServicesPage() {
@@ -30,26 +55,20 @@ export function ClinicalServicesPage() {
   const canManage = hasPermission(roles, 'api.clinical-catalog', 'manage');
 
   const servicesQuery = useClinicalServices(canView);
-  const configsQuery = useTenantServiceConfigs(canView);
+  const configsQuery = useTenantServiceConfigs(canView, { scope: 'all' });
+  const branchesQuery = useSettingsBranches(canView);
   const createMutation = useCreateTenantClinicalService();
   const publishMutation = usePublishClinicalService();
   const configMutation = useUpsertTenantServiceConfig();
 
+  const [scopeBranchId, setScopeBranchId] = useState(TENANT_DEFAULT_SCOPE);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [keySuffix, setKeySuffix] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
 
-  const configByServiceId = useMemo(() => {
-    const map = new Map<string, { enabled: boolean }>();
-    for (const cfg of configsQuery.data ?? []) {
-      if (cfg.branchId === null) {
-        map.set(cfg.clinicalServiceId, { enabled: cfg.enabled });
-      }
-    }
-    return map;
-  }, [configsQuery.data]);
+  const selectedBranchId = scopeBranchId || null;
 
   const filtered = useMemo(() => {
     const items = servicesQuery.data ?? [];
@@ -90,10 +109,17 @@ export function ClinicalServicesPage() {
 
   async function toggleEnabled(service: ClinicalCatalogService, enabled: boolean) {
     if (!canUpdate) return;
-    await configMutation.mutateAsync({ clinicalServiceId: service.id, enabled });
+    await configMutation.mutateAsync({
+      clinicalServiceId: service.id,
+      branchId: selectedBranchId,
+      enabled,
+    });
   }
 
   const displayLocale = locale.startsWith('ar') ? 'ar' : 'en';
+  const scopeLabel = selectedBranchId
+    ? (branchesQuery.data ?? []).find((b) => b.id === selectedBranchId)?.name ?? selectedBranchId
+    : t('clinicalCatalog.scope.tenantDefault');
 
   return (
     <div className={styles.page}>
@@ -108,6 +134,26 @@ export function ClinicalServicesPage() {
 
       <section className={styles.panel}>
         <div className={styles.formGrid}>
+          <label>
+            {t('clinicalCatalog.scope.label')}
+            <select
+              value={scopeBranchId}
+              onChange={(e) => setScopeBranchId(e.target.value)}
+              data-testid="clinical-services-branch-scope"
+            >
+              <option value={TENANT_DEFAULT_SCOPE}>{t('clinicalCatalog.scope.tenantDefault')}</option>
+              {(branchesQuery.data ?? [])
+                .filter((b) => b.isActive)
+                .map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+            </select>
+            <small>
+              {t('clinicalCatalog.scope.current')}: {scopeLabel}
+            </small>
+          </label>
           <label>
             {t('clinicalCatalog.search')}
             <input value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -157,8 +203,22 @@ export function ClinicalServicesPage() {
         ) : (
           <ul className={styles.recentList}>
             {filtered.map((service) => {
-              const cfg = configByServiceId.get(service.id);
+              const { config, inherited } = resolveConfigForScope(
+                configsQuery.data,
+                service.id,
+                selectedBranchId,
+              );
               const isCanonical = service.provenance === 'SYSTEM_CANONICAL';
+              const enabledLabel = config
+                ? config.enabled
+                  ? t('clinicalCatalog.enable')
+                  : t('clinicalCatalog.disable')
+                : t('clinicalCatalog.notConfigured');
+              const inheritanceLabel = inherited
+                ? t('clinicalCatalog.scope.inherited')
+                : selectedBranchId && config
+                  ? t('clinicalCatalog.scope.override')
+                  : t('clinicalCatalog.scope.tenantDefault');
               return (
                 <li key={service.id} className={styles.recentItem}>
                   <span>
@@ -167,9 +227,7 @@ export function ClinicalServicesPage() {
                     <br />
                     <small>
                       {t(`clinicalCatalog.provenance.${service.provenance}` as 'clinicalCatalog.provenance.SYSTEM_CANONICAL')} · {service.lifecycle}
-                      {isCanonical
-                        ? ` · ${cfg ? (cfg.enabled ? t('clinicalCatalog.enable') : t('clinicalCatalog.disable')) : t('clinicalCatalog.notConfigured')}`
-                        : null}
+                      {isCanonical ? ` · ${enabledLabel} · ${inheritanceLabel}` : null}
                     </small>
                   </span>
                   <span style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -177,9 +235,9 @@ export function ClinicalServicesPage() {
                       <AuthButton
                         variant="secondary"
                         loading={configMutation.isPending}
-                        onClick={() => void toggleEnabled(service, !(cfg?.enabled ?? false))}
+                        onClick={() => void toggleEnabled(service, !(config?.enabled ?? false))}
                       >
-                        {cfg?.enabled ? t('clinicalCatalog.disable') : t('clinicalCatalog.enable')}
+                        {config?.enabled ? t('clinicalCatalog.disable') : t('clinicalCatalog.enable')}
                       </AuthButton>
                     ) : null}
                     {!isCanonical && canManage && service.lifecycle === 'DRAFT' ? (

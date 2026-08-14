@@ -6,11 +6,15 @@ import {
   fetchClinicalPriceVersions,
   fetchClinicalServices,
   fetchTenantServiceConfigs,
+  inactivateClinicalPriceVersion,
   publishClinicalPriceVersion,
   publishClinicalService,
+  replaceScheduledClinicalPriceVersion,
   upsertTenantServiceConfig,
+  type ClinicalCatalogListScope,
   type CreateClinicalPriceDraftInput,
   type CreateTenantClinicalServiceInput,
+  type UpsertTenantServiceConfigInput,
 } from '../api/clinical-catalog-api';
 
 function authKeys(user: { tenantId?: string } | null) {
@@ -31,15 +35,23 @@ export function useClinicalServices(enabled = true) {
   });
 }
 
-export function useTenantServiceConfigs(enabled = true) {
+export function useTenantServiceConfigs(
+  enabled = true,
+  query: { scope: ClinicalCatalogListScope; branchId?: string | null } = { scope: 'all' },
+) {
   const { getValidAccessToken, user } = useAuth();
+  const branchKey =
+    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
   return useQuery({
-    queryKey: ['clinical-catalog', 'configs', ...authKeys(user)],
-    enabled: enabled && Boolean(user?.tenantId),
+    queryKey: ['clinical-catalog', 'configs', query.scope, branchKey, ...authKeys(user)],
+    enabled: enabled && Boolean(user?.tenantId) && (query.scope !== 'branch' || Boolean(query.branchId)),
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fetchTenantServiceConfigs(token, user.tenantId);
+      return fetchTenantServiceConfigs(token, user.tenantId, {
+        scope: query.scope,
+        branchId: query.branchId,
+      });
     },
     staleTime: 30_000,
   });
@@ -77,7 +89,7 @@ export function useUpsertTenantServiceConfig() {
   const { getValidAccessToken, user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { clinicalServiceId: string; enabled: boolean }) => {
+    mutationFn: async (body: UpsertTenantServiceConfigInput) => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return upsertTenantServiceConfig(token, user.tenantId, body);
@@ -87,16 +99,37 @@ export function useUpsertTenantServiceConfig() {
   });
 }
 
-export function useClinicalPriceVersions(enabled = true, clinicalServiceId?: string) {
+export function useClinicalPriceVersions(
+  enabled = true,
+  query: {
+    clinicalServiceId?: string;
+    scope: ClinicalCatalogListScope;
+    branchId?: string | null;
+  } = { scope: 'tenant' },
+) {
   const { getValidAccessToken, user } = useAuth();
+  const branchKey =
+    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
   return useQuery({
-    queryKey: ['clinical-catalog', 'prices', clinicalServiceId ?? 'all', ...authKeys(user)],
-    enabled: enabled && Boolean(user?.tenantId),
+    queryKey: [
+      'clinical-catalog',
+      'prices',
+      query.scope,
+      branchKey,
+      query.clinicalServiceId ?? 'all-services',
+      ...authKeys(user),
+    ],
+    enabled:
+      enabled &&
+      Boolean(user?.tenantId) &&
+      (query.scope !== 'branch' || Boolean(query.branchId)),
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return fetchClinicalPriceVersions(token, user.tenantId, {
-        clinicalServiceId,
+        clinicalServiceId: query.clinicalServiceId,
+        scope: query.scope,
+        branchId: query.branchId,
       });
     },
     staleTime: 30_000,
@@ -125,6 +158,43 @@ export function usePublishClinicalPriceVersion() {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return publishClinicalPriceVersion(token, user.tenantId, priceVersionId);
+    },
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ['clinical-catalog', 'prices'] }),
+  });
+}
+
+export function useInactivateClinicalPriceVersion() {
+  const { getValidAccessToken, user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (priceVersionId: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return inactivateClinicalPriceVersion(token, user.tenantId, priceVersionId);
+    },
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: ['clinical-catalog', 'prices'] }),
+  });
+}
+
+export function useReplaceScheduledClinicalPriceVersion() {
+  const { getValidAccessToken, user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      canceledScheduleId: string;
+      replacement: CreateClinicalPriceDraftInput;
+    }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      const draft = await createClinicalPriceDraft(token, user.tenantId, input.replacement);
+      return replaceScheduledClinicalPriceVersion(
+        token,
+        user.tenantId,
+        input.canceledScheduleId,
+        draft.id,
+      );
     },
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: ['clinical-catalog', 'prices'] }),

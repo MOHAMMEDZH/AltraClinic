@@ -92,10 +92,11 @@
 | Field | Content |
 |-------|---------|
 | **Chosen** | Append-only `PriceVersion` under tenant (+ optional branch override); `effectiveFrom`/`effectiveTo` with overlap prevention; deactivate ≠ hard delete |
-| Rejected | In-place overwrite of `ServicePrice.unitPrice` as SoR; requiring tenant-local service copies to hold different prices |
-| Required | Clinic A ≠ Clinic B **price** on the **same** SYSTEM_CANONICAL identity |
+| **PA-04 Amendment (ACCEPTED AND FROZEN)** | Option B: statuses `DRAFT \| SCHEDULED \| ACTIVE \| SUPERSEDED \| INACTIVE`; SCHEDULED = published immutable future; due-activation / on-demand reconciliation before successful live return; persisted ACTIVE 0..1; live success requires exactly one interval-valid ACTIVE; deterministic `commercialEnd`; successor → SUPERSEDED vs non-successor INACTIVE-after-effective; bidirectional interval validation; same-key advisory lock; AR-05 unchanged |
+| Rejected | In-place overwrite of `ServicePrice.unitPrice` as SoR; requiring tenant-local service copies to hold different prices; stale/expired live success; uncontrolled overlapping explicit intervals |
+| Required | Clinic A ≠ Clinic B **price** on the **same** SYSTEM_CANONICAL identity; full commercial key (tenant, branch/default, service, unit, currency, variant/default) |
 | P0/P1 | P0-07, P1-01, P1-02 |
-
+| Amendment artifact | `docs/PHASE_48_ARCHITECTURE_FREEZE_AMENDMENT_PA04_PROPOSAL.md` |
 ### AR-05 Appointment snapshot
 
 | Field | Content |

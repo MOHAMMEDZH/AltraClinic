@@ -192,7 +192,7 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
     expect(await countActive(serviceId, null)).toBe(1);
   });
 
-  it('Case A — concurrent superseding publishes after ACTIVE baseline keep single non-overlapping ACTIVE', async () => {
+  it('Case A — concurrent future schedule after ACTIVE baseline: one SCHEDULED, prior ACTIVE immutable, no ACTIVE overlap', async () => {
     const prices = priceService();
     const a = actor();
     const base = await prices.createDraft(a, {
@@ -204,7 +204,7 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
     });
     await prices.publish(a, base.id);
 
-    const startFrom = new Date('2026-09-01T00:00:00.000Z').toISOString();
+    const startFrom = new Date(Date.now() + 40 * 24 * 3600 * 1000).toISOString();
     let release!: () => void;
     const barrier = new Promise<void>((resolve) => {
       release = resolve;
@@ -229,7 +229,30 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
 
     const actives = await listActive(serviceId, null);
     expect(actives).toHaveLength(1);
-    expect(actives[0].effectiveFrom.toISOString()).toBe(startFrom);
+    expect(actives[0].id).toBe(base.id);
+    expect(actives[0].effectiveTo).toBeNull();
+
+    const scheduled = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findMany({
+        where: { tenantId, clinicalServiceId: serviceId, status: 'SCHEDULED' },
+      }),
+    );
+    expect(scheduled).toHaveLength(1);
+    expect(scheduled[0].effectiveFrom.toISOString()).toBe(startFrom);
+
+    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
+    const before = await prices.lookupActivePrice(a, serviceId, null, dims);
+    expect(before.price.id).toBe(base.id);
+
+    // Activate due schedule via backdate + live lookup (no future `at` mutation).
+    await createClinicalPrismaWrapper(prisma).withPlatformBypass(async (client) => {
+      await client.clinicalServicePriceVersion.update({
+        where: { id: scheduled[0].id },
+        data: { effectiveFrom: new Date(Date.now() - 60_000) },
+      });
+    });
+    const after = await prices.lookupActivePrice(a, serviceId, null, dims);
+    expect(after.price.id).toBe(scheduled[0].id);
   });
 
   it('Case C — branch-specific commercial key concurrent double-publish', async () => {
@@ -328,5 +351,175 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
     });
     await expect(prices.publish(a, d2.id)).rejects.toBeInstanceOf(ClinicalCatalogConflictError);
     expect(await countActive(serviceId, null)).toBe(1);
+  });
+
+  it('PA-04 — future schedule preserves current price, prior immutable, ACTIVE overlap = 0', async () => {
+    const prices = priceService();
+    const a = actor();
+    const now = new Date();
+    const t15 = new Date(now.getTime() + 15 * 24 * 3600 * 1000);
+    const t30 = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
+
+    const current = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 100,
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+      pricingUnit: 'PER_VISIT',
+    });
+    await prices.publish(a, current.id);
+    const beforePublish = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: current.id } }),
+    );
+
+    const future = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 150,
+      effectiveFrom: t30.toISOString(),
+      pricingUnit: 'PER_VISIT',
+    });
+    const scheduled = await prices.publish(a, future.id);
+    expect(scheduled.status).toBe('SCHEDULED');
+
+    const afterPublish = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: current.id } }),
+    );
+    expect(afterPublish.effectiveTo).toEqual(beforePublish.effectiveTo);
+    expect(String(afterPublish.unitPrice)).toBe(String(beforePublish.unitPrice));
+    expect(afterPublish.currency).toBe(beforePublish.currency);
+    expect(afterPublish.pricingUnit).toBe(beforePublish.pricingUnit);
+    expect(afterPublish.effectiveFrom.toISOString()).toBe(beforePublish.effectiveFrom.toISOString());
+    expect(afterPublish.status).toBe('ACTIVE');
+
+    expect(await countActive(serviceId, null)).toBe(1);
+
+    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
+    const live = await prices.lookupActivePrice(a, serviceId, null, dims);
+    expect(live.price.id).toBe(current.id);
+
+    await expect(
+      prices.lookupActivePrice(a, serviceId, null, { ...dims, at: t15 }),
+    ).rejects.toBeTruthy();
+    await expect(
+      prices.lookupActivePrice(a, serviceId, null, { ...dims, at: t30 }),
+    ).rejects.toBeTruthy();
+
+    const historical = await prices.lookupActivePrice(a, serviceId, null, {
+      ...dims,
+      at: new Date('2026-06-01T00:00:00.000Z'),
+    });
+    expect(historical.price.id).toBe(current.id);
+
+    // Due activation via backdate + live (no future at)
+    await createClinicalPrismaWrapper(prisma).withPlatformBypass(async (client) => {
+      await client.clinicalServicePriceVersion.update({
+        where: { id: future.id },
+        data: { effectiveFrom: new Date(Date.now() - 30_000) },
+      });
+    });
+    const activated = await prices.lookupActivePrice(a, serviceId, null, dims);
+    expect(activated.price.id).toBe(future.id);
+    expect(Number(activated.price.unitPrice)).toBe(150);
+  });
+
+  it('PA-04-D — schedule chain V1 ACTIVE + V2/V3 SCHEDULED; no ACTIVE overlap; no commercial mutation', async () => {
+    const prices = priceService();
+    const a = actor();
+    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
+    const now = Date.now();
+    const v1 = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 1,
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+      pricingUnit: 'PER_VISIT',
+    });
+    await prices.publish(a, v1.id);
+    const v2 = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 2,
+      effectiveFrom: new Date(now + 30 * 24 * 3600 * 1000).toISOString(),
+      pricingUnit: 'PER_VISIT',
+    });
+    await prices.publish(a, v2.id);
+    const v3 = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 3,
+      effectiveFrom: new Date(now + 60 * 24 * 3600 * 1000).toISOString(),
+      pricingUnit: 'PER_VISIT',
+    });
+    await prices.publish(a, v3.id);
+
+    const reV1 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v1.id } }),
+    );
+    const reV2 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v2.id } }),
+    );
+    const reV3 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
+      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v3.id } }),
+    );
+    expect(reV1.status).toBe('ACTIVE');
+    expect(reV1.effectiveTo).toBeNull();
+    expect(reV2.status).toBe('SCHEDULED');
+    expect(reV2.effectiveTo).toBeNull();
+    expect(reV3.status).toBe('SCHEDULED');
+    expect(await countActive(serviceId, null)).toBe(1);
+
+    // Future as-of rejected; live remains V1 until due reconcile.
+    await expect(
+      prices.lookupActivePrice(a, serviceId, null, {
+        ...dims,
+        at: new Date(now + 45 * 24 * 3600 * 1000),
+      }),
+    ).rejects.toBeTruthy();
+    expect((await prices.lookupActivePrice(a, serviceId, null, dims)).price.id).toBe(v1.id);
+
+    await createClinicalPrismaWrapper(prisma).withPlatformBypass(async (client) => {
+      await client.clinicalServicePriceVersion.update({
+        where: { id: v2.id },
+        data: { effectiveFrom: new Date(Date.now() - 120_000) },
+      });
+    });
+    expect((await prices.lookupActivePrice(a, serviceId, null, dims)).price.id).toBe(v2.id);
+  });
+
+  it('PA-07 — commercial identity distinguishes unit/currency variants', async () => {
+    const prices = priceService();
+    const a = actor();
+    const from = new Date('2026-01-01T00:00:00.000Z').toISOString();
+
+    const visit = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'SYP',
+      unitPrice: 10,
+      effectiveFrom: from,
+      pricingUnit: 'PER_VISIT',
+    });
+    const procedure = await prices.createDraft(a, {
+      clinicalServiceId: serviceId,
+      currency: 'USD',
+      unitPrice: 20,
+      effectiveFrom: from,
+      pricingUnit: 'PER_PROCEDURE',
+    });
+    await prices.publish(a, visit.id);
+    await prices.publish(a, procedure.id);
+
+    const visitHit = await prices.lookupActivePrice(a, serviceId, null, {
+      pricingUnit: 'PER_VISIT',
+      currency: 'SYP',
+      serviceVariantId: null,
+    });
+    const procHit = await prices.lookupActivePrice(a, serviceId, null, {
+      pricingUnit: 'PER_PROCEDURE',
+      currency: 'USD',
+      serviceVariantId: null,
+    });
+    expect(visitHit.price.id).toBe(visit.id);
+    expect(procHit.price.id).toBe(procedure.id);
   });
 });

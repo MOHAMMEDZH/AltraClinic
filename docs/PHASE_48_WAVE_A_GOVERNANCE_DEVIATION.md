@@ -4,50 +4,52 @@
 |-------|--------|
 | **Documented** | 2026-08-14 |
 | **Branch** | `cursor/phase48-wave-a-foundation` |
-| **Current HEAD at blocker-closure evidence** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` |
+| **HEAD at PA-04..08 correction start** | `089a3096d0ad8f0183136cd1aa0b4d859dfc7f9b` |
 
 ## Deviation
 
 ```text
-deviation = implementation committed before external Production Acceptance
+deviation = implementation committed/pushed before external Production Acceptance
 ```
 
-Prior Wave A implementation workflow required:
+### Original intended workflow
 
 ```text
-commit created = NO
-push performed = NO
+commit before external PA = prohibited
+push before external PA = prohibited
 ```
 
-Actual Wave A implementation commit:
+### Actual history (verified; not rewritten)
 
 ```text
-commit = 416c0981728a8cc2c88494352e1ec4413727efdf
-message = feat(phase48): implement Wave A clinical catalog foundation
-```
-
-Subsequent docs/evidence commits on the same branch (also before formal external Production Acceptance):
-
-```text
+416c098 feat(phase48): implement Wave A clinical catalog foundation
 90c813a docs(phase48): add Wave A external Production Acceptance review package
 f91478e docs(phase48): add Wave A QA raw command evidence
+089a309 test(phase48): close Wave A Production Acceptance blockers PA-01/02/03
 ```
 
-Verified remote tracking (local):
+Verified remote tracking:
 
 ```text
 branch tracks origin/cursor/phase48-wave-a-foundation
-push status = already pushed historically (not performed in blocker-closure task)
+historical pushes occurred (including 089a309)
 ```
+
+## Current narrow correction task (PA-04..PA-08)
+
+```text
+additional commit created = NO
+push performed = NO
+history rewritten = NO
+amend used = NO
+force-push = NO
+```
+
+All PA-04..PA-08 implementation + evidence remain **uncommitted** for external review.
 
 ## Corrective controls
 
 ```text
-history rewritten = NO
-amend used = NO
-force-push = NO
-impact on technical correctness = NONE (implementation content unchanged by this record)
-corrective control = no additional commit/push until external Production Acceptance
+impact on technical correctness = NONE (deviation is process chronology only)
+corrective control = leave current PA-04..08 corrections uncommitted until external review instructs otherwise
 ```
-
-This blocker-closure task leaves all new tests/evidence **uncommitted** for external review.

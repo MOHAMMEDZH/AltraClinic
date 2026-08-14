@@ -25,16 +25,37 @@ export class TenantServiceConfigService {
 
   async listConfigs(
     actor: ClinicalCatalogActorContext,
-    query: { clinicalServiceId?: string; branchId?: string } = {},
+    query: {
+      clinicalServiceId?: string;
+      scope: 'tenant' | 'branch' | 'all';
+      branchId?: string;
+    },
   ) {
     const tenantId = this.requireTenantId(actor);
+    const where: Prisma.TenantServiceConfigurationWhereInput = {
+      tenantId,
+      clinicalServiceId: query.clinicalServiceId,
+    };
+
+    if (query.scope === 'tenant') {
+      where.branchId = null;
+    } else if (query.scope === 'branch') {
+      if (!query.branchId) {
+        throw new ClinicalCatalogValidationError('branchId is required when scope=branch.');
+      }
+      await this.assertBranchBelongsToTenant(tenantId, query.branchId);
+      where.branchId = query.branchId;
+    } else if (query.scope === 'all') {
+      if (query.branchId) {
+        throw new ClinicalCatalogValidationError('branchId must not be set when scope=all.');
+      }
+    } else {
+      throw new ClinicalCatalogValidationError('scope must be tenant|branch|all.');
+    }
+
     return this.prisma.withPlatformBypass((client) =>
       client.tenantServiceConfiguration.findMany({
-        where: {
-          tenantId,
-          clinicalServiceId: query.clinicalServiceId,
-          branchId: query.branchId === undefined ? undefined : query.branchId,
-        },
+        where,
         orderBy: [{ clinicalServiceId: 'asc' }, { branchId: 'asc' }],
       }),
     );
@@ -47,6 +68,11 @@ export class TenantServiceConfigService {
   ) {
     const tenantId = this.requireTenantId(actor);
     await this.assertServiceReadable(tenantId, clinicalServiceId);
+
+    // PA-06: validate branch ownership BEFORE any tenant-default fallback.
+    if (branchId) {
+      await this.assertBranchBelongsToTenant(tenantId, branchId);
+    }
 
     const branchOverride = branchId
       ? await this.findConfig(tenantId, clinicalServiceId, branchId)
@@ -177,6 +203,9 @@ export class TenantServiceConfigService {
   }
 
   private async assertBranchBelongsToTenant(tenantId: string, branchId: string) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(branchId)) {
+      throw new ClinicalCatalogValidationError('branchId must be a UUID.');
+    }
     const branch = await this.prisma.withPlatformBypass((client) =>
       client.branch.findFirst({
         where: { id: branchId, tenantId, deletedAt: null },

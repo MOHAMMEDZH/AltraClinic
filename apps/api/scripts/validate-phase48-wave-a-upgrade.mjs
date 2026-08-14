@@ -13,7 +13,11 @@ import { PrismaClient } from '@prisma/client';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
 const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
-const gateDirName = '20260814010000_phase48_wave_a_clinical_catalog';
+const gateDirNames = [
+  '20260814010000_phase48_wave_a_clinical_catalog',
+  '20260814140000_phase48_wave_a_price_commercial_checks',
+  '20260814150000_phase48_wave_a_price_scheduled_status',
+];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade');
 const upgradeDb = `test_p48wa_upgrade_${Date.now()}`;
 
@@ -90,19 +94,23 @@ function digestRows(rows) {
 
 function parkMigration() {
   fs.mkdirSync(parkDir, { recursive: true });
-  const src = path.join(migrationsDir, gateDirName);
-  const dest = path.join(parkDir, gateDirName);
-  if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
-  fs.renameSync(src, dest);
+  for (const gateDirName of gateDirNames) {
+    const src = path.join(migrationsDir, gateDirName);
+    const dest = path.join(parkDir, gateDirName);
+    if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
 }
 
 function restoreMigration() {
-  const src = path.join(parkDir, gateDirName);
-  const dest = path.join(migrationsDir, gateDirName);
-  if (!fs.existsSync(src)) throw new Error('Parked Wave A migration missing');
-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
-  fs.renameSync(src, dest);
+  for (const gateDirName of gateDirNames) {
+    const src = path.join(parkDir, gateDirName);
+    const dest = path.join(migrationsDir, gateDirName);
+    if (!fs.existsSync(src)) throw new Error(`Parked Wave A migration missing: ${gateDirName}`);
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
   try {
     fs.rmSync(parkDir, { recursive: true, force: true });
   } catch {

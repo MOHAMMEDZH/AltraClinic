@@ -1,0 +1,117 @@
+ M apps/api/prisma/schema.prisma
+ M apps/api/scripts/validate-phase48-wave-a-upgrade.mjs
+ M apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts
+ M apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts
+ M apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts
+ M apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts
+ M apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts
+ M apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts
+ M apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts
+ M apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts
+ M apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
+ M apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
+ M apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts
+ M apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx
+ M apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx
+ M apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts
+ M apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx
+ M apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts
+ M apps/clinic-dashboard/src/i18n/billing-messages.ts
+ M apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts
+ M docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md
+ M docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md
+ M docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md
+ M docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md
+ M docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md
+ M docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md
+ M phase48_wave_a_external_review_bundle.zip
+ M phase48_wave_a_external_review_bundle/apps/api/scripts/validate-phase48-wave-a-upgrade.mjs
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
+ M phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/billing/components/BillingQuickNav.tsx
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/dynamic-routing/lib/route-component-registry.tsx
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/dynamic-routing/lib/static-route-catalog.ts
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/settings/config/settings-config.ts
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/i18n/billing-messages.ts
+ M phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/i18n/messages.ts
+ D phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/i18n/settings-messages.ts
+ D phase48_wave_a_external_review_bundle/apps/super-admin/src/app/router/index.tsx
+ D phase48_wave_a_external_review_bundle/apps/super-admin/src/auth/platform-auth-api.ts
+ D phase48_wave_a_external_review_bundle/apps/super-admin/src/i18n/messages.ts
+ D phase48_wave_a_external_review_bundle/apps/super-admin/src/routing/route-registry.ts
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_FROZEN_DOMAIN_CONTRACT_MATRIX.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_FROZEN_IMPLEMENTATION_AND_QA_PLAN.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_API_SURFACE_REVIEW.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_AUDIT_REVIEW.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_AUTHZ_TENANT_ISOLATION_REVIEW.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_BACKFILL_REVIEW.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_FILE_MANIFEST.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_FEATURE_FLAG_REVIEW.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_MIGRATION_SQL_REVIEW.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_REVIEW.md
+ M phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_SCHEMA_REVIEW_EVIDENCE.md
+ D phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_UI_REVIEW.md
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_commit_416c098_name_status.txt
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_commit_416c098_stat.txt
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_git_diff.txt
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_git_diff_stat.txt
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_git_status.txt
+ D phase48_wave_a_external_review_bundle/phase48_wave_a_untracked_files.txt
+?? apps/api/prisma/migrations/20260814140000_phase48_wave_a_price_commercial_checks/
+?? apps/api/prisma/migrations/20260814150000_phase48_wave_a_price_scheduled_status/
+?? apps/api/src/modules/clinical-catalog/tests/tenant-service-config.unit.spec.ts
+?? apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.branch.spec.ts
+?? docs/PHASE_48_WAVE_A_BUNDLE_INTEGRITY_REPORT.md
+?? docs/PHASE_48_WAVE_A_COMMERCIAL_IDENTITY_EVIDENCE.md
+?? docs/PHASE_48_WAVE_A_PA04_APPEND_ONLY_PRICE_HISTORY_EVIDENCE.md
+?? docs/PHASE_48_WAVE_A_PA04_FINAL_PRICE_SCHEDULE_EVIDENCE.md
+?? docs/PHASE_48_WAVE_A_PA05_BRANCH_SCOPE_EVIDENCE.md
+?? docs/PHASE_48_WAVE_A_PA08_PRODUCTION_VALIDATION_EVIDENCE.md
+?? docs/PHASE_48_WAVE_A_PERMISSION_BASELINE_PROOF.md
+?? phase48_wave_a_external_review_bundle/apps/api/prisma/migrations/20260814140000_phase48_wave_a_price_commercial_checks/
+?? phase48_wave_a_external_review_bundle/apps/api/src/app.module.ts
+?? phase48_wave_a_external_review_bundle/apps/api/src/main.ts
+?? phase48_wave_a_external_review_bundle/apps/api/src/modules/clinical-catalog/tests/tenant-service-config.unit.spec.ts
+?? phase48_wave_a_external_review_bundle/apps/api/src/modules/scheduling/
+?? phase48_wave_a_external_review_bundle/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.branch.spec.ts
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_BUNDLE_INTEGRITY_REPORT.md
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_COMMERCIAL_IDENTITY_EVIDENCE.md
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PA04_APPEND_ONLY_PRICE_HISTORY_EVIDENCE.md
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PA05_BRANCH_SCOPE_EVIDENCE.md
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PA08_PRODUCTION_VALIDATION_EVIDENCE.md
+?? phase48_wave_a_external_review_bundle/docs/PHASE_48_WAVE_A_PERMISSION_BASELINE_PROOF.md
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_external_review_bundle_manifest.sha256
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_git_diff_stat_current.txt
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_git_diff_tracked_current.txt
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_git_log_current.txt
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_git_status_current.txt
+?? phase48_wave_a_external_review_bundle/phase48_wave_a_untracked_current.txt
+?? phase48_wave_a_external_review_bundle/scripts/
+?? phase48_wave_a_external_review_bundle_manifest.sha256
+?? phase48_wave_a_git_diff_stat_current.txt
+?? phase48_wave_a_git_diff_tracked_current.txt
+?? phase48_wave_a_git_log_current.txt
+?? phase48_wave_a_git_status_current.txt
+?? phase48_wave_a_untracked_current.txt
+?? scripts/
