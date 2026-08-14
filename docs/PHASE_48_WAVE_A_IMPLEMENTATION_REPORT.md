@@ -5,10 +5,11 @@
 | **Wave** | A — Foundation |
 | **Scope** | P0-01, P0-07, P1-01 / AR-01, AR-02, AR-03, AR-04, AR-18 |
 | **Branch** | `cursor/phase48-wave-a-foundation` |
-| **HEAD** | `daf15c8bf1303f09780685ff5cf7df50da2f13ec` (working tree uncommitted) |
-| **Status** | **COMPLETE FOR WAVE A** — ready for external Wave A Production Acceptance |
+| **HEAD** | Implementation commit `416c098`; branch tip `f91478e` (+ uncommitted PA-01/02/03 closure worktree) |
+| **Status** | **COMPLETE FOR WAVE A** — Production Acceptance blockers PA-01/02/03 closed in evidence; formal external acceptance PENDING |
 | **Phase 49** | NOT AUTHORIZED |
 | **Step 30** | NOT CREATED |
+| **Governance note** | Early implementation commit `416c098` occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. Blocker-closure changes left uncommitted. |
 
 ---
 

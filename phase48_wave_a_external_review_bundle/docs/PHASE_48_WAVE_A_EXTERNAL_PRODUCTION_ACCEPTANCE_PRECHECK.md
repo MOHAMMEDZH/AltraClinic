@@ -1,67 +1,38 @@
-# Phase 48 Wave A — External Production Acceptance Precheck
+# Phase 48 Wave A — External Production Acceptance Precheck (updated)
 
 | Field | Value |
 |-------|--------|
-| **HEAD** | `416c0981728a8cc2c88494352e1ec4413727efdf` |
-| **Evidence task** | review packaging only — no fixes |
+| **Evidence HEAD baseline** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` |
+| **Blocker-closure worktree** | uncommitted tests/evidence (no additional commit/push) |
 
 ```text
-schema reviewed = YES
-migration SQL reviewed = YES
-migration additive = YES
-legacy ServicePrice preserved = YES
-Appointment.serviceType preserved = YES
+WAVE-A-PA-01 = CLOSED
+permission validation global = FAIL
+permission failure baseline-proven = YES
+Wave A permission regression = NO
+Wave A permission routes validation = PASS
+classification = PRE-EXISTING BASELINE DEBT — NOT WAVE A BLOCKER
+(causality = Category C surface expansion of pre-existing manage-action convention; root validator/actions mismatch existed at 416c098^ with 61 manage ops and no api.clinical-catalog)
 
-SYSTEM_CANONICAL shared = YES
-tenant canonical clones = 0
-TENANT_CUSTOM isolation verified = YES (unit/service predicates; API integration MISSING)
+WAVE-A-PA-02 = CLOSED
+true concurrent PriceVersion publish test = PASS
 
-tenant-default config uniqueness DB-safe = YES
-branch config uniqueness DB-safe = YES
+WAVE-A-PA-03 = CLOSED
+cross-tenant API tests = PASS
 
-PriceVersion append-only = YES
-PriceVersion publish atomic = YES
-PriceVersion overlap race-safe = YES (code path)
-true concurrent publish test = MISSING
+platform bypass tenant-isolation test = PASS
+commercial lock key identity matches overlap identity = YES
 
-backfill idempotent = YES
-ambiguous mapping guessed = NO
-
-booking canonical cutover activated = NO
-legacy booking fallback preserved = YES
-
-cross-tenant API tests = MISSING
-permission validation = FAIL
-audit evidence = PASS
-
-clean migration validator = PASS
-upgrade migration validator = PASS
-Super Admin tests = PASS
-Clinic UI tests = PASS
-
-Wave B implementation detected = NO
-Phase 49 implementation detected = NO
+governance early-commit deviation recorded = YES
+additional commit created = NO
+push performed = NO
 
 Production Acceptance blocker count = 0
 ```
 
-## Residual evidence gaps (not counted as Wave A freeze blockers)
+## Supporting evidence docs
 
-```text
-1. true concurrent PriceVersion publish test = MISSING
-2. cross-tenant API/DB integration tests = MISSING (unit only)
-3. permission-matrix validator FAIL (pre-existing manage-action schema mismatch)
-4. branch↔tenant same-tenant ownership = application-enforced only (no composite FK)
-5. Wave A tables = no RLS policies
-6. AMBIGUOUS status supported in schema but not produced by automated backfill (by design)
-7. no dedicated alias management API in Wave A
-```
-
-## Readiness statement
-
-```text
-READY FOR EXTERNAL REVIEW = YES
-Wave A Production Acceptance = PENDING EXTERNAL REVIEW (Cursor does not self-accept)
-Wave B = NOT AUTHORIZED
-Phase 49 = NOT AUTHORIZED
-```
+- `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`
+- `docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md`
+- `docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md`
+- `apps/api/scripts/validate-phase48-wave-a-permission-routes.mjs`
