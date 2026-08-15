@@ -40,8 +40,11 @@ export class SchedulingSupportController {
 
   @Get('providers')
   @RequirePermission('api.scheduling', 'view')
-  async listProviders(@Query('branchId') branchId?: string) {
-    return this.listProvidersHandler.execute(branchId);
+  async listProviders(
+    @Query('branchId') branchId?: string,
+    @Query('clinicalServiceId') clinicalServiceId?: string,
+  ) {
+    return this.listProvidersHandler.execute(branchId, clinicalServiceId);
   }
 
   @Get('service-types')
@@ -80,6 +83,7 @@ export class SchedulingSupportController {
       date: query.date,
       durationMin: query.durationMin ? Number(query.durationMin) : undefined,
       branchId: query.branchId,
+      clinicalServiceId: query.clinicalServiceId,
     });
   }
 }

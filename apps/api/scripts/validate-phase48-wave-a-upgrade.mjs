@@ -18,7 +18,20 @@ const gateDirNames = [
   '20260814140000_phase48_wave_a_price_commercial_checks',
   '20260814150000_phase48_wave_a_price_scheduled_status',
 ];
+/** Wave B depends on Wave A enums/tables — park all Wave B migrations during prior-chain deploy. */
+const dependentLaterGateDirNames = [
+  '20260815010000_phase48_wave_b_booking_integrity',
+  '20260815120000_phase48_wave_b_pa_blockers',
+  '20260815200000_phase48_wave_b_rereview_closure',
+  '20260815210000_phase48_wave_b_final_defect_closure',
+  '20260815220000_phase48_wave_b_legacy_cancelled_lock',
+  '20260815230000_phase48_wave_b_final_2blocker_closure',
+  '20260815240000_phase48_wave_b_cutover_execution_time',
+  '20260815250000_phase48_wave_b_snapshot_write_mode',
+  '20260815260000_phase48_wave_b_snapshot_write_mode_immutable',
+];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade');
+const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade_later');
 const upgradeDb = `test_p48wa_upgrade_${Date.now()}`;
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -94,10 +107,18 @@ function digestRows(rows) {
 
 function parkMigration() {
   fs.mkdirSync(parkDir, { recursive: true });
+  fs.mkdirSync(parkLaterDir, { recursive: true });
   for (const gateDirName of gateDirNames) {
     const src = path.join(migrationsDir, gateDirName);
     const dest = path.join(parkDir, gateDirName);
     if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
+  for (const gateDirName of dependentLaterGateDirNames) {
+    const src = path.join(migrationsDir, gateDirName);
+    if (!fs.existsSync(src)) continue; // Wave B may not exist in older checkouts
+    const dest = path.join(parkLaterDir, gateDirName);
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
@@ -113,6 +134,22 @@ function restoreMigration() {
   }
   try {
     fs.rmSync(parkDir, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
+}
+
+function restoreLaterMigrations() {
+  if (!fs.existsSync(parkLaterDir)) return;
+  for (const gateDirName of dependentLaterGateDirNames) {
+    const src = path.join(parkLaterDir, gateDirName);
+    const dest = path.join(migrationsDir, gateDirName);
+    if (!fs.existsSync(src)) continue;
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
+  try {
+    fs.rmSync(parkLaterDir, { recursive: true, force: true });
   } catch {
     /* ignore */
   }
@@ -227,6 +264,8 @@ async function main() {
       }
     }
     throw err;
+  } finally {
+    restoreLaterMigrations();
   }
 }
 

@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { Prisma, QueuePriority as PrismaPriority, QueueTicketStatus as PrismaStatus } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
+import { AppointmentLifecycleMutationService } from '../../../scheduling/application/services/appointment-lifecycle-mutation.service';
 import type {
   QueueBoardItem,
   QueueBoardResponse,
@@ -8,6 +9,7 @@ import type {
   QueuePriority,
   QueueTicketStatus,
 } from '../../domain/queue.types';
+import { QueueEventService } from './queue-event.service';
 
 const STATUS_MAP: Record<PrismaStatus, QueueTicketStatus> = {
   WAITING: 'waiting',
@@ -69,7 +71,11 @@ const WAITING_ORDER: Prisma.QueueTicketOrderByWithRelationInput[] = [
 
 @Injectable()
 export class QueueBoardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycle: AppointmentLifecycleMutationService,
+    private readonly events: QueueEventService,
+  ) {}
 
   async getBoard(
     tenantId: string,
@@ -115,15 +121,15 @@ export class QueueBoardService {
       }),
     ]);
 
-    waitingRows.sort((a, b) => this.compareWaiting(a as TicketRow, b as TicketRow));
+    waitingRows.sort((a, b) => this.compareWaiting(a as unknown as TicketRow, b as unknown as TicketRow));
 
     const avgWait = await this.computeAvgWaitMinutes(tenantId, branchId ?? null);
 
     return {
-      waiting: waitingRows.map((r, i) => this.toBoardItem(r as TicketRow, i + 1, avgWait)),
-      called: calledRows.map((r) => this.toBoardItem(r as TicketRow, null, avgWait)),
-      serving: servingRows.map((r) => this.toBoardItem(r as TicketRow, null, avgWait)),
-      recentlyCompleted: completedRows.map((r) => this.toBoardItem(r as TicketRow, null, avgWait)),
+      waiting: waitingRows.map((r, i) => this.toBoardItem(r as unknown as TicketRow, i + 1, avgWait)),
+      called: calledRows.map((r) => this.toBoardItem(r as unknown as TicketRow, null, avgWait)),
+      serving: servingRows.map((r) => this.toBoardItem(r as unknown as TicketRow, null, avgWait)),
+      recentlyCompleted: completedRows.map((r) => this.toBoardItem(r as unknown as TicketRow, null, avgWait)),
     };
   }
 
@@ -193,7 +199,16 @@ export class QueueBoardService {
     };
   }
 
-  async checkInByAppointment(tenantId: string, appointmentId: string) {
+  async checkInByAppointment(
+    tenantId: string,
+    appointmentId: string,
+    authenticatedActorId: string,
+  ) {
+    if (!authenticatedActorId?.trim()) {
+      throw new BadRequestException('authenticatedActorId is required for queue check-in');
+    }
+    const actorId = authenticatedActorId.trim();
+
     const ticket = await this.prisma.queueTicket.findFirst({
       where: { tenantId, appointmentId },
       include: { patient: { select: { firstName: true, lastName: true } } },
@@ -202,23 +217,60 @@ export class QueueBoardService {
 
     const now = new Date();
     const terminal: PrismaStatus[] = ['COMPLETED', 'SKIPPED', 'NO_SHOW', 'CANCELLED', 'TRANSFERRED'];
-    const updated = await this.prisma.queueTicket.update({
-      where: { id: ticket.id },
-      data: {
-        checkedInAt: ticket.checkedInAt ?? now,
-        status: terminal.includes(ticket.status) ? ticket.status : 'WAITING',
-      },
-      include: { patient: { select: { firstName: true, lastName: true } } },
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const ticketUpdated = await tx.queueTicket.update({
+        where: { id: ticket.id },
+        data: {
+          checkedInAt: ticket.checkedInAt ?? now,
+          status: terminal.includes(ticket.status) ? ticket.status : 'WAITING',
+        },
+        include: { patient: { select: { firstName: true, lastName: true } } },
+      });
+
+      const lifecycleResult = await this.lifecycle.applyStatus(tx, {
+        tenantId,
+        appointmentId,
+        nextStatus: 'CHECKED_IN',
+        now,
+        actorId,
+        statusNotIn: ['CANCELLED', 'COMPLETED', 'NO_SHOW'],
+      });
+      if (!lifecycleResult.applied) {
+        throw new ConflictException('Appointment lifecycle mutation was not applied');
+      }
+
+      await this.events.record(
+        {
+          tenantId,
+          queueTicketId: ticketUpdated.id,
+          action: 'checked_in',
+          toStatus: 'waiting',
+          actorUserId: actorId,
+          metadata: { appointmentId, providerId: ticketUpdated.providerId },
+        },
+        tx,
+      );
+
+      return ticketUpdated;
     });
 
-    await this.syncAppointmentStatus(tenantId, appointmentId, 'CHECKED_IN', now);
-
     const avgWait = await this.computeAvgWaitMinutes(tenantId, updated.branchId);
-    const position = await this.computeWaitingPosition(tenantId, updated as TicketRow);
-    return this.toBoardItem(updated as TicketRow, position, avgWait);
+    const position = await this.computeWaitingPosition(tenantId, updated as unknown as TicketRow);
+    return this.toBoardItem(updated as unknown as TicketRow, position, avgWait);
   }
 
-  async callNext(tenantId: string, branchId?: string | null, providerId?: string | null) {
+  async callNext(
+    tenantId: string,
+    branchId: string | null | undefined,
+    providerId: string | null | undefined,
+    authenticatedActorId: string,
+  ) {
+    if (!authenticatedActorId?.trim()) {
+      throw new BadRequestException('authenticatedActorId is required for queue call-next');
+    }
+    const actorId = authenticatedActorId.trim();
+
     const branchFilter = branchId ? { branchId } : {};
     const providerFilter = providerId ? { providerId } : {};
 
@@ -226,23 +278,42 @@ export class QueueBoardService {
       where: { tenantId, status: 'WAITING', ...branchFilter, ...providerFilter },
       include: { patient: { select: { firstName: true, lastName: true } } },
     });
-    next.sort((a, b) => this.compareWaiting(a as TicketRow, b as TicketRow));
+    next.sort((a, b) => this.compareWaiting(a as unknown as TicketRow, b as unknown as TicketRow));
     const first = next[0];
     if (!first) return null;
 
     const now = new Date();
-    const updated = await this.prisma.queueTicket.update({
-      where: { id: first.id },
-      data: {
-        status: 'CALLED',
-        calledAt: now,
-        checkedInAt: first.checkedInAt ?? now,
-      },
-      include: { patient: { select: { firstName: true, lastName: true } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const ticketUpdated = await tx.queueTicket.update({
+        where: { id: first.id },
+        data: {
+          status: 'CALLED',
+          calledAt: now,
+          checkedInAt: first.checkedInAt ?? now,
+        },
+        include: { patient: { select: { firstName: true, lastName: true } } },
+      });
+
+      await this.events.record(
+        {
+          tenantId,
+          queueTicketId: ticketUpdated.id,
+          action: 'called',
+          toStatus: 'called',
+          actorUserId: actorId,
+          metadata: {
+            providerId: ticketUpdated.providerId,
+            appointmentId: ticketUpdated.appointmentId,
+          },
+        },
+        tx,
+      );
+
+      return ticketUpdated;
     });
 
     const avgWait = await this.computeAvgWaitMinutes(tenantId, branchId ?? null);
-    return this.toBoardItem(updated as TicketRow, null, avgWait);
+    return this.toBoardItem(updated as unknown as TicketRow, null, avgWait);
   }
 
   async reorderWaiting(tenantId: string, branchId: string | null, ticketIds: string[]) {
@@ -298,8 +369,8 @@ export class QueueBoardService {
     });
 
     const avgWait = await this.computeAvgWaitMinutes(tenantId, updated.branchId);
-    const position = await this.computeWaitingPosition(tenantId, updated as TicketRow);
-    return this.toBoardItem(updated as TicketRow, position, avgWait);
+    const position = await this.computeWaitingPosition(tenantId, updated as unknown as TicketRow);
+    return this.toBoardItem(updated as unknown as TicketRow, position, avgWait);
   }
 
   async updatePriority(tenantId: string, queueTicketId: string, priority: QueuePriority) {
@@ -319,9 +390,9 @@ export class QueueBoardService {
     const avgWait = await this.computeAvgWaitMinutes(tenantId, updated.branchId);
     const position =
       updated.status === 'WAITING'
-        ? await this.computeWaitingPosition(tenantId, updated as TicketRow)
+        ? await this.computeWaitingPosition(tenantId, updated as unknown as TicketRow)
         : null;
-    return this.toBoardItem(updated as TicketRow, position, avgWait);
+    return this.toBoardItem(updated as unknown as TicketRow, position, avgWait);
   }
 
   async getWaitingPosition(tenantId: string, ticket: TicketRow): Promise<number> {
@@ -335,8 +406,8 @@ export class QueueBoardService {
     });
     waiting.sort((a, b) =>
       this.compareWaiting(
-        { ...a, priority: a.priority } as TicketRow,
-        { ...b, priority: b.priority } as TicketRow,
+        { ...a, priority: a.priority } as unknown as TicketRow,
+        { ...b, priority: b.priority } as unknown as TicketRow,
       ),
     );
     const idx = waiting.findIndex((w) => w.id === ticket.id);
@@ -351,23 +422,6 @@ export class QueueBoardService {
     const bChecked = b.checkedInAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
     if (aChecked !== bChecked) return aChecked - bChecked;
     return a.scheduledStart.getTime() - b.scheduledStart.getTime();
-  }
-
-  private async syncAppointmentStatus(
-    tenantId: string,
-    appointmentId: string,
-    status: 'CHECKED_IN' | 'IN_PROGRESS' | 'COMPLETED' | 'NO_SHOW' | 'CANCELLED',
-    now: Date,
-  ): Promise<void> {
-    await this.prisma.appointment.updateMany({
-      where: {
-        id: appointmentId,
-        tenantId,
-        deletedAt: null,
-        status: { notIn: ['CANCELLED', 'COMPLETED', 'NO_SHOW'] },
-      },
-      data: { status, updatedAt: now },
-    });
   }
 
   toBoardItem(row: TicketRow, position: number | null, avgWaitMinutes: number): QueueBoardItem {
@@ -413,6 +467,9 @@ export class QueueBoardService {
   }
 
   async assignRoom(tenantId: string, queueTicketId: string, resourceId: string | null) {
+    // Wave B: appointment resource mutation moved to AssignQueueRoomHandler (booking integrity).
+    // This method only updates the queue ticket display field — callers that need scheduling
+    // integrity must use AssignQueueRoomHandler.
     const ticket = await this.prisma.queueTicket.findFirst({
       where: { id: queueTicketId, tenantId },
       include: {
@@ -431,19 +488,43 @@ export class QueueBoardService {
       },
     });
 
-    if (resourceId) {
-      await this.prisma.appointment.updateMany({
-        where: { id: updated.appointmentId, tenantId },
-        data: { resourceId },
-      });
-    }
-
     const avgWait = await this.computeAvgWaitMinutes(tenantId, updated.branchId);
     const position =
       updated.status === 'WAITING'
-        ? await this.computeWaitingPosition(tenantId, updated as TicketRow)
+        ? await this.computeWaitingPosition(tenantId, updated as unknown as TicketRow)
         : null;
-    return this.toBoardItem(updated as TicketRow, position, avgWait);
+    return this.toBoardItem(updated as unknown as TicketRow, position, avgWait);
+  }
+
+  /** Load ticket for AssignQueueRoomHandler (no mutation). */
+  async findTicketForAssign(tenantId: string, queueTicketId: string) {
+    return this.prisma.queueTicket.findFirst({
+      where: { id: queueTicketId, tenantId },
+      select: {
+        id: true,
+        appointmentId: true,
+        branchId: true,
+        resourceId: true,
+        status: true,
+      },
+    });
+  }
+
+  async getBoardItemAfterAssign(tenantId: string, queueTicketId: string) {
+    const updated = await this.prisma.queueTicket.findFirst({
+      where: { id: queueTicketId, tenantId },
+      include: {
+        patient: { select: { firstName: true, lastName: true } },
+        resource: { select: { name: true } },
+      },
+    });
+    if (!updated) return null;
+    const avgWait = await this.computeAvgWaitMinutes(tenantId, updated.branchId);
+    const position =
+      updated.status === 'WAITING'
+        ? await this.computeWaitingPosition(tenantId, updated as unknown as TicketRow)
+        : null;
+    return this.toBoardItem(updated as unknown as TicketRow, position, avgWait);
   }
 
   priorityWeight(priority: PrismaPriority): number {

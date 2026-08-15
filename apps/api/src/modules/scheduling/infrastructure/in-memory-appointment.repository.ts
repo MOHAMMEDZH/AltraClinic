@@ -79,12 +79,48 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     return { total, items: page.map((a) => this.toListItem(a)) };
   }
 
+  async listSeriesFutureMembers(params: {
+    tenantId: string;
+    recurrenceSeriesId: string;
+    fromScheduledStart: string | Date;
+    pageSize?: number;
+  }): Promise<AppointmentListItem[]> {
+    const from = new Date(params.fromScheduledStart).getTime();
+    let items = [...this.store.values()].filter(
+      (a) =>
+        a.tenantId === params.tenantId &&
+        a.recurrenceSeriesId === params.recurrenceSeriesId &&
+        a.status !== AppointmentStatus.Cancelled &&
+        new Date(a.slot.start).getTime() >= from,
+    );
+    items.sort((a, b) => {
+      const ds = new Date(a.slot.start).getTime() - new Date(b.slot.start).getTime();
+      return ds !== 0 ? ds : a.id.localeCompare(b.id);
+    });
+    if (params.pageSize && params.pageSize > 0) {
+      // Page until exhausted (same contract as prisma repo).
+      const out: AppointmentListItem[] = [];
+      for (let offset = 0; offset < items.length; offset += params.pageSize) {
+        out.push(...items.slice(offset, offset + params.pageSize).map((a) => this.toListItem(a)));
+      }
+      return out;
+    }
+    return items.map((a) => this.toListItem(a));
+  }
+
   async updateNotes(id: string, tenantId: string, notes: string | null): Promise<void> {
     const appt = await this.findById(id, tenantId);
     if (appt) {
       appt.notes = notes;
       await this.save(appt);
     }
+  }
+
+  async softDelete(id: string, tenantId: string): Promise<boolean> {
+    const appt = await this.findById(id, tenantId);
+    if (!appt) return false;
+    this.store.delete(id);
+    return true;
   }
 
   private toListItem(appt: Appointment): AppointmentDetail {

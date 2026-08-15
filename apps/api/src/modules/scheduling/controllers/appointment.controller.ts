@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../../common/tenant-scoped-access.guard';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
+import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
 import { RequireLicensedFeature } from '../../subscription/api/decorators/require-licensed-feature.decorator';
 import { CreateAppointmentDTO, UpdateAppointmentDTO, ListAppointmentsQueryDTO } from '../application/dto/appointment.dto';
@@ -92,7 +94,7 @@ export class AppointmentController {
 
   @Post()
   @RequirePermission('api.scheduling', 'create')
-  async create(@Body() body: CreateAppointmentDTO) {
+  async create(@Body() body: CreateAppointmentDTO, @CurrentUser() user: JwtClaimsVO) {
     const result = await this.createHandler.execute({
       patientId: body.patientId,
       providerId: body.providerId,
@@ -103,6 +105,13 @@ export class AppointmentController {
       isEmergency: body.isEmergency,
       recurrence: body.recurrence,
       resourceId: body.resourceId,
+      clinicalServiceId: body.clinicalServiceId,
+      quantity: body.quantity,
+      pricingUnit: body.pricingUnit as never,
+      currency: body.currency,
+      commercialReason: body.commercialReason,
+      resourceIds: body.resourceIds,
+      actorId: user.sub,
     });
     return {
       id: result.appointmentId,
@@ -133,8 +142,12 @@ export class AppointmentController {
 
   @Patch(':id')
   @RequirePermission('api.scheduling', 'update')
-  async update(@Param('id') id: string, @Body() body: UpdateAppointmentDTO) {
-    return this.updateHandler.execute(id, body);
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAppointmentDTO,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.updateHandler.execute(id, body, user.sub);
   }
 
   @Delete(':id')

@@ -37,6 +37,8 @@ import { PatientsModule } from '../patients/patients.module';
 
 import { LoyaltyModule } from '../loyalty/loyalty.module';
 
+import { SchedulingModule } from '../scheduling/scheduling.module';
+
 import {
   ConsumeBeautyMaterialHandler,
   CreateBeautyProcedureMaterialHandler,
@@ -46,7 +48,7 @@ import {
 } from './application/handlers/beauty-material.handlers';
 
 @Module({
-  imports: [InventoryModule, PatientsModule, LoyaltyModule],
+  imports: [InventoryModule, PatientsModule, LoyaltyModule, SchedulingModule],
   controllers: [BeautyController],
   providers: [
     BeautyRecordService,

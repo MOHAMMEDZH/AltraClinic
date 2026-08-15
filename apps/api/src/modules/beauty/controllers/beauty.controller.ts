@@ -226,10 +226,17 @@ export class BeautyController {
 
   @RequirePermission('api.beauty', 'update')
 
-  async updateRecord(@Param('patientId') patientId: string, @Body() body: UpdateBeautyRecordDto) {
-
-    return this.recordService.updateBodyMapState(await this.tenantId(), patientId, body.bodyMapState);
-
+  async updateRecord(
+    @Param('patientId') patientId: string,
+    @Body() body: UpdateBeautyRecordDto,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.recordService.updateBodyMapState(
+      await this.tenantId(),
+      patientId,
+      body.bodyMapState,
+      user.sub,
+    );
   }
 
 

@@ -5,6 +5,7 @@ import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard
 import { RealtimeModule } from '../realtime/realtime.module';
 
 import { NotificationModule } from '../notifications/notifications.module';
+import { SchedulingModule } from '../scheduling/scheduling.module';
 
 import { QueueController } from './controllers/queue.controller';
 
@@ -51,7 +52,7 @@ import { AppointmentScheduledQueueListener } from './application/integrations/ap
 
 @Module({
 
-  imports: [RealtimeModule, NotificationModule],
+  imports: [RealtimeModule, NotificationModule, SchedulingModule],
 
   controllers: [QueueController],
 
@@ -112,5 +113,3 @@ import { AppointmentScheduledQueueListener } from './application/integrations/ap
 })
 
 export class QueueModule {}
-
-

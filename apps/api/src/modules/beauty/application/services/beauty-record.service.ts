@@ -313,6 +313,7 @@ export class BeautyRecordService {
     tenantId: string,
     patientId: string,
     bodyMapState: Record<string, unknown>,
+    authenticatedActorId: string,
   ): Promise<BeautyRecordDto> {
     const record = await this.prisma.beautyRecord.findFirst({
       where: { patientId, tenantId },
@@ -331,6 +332,7 @@ export class BeautyRecordService {
       patientId,
       prevSessions as Parameters<BeautySessionSyncService['syncSessions']>[3],
       nextSessionsRaw as Parameters<BeautySessionSyncService['syncSessions']>[4],
+      authenticatedActorId,
     );
     sanitized.sessions = syncedSessions;
 

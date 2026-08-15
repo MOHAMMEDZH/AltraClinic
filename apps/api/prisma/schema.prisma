@@ -90,6 +90,14 @@ enum AppointmentStatus {
   @@map("appointment_status")
 }
 
+/// Wave B — appointment-level commercial snapshot write provenance (not global cutover).
+enum AppointmentSnapshotWriteMode {
+  LEGACY
+  CANONICAL_REQUIRED
+
+  @@map("appointment_snapshot_write_mode")
+}
+
 enum WaitlistStatus {
   OPEN
   SCHEDULED
@@ -470,6 +478,11 @@ model Tenant {
   patients             Patient[]
   appointments         Appointment[]
   appointmentWaitlist  AppointmentWaitlist[]
+  appointmentSnapshotRevisions AppointmentServiceSnapshotRevision[]
+  providerServiceEligibilities ProviderServiceEligibility[]
+  serviceResourceRequirements ServiceResourceRequirement[]
+  appointmentResourceAllocations AppointmentResourceAllocation[]
+  portalSchedulingIdempotencyLedger PortalSchedulingIdempotencyLedger[]
   schedulingResources  SchedulingResource[]
   appointmentTemplates AppointmentTemplate[]
   branchOperatingHours BranchOperatingHours[]
@@ -585,6 +598,7 @@ model Branch {
   userBranchAccess UserBranchAccess[]
   clinicalServiceConfigs TenantServiceConfiguration[]
   clinicalPriceVersions  ClinicalServicePriceVersion[]
+  providerServiceEligibilities ProviderServiceEligibility[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -1282,18 +1296,32 @@ model Appointment {
   notes           String?             @db.Text
   cancellationReason String?          @db.VarChar(500)
   /// consultation, follow_up, procedure, imaging, lab, cleaning, etc.
+  /// Preserved for legacy/display; Wave B canonical bookings also set clinicalServiceId.
   serviceType     String?             @db.VarChar(100)
+  /// Wave B canonical clinical service identity (null for legacy-only rows).
+  clinicalServiceId String?           @db.Uuid
+  /// Wave B effective commercial snapshot pointer (append-only revisions).
+  effectiveSnapshotRevisionId String? @db.Uuid
   isEmergency     Boolean             @default(false)
   /// Groups recurring series appointments
   recurrenceSeriesId String?          @db.Uuid
   /// Room or equipment resource
   resourceId      String?             @db.Uuid
+  /// Wave B — set when appointment first reaches CONFIRMED (irreversible commercial lock).
+  commercialLockedAt DateTime?
+  /// Wave B — write provenance for snapshot backfill classification (not createdAt/cutover).
+  /// LEGACY = bounded legacy booking (revision 1 not mandatory). CANONICAL_REQUIRED = revision 1 must exist.
+  snapshotWriteMode AppointmentSnapshotWriteMode @default(LEGACY)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   deletedAt       DateTime?
 
   tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient         Patient             @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  effectiveSnapshotRevision AppointmentServiceSnapshotRevision? @relation("AppointmentEffectiveSnapshot", fields: [effectiveSnapshotRevisionId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[] @relation("AppointmentSnapshotHistory")
+  resourceAllocations AppointmentResourceAllocation[]
   encounters      Encounter[]
   queueTicket     QueueTicket?
 
@@ -1303,9 +1331,158 @@ model Appointment {
   @@index([tenantId, providerId])
   @@index([tenantId, scheduledStart])
   @@index([tenantId, recurrenceSeriesId])
+  @@index([tenantId, recurrenceSeriesId, scheduledStart, id], map: "appointments_tenant_series_start_idx")
   @@index([tenantId, resourceId])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, effectiveSnapshotRevisionId])
+  @@index([tenantId, commercialLockedAt])
+  @@index([tenantId, snapshotWriteMode, effectiveSnapshotRevisionId])
   @@map("appointments")
+}
+
+/// Wave B — migration-owned runtime markers (e.g. snapshot backfill cutover watermark).
+model Phase48WaveBRuntimeMarker {
+  key               String   @id @db.Text
+  valueTimestamptz  DateTime @db.Timestamptz(6)
+  note              String?  @db.Text
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("phase48_wave_b_runtime_markers")
+}
+
+/// Wave B AR-05 — append-only appointment commercial snapshot revisions.
+model AppointmentServiceSnapshotRevision {
+  id                           String   @id @default(uuid()) @db.Uuid
+  tenantId                     String   @db.Uuid
+  appointmentId                String   @db.Uuid
+  revisionNumber               Int
+  previousRevisionId           String?  @db.Uuid
+  /// null allowed for LEGACY_UNMAPPED historical records
+  clinicalServiceId            String?  @db.Uuid
+  stableKey                    String   @db.VarChar(160)
+  displayNameAr                String   @db.VarChar(255)
+  displayNameEn                String   @db.VarChar(255)
+  tenantServiceConfigurationId String?  @db.Uuid
+  priceVersionId               String?  @db.Uuid
+  pricingUnit                  ClinicalPricingUnit @default(PER_VISIT)
+  quantity                     Decimal  @db.Decimal(18, 4)
+  currency                     String   @db.VarChar(3)
+  unitPrice                    Decimal  @db.Decimal(18, 4)
+  taxPercent                   Decimal? @db.Decimal(5, 2)
+  lineBasisAmount              Decimal  @db.Decimal(18, 4)
+  commercialReason             String?  @db.VarChar(255)
+  changeReason                 String?  @db.VarChar(500)
+  actorId                      String   @db.Uuid
+  capturedAt                   DateTime @default(now())
+  changeCommandContext         String?  @db.VarChar(120)
+  createdAt                    DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  appointment     Appointment @relation("AppointmentSnapshotHistory", fields: [appointmentId], references: [id], onDelete: Restrict)
+  previousRevision AppointmentServiceSnapshotRevision? @relation("SnapshotRevisionChain", fields: [previousRevisionId], references: [id], onDelete: Restrict)
+  nextRevisions   AppointmentServiceSnapshotRevision[] @relation("SnapshotRevisionChain")
+  effectiveForAppointments Appointment[] @relation("AppointmentEffectiveSnapshot")
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  tenantServiceConfiguration TenantServiceConfiguration? @relation(fields: [tenantServiceConfigurationId], references: [id], onDelete: Restrict)
+  priceVersion    ClinicalServicePriceVersion? @relation(fields: [priceVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([appointmentId, revisionNumber])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("appointment_service_snapshot_revisions")
+}
+
+/// Wave B AR-07 — first-class provider×service eligibility.
+model ProviderServiceEligibility {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @db.Uuid
+  providerUserId          String   @db.Uuid
+  clinicalServiceId       String   @db.Uuid
+  /// null = tenant-level eligibility (applies to all branches)
+  branchId                String?  @db.Uuid
+  specialtyRequirementRef String?  @db.VarChar(120)
+  active                  Boolean  @default(true)
+  effectiveFrom           DateTime
+  effectiveTo             DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  inactivatedAt           DateTime?
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// Ownership validated in ProviderEligibilityService (tenant-scoped user lookup).
+  /// No Prisma FK: historical/synthetic provider UUIDs may exist without users rows.
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  branch          Branch? @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, providerUserId, clinicalServiceId, active])
+  @@index([tenantId, clinicalServiceId, active])
+  @@index([tenantId, branchId])
+  @@map("provider_service_eligibilities")
+}
+
+/// Wave B PA — multi-resource allocations (Appointment.resourceId remains primary/legacy = resourceIds[0]).
+model AppointmentResourceAllocation {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  appointmentId         String   @db.Uuid
+  schedulingResourceId  String   @db.Uuid
+  createdAt             DateTime @default(now())
+
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  appointment         Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  schedulingResource  SchedulingResource @relation(fields: [schedulingResourceId], references: [id], onDelete: Restrict)
+
+  @@unique([appointmentId, schedulingResourceId])
+  @@index([tenantId, schedulingResourceId])
+  @@map("appointment_resource_allocations")
+}
+
+/// Wave B PA — portal scheduling mutation idempotency (DB-backed, tenant+patient scoped).
+model PortalSchedulingIdempotencyLedger {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  patientId       String   @db.Uuid
+  operation       String   @db.VarChar(64)
+  idempotencyKey  String   @db.VarChar(255)
+  fingerprint     String   @db.VarChar(64)
+  /// IN_PROGRESS | COMPLETED | FAILED
+  status          String   @default("IN_PROGRESS") @db.VarChar(32)
+  responseJson    Json?
+  expiresAt       DateTime?
+  completedAt     DateTime?
+  /// CAS ownership for stale reclaim / complete / fail
+  attemptVersion  BigInt   @default(0)
+  ownerToken      String?  @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, patientId, operation, idempotencyKey])
+  @@index([tenantId, patientId])
+  @@index([status, expiresAt])
+  @@index([ownerToken])
+  @@map("portal_scheduling_idempotency_ledger")
+}
+
+/// Wave B AR-12 — service resource requirement foundation (not P1-03 OPERATORY workflow).
+model ServiceResourceRequirement {
+  id                String                 @id @default(uuid()) @db.Uuid
+  tenantId          String                 @db.Uuid
+  clinicalServiceId String                 @db.Uuid
+  resourceType      SchedulingResourceType
+  quantity          Int                    @default(1)
+  constraints       Json?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, resourceType])
+  @@index([tenantId, clinicalServiceId])
+  @@map("service_resource_requirements")
 }
 
 /// Patient waitlist when preferred slots are full.
@@ -1346,6 +1523,7 @@ model SchedulingResource {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   queueTickets QueueTicket[]
+  appointmentAllocations AppointmentResourceAllocation[]
 
   @@index([tenantId, resourceType])
   @@index([tenantId, branchId])
@@ -2791,6 +2969,10 @@ model CanonicalClinicalServiceDefinition {
   presentationOverrides TenantServicePresentationOverride[]
   legacyServiceMappings LegacyClinicalServiceMapping[]
   legacyPriceMappings   LegacyClinicalPriceMapping[]
+  appointments    Appointment[]
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
+  providerEligibilities ProviderServiceEligibility[]
+  resourceRequirements ServiceResourceRequirement[]
 
   @@unique([stableKey])
   @@index([provenance, lifecycle])
@@ -2869,6 +3051,7 @@ model TenantServiceConfiguration {
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
   clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
 
   @@index([tenantId, clinicalServiceId])
   @@index([tenantId, branchId])
@@ -2903,6 +3086,7 @@ model ClinicalServicePriceVersion {
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
   clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
 
   @@index([tenantId, clinicalServiceId, status, effectiveFrom])
   @@index([tenantId, branchId, clinicalServiceId, status])

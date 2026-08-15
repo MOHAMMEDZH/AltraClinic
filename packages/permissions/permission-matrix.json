@@ -181,7 +181,16 @@
         { "method": "PATCH","path": "/scheduling/appointments/:id",            "action": "update" },
         { "method": "DELETE","path": "/scheduling/appointments/:id",           "action": "delete" },
         { "method": "DELETE","path": "/scheduling/templates/:id",              "action": "delete" },
-        { "method": "DELETE","path": "/scheduling/waitlist/:id",               "action": "delete" }
+        { "method": "DELETE","path": "/scheduling/waitlist/:id",               "action": "delete" },
+        { "method": "GET",  "path": "/scheduling/booking-integrity/eligibilities", "action": "view" },
+        { "method": "POST", "path": "/scheduling/booking-integrity/eligibilities", "action": "manage" },
+        { "method": "POST", "path": "/scheduling/booking-integrity/eligibilities/:id/deactivate", "action": "manage" },
+        { "method": "GET",  "path": "/scheduling/booking-integrity/eligibilities/readiness", "action": "view" },
+        { "method": "POST", "path": "/scheduling/booking-integrity/eligibilities/enforcement/activate", "action": "manage" },
+        { "method": "GET",  "path": "/scheduling/booking-integrity/resource-requirements", "action": "view" },
+        { "method": "PUT",  "path": "/scheduling/booking-integrity/resource-requirements", "action": "manage" },
+        { "method": "GET",  "path": "/scheduling/booking-integrity/appointments/:id/snapshots", "action": "view" },
+        { "method": "POST", "path": "/scheduling/booking-integrity/appointments/:id/commercial-correction", "action": "manage" }
       ]
     },
 

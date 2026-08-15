@@ -41,6 +41,7 @@ class BookMyAppointmentDto {
   end!: string;
   notes?: string;
   serviceType?: string;
+  clinicalServiceId?: string;
 }
 
 class UpdateMyAppointmentDto {
@@ -165,8 +166,9 @@ export class PortalSchedulingController {
   async providers(
     @Req() request: AuthenticatedRequest,
     @Query('branchId') branchId?: string,
+    @Query('clinicalServiceId') clinicalServiceId?: string,
   ) {
-    return this.listProviders.execute(this.actor(request), branchId);
+    return this.listProviders.execute(this.actor(request), branchId, clinicalServiceId);
   }
 
   @Get('availability')
@@ -176,11 +178,13 @@ export class PortalSchedulingController {
     @Query('providerId') providerId: string,
     @Query('date') date: string,
     @Query('durationMin') durationMin?: string,
+    @Query('clinicalServiceId') clinicalServiceId?: string,
   ) {
     return this.availability.execute(this.actor(request), {
       providerId,
       date,
       durationMin: durationMin ? Number(durationMin) : undefined,
+      clinicalServiceId,
     });
   }
 }

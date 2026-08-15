@@ -1,6 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { AppointmentStatus as PrismaAppointmentStatus, ClinicalPricingUnit } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
+import { BookingConcurrencyService } from '../services/booking-concurrency.service';
+import { BookingCommercialResolver } from '../services/booking-commercial-resolver.service';
+import { ProviderEligibilityService } from '../services/provider-eligibility.service';
+import { ServiceResourceRequirementService } from '../services/service-resource-requirement.service';
+import { AppointmentSnapshotService } from '../services/appointment-snapshot.service';
+import { isTenantCanonicalWriteEnabled } from '../../../clinical-catalog/domain/feature-flag.helpers';
+import {
+  SCHEDULING_AUDIT_LOG,
+  SchedulingAuditLog,
+} from '../ports/scheduling-audit-log.port';
 
 export interface BranchHoursDayInput {
   dayOfWeek: number;
@@ -180,12 +192,34 @@ export class BookWaitlistEntryHandler {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
+    private readonly concurrency: BookingConcurrencyService,
+    private readonly commercial: BookingCommercialResolver,
+    private readonly eligibility: ProviderEligibilityService,
+    private readonly resources: ServiceResourceRequirementService,
+    private readonly snapshots: AppointmentSnapshotService,
+    @Inject(SCHEDULING_AUDIT_LOG) private readonly auditLog: SchedulingAuditLog,
   ) { }
 
   async execute(
     waitlistId: string,
-    input: { start: string; end: string; providerId?: string },
+    input: {
+      start: string;
+      end: string;
+      providerId?: string;
+      clinicalServiceId?: string;
+      resourceId?: string;
+      resourceIds?: string[];
+      pricingUnit?: string;
+      currency?: string;
+      quantity?: number;
+      commercialReason?: string;
+    },
+    authenticatedActorId: string,
   ) {
+    if (!authenticatedActorId?.trim()) {
+      throw new BadRequestException('authenticatedActorId is required');
+    }
+    const actorId = authenticatedActorId.trim();
     const tenant = await this.tenantContext.resolve();
     const entry = await this.prisma.appointmentWaitlist.findFirst({
       where: {
@@ -204,24 +238,133 @@ export class BookWaitlistEntryHandler {
     const providerId = input.providerId ?? entry.providerId;
     if (!providerId) throw new BadRequestException('providerId is required');
 
-    const appointment = await this.prisma.appointment.create({
-      data: {
+    const features = await this.prisma.withPlatformBypass((c) =>
+      c.tenant.findUnique({ where: { id: tenant.tenantId }, select: { features: true } }),
+    );
+    const canonicalWriteOn = isTenantCanonicalWriteEnabled(
+      (features?.features as Record<string, unknown> | null) ?? null,
+    );
+    if (canonicalWriteOn && !input.clinicalServiceId?.trim()) {
+      throw new BadRequestException(
+        'clinicalServiceId is required when catalog.canonical.write is ON',
+      );
+    }
+
+    const start = new Date(input.start);
+    const end = new Date(input.end);
+    const appointmentId = randomUUID();
+    const branchId = entry.branchId ?? tenant.branchId ?? null;
+    const resourceIds = [
+      ...new Set(
+        [...(input.resourceIds ?? []), ...(input.resourceId ? [input.resourceId] : [])].filter(
+          Boolean,
+        ),
+      ),
+    ] as string[];
+
+    let resolvedCommercial = null as Awaited<
+      ReturnType<BookingCommercialResolver['resolveCanonical']>
+    > | null;
+    if (input.clinicalServiceId?.trim()) {
+      await this.eligibility.assertClinicalServiceAccessible(
+        tenant.tenantId,
+        input.clinicalServiceId.trim(),
+      );
+      resolvedCommercial = await this.commercial.resolveCanonical({
         tenantId: tenant.tenantId,
-        branchId: entry.branchId ?? tenant.branchId,
-        patientId: entry.patientId,
+        actorId,
+        clinicalServiceId: input.clinicalServiceId.trim(),
+        branchId,
+        pricingUnit: (input.pricingUnit as ClinicalPricingUnit) ?? ClinicalPricingUnit.PER_VISIT,
+        currency: input.currency ?? 'SYP',
+        quantity: input.quantity ?? 1,
+        commercialReason: input.commercialReason ?? null,
+      });
+    }
+
+    await this.concurrency.withBookingTransaction(async (client) => {
+      await this.concurrency.assertSlotAvailableUnderLock(client, {
+        tenantId: tenant.tenantId,
         providerId,
-        scheduledStart: new Date(input.start),
-        scheduledEnd: new Date(input.end),
-        status: 'PENDING',
-        notes: entry.notes,
-      },
+        resourceIds,
+        start,
+        end,
+      });
+
+      if (input.clinicalServiceId?.trim()) {
+        await this.eligibility.assertEligible({
+          tenantId: tenant.tenantId,
+          providerUserId: providerId,
+          clinicalServiceId: input.clinicalServiceId.trim(),
+          branchId,
+          at: start,
+          client,
+        });
+        await this.resources.assertRequirementsSatisfied({
+          tenantId: tenant.tenantId,
+          clinicalServiceId: input.clinicalServiceId.trim(),
+          branchId,
+          allocatedResourceIds: resourceIds,
+          client,
+        });
+      } else if (resourceIds.length > 0) {
+        await this.resources.assertAllocatedResourcesOwned({
+          tenantId: tenant.tenantId,
+          branchId,
+          allocatedResourceIds: resourceIds,
+          client,
+        });
+      }
+
+      await client.appointment.create({
+        data: {
+          id: appointmentId,
+          tenantId: tenant.tenantId,
+          branchId,
+          patientId: entry.patientId,
+          providerId,
+          scheduledStart: start,
+          scheduledEnd: end,
+          status: PrismaAppointmentStatus.PENDING,
+          notes: entry.notes,
+          clinicalServiceId: input.clinicalServiceId?.trim() || null,
+          resourceId: resourceIds[0] ?? null,
+          snapshotWriteMode:
+            canonicalWriteOn && resolvedCommercial ? 'CANONICAL_REQUIRED' : 'LEGACY',
+        },
+      });
+
+      await this.concurrency.replaceResourceAllocations(client, {
+        tenantId: tenant.tenantId,
+        appointmentId,
+        resourceIds,
+      });
+
+      if (canonicalWriteOn && resolvedCommercial) {
+        const revision = await this.snapshots.captureCanonicalRevision1(client, {
+          tenantId: tenant.tenantId,
+          appointmentId,
+          actorId,
+          commercial: resolvedCommercial,
+        });
+        await this.auditLog.recordInTransaction(client, {
+          tenantId: tenant.tenantId,
+          action: 'scheduling.waitlist.canonical_snapshot',
+          resourceId: revision.id,
+          actorId,
+          actorRoles: [],
+          descriptionEn: 'Canonical waitlist booking snapshot revision 1',
+          descriptionAr: 'لقطة حجز قائمة الانتظار الكنسي مراجعة 1',
+          details: { appointmentId, waitlistId: entry.id },
+        });
+      }
+
+      await client.appointmentWaitlist.update({
+        where: { id: entry.id },
+        data: { status: 'SCHEDULED', updatedAt: new Date() },
+      });
     });
 
-    await this.prisma.appointmentWaitlist.update({
-      where: { id: entry.id },
-      data: { status: 'SCHEDULED', updatedAt: new Date() },
-    });
-
-    return { appointmentId: appointment.id, waitlistId: entry.id };
+    return { appointmentId, waitlistId: entry.id };
   }
 }

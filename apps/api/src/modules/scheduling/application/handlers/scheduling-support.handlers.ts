@@ -10,20 +10,15 @@ import { TenantTimezoneService } from '../services/tenant-timezone.service';
 import {
   applyWindowToZonedDay,
   dayOfWeekInTimezone,
-  zonedDayBoundsUtc,
 } from '../../domain/scheduling-timezone.util';
+import {
+  ProviderEligibilityService,
+  SCHEDULING_PROVIDER_ROLES,
+} from '../services/provider-eligibility.service';
+import { SCHEDULING_SERVICE_TYPES } from '../../domain/service-types';
 
-const PROVIDER_ROLES: UserRole[] = [
-  UserRole.OWNER,
-  UserRole.DOCTOR,
-  UserRole.DENTIST,
-  UserRole.SPECIALIST,
-  UserRole.GENERAL_MANAGER,
-  UserRole.BRANCH_MANAGER,
-];
+const PROVIDER_ROLES: UserRole[] = SCHEDULING_PROVIDER_ROLES;
 
-const WORKDAY_START_HOUR = 7;
-const WORKDAY_END_HOUR = 20;
 const SLOT_INTERVAL_MIN = 15;
 
 @Injectable()
@@ -31,9 +26,10 @@ export class ListProvidersHandler {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
+    private readonly eligibility: ProviderEligibilityService,
   ) {}
 
-  async execute(branchId?: string) {
+  async execute(branchId?: string, clinicalServiceId?: string) {
     const tenant = await this.tenantContext.resolve();
     const users = await this.prisma.user.findMany({
       where: {
@@ -52,17 +48,28 @@ export class ListProvidersHandler {
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
 
+    let providerIds = users.map((u) => u.id);
+    if (clinicalServiceId?.trim()) {
+      providerIds = await this.eligibility.filterEligibleProviderIds({
+        tenantId: tenant.tenantId,
+        clinicalServiceId: clinicalServiceId.trim(),
+        branchId: branchId ?? tenant.branchId ?? null,
+        providerIds,
+      });
+    }
+    const allowed = new Set(providerIds);
+
     return {
-      items: users.map((u) => ({
-        id: u.id,
-        name: `${u.firstName} ${u.lastName}`.trim(),
-        branchId: u.branchId,
-      })),
+      items: users
+        .filter((u) => allowed.has(u.id))
+        .map((u) => ({
+          id: u.id,
+          name: `${u.firstName} ${u.lastName}`.trim(),
+          branchId: u.branchId,
+        })),
     };
   }
 }
-
-import { SCHEDULING_SERVICE_TYPES } from '../../domain/service-types';
 
 @Injectable()
 export class ListServiceTypesHandler {
@@ -83,6 +90,7 @@ export class GetAvailabilityHandler {
     private readonly tenantContext: TenantContextService,
     private readonly scheduleWindow: ScheduleWindowService,
     private readonly tenantTimezone: TenantTimezoneService,
+    private readonly eligibility: ProviderEligibilityService,
   ) {}
 
   async execute(input: {
@@ -90,6 +98,7 @@ export class GetAvailabilityHandler {
     date: string;
     durationMin?: number;
     branchId?: string;
+    clinicalServiceId?: string;
   }) {
     if (!input.providerId?.trim()) {
       throw new BadRequestException('providerId is required');
@@ -105,11 +114,17 @@ export class GetAvailabilityHandler {
       throw new BadRequestException('Invalid date');
     }
 
+    const branchId = input.branchId ?? tenant.branchId ?? null;
+    const clinicalServiceId = input.clinicalServiceId?.trim() || null;
+    const enforcementOn = clinicalServiceId
+      ? await this.eligibility.isEnforcementEnabled(tenant.tenantId)
+      : false;
+
     const dayOfWeek = dayOfWeekInTimezone(input.date, timezone);
     const window = await this.scheduleWindow.resolveProviderWindow(
       tenant.tenantId,
       input.providerId,
-      input.branchId ?? tenant.branchId,
+      branchId,
       dayOfWeek,
     );
     const range = applyWindowToZonedDay(input.date, timezone, window);
@@ -118,6 +133,7 @@ export class GetAvailabilityHandler {
         providerId: input.providerId,
         date: input.date,
         durationMin,
+        ...(clinicalServiceId ? { clinicalServiceId } : {}),
         slots: [],
       };
     }
@@ -126,7 +142,7 @@ export class GetAvailabilityHandler {
 
     const { items: booked } = await this.repo.list({
       tenantId: tenant.tenantId,
-      branchId: input.branchId ?? tenant.branchId,
+      branchId: branchId ?? undefined,
       providerId: input.providerId,
       from: rangeStart.toISOString(),
       to: rangeEnd.toISOString(),
@@ -150,6 +166,19 @@ export class GetAvailabilityHandler {
       });
 
       if (!overlaps) {
+        if (enforcementOn && clinicalServiceId) {
+          const ok = await this.eligibility.hasActiveEligibility({
+            tenantId: tenant.tenantId,
+            providerUserId: input.providerId,
+            clinicalServiceId,
+            branchId,
+            at: slotStart,
+          });
+          if (!ok) {
+            cursor.setMinutes(cursor.getMinutes() + SLOT_INTERVAL_MIN);
+            continue;
+          }
+        }
         slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
       }
 
@@ -160,7 +189,9 @@ export class GetAvailabilityHandler {
       providerId: input.providerId,
       date: input.date,
       durationMin,
+      ...(clinicalServiceId ? { clinicalServiceId } : {}),
       slots,
+      ...(enforcementOn && clinicalServiceId && slots.length === 0 ? { ineligible: true } : {}),
     };
   }
 }
