@@ -6,6 +6,7 @@ export class UploadMediaDTO {
   category!: string;
 
   @IsString()
+  @IsIn(['patient', 'encounter', 'appointment', 'beauty_service', 'invoice', 'dental_chart'])
   ownerType!: string;
 
   @IsUUID()

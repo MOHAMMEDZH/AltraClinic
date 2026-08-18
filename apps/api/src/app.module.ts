@@ -9,6 +9,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DentalModule } from './modules/dental/dental.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { ClinicalFormsModule } from './modules/clinical-forms/clinical-forms.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CommissionModule } from './modules/commission/commission.module';
@@ -81,6 +82,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     DentalModule,
     BeautyModule,
     InventoryModule,
+    ClinicalFormsModule,
     BillingModule,
     CommissionModule,
     LoyaltyModule,

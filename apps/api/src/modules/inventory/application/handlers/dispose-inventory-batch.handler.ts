@@ -1,14 +1,17 @@
-import { Inject, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { INVENTORY_ITEM_REPOSITORY } from '../../../../infrastructure/provider.tokens';
-import { InventoryItemRepository } from '../../domain/repositories/inventory-item.repository.interface';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
 import { TenantContextContract } from '../../../../contracts/tenant-context.contract';
+import { InventoryUsagePostingService } from '../services/inventory-usage-posting.service';
 
+/**
+ * Wave C: disposal is one canonical transaction via InventoryUsagePostingService.disposeBatch
+ * (usage ledger + stock + disposal log + batch status + audit).
+ */
 @Injectable()
 export class DisposeInventoryBatchHandler {
   constructor(
-    @Inject(INVENTORY_ITEM_REPOSITORY) private readonly repo: InventoryItemRepository,
     private readonly tenantContext: TenantContextService,
+    private readonly usagePosting: InventoryUsagePostingService,
   ) {}
 
   async execute(command: {
@@ -17,47 +20,29 @@ export class DisposeInventoryBatchHandler {
     reason: string;
     notes?: string | null;
     disposedBy: string;
+    usedByUserId: string;
+    forceFailAfterUsage?: boolean;
   }) {
     const tenantCtx = (await this.tenantContext.resolve()) as TenantContextContract;
     const tenantId = tenantCtx?.tenantId;
     if (!tenantId) throw new BadRequestException('tenant context could not be resolved');
     if (!command.disposedBy?.trim()) throw new BadRequestException('User context is required');
+    if (!command.usedByUserId?.trim()) {
+      throw new BadRequestException(
+        'usedByUserId is required for disposal (recorder must not be inferred as accountable user)',
+      );
+    }
     if (!command.reason?.trim()) throw new BadRequestException('Disposal reason is required');
 
-    let disposalResult: { itemId: string; quantity: number };
-    try {
-      disposalResult = await this.repo.disposeBatch({
-        tenantId,
-        batchId: command.batchId,
-        quantity: command.quantity,
-        reason: command.reason.trim(),
-        notes: command.notes ?? null,
-        disposedBy: command.disposedBy,
-      });
-    } catch {
-      throw new NotFoundException('Batch not found or invalid disposal quantity');
-    }
-
-    const item = await this.repo.findById(tenantId, disposalResult.itemId);
-    if (!item) throw new NotFoundException('Inventory item not found');
-
-    const quantityBefore = item.quantityOnHand;
-    item.consume(disposalResult.quantity);
-    const quantityAfter = item.quantityOnHand;
-    await this.repo.save(item);
-
-    await this.repo.recordStockMovement({
+    return this.usagePosting.disposeBatch({
       tenantId,
-      inventoryItemId: item.itemId,
-      movementType: 'DISPOSE',
-      quantity: disposalResult.quantity,
-      quantityBefore,
-      quantityAfter,
-      reason: command.reason.trim(),
+      batchId: command.batchId,
+      quantity: command.quantity,
+      reason: command.reason,
       notes: command.notes ?? null,
-      performedBy: command.disposedBy,
+      disposedBy: command.disposedBy.trim(),
+      usedByUserId: command.usedByUserId.trim(),
+      forceFailAfterUsage: command.forceFailAfterUsage,
     });
-
-    return { batchId: command.batchId, itemId: item.itemId, quantity: disposalResult.quantity };
   }
 }

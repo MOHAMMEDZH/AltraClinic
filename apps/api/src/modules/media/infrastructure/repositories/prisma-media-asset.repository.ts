@@ -58,6 +58,7 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
       ownerType: asset.ownerType,
       ownerId: asset.ownerId,
       patientId: asset.patientId,
+      requiresPhotoConsent: asset.requiresPhotoConsent,
       originalFilename: asset.originalFilename,
       mimeType: asset.mimeType,
       sizeBytes: BigInt(asset.sizeBytes),
@@ -86,6 +87,7 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
     ownerType: string;
     ownerId: string;
     patientId: string | null;
+    requiresPhotoConsent?: boolean;
     originalFilename: string;
     mimeType: string;
     sizeBytes: bigint;
@@ -108,14 +110,16 @@ export class PrismaMediaAssetRepository implements MediaAssetRepository {
       ? row.comparisonRole.toLowerCase() as BeautyComparisonRoleType
       : null;
 
+    const category = MediaCategoryVO.fromPrisma(row.category);
     return MediaAsset.restore({
       id: row.id,
       tenantId: row.tenantId,
       branchId: row.branchId,
-      category: MediaCategoryVO.fromPrisma(row.category),
+      category,
       ownerType: row.ownerType,
       ownerId: row.ownerId,
       patientId: row.patientId,
+      requiresPhotoConsent: row.requiresPhotoConsent ?? category.requiresPhotoConsent(),
       originalFilename: row.originalFilename,
       mimeType: row.mimeType,
       sizeBytes: Number(row.sizeBytes),

@@ -141,11 +141,17 @@ export class ConsumeDentalMaterialHandler {
       notes?: string | null;
       warehouseId?: string | null;
       consumedBy: string;
+      usedByUserId: string;
     },
   ) {
     const tenantCtx = (await this.tenantContext.resolve()) as TenantContextContract;
     const tenantId = tenantCtx?.tenantId;
     if (!tenantId) throw new BadRequestException('tenant context could not be resolved');
+    if (!input.usedByUserId?.trim()) {
+      throw new BadRequestException(
+        'usedByUserId is required for clinical dental material consumption',
+      );
+    }
 
     const patient = await this.patientRepo.findById(patientId, tenantId);
     if (!patient) throw new NotFoundException('Patient not found');
@@ -160,9 +166,12 @@ export class ConsumeDentalMaterialHandler {
       notes: input.notes ?? null,
       warehouseId: input.warehouseId ?? null,
       consumedBy: input.consumedBy,
+      usedByUserId: input.usedByUserId,
+      recordedByUserId: input.consumedBy,
       patientId,
       procedureCode,
       reason,
+      usageType: 'CLINICAL_CONSUMPTION',
     });
   }
 }

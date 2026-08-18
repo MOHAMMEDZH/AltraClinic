@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard';
 import { DentalModule } from '../dental/dental.module';
+import { ClinicalFormsModule } from '../clinical-forms/clinical-forms.module';
 import { EncounterController } from './controllers/encounter.controller';
 import { EmrController } from './controllers/emr.controller';
 import { PrismaEncounterRepository } from './infrastructure/prisma-encounter.repository';
@@ -57,7 +58,7 @@ import { ConsumeEncounterMaterialHandler } from './application/handlers/consume-
 import { SearchClinicalInventoryHandler } from './application/handlers/search-clinical-inventory.handler';
 
 @Module({
-  imports: [PatientsModule, InventoryModule, DentalModule],
+  imports: [PatientsModule, InventoryModule, DentalModule, ClinicalFormsModule],
   controllers: [EncounterController, EmrController],
   providers: [
     { provide: ENCOUNTER_REPOSITORY, useClass: PrismaEncounterRepository },

@@ -16,9 +16,10 @@ import { ListMediaHandler, UpdateMediaHandler } from './application/handlers/lis
 import { MediaListService } from './application/services/media-list.service';
 import { MEDIA_ASSET_REPOSITORY } from '../../infrastructure/provider.tokens';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { ClinicalFormsModule } from '../clinical-forms/clinical-forms.module';
 
 @Module({
-  imports: [SubscriptionModule],
+  imports: [SubscriptionModule, ClinicalFormsModule],
   controllers: [MediaController],
   providers: [
     { provide: MEDIA_ASSET_REPOSITORY, useClass: PrismaMediaAssetRepository },

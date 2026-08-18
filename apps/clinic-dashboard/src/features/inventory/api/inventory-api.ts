@@ -1,4 +1,8 @@
 import { ApiError, API_BASE, apiRequest } from '@/lib/api-client';
+import {
+  buildFulfillStockRequestLineBody,
+  type FulfillStockRequestLineBody,
+} from './fulfill-stock-request-body';
 import type {
   InventoryItem,
   InventoryListResponse,
@@ -1084,11 +1088,11 @@ export async function fulfillStockRequestLine(
   token: string,
   tenantId: string,
   lineId: string,
-  body: { quantity: number; notes?: string },
+  body: FulfillStockRequestLineBody,
 ): Promise<StockRequest> {
   const row = await apiRequest<Record<string, unknown>>(
     `/inventory/stock-requests/lines/${encodeURIComponent(lineId)}/fulfill`,
-    { method: 'POST', token, tenantId, body },
+    { method: 'POST', token, tenantId, body: buildFulfillStockRequestLineBody(body) },
   );
   return mapStockRequest(row);
 }

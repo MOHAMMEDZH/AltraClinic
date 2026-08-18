@@ -56,6 +56,7 @@ import { AppointmentCancelledWaitlistListener } from './application/integrations
 import { BillingModule } from '../billing/billing.module';
 import { NotificationModule } from '../notifications/notifications.module';
 import { ClinicalCatalogModule } from '../clinical-catalog/clinical-catalog.module';
+import { ClinicalFormsModule } from '../clinical-forms/clinical-forms.module';
 import { BookingConcurrencyService } from './application/services/booking-concurrency.service';
 import { AppointmentSnapshotService } from './application/services/appointment-snapshot.service';
 import { AppointmentLifecycleMutationService } from './application/services/appointment-lifecycle-mutation.service';
@@ -66,7 +67,14 @@ import { SCHEDULING_AUDIT_LOG } from './application/ports/scheduling-audit-log.p
 import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-scheduling-audit-log';
 
 @Module({
-  imports: [PatientsModule, SubscriptionModule, BillingModule, NotificationModule, ClinicalCatalogModule],
+  imports: [
+    PatientsModule,
+    SubscriptionModule,
+    BillingModule,
+    NotificationModule,
+    ClinicalCatalogModule,
+    ClinicalFormsModule,
+  ],
   controllers: [
     AppointmentController,
     AppointmentTemplateController,

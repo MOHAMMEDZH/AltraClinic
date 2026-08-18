@@ -263,7 +263,11 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
     });
   }
 
-  async recordConsumption(input: {
+  /**
+   * Wave C: direct ledger insert without StockMovement is forbidden.
+   * Use InventoryUsagePostingService.postUsage / postClinicalUsage instead.
+   */
+  async recordConsumption(_input: {
     tenantId: string;
     inventoryItemId: string;
     quantityUsed: number;
@@ -273,23 +277,13 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
     patientId?: string | null;
     procedureCode?: string | null;
   }): Promise<void> {
-    await this.prisma.inventoryConsumptionLog.create({
-      data: {
-        id: randomUUID(),
-        tenantId: input.tenantId,
-        inventoryItemId: input.inventoryItemId,
-        quantityUsed: new Prisma.Decimal(input.quantityUsed),
-        consumedBy: input.consumedBy,
-        notes: input.notes ?? null,
-        encounterId: input.encounterId ?? null,
-        patientId: input.patientId ?? null,
-        procedureCode: input.procedureCode ?? null,
-      },
-    });
+    throw new Error(
+      'InventoryUsageLedger writes must go through InventoryUsagePostingService (AR-20)',
+    );
   }
 
   async listRecentConsumptions(tenantId: string, limit: number): Promise<ConsumptionLogRecord[]> {
-    const rows = await this.prisma.inventoryConsumptionLog.findMany({
+    const rows = await this.prisma.inventoryUsageLedger.findMany({
       where: { tenantId },
       orderBy: { consumedAt: 'desc' },
       take: limit,
@@ -344,7 +338,7 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
   }
 
   async listConsumptions(filter: ConsumptionListFilter): Promise<ConsumptionListResult> {
-    const where: Prisma.InventoryConsumptionLogWhereInput = {
+    const where: Prisma.inventoryUsageLedgerWhereInput = {
       tenantId: filter.tenantId,
       ...(filter.itemId ? { inventoryItemId: filter.itemId } : {}),
       ...(filter.encounterId ? { encounterId: filter.encounterId } : {}),
@@ -354,7 +348,7 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
       ...(filter.unbilled ? { invoiceId: null, patientId: { not: null } } : {}),
     };
     const [rows, total] = await Promise.all([
-      this.prisma.inventoryConsumptionLog.findMany({
+      this.prisma.inventoryUsageLedger.findMany({
         where,
         orderBy: { consumedAt: 'desc' },
         skip: filter.offset,
@@ -365,7 +359,7 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
           },
         },
       }),
-      this.prisma.inventoryConsumptionLog.count({ where }),
+      this.prisma.inventoryUsageLedger.count({ where }),
     ]);
     return {
       consumptions: rows.map((row) => this.mapConsumptionRow(row)),
@@ -375,7 +369,7 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
 
   async findConsumptionsByIds(tenantId: string, consumptionIds: string[]): Promise<ConsumptionLogRecord[]> {
     if (consumptionIds.length === 0) return [];
-    const rows = await this.prisma.inventoryConsumptionLog.findMany({
+    const rows = await this.prisma.inventoryUsageLedger.findMany({
       where: { tenantId, id: { in: consumptionIds } },
       include: {
         inventoryItem: {
@@ -662,7 +656,7 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
     return consumed;
   }
 
-  async disposeBatch(input: {
+  async disposeBatch(_input: {
     tenantId: string;
     batchId: string;
     quantity: number;
@@ -670,35 +664,9 @@ export class PrismaInventoryRepository implements InventoryItemRepository {
     notes?: string | null;
     disposedBy: string;
   }): Promise<{ itemId: string; quantity: number }> {
-    const batch = await this.prisma.inventoryBatch.findFirst({
-      where: { id: input.batchId, tenantId: input.tenantId },
-    });
-    if (!batch) throw new Error('Batch not found');
-    const available = batch.quantityOnHand.toNumber();
-    if (input.quantity <= 0 || input.quantity > available) {
-      throw new Error('Invalid disposal quantity');
-    }
-    const after = available - input.quantity;
-    await this.prisma.inventoryBatch.update({
-      where: { id: batch.id },
-      data: {
-        quantityOnHand: new Prisma.Decimal(after),
-        status: after <= 0 ? 'DISPOSED' : batch.status,
-      },
-    });
-    await this.prisma.inventoryDisposalLog.create({
-      data: {
-        id: randomUUID(),
-        tenantId: input.tenantId,
-        inventoryItemId: batch.inventoryItemId,
-        batchId: batch.id,
-        quantity: new Prisma.Decimal(input.quantity),
-        reason: input.reason,
-        notes: input.notes ?? null,
-        disposedBy: input.disposedBy,
-      },
-    });
-    return { itemId: batch.inventoryItemId, quantity: input.quantity };
+    throw new Error(
+      'disposeBatch repository primitive is closed. Use DisposeInventoryBatchHandler / InventoryUsagePostingService.disposeBatch',
+    );
   }
 
   async getExpirySummary(tenantId: string): Promise<ExpirySummaryResult> {

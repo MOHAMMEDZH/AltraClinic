@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { InventoryController } from './controllers/inventory.controller';
 import { CreateInventoryItemHandler } from './application/handlers/create-inventory-item.handler';
 import { ConsumeInventoryHandler } from './application/handlers/consume-inventory.handler';
+import { InventoryUsagePostingService } from './application/services/inventory-usage-posting.service';
+import { InventoryUsageOwnerReportService } from './application/services/inventory-usage-owner-report.service';
 import { GetInventoryItemHandler } from './application/handlers/get-inventory-item.handler';
 import { LookupInventoryItemHandler } from './application/handlers/lookup-inventory-item.handler';
 import { ListInventoryItemsHandler } from './application/handlers/list-inventory-items.handler';
@@ -104,6 +106,8 @@ import { AutoReorderInventoryHandler } from './application/handlers/auto-reorder
 import { ConvertStockRequestToPoHandler } from './application/handlers/convert-stock-request-to-po.handler';
 import { ExportInventoryAnalyticsHandler } from './application/handlers/export-inventory-analytics.handler';
 import { InventoryReorderService } from './domain/services/inventory-reorder.service';
+import { AuditTrailInventoryAuditLog } from './infrastructure/audit-trail-inventory-audit-log';
+import { INVENTORY_AUDIT_LOG } from './ports/inventory-audit-log.port';
 
 @Module({
   controllers: [InventoryController],
@@ -116,8 +120,11 @@ import { InventoryReorderService } from './domain/services/inventory-reorder.ser
     { provide: STOCK_TRANSFER_REPOSITORY, useClass: PrismaStockTransferRepository },
     { provide: STOCK_COUNT_REPOSITORY, useClass: PrismaStockCountRepository },
     { provide: STOCK_REQUEST_REPOSITORY, useClass: PrismaStockRequestRepository },
+    { provide: INVENTORY_AUDIT_LOG, useClass: AuditTrailInventoryAuditLog },
     CreateInventoryItemHandler,
     ConsumeInventoryHandler,
+    InventoryUsagePostingService,
+    InventoryUsageOwnerReportService,
     GetInventoryItemHandler,
     LookupInventoryItemHandler,
     ListInventoryItemsHandler,
@@ -191,6 +198,8 @@ import { InventoryReorderService } from './domain/services/inventory-reorder.ser
   ],
   exports: [
     ConsumeInventoryHandler,
+    InventoryUsagePostingService,
+    InventoryUsageOwnerReportService,
     ListInventoryItemsHandler,
     ListInventoryConsumptionsHandler,
     ListInventoryMovementsHandler,

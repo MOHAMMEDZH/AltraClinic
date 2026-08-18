@@ -701,6 +701,7 @@ CREATE POLICY tenant_update ON inventory_items FOR UPDATE USING ("tenantId" = NU
 DROP POLICY IF EXISTS tenant_delete ON inventory_items;
 CREATE POLICY tenant_delete ON inventory_items FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
+-- InventoryUsageLedger → inventory_consumption_logs (evolved; table name preserved)
 -- InventoryConsumptionLog → inventory_consumption_logs
 ALTER TABLE inventory_consumption_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_consumption_logs FORCE ROW LEVEL SECURITY;
@@ -2048,3 +2049,161 @@ DROP POLICY IF EXISTS tenant_update ON platform_feature_flag_targets;
 CREATE POLICY tenant_update ON platform_feature_flag_targets FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON platform_feature_flag_targets;
 CREATE POLICY tenant_delete ON platform_feature_flag_targets FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- =============================================================================
+-- Phase 48 Wave C — Clinical forms + injectable usage RLS
+-- =============================================================================
+
+-- InjectableUsageDetail → injectable_usage_details (via parent usage ledger tenant)
+ALTER TABLE injectable_usage_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE injectable_usage_details FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON injectable_usage_details;
+CREATE POLICY tenant_select ON injectable_usage_details FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM inventory_consumption_logs u
+    WHERE u.id = injectable_usage_details."usageLedgerId"
+      AND (u."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_insert ON injectable_usage_details;
+CREATE POLICY tenant_insert ON injectable_usage_details FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM inventory_consumption_logs u
+    WHERE u.id = injectable_usage_details."usageLedgerId"
+      AND (u."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_update ON injectable_usage_details;
+CREATE POLICY tenant_update ON injectable_usage_details FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON injectable_usage_details;
+CREATE POLICY tenant_delete ON injectable_usage_details FOR DELETE USING (false);
+
+ALTER TABLE clinical_form_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_form_templates FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_form_templates;
+CREATE POLICY tenant_select ON clinical_form_templates FOR SELECT USING (
+  "tenantId" IS NULL
+  OR "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_insert ON clinical_form_templates;
+CREATE POLICY tenant_insert ON clinical_form_templates FOR INSERT WITH CHECK (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_update ON clinical_form_templates;
+CREATE POLICY tenant_update ON clinical_form_templates FOR UPDATE USING (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+) WITH CHECK (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_delete ON clinical_form_templates;
+CREATE POLICY tenant_delete ON clinical_form_templates FOR DELETE USING (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+
+ALTER TABLE clinical_form_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_form_versions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_form_versions;
+CREATE POLICY tenant_select ON clinical_form_versions FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (t."tenantId" IS NULL
+           OR t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_insert ON clinical_form_versions;
+CREATE POLICY tenant_insert ON clinical_form_versions FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+DROP POLICY IF EXISTS tenant_update ON clinical_form_versions;
+CREATE POLICY tenant_update ON clinical_form_versions FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+) WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+DROP POLICY IF EXISTS tenant_delete ON clinical_form_versions;
+CREATE POLICY tenant_delete ON clinical_form_versions FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+
+ALTER TABLE patient_form_instances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE patient_form_instances FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON patient_form_instances;
+CREATE POLICY tenant_select ON patient_form_instances FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON patient_form_instances;
+CREATE POLICY tenant_insert ON patient_form_instances FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON patient_form_instances;
+CREATE POLICY tenant_update ON patient_form_instances FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON patient_form_instances;
+CREATE POLICY tenant_delete ON patient_form_instances FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE clinical_service_form_requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_service_form_requirements FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_service_form_requirements;
+CREATE POLICY tenant_select ON clinical_service_form_requirements FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON clinical_service_form_requirements;
+CREATE POLICY tenant_insert ON clinical_service_form_requirements FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON clinical_service_form_requirements;
+CREATE POLICY tenant_update ON clinical_service_form_requirements FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON clinical_service_form_requirements;
+CREATE POLICY tenant_delete ON clinical_service_form_requirements FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');

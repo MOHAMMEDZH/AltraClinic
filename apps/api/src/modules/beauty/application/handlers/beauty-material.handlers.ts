@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, NotFoundException, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
@@ -8,6 +8,7 @@ import { ListInventoryConsumptionsHandler } from '../../../inventory/application
 import { ListInventoryItemsHandler } from '../../../inventory/application/handlers/list-inventory-items.handler';
 import { PATIENT_REPOSITORY } from '../../../../infrastructure/provider.tokens';
 import { PatientRepository } from '../../../patients/domain/patient.repository.interface';
+import { RequiredConsentGateService } from '../../../clinical-forms/services/required-consent-gate.service';
 
 @Injectable()
 export class ListBeautyProcedureMaterialsHandler {
@@ -129,6 +130,7 @@ export class ConsumeBeautyMaterialHandler {
     @Inject(PATIENT_REPOSITORY) private readonly patientRepo: PatientRepository,
     private readonly tenantContext: TenantContextService,
     private readonly consumeHandler: ConsumeInventoryHandler,
+    @Optional() private readonly consentGate?: RequiredConsentGateService,
   ) {}
 
   async execute(
@@ -141,14 +143,32 @@ export class ConsumeBeautyMaterialHandler {
       notes?: string | null;
       warehouseId?: string | null;
       consumedBy: string;
+      usedByUserId: string;
+      clinicalServiceId?: string | null;
+      appointmentId?: string | null;
     },
   ) {
     const tenantCtx = (await this.tenantContext.resolve()) as TenantContextContract;
     const tenantId = tenantCtx?.tenantId;
     if (!tenantId) throw new BadRequestException('tenant context could not be resolved');
+    if (!input.usedByUserId?.trim()) {
+      throw new BadRequestException(
+        'usedByUserId is required for clinical beauty material consumption',
+      );
+    }
 
     const patient = await this.patientRepo.findById(patientId, tenantId);
     if (!patient) throw new NotFoundException('Patient not found');
+
+    const clinicalServiceId = input.clinicalServiceId?.trim() || null;
+    if (this.consentGate && clinicalServiceId) {
+      await this.consentGate.assertRequiredConsentsSatisfied({
+        tenantId,
+        patientId,
+        clinicalServiceId,
+        appointmentId: input.appointmentId ?? null,
+      });
+    }
 
     const procedureCode = input.procedureCode?.trim() || null;
     const reason = procedureCode ? `Beauty ${procedureCode}` : 'Beauty treatment';
@@ -160,9 +180,14 @@ export class ConsumeBeautyMaterialHandler {
       notes: input.notes ?? null,
       warehouseId: input.warehouseId ?? null,
       consumedBy: input.consumedBy,
+      usedByUserId: input.usedByUserId,
+      recordedByUserId: input.consumedBy,
       patientId,
       procedureCode,
       reason,
+      clinicalServiceId,
+      appointmentId: input.appointmentId ?? null,
+      usageType: 'CLINICAL_CONSUMPTION',
     });
   }
 }

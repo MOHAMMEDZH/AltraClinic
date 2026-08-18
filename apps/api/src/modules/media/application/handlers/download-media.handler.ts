@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { DownloadMediaQuery } from '../queries/download-media.query';
 import { MediaAssetRepository } from '../../domain/repositories/media-asset.repository.interface';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
@@ -8,6 +8,7 @@ import {
   MediaNotFoundException,
   MediaQuarantinedException,
 } from '../../domain/exceptions/media.exceptions';
+import { PhotoConsentMediaGateService } from '../../../clinical-forms/services/photo-consent-media-gate.service';
 
 @Injectable()
 export class DownloadMediaHandler {
@@ -15,12 +16,21 @@ export class DownloadMediaHandler {
     @Inject(MEDIA_ASSET_REPOSITORY) private readonly repo: MediaAssetRepository,
     @Inject(MEDIA_STORAGE) private readonly storage: MediaStoragePort,
     private readonly tenantContext: TenantContextService,
+    @Optional() private readonly photoConsentGate?: PhotoConsentMediaGateService,
   ) {}
 
-  async execute(query: DownloadMediaQuery) {
+  async execute(query: DownloadMediaQuery & { actorUserId?: string | null }) {
     const tenant = await this.tenantContext.resolve();
     const asset = await this.repo.findById(tenant.tenantId, query.id);
     if (!asset) throw new MediaNotFoundException(query.id);
+
+    if (this.photoConsentGate) {
+      await this.photoConsentGate.assertPhotoConsentForMedia({
+        tenantId: tenant.tenantId,
+        mediaAssetId: asset.id,
+        actor: { userId: query.actorUserId ?? null },
+      });
+    }
 
     if (asset.status === 'quarantined') {
       throw new MediaQuarantinedException(asset.id, asset.quarantineReason ?? 'quarantined');

@@ -112,8 +112,9 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       }
 
       if (consumptionLinks?.length) {
+        await tx.$executeRaw`SELECT set_config('app.allow_inventory_usage_invoice_link', 'true', true)`;
         for (const link of consumptionLinks) {
-          const updated = await tx.inventoryConsumptionLog.updateMany({
+          const updated = await tx.inventoryUsageLedger.updateMany({
             where: {
               id: link.consumptionId,
               tenantId: invoice.tenantId,

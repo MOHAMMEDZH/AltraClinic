@@ -163,28 +163,63 @@ export class PrismaInventoryWarehouseRepository implements InventoryWarehouseRep
     });
   }
 
-  async existsActive(tenantId: string, warehouseId: string) {
-    const count = await this.prisma.inventoryWarehouse.count({
+  async existsActive(tenantId: string, warehouseId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? this.prisma;
+    const count = await db.inventoryWarehouse.count({
       where: { id: warehouseId, tenantId, deletedAt: null, isActive: true },
     });
     return count > 0;
   }
 
-  async ensureDefaultWarehouseId(tenantId: string) {
-    const existing = await this.prisma.inventoryWarehouse.findFirst({
+  /**
+   * Read-mostly: returns an existing default active warehouse.
+   * Write-capable when none is default (setDefault) or none exist (create MAIN).
+   * When `tx` is provided, those writes join the caller transaction.
+   */
+  async ensureDefaultWarehouseId(tenantId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? this.prisma;
+    const existing = await db.inventoryWarehouse.findFirst({
       where: { tenantId, deletedAt: null, isDefault: true, isActive: true },
       select: { id: true },
     });
     if (existing) return existing.id;
 
-    const anyActive = await this.prisma.inventoryWarehouse.findFirst({
+    const anyActive = await db.inventoryWarehouse.findFirst({
       where: { tenantId, deletedAt: null, isActive: true },
       orderBy: { createdAt: 'asc' },
       select: { id: true },
     });
     if (anyActive) {
-      await this.setDefault(tenantId, anyActive.id);
+      if (tx) {
+        await tx.inventoryWarehouse.updateMany({
+          where: { tenantId, deletedAt: null, isDefault: true },
+          data: { isDefault: false },
+        });
+        await tx.inventoryWarehouse.updateMany({
+          where: { id: anyActive.id, tenantId, deletedAt: null },
+          data: { isDefault: true, isActive: true },
+        });
+      } else {
+        await this.setDefault(tenantId, anyActive.id);
+      }
       return anyActive.id;
+    }
+
+    if (tx) {
+      const id = randomUUID();
+      await tx.inventoryWarehouse.create({
+        data: {
+          id,
+          tenantId,
+          code: 'MAIN',
+          nameEn: 'Main Store',
+          nameAr: null,
+          address: null,
+          isDefault: true,
+          isActive: true,
+        },
+      });
+      return id;
     }
 
     const created = await this.create({

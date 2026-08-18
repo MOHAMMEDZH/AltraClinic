@@ -29,6 +29,7 @@ const dependentLaterGateDirNames = [
   '20260815240000_phase48_wave_b_cutover_execution_time',
   '20260815250000_phase48_wave_b_snapshot_write_mode',
   '20260815260000_phase48_wave_b_snapshot_write_mode_immutable',
+  '20260816010000_phase48_wave_c_clinical_safety',
 ];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade');
 const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade_later');

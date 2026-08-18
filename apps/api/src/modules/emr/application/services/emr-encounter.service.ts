@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { EncounterStatus as PrismaEncounterStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { generateEntityId } from '../../../../common/id-generator.util';
+import { RequiredConsentGateService } from '../../../clinical-forms/services/required-consent-gate.service';
 import type {
   ClinicalSearchResult,
   DiagnosisRecord,
@@ -28,7 +29,10 @@ const STATUS_MAP: Record<PrismaEncounterStatus, EncounterStatus> = {
 
 @Injectable()
 export class EmrEncounterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly consentGate?: RequiredConsentGateService,
+  ) {}
 
   async list(filter: EncounterListFilter): Promise<{ items: EncounterListItem[]; total: number }> {
     const where = this.buildWhere(filter);
@@ -474,6 +478,21 @@ export class EmrEncounterService {
     if (!existing) return null;
     if (existing.status === 'SIGNED') {
       throw new BadRequestException('Signed encounters cannot be modified');
+    }
+
+    if (this.consentGate && existing.appointmentId) {
+      const appt = await this.prisma.appointment.findFirst({
+        where: { id: existing.appointmentId, tenantId, deletedAt: null },
+        select: { clinicalServiceId: true, patientId: true },
+      });
+      if (appt?.clinicalServiceId) {
+        await this.consentGate.assertRequiredConsentsSatisfied({
+          tenantId,
+          patientId: appt.patientId ?? existing.patientId,
+          clinicalServiceId: appt.clinicalServiceId,
+          appointmentId: existing.appointmentId,
+        });
+      }
     }
 
     const updated = await this.prisma.encounter.update({

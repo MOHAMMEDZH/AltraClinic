@@ -489,6 +489,9 @@ model Tenant {
   providerWeeklySchedules ProviderWeeklySchedule[]
   encounters           Encounter[]
   clinicalNoteTemplates ClinicalNoteTemplate[]
+  clinicalFormTemplates ClinicalFormTemplate[]
+  patientFormInstances  PatientFormInstance[]
+  clinicalServiceFormRequirements ClinicalServiceFormRequirement[]
   inventoryItems       InventoryItem[]
   inventorySuppliers   InventorySupplier[]
   purchaseOrders       PurchaseOrder[]
@@ -1251,6 +1254,7 @@ model Patient {
   waitlistEntries     AppointmentWaitlist[]
   clinicSubscriptions ClinicSubscription[]
   mediaAssets         MediaAsset[]
+  formInstances       PatientFormInstance[]
   problems            PatientProblem[]
   labResults          LabResult[]
 
@@ -2189,7 +2193,7 @@ model InventoryItem {
   tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   category          InventoryCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   supplier          InventorySupplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  consumptionLogs   InventoryConsumptionLog[]
+  usageLedgerEntries InventoryUsageLedger[]
   stockMovements    InventoryStockMovement[]
   batches           InventoryBatch[]
   disposalLogs      InventoryDisposalLog[]
@@ -2214,32 +2218,77 @@ model InventoryItem {
   @@map("inventory_items")
 }
 
-/// Immutable consumption event — triggered automatically on treatment completion.
-model InventoryConsumptionLog {
-  id              String        @id @default(uuid()) @db.Uuid
-  tenantId        String        @db.Uuid
-  inventoryItemId String        @db.Uuid
-  encounterId     String?       @db.Uuid
-  patientId       String?       @db.Uuid
-  procedureCode   String?       @db.VarChar(30)
-  quantityUsed    Decimal       @db.Decimal(18, 4)
-  /// userId of staff who triggered the consumption
-  consumedBy      String        @db.Uuid
-  notes           String?       @db.Text
-  consumedAt      DateTime      @default(now())
-  invoiceId       String?       @db.Uuid
-  invoiceLineItemId String?     @db.Uuid
+/// Inventory usage ledger (evolved from InventoryConsumptionLog) — append-only accountability (AR-20).
+/// Table name preserved as inventory_consumption_logs (non-destructive).
+model InventoryUsageLedger {
+  id                    String        @id @default(uuid()) @db.Uuid
+  tenantId              String        @db.Uuid
+  branchId              String?       @db.Uuid
+  warehouseId           String?       @db.Uuid
+  inventoryItemId       String        @db.Uuid
+  inventoryBatchId      String?       @db.Uuid
+  encounterId           String?       @db.Uuid
+  patientId             String?       @db.Uuid
+  procedureCode         String?       @db.VarChar(30)
+  /// Conceptual quantity; column name preserved for non-destructive migration.
+  quantityUsed          Decimal       @db.Decimal(18, 4)
+  unit                  String?       @db.VarChar(30)
+  /// CLINICAL_CONSUMPTION | OPERATIONAL_CONSUMPTION | WASTAGE | DAMAGE | EXPIRED | SAMPLE_OR_PROMOTIONAL | CORRECTION | REVERSAL
+  usageType             String        @default("CLINICAL_CONSUMPTION") @db.VarChar(40)
+  /// Legacy compat: staff who triggered; new code prefers usedByUserId / recordedByUserId.
+  consumedBy            String        @db.Uuid
+  usedByUserId          String?       @db.Uuid
+  recordedByUserId      String?       @db.Uuid
+  appointmentId         String?       @db.Uuid
+  clinicalServiceId     String?       @db.Uuid
+  beautyAnnotationId    String?       @db.Uuid
+  reasonCode            String?       @db.VarChar(100)
+  notes                 String?       @db.Text
+  consumedAt            DateTime      @default(now())
+  occurredAt            DateTime?
+  recordedAt            DateTime?
+  sourceStockMovementId String?       @unique @db.Uuid
+  reversalOfUsageId     String?       @db.Uuid
+  /// POSTED | REVERSED
+  status                String        @default("POSTED") @db.VarChar(20)
+  /// ATTRIBUTED | LEGACY_UNATTRIBUTED
+  attributionStatus     String        @default("ATTRIBUTED") @db.VarChar(30)
+  invoiceId             String?       @db.Uuid
+  invoiceLineItemId     String?       @db.Uuid
 
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  invoice         Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  invoiceLineItem InvoiceLineItem? @relation(fields: [invoiceLineItemId], references: [id], onDelete: SetNull)
+  inventoryItem         InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  inventoryBatch        InventoryBatch? @relation(fields: [inventoryBatchId], references: [id], onDelete: Restrict)
+  sourceStockMovement   InventoryStockMovement? @relation(fields: [sourceStockMovementId], references: [id], onDelete: Restrict)
+  reversalOf            InventoryUsageLedger? @relation("UsageReversal", fields: [reversalOfUsageId], references: [id], onDelete: Restrict)
+  reversals             InventoryUsageLedger[] @relation("UsageReversal")
+  injectableDetail      InjectableUsageDetail?
+  invoice               Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  invoiceLineItem       InvoiceLineItem? @relation(fields: [invoiceLineItemId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([inventoryItemId])
   @@index([tenantId, consumedAt])
   @@index([tenantId, patientId])
   @@index([tenantId, invoiceId])
+  @@index([tenantId, usageType])
+  @@index([tenantId, usedByUserId])
+  @@index([tenantId, attributionStatus])
+  @@index([inventoryBatchId])
+  @@index([reversalOfUsageId])
   @@map("inventory_consumption_logs")
+}
+
+/// Clinical/injectable specialization of InventoryUsageLedger (AR-11) — no independent stock decrement.
+model InjectableUsageDetail {
+  usageLedgerId       String   @id @db.Uuid
+  dose                Decimal? @db.Decimal(18, 4)
+  anatomicalSite      String?  @db.VarChar(100)
+  beautyAnnotationId  String?  @db.Uuid
+  notes               String?  @db.Text
+
+  usageLedger InventoryUsageLedger @relation(fields: [usageLedgerId], references: [id], onDelete: Restrict)
+
+  @@map("injectable_usage_details")
 }
 
 /// Immutable stock movement ledger — all quantity changes (receive, consume, adjust, initial).
@@ -2262,6 +2311,7 @@ model InventoryStockMovement {
   createdAt       DateTime      @default(now())
 
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  usageLedgerEntry InventoryUsageLedger?
 
   @@index([tenantId])
   @@index([inventoryItemId])
@@ -2282,17 +2332,21 @@ model InventoryBatch {
   quantityOnHand   Decimal   @default(0) @db.Decimal(18, 4)
   /// ACTIVE | DEPLETED | DISPOSED
   status           String    @default("ACTIVE") @db.VarChar(20)
+  recalled         Boolean   @default(false)
+  recalledAt       DateTime?
   receivedAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   inventoryItem    InventoryItem          @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   disposalLogs     InventoryDisposalLog[]
+  usageLedgerEntries InventoryUsageLedger[]
 
   @@index([tenantId])
   @@index([inventoryItemId])
   @@index([tenantId, expiryDate])
   @@index([tenantId, status])
+  @@index([tenantId, recalled])
   @@map("inventory_batches")
 }
 
@@ -2667,7 +2721,7 @@ model Invoice {
   writeOffs      InvoiceWriteOff[]
   paymentPlans   PaymentPlan[]
   receipts       PaymentReceipt[]
-  consumptionLogs InventoryConsumptionLog[]
+  usageLedgerEntries InventoryUsageLedger[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -2698,7 +2752,7 @@ model InvoiceLineItem {
   createdAt       DateTime @default(now())
 
   invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  consumptionLogs InventoryConsumptionLog[]
+  usageLedgerEntries InventoryUsageLedger[]
 
   @@index([invoiceId])
   @@index([tenantId])
@@ -4619,6 +4673,109 @@ model AiTenantSettings {
 // ── DOMAIN 19 · MEDIA & ATTACHMENTS ──────────────────────────────────────────
 // =============================================================================
 
+// =============================================================================
+// ── CLINICAL FORMS / CONSENT (Phase 48 Wave C · AR-09 / AR-10) ───────────────
+// =============================================================================
+
+/// Form template identity (kind + stableKey). Versions carry publishable content.
+model ClinicalFormTemplate {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String?  @db.Uuid
+  /// CONSENT | PHOTO_CONSENT | TREATMENT_CONSENT | INTAKE | PRE_CARE | POST_CARE | OTHER
+  kind            String   @db.VarChar(40)
+  stableKey       String   @db.VarChar(100)
+  /// DRAFT | ACTIVE | DEPRECATED
+  status          String   @default("DRAFT") @db.VarChar(20)
+  nameEn          String   @db.VarChar(255)
+  nameAr          String?  @db.VarChar(255)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String?  @db.Uuid
+
+  tenant   Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  versions ClinicalFormVersion[]
+
+  @@unique([tenantId, kind, stableKey])
+  @@index([tenantId])
+  @@index([tenantId, kind, status])
+  @@map("clinical_form_templates")
+}
+
+/// Immutable after PUBLISHED (DB trigger). contentEn + contentAr required to publish.
+model ClinicalFormVersion {
+  id                String    @id @default(uuid()) @db.Uuid
+  templateId        String    @db.Uuid
+  version           Int
+  /// DRAFT | PUBLISHED | SUPERSEDED
+  status            String    @default("DRAFT") @db.VarChar(20)
+  contentEn         String    @db.Text
+  contentAr         String    @db.Text
+  publishedAt       DateTime?
+  publishedByUserId String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+
+  template  ClinicalFormTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  instances PatientFormInstance[]
+
+  @@unique([templateId, version])
+  @@index([templateId, status])
+  @@map("clinical_form_versions")
+}
+
+/// Patient-signed (or draft) instance pinned to a published version. SIGNED is immutable.
+model PatientFormInstance {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @db.Uuid
+  patientId         String    @db.Uuid
+  versionId         String    @db.Uuid
+  appointmentId     String?   @db.Uuid
+  clinicalServiceId String?   @db.Uuid
+  /// DRAFT | SIGNED | VOID
+  status            String    @default("DRAFT") @db.VarChar(20)
+  signedAt          DateTime?
+  signerUserId      String?   @db.Uuid
+  signerPatientId   String?   @db.Uuid
+  method            String?   @db.VarChar(40)
+  signedContentEn   String?   @db.Text
+  signedContentAr   String?   @db.Text
+  voidedAt          DateTime?
+  voidedByUserId    String?   @db.Uuid
+  voidReason        String?   @db.Text
+  createdAt         DateTime  @default(now())
+  createdByUserId   String?   @db.Uuid
+
+  tenant  Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient Patient             @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  version ClinicalFormVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([versionId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("patient_form_instances")
+}
+
+/// Which form kinds are required before completing a clinical service.
+model ClinicalServiceFormRequirement {
+  id                String  @id @default(uuid()) @db.Uuid
+  tenantId          String  @db.Uuid
+  clinicalServiceId String  @db.Uuid
+  formKind          String  @db.VarChar(40)
+  required          Boolean @default(true)
+  active            Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, formKind])
+  @@index([tenantId, clinicalServiceId, active])
+  @@map("clinical_service_form_requirements")
+}
+
+// =============================================================================
+// ── MEDIA ───────────────────────────────────────────────────────────────────
+// =============================================================================
+
 /// Tenant-scoped media asset with processing variants stored as JSONB.
 /// Storage keys point to object storage (local filesystem or S3); never serve directly.
 model MediaAsset {
@@ -4630,6 +4787,8 @@ model MediaAsset {
   ownerType           String                @db.VarChar(50)
   ownerId             String                @db.Uuid
   patientId           String?               @db.Uuid
+  /// When true, get/download requires signed PHOTO_CONSENT for the patient (AR-10).
+  requiresPhotoConsent Boolean              @default(false)
   originalFilename    String                @db.VarChar(500)
   mimeType            String                @db.VarChar(127)
   sizeBytes           BigInt

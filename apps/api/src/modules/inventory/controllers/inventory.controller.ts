@@ -1,15 +1,27 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { InventoryPermissionGuard } from '../api/inventory-permission.guard';
-import { RequirePermission } from '../../auth/api/guards/permission.guard';
+import { RequirePermission, rolesGrantPermission, customRoleGrantsApply } from '../../auth/api/guards/permission.guard';
+import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
 import { CreateInventoryItemDTO } from '../application/dto/create-inventory-item.dto';
 import { ConsumeInventoryDTO } from '../application/dto/consume-inventory.dto';
+import {
+  CorrectInventoryUsageDto,
+  InventoryUsageListQueryDto,
+  InventoryUsageOwnerReportQueryDto,
+  PostInventoryUsageDto,
+  ReverseInventoryUsageDto,
+} from '../application/dto/inventory-usage.dto';
 import { UpdateInventoryItemDTO, ReceiveInventoryDTO, CreateInventoryCategoryDTO } from '../application/dto/update-inventory-item.dto';
 import { ListInventoryCategoriesHandler } from '../application/handlers/list-inventory-categories.handler';
 import { CreateInventoryCategoryHandler } from '../application/handlers/create-inventory-category.handler';
 import { CreateInventoryItemHandler } from '../application/handlers/create-inventory-item.handler';
 import { ConsumeInventoryHandler } from '../application/handlers/consume-inventory.handler';
+import { InventoryUsagePostingService } from '../application/services/inventory-usage-posting.service';
+import { InventoryUsageOwnerReportService } from '../application/services/inventory-usage-owner-report.service';
+import { PrismaService } from '../../../infrastructure/prisma.service';
+import { TenantContextService } from '../../../infrastructure/tenant-context.service';
 import { GetInventoryItemHandler } from '../application/handlers/get-inventory-item.handler';
 import { LookupInventoryItemHandler } from '../application/handlers/lookup-inventory-item.handler';
 import { ListInventoryItemsHandler } from '../application/handlers/list-inventory-items.handler';
@@ -177,7 +189,199 @@ export class InventoryController {
     private readonly autoReorderHandler: AutoReorderInventoryHandler,
     private readonly convertStockRequestToPoHandler: ConvertStockRequestToPoHandler,
     private readonly exportAnalyticsHandler: ExportInventoryAnalyticsHandler,
+    private readonly usagePosting: InventoryUsagePostingService,
+    private readonly ownerReportService: InventoryUsageOwnerReportService,
+    private readonly prisma: PrismaService,
+    private readonly tenantContext: TenantContextService,
   ) {}
+
+  /** Explicit resource/action grant from role matrix or custom role — never a client flag. */
+  private async userHasPermission(
+    user: JwtClaimsVO | undefined,
+    resource: string,
+    action: string,
+  ): Promise<boolean> {
+    if (!user) return false;
+    if (rolesGrantPermission(user.roles ?? [], resource, action as never)) return true;
+    if (!customRoleGrantsApply(resource, action as never)) return false;
+    const tenantId = user.tenantId ?? '';
+    if (!tenantId || !user.sub) return false;
+    const rows = await this.prisma.userCustomRole.findMany({
+      where: { userId: user.sub, tenantId },
+      include: { customRole: { select: { permissions: true, isArchived: true } } },
+    });
+    return rows.some((row) => {
+      if (row.customRole.isArchived) return false;
+      const grants = row.customRole.permissions as Record<string, string[]>;
+      return (grants[resource] ?? []).includes(action);
+    });
+  }
+
+  /** PHI inclusion requires api.patients / view — inventory export alone is not enough. */
+  private async userHasPatientsView(user?: JwtClaimsVO): Promise<boolean> {
+    return this.userHasPermission(user, 'api.patients', 'view');
+  }
+
+  @Post('usage')
+  @RequirePermission('api.inventory', 'update')
+  async postUsage(
+    @Body() body: PostInventoryUsageDto,
+    @Req() req: { user?: JwtClaimsVO },
+  ) {
+    const userId = req.user?.sub ?? '';
+    const injectable = body.injectable ?? null;
+    const hasInjectableCreatePermission =
+      injectable != null
+        ? await this.userHasPermission(req.user, 'api.clinical-injectable', 'create')
+        : false;
+    if (injectable != null && !hasInjectableCreatePermission) {
+      throw new ForbiddenException(
+        'api.clinical-injectable create permission is required to record injectable usage',
+      );
+    }
+    return await this.consumeHandler.execute({
+      itemId: body.itemId,
+      quantity: body.quantity,
+      consumedBy: userId,
+      recordedByUserId: userId,
+      usedByUserId: body.usedByUserId ?? null,
+      usageType: body.usageType ?? 'CLINICAL_CONSUMPTION',
+      warehouseId: body.warehouseId ?? null,
+      branchId: body.branchId ?? null,
+      encounterId: body.encounterId ?? null,
+      beautyAnnotationId: body.beautyAnnotationId ?? body.injectable?.beautyAnnotationId ?? null,
+      patientId: body.patientId ?? null,
+      appointmentId: body.appointmentId ?? null,
+      clinicalServiceId: body.clinicalServiceId ?? null,
+      inventoryBatchId: body.inventoryBatchId ?? null,
+      reasonCode: body.reasonCode ?? null,
+      procedureCode: body.procedureCode ?? null,
+      notes: body.notes ?? null,
+      injectable,
+      hasInjectableCreatePermission,
+    });
+  }
+
+  @Post('usage/:id/reverse')
+  @RequirePermission('api.inventory', 'approve')
+  async reverseUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ReverseInventoryUsageDto,
+    @Req() req: { user?: { userId?: string; sub?: string } },
+  ) {
+    const userId = req.user?.userId ?? req.user?.sub ?? '';
+    const tenant = (await this.tenantContext.resolve()) as { tenantId?: string };
+    if (!tenant.tenantId) throw new BadRequestException('tenant context could not be resolved');
+    return this.usagePosting.reverseUsage({
+      tenantId: tenant.tenantId,
+      usageLedgerId: id,
+      recordedByUserId: userId,
+      reasonCode: body.reasonCode ?? null,
+      notes: body.notes ?? null,
+    });
+  }
+
+  @Post('usage/:id/correct')
+  @RequirePermission('api.inventory', 'approve')
+  async correctUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CorrectInventoryUsageDto,
+    @Req() req: { user?: JwtClaimsVO },
+  ) {
+    const userId = req.user?.sub ?? '';
+    const tenant = (await this.tenantContext.resolve()) as { tenantId?: string };
+    if (!tenant.tenantId) throw new BadRequestException('tenant context could not be resolved');
+    const injectable = body.correction.injectable ?? null;
+    const hasInjectableCreatePermission =
+      injectable != null
+        ? await this.userHasPermission(req.user as JwtClaimsVO | undefined, 'api.clinical-injectable', 'create')
+        : false;
+    if (injectable != null && !hasInjectableCreatePermission) {
+      throw new ForbiddenException(
+        'api.clinical-injectable create permission is required to record injectable usage',
+      );
+    }
+    return this.usagePosting.correctUsage({
+      tenantId: tenant.tenantId,
+      usageLedgerId: id,
+      recordedByUserId: userId,
+      reasonCode: body.reasonCode,
+      correction: {
+        inventoryItemId: body.correction.itemId,
+        quantity: body.correction.quantity,
+        usageType: body.correction.usageType ?? 'CORRECTION',
+        usedByUserId: body.correction.usedByUserId ?? null,
+        warehouseId: body.correction.warehouseId ?? null,
+        inventoryBatchId: body.correction.inventoryBatchId ?? null,
+        patientId: body.correction.patientId ?? null,
+        clinicalServiceId: body.correction.clinicalServiceId ?? null,
+        appointmentId: body.correction.appointmentId ?? null,
+        reasonCode: body.correction.reasonCode ?? body.reasonCode,
+        notes: body.correction.notes ?? null,
+        injectable,
+        hasInjectableCreatePermission,
+      },
+    });
+  }
+
+  @Get('usage/owner-report')
+  @RequirePermission('api.inventory', 'export')
+  async ownerReport(
+    @Query() query: InventoryUsageOwnerReportQueryDto,
+    @Req() req?: { user?: JwtClaimsVO },
+  ) {
+    const tenant = (await this.tenantContext.resolve()) as { tenantId?: string };
+    if (!tenant.tenantId) throw new BadRequestException('tenant context could not be resolved');
+    const includePhiFlag = query.includePhi === 'true' || query.includePhi === '1';
+    const hasPhiPermission = await this.userHasPatientsView(req?.user);
+    if (includePhiFlag && !hasPhiPermission) {
+      throw new ForbiddenException('api.patients view permission required to include PHI fields');
+    }
+    return this.ownerReportService.report({
+      tenantId: tenant.tenantId,
+      from: query.from ? new Date(query.from) : undefined,
+      to: query.to ? new Date(query.to) : undefined,
+      usageType: query.usageType,
+      usedByUserId: query.usedByUserId,
+      inventoryItemId: query.inventoryItemId,
+      inventoryBatchId: query.inventoryBatchId,
+      warehouseId: query.warehouseId,
+      branchId: query.branchId,
+      clinicalServiceId: query.clinicalServiceId,
+      includePhi: includePhiFlag,
+      hasPhiPermission,
+      limit: query.limit,
+      offset: query.offset,
+    });
+  }
+
+  @Get('usage')
+  @RequirePermission('api.inventory', 'view')
+  async listUsage(@Query() query: InventoryUsageListQueryDto) {
+    return await this.listConsumptionsHandler.execute({
+      itemId: query.itemId,
+      encounterId: query.encounterId,
+      patientId: query.patientId,
+      procedureCode: query.procedureCode,
+      limit: query.limit,
+      offset: query.offset,
+    });
+  }
+
+  @Get('usage/:id/injectable')
+  @RequirePermission('api.clinical-injectable', 'view')
+  async getInjectable(@Param('id', ParseUUIDPipe) id: string) {
+    const tenant = (await this.tenantContext.resolve()) as { tenantId?: string };
+    if (!tenant.tenantId) throw new BadRequestException('tenant context could not be resolved');
+    const ledger = await this.prisma.inventoryUsageLedger.findFirst({
+      where: { id, tenantId: tenant.tenantId },
+      include: { injectableDetail: true },
+    });
+    if (!ledger?.injectableDetail) {
+      throw new BadRequestException('Injectable usage detail not found');
+    }
+    return ledger.injectableDetail;
+  }
 
   @Get('categories')
   @RequirePermission('api.inventory', 'view')
@@ -656,7 +860,7 @@ export class InventoryController {
   @Post('stock-requests/lines/:lineId/fulfill')
   @RequirePermission('api.inventory', 'update')
   async fulfillStockRequestLine(
-    @Param('lineId') lineId: string,
+    @Param('lineId', ParseUUIDPipe) lineId: string,
     @Body() body: FulfillStockRequestLineDTO,
     @Req() req: { user?: { userId?: string; sub?: string } },
   ) {
@@ -665,6 +869,7 @@ export class InventoryController {
       lineId,
       quantity: body.quantity,
       fulfilledBy: userId,
+      usedByUserId: body.usedByUserId,
       notes: body.notes ?? null,
     });
   }
@@ -700,8 +905,8 @@ export class InventoryController {
   @Get('analytics/export')
   @RequirePermission('api.inventory', 'export')
   async exportAnalytics(
-    @Query('days') days?: string,
     @Res({ passthrough: false }) res: Response,
+    @Query('days') days?: string,
   ) {
     const csv = await this.exportAnalyticsHandler.execute(days ? Number(days) : undefined);
     const stamp = new Date().toISOString().slice(0, 10);
@@ -757,7 +962,7 @@ export class InventoryController {
   @Post('batch/:batchId/dispose')
   @RequirePermission('api.inventory', 'update')
   async disposeBatch(
-    @Param('batchId') batchId: string,
+    @Param('batchId', ParseUUIDPipe) batchId: string,
     @Body() body: DisposeInventoryBatchDTO,
     @Req() req: { user?: { userId?: string; sub?: string } },
   ) {
@@ -768,6 +973,7 @@ export class InventoryController {
       reason: body.reason,
       notes: body.notes ?? null,
       disposedBy: userId,
+      usedByUserId: body.usedByUserId,
     });
   }
 
@@ -875,7 +1081,16 @@ export class InventoryController {
       sourceDocumentId: body.sourceDocumentId ?? null,
       notes: body.notes ?? null,
       consumedBy: userId,
+      recordedByUserId: userId,
+      usedByUserId: body.usedByUserId ?? null,
       warehouseId: body.warehouseId ?? null,
+      usageType: body.usageType,
+      patientId: body.patientId ?? null,
+      appointmentId: body.appointmentId ?? null,
+      clinicalServiceId: body.clinicalServiceId ?? null,
+      inventoryBatchId: body.inventoryBatchId ?? null,
+      reasonCode: body.reasonCode ?? null,
+      procedureCode: body.procedureCode ?? null,
     });
   }
 
@@ -954,13 +1169,13 @@ export class InventoryController {
   @Get('items/export')
   @RequirePermission('api.inventory', 'export')
   async exportItems(
+    @Res({ passthrough: false }) res: Response,
     @Query('ids') ids?: string,
     @Query('branchId') branchId?: string,
     @Query('categoryId') categoryId?: string,
     @Query('q') q?: string,
     @Query('status') status?: 'active' | 'archived' | 'all',
     @Query('stock') stock?: 'all' | 'low' | 'out' | 'expiring' | 'expired',
-    @Res({ passthrough: false }) res: Response,
   ) {
     const itemIds = ids
       ?.split(',')

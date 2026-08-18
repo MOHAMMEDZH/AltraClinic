@@ -23,7 +23,10 @@ const gateDirNames = [
   '20260815250000_phase48_wave_b_snapshot_write_mode',
   '20260815260000_phase48_wave_b_snapshot_write_mode_immutable',
 ];
+/** Wave C depends on full prior chain — park later migrations during prior-chain deploy. */
+const dependentLaterGateDirNames = ['20260816010000_phase48_wave_c_clinical_safety'];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_b_upgrade');
+const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_b_upgrade_later');
 const upgradeDb = `test_p48wb_upgrade_${Date.now()}`;
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -81,10 +84,18 @@ async function withAdmin(fn) {
 
 function parkMigration() {
   fs.mkdirSync(parkDir, { recursive: true });
+  fs.mkdirSync(parkLaterDir, { recursive: true });
   for (const gateDirName of gateDirNames) {
     const src = path.join(migrationsDir, gateDirName);
     const dest = path.join(parkDir, gateDirName);
     if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
+  for (const gateDirName of dependentLaterGateDirNames) {
+    const src = path.join(migrationsDir, gateDirName);
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(parkLaterDir, gateDirName);
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
@@ -100,6 +111,22 @@ function restoreMigration() {
   }
   try {
     fs.rmSync(parkDir, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
+}
+
+function restoreLaterMigrations() {
+  if (!fs.existsSync(parkLaterDir)) return;
+  for (const gateDirName of dependentLaterGateDirNames) {
+    const src = path.join(parkLaterDir, gateDirName);
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(migrationsDir, gateDirName);
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.renameSync(src, dest);
+  }
+  try {
+    fs.rmSync(parkLaterDir, { recursive: true, force: true });
   } catch {
     /* ignore */
   }
@@ -176,6 +203,11 @@ async function main() {
       } catch (e) {
         console.error('Failed to restore parked Wave B migration', e);
       }
+    }
+    try {
+      restoreLaterMigrations();
+    } catch (e) {
+      console.error('Failed to restore parked later migrations', e);
     }
   }
 }

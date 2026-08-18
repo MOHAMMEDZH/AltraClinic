@@ -22,6 +22,7 @@ export interface MediaAssetProps {
   ownerType: string;
   ownerId: string;
   patientId: string | null;
+  requiresPhotoConsent: boolean;
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
@@ -64,6 +65,7 @@ export class MediaAsset {
   readonly ownerType: string;
   readonly ownerId: string;
   readonly patientId: string | null;
+  readonly requiresPhotoConsent: boolean;
   readonly originalFilename: string;
   readonly mimeType: string;
   readonly sizeBytes: number;
@@ -89,6 +91,7 @@ export class MediaAsset {
     this.ownerType = props.ownerType;
     this.ownerId = props.ownerId;
     this.patientId = props.patientId;
+    this.requiresPhotoConsent = props.requiresPhotoConsent;
     this.originalFilename = props.originalFilename;
     this.mimeType = props.mimeType;
     this.sizeBytes = props.sizeBytes;
@@ -132,6 +135,7 @@ export class MediaAsset {
       ownerType: input.ownerType,
       ownerId: input.ownerId,
       patientId: input.patientId,
+      requiresPhotoConsent: input.category.requiresPhotoConsent(),
       originalFilename: input.originalFilename,
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,

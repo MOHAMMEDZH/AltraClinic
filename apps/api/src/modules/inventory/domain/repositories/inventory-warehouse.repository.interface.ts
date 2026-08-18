@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type {
   InventoryWarehouseListFilter,
   InventoryWarehouseRecord,
@@ -5,6 +6,8 @@ import type {
   WarehouseStockListFilter,
   WarehouseStockRecord,
 } from './inventory-warehouse.types';
+
+export type InventoryWarehouseTx = Prisma.TransactionClient;
 
 export interface InventoryWarehouseRepository {
   list(filter: InventoryWarehouseListFilter): Promise<{ warehouses: InventoryWarehouseRecord[]; total: number }>;
@@ -32,8 +35,8 @@ export interface InventoryWarehouseRepository {
   reactivate(tenantId: string, warehouseId: string): Promise<void>;
   setDefault(tenantId: string, warehouseId: string): Promise<void>;
   countActive(tenantId: string): Promise<number>;
-  existsActive(tenantId: string, warehouseId: string): Promise<boolean>;
-  ensureDefaultWarehouseId(tenantId: string): Promise<string>;
+  existsActive(tenantId: string, warehouseId: string, tx?: InventoryWarehouseTx): Promise<boolean>;
+  ensureDefaultWarehouseId(tenantId: string, tx?: InventoryWarehouseTx): Promise<string>;
   applyStockDelta(input: {
     tenantId: string;
     warehouseId: string;

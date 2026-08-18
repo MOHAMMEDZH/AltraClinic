@@ -1,4 +1,4 @@
-import { Body, Controller, Get, GoneException, Header, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, GoneException, Header, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { BeautyPermissionGuard } from '../api/beauty-permission.guard';
 
@@ -322,6 +322,9 @@ export class BeautyController {
       notes: body.notes ?? null,
       warehouseId: body.warehouseId ?? null,
       consumedBy: user.sub,
+      usedByUserId: body.usedByUserId,
+      clinicalServiceId: body.clinicalServiceId ?? null,
+      appointmentId: body.appointmentId ?? null,
     });
   }
 
@@ -334,6 +337,12 @@ export class BeautyController {
   ) {
     const results = [];
     for (const line of body.items) {
+      const usedBy = line.usedByUserId ?? body.usedByUserId;
+      if (!usedBy?.trim()) {
+        throw new BadRequestException(
+          'usedByUserId is required for clinical beauty material consumption',
+        );
+      }
       const result = await this.consumeMaterialHandler.execute(patientId, {
         itemId: line.itemId,
         quantity: line.quantity,
@@ -341,6 +350,7 @@ export class BeautyController {
         encounterId: body.encounterId ?? null,
         notes: body.notes ?? null,
         consumedBy: user.sub,
+        usedByUserId: usedBy,
       });
       results.push(result);
     }

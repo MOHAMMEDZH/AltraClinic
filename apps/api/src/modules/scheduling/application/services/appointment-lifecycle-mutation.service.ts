@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AppointmentSnapshotService } from './appointment-snapshot.service';
 import { BookingConcurrencyService } from './booking-concurrency.service';
@@ -6,6 +6,7 @@ import {
   SCHEDULING_AUDIT_LOG,
   SchedulingAuditLog,
 } from '../ports/scheduling-audit-log.port';
+import { RequiredConsentGateService } from '../../../clinical-forms/services/required-consent-gate.service';
 
 export type QueueLifecycleAppointmentStatus =
   | 'CHECKED_IN'
@@ -27,6 +28,7 @@ export class AppointmentLifecycleMutationService {
     private readonly snapshots: AppointmentSnapshotService,
     private readonly concurrency: BookingConcurrencyService,
     @Inject(SCHEDULING_AUDIT_LOG) private readonly auditLog: SchedulingAuditLog,
+    @Optional() private readonly consentGate?: RequiredConsentGateService,
   ) {}
 
   async applyStatus(
@@ -58,6 +60,21 @@ export class AppointmentLifecycleMutationService {
         applied: false,
         commercialLockedAt: row.commercialLockedAt ?? null,
       };
+    }
+
+    if (params.nextStatus === 'COMPLETED' && row.clinicalServiceId && this.consentGate) {
+      const patientRow = await client.appointment.findFirst({
+        where: { id: row.id, tenantId: params.tenantId },
+        select: { patientId: true },
+      });
+      if (patientRow?.patientId) {
+        await this.consentGate.assertRequiredConsentsSatisfied({
+          tenantId: params.tenantId,
+          patientId: patientRow.patientId,
+          clinicalServiceId: row.clinicalServiceId,
+          appointmentId: row.id,
+        });
+      }
     }
 
     const shouldLock = this.snapshots.shouldSetCommercialLock({
