@@ -2521,6 +2521,325 @@
       ]
     },
     {
+      "id": "api.treatment-course",
+      "kind": "api",
+      "name": "Treatment Course API",
+      "description": "AR-13 TreatmentCourse + CourseSession (aesthetic.course).",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "nurse"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/aesthetic/treatment-courses",
+          "action": "create"
+        },
+        {
+          "method": "GET",
+          "path": "/aesthetic/treatment-courses/:id",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/treatment-courses/:id/transition",
+          "action": "update"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/treatment-courses/:courseId/sessions/:sessionId/link-appointment",
+          "action": "update"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/treatment-courses/:courseId/sessions/:sessionId/transition",
+          "action": "update"
+        }
+      ]
+    },
+    {
+      "id": "api.device-treatment",
+      "kind": "api",
+      "name": "Device Treatment Record API",
+      "description": "AR-14 DeviceTreatmentRecord (aesthetic.device).",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "nurse"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/aesthetic/device-treatments",
+          "action": "create"
+        },
+        {
+          "method": "GET",
+          "path": "/aesthetic/device-treatments/:id",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/device-treatments/:id/corrections",
+          "action": "manage"
+        }
+      ]
+    },
+    {
+      "id": "api.dermatology-encounter",
+      "kind": "api",
+      "name": "Dermatology Encounter API",
+      "description": "AR-15 Dermatology via Encounter only (no DermatologyRecord).",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "nurse"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/aesthetic/dermatology/encounters",
+          "action": "create"
+        },
+        {
+          "method": "GET",
+          "path": "/aesthetic/dermatology/encounters/:id",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/dermatology/encounters/:id/photos",
+          "action": "update"
+        },
+        {
+          "method": "GET",
+          "path": "/aesthetic/dermatology/no-dermatology-record",
+          "action": "view"
+        }
+      ]
+    },
+    {
+      "id": "api.pre-post-care",
+      "kind": "api",
+      "name": "Pre/Post Care Clinical Forms API",
+      "description": "P1-09 PRE_CARE/POST_CARE via ClinicalForm authority.",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "nurse"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/aesthetic/pre-post-care/kinds",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/pre-post-care/instances",
+          "action": "create"
+        },
+        {
+          "method": "POST",
+          "path": "/aesthetic/pre-post-care/instances/:id/assert",
+          "action": "view"
+        }
+      ]
+    },
+    {
       "id": "api.dental-lab",
       "kind": "api",
       "name": "Dental Laboratory Case API",

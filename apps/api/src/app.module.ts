@@ -8,6 +8,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { DentalModule } from './modules/dental/dental.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
+import { AestheticModule } from './modules/aesthetic/aesthetic.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ClinicalFormsModule } from './modules/clinical-forms/clinical-forms.module';
 import { ServicePerformanceModule } from './modules/service-performance/service-performance.module';
@@ -82,6 +83,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     AuditModule,
     DentalModule,
     BeautyModule,
+    AestheticModule,
     InventoryModule,
     ClinicalFormsModule,
     ServicePerformanceModule,

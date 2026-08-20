@@ -53,6 +53,8 @@ export async function assertTenantAppointment(db: Db, tenantId: string, appointm
       clinicalServiceId: true,
       status: true,
       snapshotWriteMode: true,
+      scheduledStart: true,
+      scheduledEnd: true,
     },
   });
   if (!row) throw new NotFoundException('Appointment not found');

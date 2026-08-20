@@ -500,6 +500,9 @@ model Tenant {
   servicePerformances   ServicePerformance[]
   servicePerformanceParticipants ServicePerformanceParticipant[]
   servicePerformanceCorrections ServicePerformanceCorrection[]
+  treatmentCourses      TreatmentCourse[]
+  courseSessions        CourseSession[]
+  deviceTreatmentRecords DeviceTreatmentRecord[]
   inventoryItems       InventoryItem[]
   inventorySuppliers   InventorySupplier[]
   purchaseOrders       PurchaseOrder[]
@@ -1268,6 +1271,8 @@ model Patient {
   labResults          LabResult[]
   dentalLabCases      DentalLabCase[]
   servicePerformances ServicePerformance[]
+  treatmentCourses    TreatmentCourse[]
+  deviceTreatmentRecords DeviceTreatmentRecord[]
 
   @@index([tenantId])
   @@index([tenantId, deletedAt])
@@ -2219,6 +2224,89 @@ model ServicePerformanceCorrection {
 
   @@index([tenantId, performanceId])
   @@map("service_performance_corrections")
+}
+
+/// Phase 48 Wave E / AR-13 — multi-session treatment course SoR (cross-specialty).
+model TreatmentCourse {
+  id                     String               @id @default(uuid()) @db.Uuid
+  tenantId               String               @db.Uuid
+  patientId              String               @db.Uuid
+  clinicalServiceId      String               @db.Uuid
+  plannedSessions        Int
+  intervalMinDays        Int?
+  intervalMaxDays        Int?
+  packagePriceVersionId  String?              @db.Uuid
+  status                 TreatmentCourseStatus @default(DRAFT)
+  createdBy              String               @db.Uuid
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  deletedAt              DateTime?
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient  Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  sessions CourseSession[]
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, status])
+  @@map("treatment_courses")
+}
+
+model CourseSession {
+  id            String              @id @default(uuid()) @db.Uuid
+  tenantId      String              @db.Uuid
+  courseId      String              @db.Uuid
+  sequence      Int
+  appointmentId String?             @db.Uuid
+  status        CourseSessionStatus @default(PLANNED)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  course TreatmentCourse @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([courseId, sequence])
+  @@index([tenantId, courseId])
+  @@index([tenantId, appointmentId])
+  @@map("course_sessions")
+}
+
+/// Phase 48 Wave E / AR-14 — device/laser treatment parameter SoR.
+model DeviceTreatmentRecord {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @db.Uuid
+  /// Opaque external device identifier (not an internal FK / resource authority).
+  deviceId           String?   @db.VarChar(120)
+  deviceType         String    @db.VarChar(80)
+  clinicalServiceId  String    @db.Uuid
+  bodyArea           String?   @db.VarChar(120)
+  parameterPayload   Json      @default("{}")
+  parameterSchemaKey String    @db.VarChar(120)
+  patientId          String    @db.Uuid
+  /// Clinical provider/performer (not inferred from authenticated recorder).
+  providerId         String    @db.Uuid
+  branchId           String?   @db.Uuid
+  recordedAt         DateTime  @default(now())
+  /// Authenticated recorder (accountability).
+  recordedBy         String    @db.Uuid
+  beautyAnnotationId String?   @db.Uuid
+  encounterId        String?   @db.Uuid
+  correctionReason   String?   @db.VarChar(500)
+  correctedAt        DateTime?
+  correctedBy        String?   @db.Uuid
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, deviceType])
+  @@index([tenantId, encounterId])
+  @@map("device_treatment_records")
 }
 
 /// Periodontal charting exam — full-mouth probing with historical snapshots.
@@ -3178,6 +3266,21 @@ enum ServicePerformanceStatus {
 enum ServicePerformanceParticipantRole {
   PRIMARY
   ASSISTING
+}
+
+enum TreatmentCourseStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CourseSessionStatus {
+  PLANNED
+  BOOKED
+  COMPLETED
+  SKIPPED
+  CANCELLED
 }
 
 enum ClinicalPriceVersionStatus {

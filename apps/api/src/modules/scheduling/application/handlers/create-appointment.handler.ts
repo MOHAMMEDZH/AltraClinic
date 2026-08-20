@@ -114,6 +114,8 @@ export class CreateAppointmentHandler {
             currency: cmd.currency ?? 'SYP',
             quantity: cmd.quantity ?? 1,
             commercialReason: cmd.commercialReason ?? null,
+            treatmentCourseId: cmd.treatmentCourseId ?? null,
+            patientId: cmd.patientId,
           })
         : null;
 

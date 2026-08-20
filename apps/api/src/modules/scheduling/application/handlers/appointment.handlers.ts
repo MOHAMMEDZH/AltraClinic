@@ -19,6 +19,7 @@ import { ServiceResourceRequirementService } from '../services/service-resource-
 import { AppointmentSnapshotService } from '../services/appointment-snapshot.service';
 import { BookingCommercialResolver } from '../services/booking-commercial-resolver.service';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
+import { assertCourseIntervalsForReschedule } from '../../../aesthetic/services/wave-e-reference.validation';
 import {
   SCHEDULING_AUDIT_LOG,
   SchedulingAuditLog,
@@ -560,6 +561,16 @@ export class UpdateAppointmentHandler {
                 allocatedResourceIds: effResourceIds,
                 client,
               });
+            }
+
+            // Wave E Round 1 E2 — course interval invariant on reschedule
+            if (slotAffecting) {
+              await assertCourseIntervalsForReschedule(
+                client,
+                tenant.tenantId,
+                appointment.id,
+                effStart,
+              );
             }
 
             const data: Prisma.AppointmentUncheckedUpdateInput = {

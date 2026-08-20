@@ -550,4 +550,241 @@ CREATE TRIGGER service_performance_corrections_tenant_integrity
   BEFORE INSERT OR UPDATE ON "service_performance_corrections"
   FOR EACH ROW EXECUTE FUNCTION enforce_service_performance_correction_tenant_integrity();
 
+-- Phase 48 Wave E — Aesthetic / Dermatology child-parent tenant integrity
+CREATE OR REPLACE FUNCTION enforce_treatment_course_tenant_integrity()
+RETURNS TRIGGER AS $$
+DECLARE
+  patient_tenant UUID;
+  service_tenant UUID;
+  price_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO patient_tenant FROM "patients" WHERE "id" = NEW."patientId";
+  IF patient_tenant IS NULL THEN
+    RAISE EXCEPTION 'treatment_courses: patient % not found', NEW."patientId"
+      USING ERRCODE = '23503';
+  END IF;
+  IF patient_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'treatment_courses: tenantId must match patient.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO service_tenant FROM "canonical_clinical_service_definitions"
+    WHERE "id" = NEW."clinicalServiceId";
+  IF service_tenant IS NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM "canonical_clinical_service_definitions" WHERE "id" = NEW."clinicalServiceId"
+    ) THEN
+      RAISE EXCEPTION 'treatment_courses: clinicalService % not found', NEW."clinicalServiceId"
+        USING ERRCODE = '23503';
+    END IF;
+  ELSIF service_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'treatment_courses: tenantId must match clinicalService.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW."packagePriceVersionId" IS NOT NULL THEN
+    SELECT "tenantId" INTO price_tenant FROM "clinical_service_price_versions"
+      WHERE "id" = NEW."packagePriceVersionId";
+    IF price_tenant IS NULL THEN
+      RAISE EXCEPTION 'treatment_courses: packagePriceVersion % not found', NEW."packagePriceVersionId"
+        USING ERRCODE = '23503';
+    END IF;
+    IF price_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'treatment_courses: tenantId must match packagePriceVersion.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS treatment_courses_tenant_integrity ON "treatment_courses";
+CREATE TRIGGER treatment_courses_tenant_integrity
+  BEFORE INSERT OR UPDATE ON "treatment_courses"
+  FOR EACH ROW EXECUTE FUNCTION enforce_treatment_course_tenant_integrity();
+
+CREATE OR REPLACE FUNCTION enforce_course_session_tenant_integrity()
+RETURNS TRIGGER AS $$
+DECLARE
+  course_tenant UUID;
+  appt_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO course_tenant FROM "treatment_courses" WHERE "id" = NEW."courseId";
+  IF course_tenant IS NULL THEN
+    RAISE EXCEPTION 'course_sessions: course % not found', NEW."courseId"
+      USING ERRCODE = '23503';
+  END IF;
+  IF course_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'course_sessions: tenantId must match course.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW."appointmentId" IS NOT NULL THEN
+    SELECT "tenantId" INTO appt_tenant FROM "appointments" WHERE "id" = NEW."appointmentId";
+    IF appt_tenant IS NULL THEN
+      RAISE EXCEPTION 'course_sessions: appointment % not found', NEW."appointmentId"
+        USING ERRCODE = '23503';
+    END IF;
+    IF appt_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'course_sessions: tenantId must match appointment.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS course_sessions_tenant_integrity ON "course_sessions";
+CREATE TRIGGER course_sessions_tenant_integrity
+  BEFORE INSERT OR UPDATE ON "course_sessions"
+  FOR EACH ROW EXECUTE FUNCTION enforce_course_session_tenant_integrity();
+
+CREATE OR REPLACE FUNCTION enforce_device_treatment_record_tenant_integrity()
+RETURNS TRIGGER AS $$
+DECLARE
+  patient_tenant UUID;
+  provider_tenant UUID;
+  service_tenant UUID;
+  branch_tenant UUID;
+  encounter_tenant UUID;
+  annotation_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO patient_tenant FROM "patients" WHERE "id" = NEW."patientId";
+  IF patient_tenant IS NULL THEN
+    RAISE EXCEPTION 'device_treatment_records: patient % not found', NEW."patientId"
+      USING ERRCODE = '23503';
+  END IF;
+  IF patient_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'device_treatment_records: tenantId must match patient.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO provider_tenant FROM "users" WHERE "id" = NEW."providerId";
+  IF provider_tenant IS NULL THEN
+    RAISE EXCEPTION 'device_treatment_records: provider % not found', NEW."providerId"
+      USING ERRCODE = '23503';
+  END IF;
+  IF provider_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'device_treatment_records: tenantId must match provider.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO service_tenant FROM "canonical_clinical_service_definitions"
+    WHERE "id" = NEW."clinicalServiceId";
+  IF service_tenant IS NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM "canonical_clinical_service_definitions" WHERE "id" = NEW."clinicalServiceId"
+    ) THEN
+      RAISE EXCEPTION 'device_treatment_records: clinicalService % not found', NEW."clinicalServiceId"
+        USING ERRCODE = '23503';
+    END IF;
+  ELSIF service_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'device_treatment_records: tenantId must match clinicalService.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW."branchId" IS NOT NULL THEN
+    SELECT "tenantId" INTO branch_tenant FROM "branches" WHERE "id" = NEW."branchId";
+    IF branch_tenant IS NULL THEN
+      RAISE EXCEPTION 'device_treatment_records: branch % not found', NEW."branchId"
+        USING ERRCODE = '23503';
+    END IF;
+    IF branch_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'device_treatment_records: tenantId must match branch.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  IF NEW."encounterId" IS NOT NULL THEN
+    SELECT "tenantId" INTO encounter_tenant FROM "encounters" WHERE "id" = NEW."encounterId";
+    IF encounter_tenant IS NULL THEN
+      RAISE EXCEPTION 'device_treatment_records: encounter % not found', NEW."encounterId"
+        USING ERRCODE = '23503';
+    END IF;
+    IF encounter_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'device_treatment_records: tenantId must match encounter.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  IF NEW."beautyAnnotationId" IS NOT NULL THEN
+    SELECT "tenantId" INTO annotation_tenant FROM "beauty_annotations" WHERE "id" = NEW."beautyAnnotationId";
+    IF annotation_tenant IS NULL THEN
+      RAISE EXCEPTION 'device_treatment_records: beautyAnnotation % not found', NEW."beautyAnnotationId"
+        USING ERRCODE = '23503';
+    END IF;
+    IF annotation_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'device_treatment_records: tenantId must match beautyAnnotation.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS device_treatment_records_tenant_integrity ON "device_treatment_records";
+CREATE TRIGGER device_treatment_records_tenant_integrity
+  BEFORE INSERT OR UPDATE ON "device_treatment_records"
+  FOR EACH ROW EXECUTE FUNCTION enforce_device_treatment_record_tenant_integrity();
+
+-- Phase 48 Wave E Round 1 — accountability tenant integrity
+CREATE OR REPLACE FUNCTION enforce_treatment_course_accountability_tenant()
+RETURNS TRIGGER AS $$
+DECLARE
+  creator_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO creator_tenant FROM "users" WHERE "id" = NEW."createdBy";
+  IF creator_tenant IS NULL THEN
+    RAISE EXCEPTION 'treatment_courses: createdBy % not found', NEW."createdBy"
+      USING ERRCODE = '23503';
+  END IF;
+  IF creator_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'treatment_courses: tenantId must match createdBy.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS treatment_courses_accountability_tenant ON "treatment_courses";
+CREATE TRIGGER treatment_courses_accountability_tenant
+  BEFORE INSERT OR UPDATE ON "treatment_courses"
+  FOR EACH ROW EXECUTE FUNCTION enforce_treatment_course_accountability_tenant();
+
+CREATE OR REPLACE FUNCTION enforce_device_treatment_accountability_tenant()
+RETURNS TRIGGER AS $$
+DECLARE
+  recorded_tenant UUID;
+  corrected_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO recorded_tenant FROM "users" WHERE "id" = NEW."recordedBy";
+  IF recorded_tenant IS NULL THEN
+    RAISE EXCEPTION 'device_treatment_records: recordedBy % not found', NEW."recordedBy"
+      USING ERRCODE = '23503';
+  END IF;
+  IF recorded_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'device_treatment_records: tenantId must match recordedBy.tenantId'
+      USING ERRCODE = '23514';
+  END IF;
+  IF NEW."correctedBy" IS NOT NULL THEN
+    SELECT "tenantId" INTO corrected_tenant FROM "users" WHERE "id" = NEW."correctedBy";
+    IF corrected_tenant IS NULL THEN
+      RAISE EXCEPTION 'device_treatment_records: correctedBy % not found', NEW."correctedBy"
+        USING ERRCODE = '23503';
+    END IF;
+    IF corrected_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'device_treatment_records: tenantId must match correctedBy.tenantId'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS device_treatment_records_accountability_tenant ON "device_treatment_records";
+CREATE TRIGGER device_treatment_records_accountability_tenant
+  BEFORE INSERT OR UPDATE ON "device_treatment_records"
+  FOR EACH ROW EXECUTE FUNCTION enforce_device_treatment_accountability_tenant();
+
 RAISE NOTICE 'Triggers applied successfully.';
