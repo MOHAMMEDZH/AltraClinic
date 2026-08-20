@@ -16,6 +16,7 @@ import {
 } from './ports/clinical-catalog-audit-log.port';
 import type { CreateClinicalPriceDraftDto } from './dto/clinical-catalog.dto';
 import type { ClinicalCatalogActorContext } from './clinical-catalog.service';
+import { assertPricingUnitAppliesToDomain } from '../domain/pricing-unit-applicability';
 
 type PriceRow = {
   id: string;
@@ -304,6 +305,7 @@ export class ClinicalPriceVersionService {
       currency: body.currency,
       serviceVariantId: body.serviceVariantId ?? null,
     });
+    await this.assertPricingApplicability(body.clinicalServiceId, commercial.pricingUnit);
     const unitPrice = this.assertNonNegativeMoney(body.unitPrice, 'unitPrice');
     const taxPercent = this.assertTaxPercent(body.taxPercent ?? 0);
 
@@ -361,6 +363,8 @@ export class ClinicalPriceVersionService {
         ClinicalCatalogErrorCode.APPEND_ONLY_VIOLATION,
       );
     }
+
+    await this.assertPricingApplicability(draft.clinicalServiceId, draft.pricingUnit);
 
     return this.prisma.withPlatformBypass(async (client) => {
       const key = this.keyFromRow(draft);
@@ -1328,6 +1332,22 @@ export class ClinicalPriceVersionService {
         ClinicalCatalogErrorCode.BRANCH_TENANT_MISMATCH,
       );
     }
+  }
+
+  private async assertPricingApplicability(
+    clinicalServiceId: string,
+    pricingUnit: ClinicalPricingUnit,
+  ) {
+    const service = await this.prisma.withPlatformBypass((client) =>
+      client.canonicalClinicalServiceDefinition.findUnique({
+        where: { id: clinicalServiceId },
+        select: { domain: true },
+      }),
+    );
+    if (!service) {
+      throw new ClinicalCatalogNotFoundError();
+    }
+    assertPricingUnitAppliesToDomain(pricingUnit, service.domain);
   }
 
   private async assertServiceReadable(tenantId: string, clinicalServiceId: string) {

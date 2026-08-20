@@ -265,8 +265,8 @@ export class UpsertResourceRequirementDTO {
   @IsUUID()
   clinicalServiceId!: string;
 
-  @IsIn(['ROOM', 'EQUIPMENT'])
-  resourceType!: 'ROOM' | 'EQUIPMENT';
+  @IsIn(['ROOM', 'EQUIPMENT', 'OPERATORY'])
+  resourceType!: 'ROOM' | 'EQUIPMENT' | 'OPERATORY';
 
   @IsInt()
   @Min(1)

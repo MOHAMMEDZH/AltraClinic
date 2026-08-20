@@ -138,6 +138,8 @@ export class ConsumeDentalMaterialHandler {
       quantity: number;
       procedureCode?: string | null;
       encounterId?: string | null;
+      appointmentId?: string | null;
+      clinicalServiceId?: string | null;
       notes?: string | null;
       warehouseId?: string | null;
       consumedBy: string;
@@ -172,6 +174,8 @@ export class ConsumeDentalMaterialHandler {
       procedureCode,
       reason,
       usageType: 'CLINICAL_CONSUMPTION',
+      appointmentId: input.appointmentId ?? null,
+      clinicalServiceId: input.clinicalServiceId ?? null,
     });
   }
 }

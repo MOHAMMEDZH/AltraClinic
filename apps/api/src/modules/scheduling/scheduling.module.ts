@@ -25,6 +25,7 @@ import {
   GetResourceAvailabilityHandler,
   GetResourceDayStatusHandler,
   ListSchedulingResourcesHandler,
+  CreateSchedulingResourceHandler,
 } from './application/handlers/scheduling-resources.handlers';
 import {
   GetAvailabilityHandler,
@@ -104,6 +105,7 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     GetAvailabilityHandler,
     ListServiceTypesHandler,
     ListSchedulingResourcesHandler,
+    CreateSchedulingResourceHandler,
     GetResourceAvailabilityHandler,
     GetResourceDayStatusHandler,
     ListAppointmentTemplatesHandler,

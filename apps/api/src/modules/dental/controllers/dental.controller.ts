@@ -296,6 +296,8 @@ export class DentalController {
       quantity: body.quantity,
       procedureCode: body.procedureCode ?? null,
       encounterId: body.encounterId ?? null,
+      appointmentId: body.appointmentId ?? null,
+      clinicalServiceId: body.clinicalServiceId ?? null,
       notes: body.notes ?? null,
       warehouseId: body.warehouseId ?? null,
       consumedBy: user.sub,

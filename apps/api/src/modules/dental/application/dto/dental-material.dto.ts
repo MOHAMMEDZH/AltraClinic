@@ -51,6 +51,14 @@ export class ConsumeDentalMaterialDTO {
   encounterId?: string | null;
 
   @IsOptional()
+  @IsUUID()
+  appointmentId?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  clinicalServiceId?: string | null;
+
+  @IsOptional()
   @IsString()
   notes?: string | null;
 

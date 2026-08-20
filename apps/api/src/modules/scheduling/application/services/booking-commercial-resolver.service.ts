@@ -7,6 +7,7 @@ import {
   AppointmentSnapshotService,
   ResolvedCanonicalCommercial,
 } from './appointment-snapshot.service';
+import { assertPricingUnitAppliesToDomain } from '../../../clinical-catalog/domain/pricing-unit-applicability';
 
 @Injectable()
 export class BookingCommercialResolver {
@@ -33,6 +34,16 @@ export class BookingCommercialResolver {
       actorRoles: params.actorRoles ?? ['owner'],
       tenantId: params.tenantId,
     };
+    const service = await this.prisma.withPlatformBypass((c) =>
+      c.canonicalClinicalServiceDefinition.findFirst({
+        where: { id: params.clinicalServiceId },
+        include: { translations: true },
+      }),
+    );
+    if (service) {
+      assertPricingUnitAppliesToDomain(params.pricingUnit, service.domain);
+    }
+
     const cfgResult = await this.configs.getEffectiveConfig(
       actor as never,
       params.clinicalServiceId,
@@ -52,12 +63,6 @@ export class BookingCommercialResolver {
     const taxPercent = Number(price.taxPercent ?? 0);
     this.snapshots.assertZeroAllowed(unitPrice, params.commercialReason);
 
-    const service = await this.prisma.withPlatformBypass((c) =>
-      c.canonicalClinicalServiceDefinition.findFirst({
-        where: { id: params.clinicalServiceId },
-        include: { translations: true },
-      }),
-    );
     const en =
       service?.translations.find((t) => t.locale.startsWith('en'))?.displayName ??
       service?.stableKey ??

@@ -803,6 +803,11 @@
           "method": "POST",
           "path": "/scheduling/booking-integrity/appointments/:id/commercial-correction",
           "action": "manage"
+        },
+        {
+          "method": "POST",
+          "path": "/scheduling/resources",
+          "action": "manage"
         }
       ]
     },
@@ -2431,6 +2436,256 @@
           "method": "GET",
           "path": "/inventory/usage/:id/injectable",
           "action": "view"
+        }
+      ]
+    },
+    {
+      "id": "api.service-performance",
+      "kind": "api",
+      "name": "Service Performance Attribution API",
+      "description": "AR-21 ServicePerformance + Participants (service.performance.*). Commission accruals remain Wave F.",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "nurse"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/service-performances",
+          "action": "create"
+        },
+        {
+          "method": "GET",
+          "path": "/service-performances/:id",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/service-performances/:id/complete",
+          "action": "approve"
+        },
+        {
+          "method": "POST",
+          "path": "/service-performances/:id/corrections",
+          "action": "manage"
+        }
+      ]
+    },
+    {
+      "id": "api.dental-lab",
+      "kind": "api",
+      "name": "Dental Laboratory Case API",
+      "description": "AR-16 DentalLabCase (dental.lab).",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist",
+          "doctor",
+          "lab_technician",
+          "assistant"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist",
+          "lab_technician"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist",
+          "lab_technician"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist",
+          "lab_technician"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/dental/lab-cases",
+          "action": "view"
+        },
+        {
+          "method": "GET",
+          "path": "/dental/lab-cases/:id",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/dental/lab-cases",
+          "action": "create"
+        },
+        {
+          "method": "POST",
+          "path": "/dental/lab-cases/:id/transition",
+          "action": "update"
+        },
+        {
+          "method": "POST",
+          "path": "/dental/lab-cases/:id/attachments",
+          "action": "update"
+        }
+      ]
+    },
+    {
+      "id": "api.treatment-plan-links",
+      "kind": "api",
+      "name": "Treatment Plan Item Appointment Links API",
+      "description": "AR-08 PlanItem↔Appointment M:N (clinical/reception).",
+      "permissions": {
+        "view": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "branch_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "assistant",
+          "receptionist"
+        ],
+        "create": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "assistant",
+          "receptionist"
+        ],
+        "update": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "doctor",
+          "dentist",
+          "specialist",
+          "assistant",
+          "receptionist"
+        ],
+        "delete": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist",
+          "doctor"
+        ],
+        "approve": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ],
+        "export": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ],
+        "manage": [
+          "super_admin",
+          "owner",
+          "general_manager",
+          "dentist"
+        ]
+      },
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/dental/treatment-plans/:planId/items/:itemId/appointments",
+          "action": "view"
+        },
+        {
+          "method": "POST",
+          "path": "/dental/treatment-plans/:planId/items/:itemId/appointments",
+          "action": "create"
+        },
+        {
+          "method": "DELETE",
+          "path": "/dental/treatment-plans/:planId/items/:itemId/appointments/:appointmentId",
+          "action": "delete"
+        },
+        {
+          "method": "POST",
+          "path": "/dental/treatment-plans/:planId/items/:itemId/complete-from-appointment",
+          "action": "update"
         }
       ]
     },

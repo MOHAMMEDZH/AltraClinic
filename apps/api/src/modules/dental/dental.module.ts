@@ -54,6 +54,8 @@ import { DENTAL_RECORD_REPOSITORY } from '../../infrastructure/provider.tokens';
 import { InventoryModule } from '../inventory/inventory.module';
 import { PatientsModule } from '../patients/patients.module';
 import { BillingModule } from '../billing/billing.module';
+import { AuditModule } from '../audit/audit.module';
+import { AuthModule } from '../auth/auth.module';
 import {
   ConsumeDentalMaterialHandler,
   CreateDentalProcedureMaterialHandler,
@@ -61,10 +63,16 @@ import {
   ListPatientDentalMaterialsHandler,
   SearchDentalClinicalInventoryHandler,
 } from './application/handlers/dental-material.handlers';
+import { TreatmentPlanLinksController } from './api/treatment-plan-links.controller';
+import { DentalLabCasesController } from './api/dental-lab-cases.controller';
+import { TreatmentPlanAppointmentLinkService } from './services/treatment-plan-appointment-link.service';
+import { DentalLabCaseService } from './services/dental-lab-case.service';
+import { WAVE_D_AUDIT_LOG } from './ports/wave-d-audit-log.port';
+import { AuditTrailWaveDAuditLog } from './infrastructure/audit-trail-wave-d-audit-log';
 
 @Module({
-  imports: [InventoryModule, PatientsModule, BillingModule],
-  controllers: [DentalController],
+  imports: [InventoryModule, PatientsModule, BillingModule, AuditModule, AuthModule],
+  controllers: [DentalController, TreatmentPlanLinksController, DentalLabCasesController],
   providers: [
     CreateTreatmentHandler,
     GetDentalChartHandler,
@@ -110,9 +118,12 @@ import {
     ListPatientDentalMaterialsHandler,
     ConsumeDentalMaterialHandler,
     SearchDentalClinicalInventoryHandler,
+    TreatmentPlanAppointmentLinkService,
+    DentalLabCaseService,
     DentalPolicyService,
     DentalPermissionGuard,
     { provide: DENTAL_RECORD_REPOSITORY, useClass: PrismaDentalRepository },
+    { provide: WAVE_D_AUDIT_LOG, useClass: AuditTrailWaveDAuditLog },
   ],
   exports: [TreatmentPlanService],
 })
