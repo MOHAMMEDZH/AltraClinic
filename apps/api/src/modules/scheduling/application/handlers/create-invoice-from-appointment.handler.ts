@@ -5,6 +5,7 @@ import { APPOINTMENT_REPOSITORY } from '../../../../infrastructure/provider.toke
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { isBillingInvoiceFromSnapshotEnabled } from '../../domain/booking-feature-flags';
+import { resolveAuthoritativeServicePerformanceForAppointment } from '../../../workforce-commercials/services/invoice-line-performance-attribution.service';
 
 @Injectable()
 export class CreateInvoiceFromAppointmentHandler {
@@ -15,7 +16,11 @@ export class CreateInvoiceFromAppointmentHandler {
     private readonly prisma: PrismaService,
   ) {}
 
-  async execute(appointmentId: string): Promise<{ invoiceId: string; appointmentId: string }> {
+  async execute(appointmentId: string): Promise<{
+    invoiceId: string;
+    appointmentId: string;
+    servicePerformanceId: string | null;
+  }> {
     const tenant = await this.tenantContext.resolve();
     const appt = await this.appointmentRepo.findDetailById(appointmentId, tenant.tenantId);
     if (!appt) throw new NotFoundException('Appointment not found');
@@ -44,6 +49,8 @@ export class CreateInvoiceFromAppointmentHandler {
     let unitPrice = 0;
     let taxPercent = 0;
     let currency = 'SYP';
+    let snapshotRevisionId: string | null = null;
+    let clinicalServiceId: string | null = row?.clinicalServiceId ?? null;
 
     if (snapshotBillingOn) {
       const snap = row?.effectiveSnapshotRevision;
@@ -57,12 +64,24 @@ export class CreateInvoiceFromAppointmentHandler {
       unitPrice = Number(snap.unitPrice);
       taxPercent = Number(snap.taxPercent ?? 0);
       currency = snap.currency;
+      snapshotRevisionId = snap.id;
+      clinicalServiceId = snap.clinicalServiceId ?? clinicalServiceId;
       if (unitPrice === 0 && !snap.commercialReason) {
         throw new BadRequestException('Snapshot zero unitPrice missing commercialReason');
       }
     }
     // flag OFF = bounded Release 47 legacy path (serviceType label + zero unitPrice placeholder).
     // Do NOT opportunistically consume snapshot merely because one exists.
+
+    // Wave F Round 3 — derive durable ServicePerformance link server-side (no client input).
+    const servicePerformanceId = await this.prisma.withPlatformBypass((c) =>
+      resolveAuthoritativeServicePerformanceForAppointment(c, {
+        tenantId: tenant.tenantId,
+        appointmentId,
+        snapshotRevisionId,
+        clinicalServiceId,
+      }),
+    );
 
     const { invoiceId } = await this.createInvoiceHandler.execute({
       patientId: appt.patientId,
@@ -79,11 +98,15 @@ export class CreateInvoiceFromAppointmentHandler {
           unitPrice,
           discountPercent: 0,
           taxPercent,
+          servicePerformanceId,
+          appointmentId,
+          clinicalServiceId,
+          snapshotRevisionId,
         },
       ],
       requireActiveSubscription: false,
     });
 
-    return { invoiceId, appointmentId };
+    return { invoiceId, appointmentId, servicePerformanceId };
   }
 }

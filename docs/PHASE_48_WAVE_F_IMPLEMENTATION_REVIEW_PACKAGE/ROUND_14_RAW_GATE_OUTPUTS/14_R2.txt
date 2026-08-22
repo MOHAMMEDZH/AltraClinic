@@ -1,0 +1,44 @@
+GATE=R2
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=22 passed, 22 total
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round2.postgres.integration.spec.ts (12.246 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.246 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 2 remediation (PostgreSQL)
+    ΓêÜ R2-F1 legacy calculate still GoneException (93 ms)
+    ΓêÜ F3-R2-T1 exact durable performanceΓåöinvoice-line link ΓåÆ success (118 ms)
+    ΓêÜ F3-R2-T2 same patient/service different encounter ΓåÆ reject (89 ms)
+    ΓêÜ F3-R2-T3 serviceCode only without durable SP link ΓåÆ reject (56 ms)
+    ΓêÜ F3-R2-T4 wrong appointment context ΓåÆ reject (60 ms)
+    ΓêÜ F3-R2-T5 wrong snapshot revision ΓåÆ reject (57 ms)
+    ΓêÜ F3-R2-T7 same performance cannot post against second unrelated line (73 ms)
+    ΓêÜ F3-R2-T8 rejection leaves zero accrual side effects (50 ms)
+    ΓêÜ F4-R2-T1/T2 dual caps on commission and attributed revenue (124 ms)
+    ΓêÜ F4-R2-T5 full reversal then another ΓåÆ reject (92 ms)
+    ΓêÜ F4-R2-T6 concurrent reversals never over-reverse (114 ms)
+    ΓêÜ F4-R2-T7 same refund replay idempotent (133 ms)
+    ΓêÜ F4-R2-T8 correction reverse+repost append-only (162 ms)
+    ΓêÜ F5-R2-T1/T3 historical SUPERSEDED plan resolves for past date (83 ms)
+    ΓêÜ F5-R2-T2 new version resolves on/after effectiveFrom (78 ms)
+    ΓêÜ F5-R2-T7 concurrent publishes same scope deterministic (39 ms)
+    ΓêÜ F5-R2-T9 published immutability still rejects rate change (37 ms)
+    ΓêÜ F6-R2 complete tenant-ref INSERT mixed-parent matrix (71 ms)
+    ΓêÜ F6-R2 parent-switch UPDATE rejected for each mutable attempt path (73 ms)
+    ΓêÜ F7-R2-T2 partial reversal then settlement settles only net remaining (91 ms)
+    ΓêÜ F7-R2-T3 full reversal then settlement rejected (100 ms)
+    ΓêÜ F7-R2-T6..T12 owner report dimensions + attributed revenue + multi-currency + legacy excluded (73 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        12.469 s
+Ran all test suites matching /wave-f-round2.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

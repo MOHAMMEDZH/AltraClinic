@@ -1,0 +1,34 @@
+  console.log
+    distinctSearchMultisets=23948 realizableSearch=23815 unrealizableSearch=133 contractInvalid=30 singleStepCrossChecks=320576 singleStepMismatches=0 productionVsOracleMismatches=0 deepDeadEnd=65 validNextNotFirstByOldPriority=1 maxN=6 elapsedMs=16667
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round19-refund-complete-set.unit.spec.ts:327:15)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round19-refund-complete-set.unit.spec.ts (40.404 s)
+  Wave F Round 19 refund complete-set (unit)
+    √ R19-A-U1 mandatory 0.05/0.02/0.07 counterexample accepts with oracle witness A→B→C→D→E (4 ms)
+    √ R19-A-U2 refundId renaming does not change acceptance
+    √ R19-A-U3 reverse array and deterministic shuffles accept counterexample (3 ms)
+    √ R19-A-U4 aggregate-preserving forged neighbor passes static gates but rejects as NOT_SEQUENTIALLY_REALIZABLE (20 ms)
+    √ R19-A-U5 multiple eligible candidates explored — valid path is not priority-first (1 ms)
+    √ R19-A-U6 25/50/100 distinct-special fixtures remain accepted within timeout (20 ms)
+    √ R19-A-U7 no exploreBudget or renamed validity budget in production source (1 ms)
+    √ R19-B-U2 legacy exhaustive wrapper still reports zero mismatches (17388 ms)
+    R19 oracle strengthened populations
+      √ R19-ORACLE-U1 independent transition equals authoritative single-step over declared domain
+      √ R19-ORACLE-U2 at least 250 distinct realizable economic multisets agree with production (1 ms)
+      √ R19-ORACLE-U3 at least 100 distinct well-shaped unrealizable multisets agree with production (1 ms)
+      √ R19-ORACLE-U4 honestly classified unrealizable categories have non-zero counts (1 ms)
+      √ R19-ORACLE-U5 at least 30 contract-invalid cases reject with expected error families
+      √ R19-ORACLE-U6 mandatory counterexample accepts with oracle witness
+      √ R19-ORACLE-U7 invalid near-neighbors of mandatory counterexample rejected by oracle and production (10 ms)
+      √ R19-ORACLE-U8 refundId renaming and shuffles preserve acceptance/rejection
+      √ R19-ORACLE-U9 old priority-first greedy insufficient while complete search accepts mandatory case (1 ms)
+      √ R19-ORACLE-U10 no exploreBudget or renamed validity budget in production source
+      √ R19-ORACLE summary line for raw gate capture (21 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        40.685 s, estimated 47 s
+Ran all test suites matching /wave-f-round19-refund-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

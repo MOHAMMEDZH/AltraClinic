@@ -1,0 +1,74 @@
+  console.log
+    R9_BLOCKING_DIAGNOSTICS_BEGIN
+    ## R9-C-T1
+    - pidA=1181519
+    - pidB=1181535
+    - pg_blocking_pids(pidB)=[1181519]
+    - barrierReached=2026-08-22T00:10:14.994Z
+    - blockedByA=true
+    - releaseAt=2026-08-22T00:10:15.051Z
+    - loserResult=BadRequestException: Correction source invoice line is not the current ACTIVE binding; stale predecessor cannot branch
+    - finalOpenCount=2
+    - finalNetAttributed=320.00
+    - deadlock=false
+    
+    ## R9-C-T2
+    - pidA=1181519
+    - pidB=1181538
+    - pg_blocking_pids(pidB)=[1181519]
+    - blockedByA=true
+    - outcome=correction_won_settlement_rejected
+    - finalOpen=2
+    
+    ## R9-C-T5
+    - pidA=1181519
+    - pidB=1181549
+    - blockedByA=true
+    - note=performance-then-package lock order preserved
+    
+    ## R9-E-T2
+    - assertedBufferLines=26
+    - containsPidA=true
+    - containsBlockingPids=true
+    
+    R9_BLOCKING_DIAGNOSTICS_END
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts:560:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts (20.993 s)
+  Wave F Round 9 remediation (PostgreSQL)
+    √ R9-A-T1 one payment prior partial refund then correction keeps net 80 (456 ms)
+    √ R9-A-T2 two payments prior refund then correction preserves net (407 ms)
+    √ R9-A-T3 two payments × two participants prior refund reconcile (524 ms)
+    √ R9-A-T4 full prior refund then correction carries refund economics (R12 rem=0 path) (286 ms)
+    √ R9-A-T5 exact replay same correctionEventId (288 ms)
+    √ R9-A-T6 conflicting replay different replacement fails closed (281 ms)
+    √ R9-A-T7 refund after refund-aware correction targets replacement only (294 ms)
+    √ R9-A-T8 rollback after repost before refund carry (279 ms)
+    √ R9-B-T1 selected root partially settled blocks correction (186 ms)
+    √ R9-B-T2 sibling partially settled blocks whole cohort (178 ms)
+    √ R9-B-T3 fully SETTLED still fails closed (182 ms)
+    √ R9-B-T4 multiple settlement allocations block correction (167 ms)
+    √ R9-B-T5 settlement replay still blocks correction (157 ms)
+    √ R9-B-T6 owner-report unchanged after rejected partial-settlement correction (206 ms)
+    √ R9-C-T1 concurrent sibling corrections serialize without deadlock (376 ms)
+    √ R9-C-T2 correction versus partial settlement — blocking + safe outcome (403 ms)
+    √ R9-C-T3 refund-before-correction sequential post-lock carry preserves net 80 (272 ms)
+    √ R9-C-T4 exact correction replay under contention (453 ms)
+    √ R9-C-T5 lock-order regression correction vs collected post (323 ms)
+    √ R9-D-T1 invoice correction1 then correction2 creates new open successor (249 ms)
+    √ R9-D-T2 three sequential invoice corrections (287 ms)
+    √ R9-D-T3 multi-participant sequential corrections (329 ms)
+    √ R9-D-T4 package invoice-based sequential corrections (276 ms)
+    √ R9-D-T5 exact replay of correction 2 (228 ms)
+    √ R9-D-T6 concurrent correction events serialize; loser defined conflict (360 ms)
+    √ R9-D-T7 unique-conflict cannot accept fully reversed stale successor (148 ms)
+    √ R9-E-T1 isolated same-invoice package currency mismatch (193 ms)
+    √ R9-E-T2 raw pg_blocking_pids evidence emitted (13 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       28 passed, 28 total
+Snapshots:   0 total
+Time:        21.227 s
+Ran all test suites matching /wave-f-round9.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -1,0 +1,41 @@
+GATE=R8
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=19 passed, 19 total
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round8.postgres.integration.spec.ts (14.119 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (14.119 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 8 remediation (PostgreSQL)
+    ΓêÜ R8-A-T1 two payments one participant package COLLECTED correction ΓåÆ 320 (429 ms)
+    ΓêÜ R8-A-T2 one payment two participants 60/40 correction (223 ms)
+    ΓêÜ R8-A-T3/T4 two payments ├ù two participants + idempotent replay (404 ms)
+    ΓêÜ R8-A-T5 idempotency conflict different replacement (214 ms)
+    ΓêÜ R8-A-T6 SETTLED sibling fails closed with zero cohort mutation (171 ms)
+    ΓêÜ R8-A-T7 cross-invoice payment correction rejected (160 ms)
+    ΓêÜ R8-A-T8 currency mismatch correction zero side effects (131 ms)
+    ΓêÜ R8-A-T9 multi-participant provenance failure full rollback (164 ms)
+    ΓêÜ R8-A-T10 invoice-based multi-participant cohort correction (186 ms)
+    ΓêÜ R8-A-T11 refund after multi-payment correction uses exact replacement basis (271 ms)
+    ΓêÜ R8-B-T1 invoice first holds lock; collected waits on pg_blocking_pids then rejects (208 ms)
+    ΓêÜ R8-B-T2 collected first holds lock; invoice waits then rejects opposing basis (265 ms)
+    ΓêÜ R8-B-T3 concurrent duplicate collected remains idempotent under contention (136 ms)
+    ΓêÜ R8-B-T4 package allocation lock ordering ΓÇö concurrent partials no deadlock (145 ms)
+    ΓêÜ R8-C-T1 collected-path pin mismatch on unconsumed allocation (79 ms)
+    ΓêÜ R8-C-T2 cross-tenant line cannot satisfy package pinning (77 ms)
+    ΓêÜ R8-C-T3 correction currency mismatch zero reversals/reposts/binding (132 ms)
+    ΓêÜ R8-C-T4 multi-participant collected correction ΓÇö two roots reversed and reposted (237 ms)
+    ΓêÜ R8-C-T5 exact refund amount 80.00 after corrected 160 basis (partial collected refund) (201 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        14.334 s
+Ran all test suites matching /wave-f-round8.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

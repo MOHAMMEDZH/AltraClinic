@@ -1,0 +1,31 @@
+{
+  "declaredEnumeration": "cent caps revC=1..28 commC=0..revC denomC=max(revC,3)..revC+8 bases=1..9c n=1..6 + seed500 + forge2500; oracle n<=8; seed=19042022",
+  "domainSeed": 19042022,
+  "maxOracleN": 8,
+  "candidatesBeforeDedup": 24604,
+  "distinctSearchMultisets": 23948,
+  "realizableSearchCount": 23815,
+  "unrealizableSearchCount": 133,
+  "contractInvalidCount": 30,
+  "categoryCounts": {
+    "mandatory_valid_counterexample": 1,
+    "authoritative_simulation": 23358,
+    "seeded_authoritative": 456,
+    "aggregate_fitting_swap": 1,
+    "competing_eligible_dead_end": 64,
+    "proposal_observed_mismatch": 68
+  },
+  "singleStepCrossChecks": 320576,
+  "singleStepMismatches": 0,
+  "multiEligibleStateCount": 72965,
+  "deepDeadEndCount": 65,
+  "validNextNotFirstByOldPriority": 1,
+  "refundIdRenameRepresentations": 23948,
+  "shuffledRepresentations": 23948,
+  "maxN": 6,
+  "maxExploredStatesOneCase": 240,
+  "totalExploredStates": 78378,
+  "productionVsOracleMismatches": 0,
+  "elapsedMs": 14251,
+  "reportLine": "distinctSearchMultisets=23948 realizableSearch=23815 unrealizableSearch=133 contractInvalid=30 singleStepCrossChecks=320576 singleStepMismatches=0 productionVsOracleMismatches=0 deepDeadEnd=65 validNextNotFirstByOldPriority=1 maxN=6 elapsedMs=14251"
+}

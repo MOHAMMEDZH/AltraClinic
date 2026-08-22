@@ -1,0 +1,38 @@
+GATE=PRIOR_D_RLS
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=16 passed, 16 total
+---
+node.exe : PASS src/modules/dental/tests/wave-d-rls.postgres.integration.spec.ts (6.044 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (6.044 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave D real RLS (bypass OFF, booking_app)
+    ΓêÜ same-tenant SELECT sees Wave D rows (35 ms)
+    ΓêÜ cross-tenant SELECT is empty (20 ms)
+    ΓêÜ NOBYPASSRLS context is active (8 ms)
+    ΓêÜ cross-tenant INSERT/UPDATE/DELETE are denied for Wave D tables (70 ms)
+    ΓêÜ same-tenant INSERT succeeds for all six Wave D tables under RLS (52 ms)
+    ΓêÜ mixed-tenant parent INSERT is rejected when child.tenantId matches current tenant (23 ms)
+    ΓêÜ R3-T1 attachment mixed-tenant labCaseId INSERT rejected under tenant B (19 ms)
+    ΓêÜ R3-T2 participant mixed-tenant performanceId INSERT rejected under tenant B (8 ms)
+    ΓêÜ R3-T3 correction mixed-tenant performanceId INSERT rejected under tenant B (8 ms)
+    ΓêÜ R3-T4 participant wrong child tenantId INSERT rejected by RLS under tenant B (8 ms)
+    ΓêÜ R3-T5 correction wrong child tenantId INSERT rejected by RLS under tenant B (7 ms)
+    ΓêÜ R3 parent-switch UPDATE rejected for attachment labCaseId and participant performanceId (17 ms)
+    ΓêÜ R3 parent-switch UPDATE rejected for link appointmentId (9 ms)
+    ΓêÜ R3 service_performance_corrections UPDATE is intentionally immutable via RLS (append-only) (15 ms)
+    ΓêÜ R3 six-table RLS lifecycle matrix has explicit per-operation proof (98 ms)
+    ΓêÜ parent-switch UPDATE is rejected for child Wave D relations (15 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        6.316 s
+Ran all test suites matching /wave-d-rls/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

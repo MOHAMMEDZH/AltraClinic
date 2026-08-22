@@ -1,0 +1,73 @@
+GATE=R3
+START_UTC=2026-08-21T16:29:30.4797478Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round3.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round3.postgres.integration.spec.ts (15.423 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (15.423 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 3 remediation (PostgreSQL)
+    ΓêÜ R3-F1 legacy calculate still GoneException (80 ms)
+    ΓêÜ R3-F2 COLLECTED_REVENUE path still works (120 ms)
+    ΓêÜ R3-F3-T1 production billing path populates servicePerformanceId (30 ms)
+    ΓêÜ R3-F3-T2 client cannot arbitrarily bind another ServicePerformance (92 ms)
+    ΓêÜ R3-F3-T3 same patient+service wrong appointment SP rejected on accrual (107 ms)
+    ΓêÜ R3-F3-T4/T5 wrong tenant/branch binding rejected (45 ms)
+    ΓêÜ R3-F3-T6/T9 billing-created line then accrual succeeds without raw SP injection (69 ms)
+    ΓêÜ R3-F3-T7 second unrelated line cannot reuse same performance (111 ms)
+    ΓêÜ R3-F4-T1 successful atomic correction (203 ms)
+    ΓêÜ R3-F4-T2/T3 repost failure rolls back reversal (atomic) (124 ms)
+    ΓêÜ R3-F4-T4/T5/T6 correction replay + concurrent + audit (318 ms)
+    ΓêÜ R3-F5-T1 current A + future B ΓåÆ clean non-overlapping timeline (105 ms)
+    ΓêÜ R3-F5-T2/T3 same or overlapping future publish rejected (70 ms)
+    ΓêÜ R3-F5-T4 concurrent future publishes ΓåÆ one valid timeline (59 ms)
+    ΓêÜ R3-F5-T6/T7/T8 historical resolve + boundary + no overlap (74 ms)
+    ΓêÜ R3-F5-T9 published immutability still rejects rate change (43 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for userId ΓåÆ users (80 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for servicePerformanceId ΓåÆ service_performances (82 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for commissionPlanVersionId ΓåÆ staff_commission_plan_versions (81 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for createdBy ΓåÆ users (79 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for invoiceId ΓåÆ invoices (105 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for invoiceLineId ΓåÆ invoice_line_items (85 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for paymentId ΓåÆ invoice_payments (83 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for refundId ΓåÆ invoice_refunds (82 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for appointmentId ΓåÆ appointments (82 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for branchId ΓåÆ branches (73 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for clinicalServiceId ΓåÆ canonical_clinical_service_definitions (90 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for snapshotRevisionId ΓåÆ appointment_service_snapshot_revisions (84 ms)
+    ΓêÜ R3-F6A INSERT mixed-parent rejected for reversalOfAccrualId ΓåÆ commission_accruals (83 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for userId (append-only/tenant) (75 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for servicePerformanceId (append-only/tenant) (76 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for commissionPlanVersionId (append-only/tenant) (73 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for createdBy (append-only/tenant) (76 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for invoiceId (append-only/tenant) (71 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for invoiceLineId (append-only/tenant) (74 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for paymentId (append-only/tenant) (70 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for refundId (append-only/tenant) (72 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for appointmentId (append-only/tenant) (71 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for branchId (append-only/tenant) (71 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for clinicalServiceId (append-only/tenant) (71 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for snapshotRevisionId (append-only/tenant) (70 ms)
+    ΓêÜ R3-F6A UPDATE parent-switch rejected for reversalOfAccrualId (append-only/tenant) (73 ms)
+    ΓêÜ R3-F6B settlement allocation ENABLE/FORCE RLS + booking_app NOBYPASSRLS (27 ms)
+    ΓêÜ R3-F7-T1/T3 concurrent full-net settlement never exceeds net settleable (131 ms)
+    ΓêÜ R3-F7-T2 concurrent partial settlements cumulative <= net (132 ms)
+    ΓêÜ R3-F7-T4/T5 full reverse blocks settle; idempotent replay (149 ms)
+    ΓêÜ R3-F7-RPT-T1..T7 owner report drilldown completeness (114 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       47 passed, 47 total
+Snapshots:   0 total
+Time:        15.663 s
+Ran all test suites matching /wave-f-round3.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:29:47.6269192Z
+EXIT=0
+STATUS=PASS

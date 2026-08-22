@@ -1,0 +1,20 @@
+GATE=PKG_PERM
+EXIT=0
+STATUS=PASS
+SUITES=
+TESTS=
+---
+
+> @booking/permissions@0.0.1 test
+> vitest run
+
+
+ RUN  v1.6.1 C:/Users/mrame/Projects/AltraClinic/packages/permissions
+
+ Γ£ô src/permissions.test.ts  (6 tests) 5ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  19:38:26
+   Duration  687ms (transform 97ms, setup 1ms, collect 103ms, tests 5ms, environment 0ms, prepare 237ms)
+

@@ -1,0 +1,13 @@
+GATE=BUILD
+START_UTC=2026-08-21T12:32:28.6080545Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx tsc -p tsconfig.build.json --pretty false
+---
+error TS6059: File 'C:/Users/mrame/Projects/AltraClinic/apps/api/prisma/seeds/permission-seeds.ts' is not under 'rootDir' 'C:/Users/mrame/Projects/AltraClinic/apps/api/src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by default include pattern '**/*'
+
+---
+END_UTC=2026-08-21T12:32:50.9349262Z
+EXIT=2
+STATUS=PASS_BASELINE

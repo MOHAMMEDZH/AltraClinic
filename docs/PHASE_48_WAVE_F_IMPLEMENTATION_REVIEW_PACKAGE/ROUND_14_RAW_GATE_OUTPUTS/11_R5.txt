@@ -1,0 +1,43 @@
+GATE=R5
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=21 passed, 21 total
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round5.postgres.integration.spec.ts (12.254 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.254 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 5 remediation (PostgreSQL)
+    ΓêÜ R5-PKG1-T1/T7/T8 basis from packagePriceVersionId; valid allocation persists (178 ms)
+    ΓêÜ R5-PKG1-T2 inflated packageCommercialBasisAmount rejected (56 ms)
+    ΓêÜ R5-PKG1-T3 wrong currency rejected (34 ms)
+    ΓêÜ R5-PKG1-T4/T5 wrong / missing package price version rejected (63 ms)
+    ΓêÜ R5-PKG1-T6 non-PER_COURSE/PER_PACKAGE pricing unit rejected (31 ms)
+    ΓêÜ R5-PKG2-T1/T2/T6 concurrent allocations cannot exceed basis (94 ms)
+    ΓêÜ R5-PKG2-T3 concurrent small allocations that fit both succeed (79 ms)
+    ΓêÜ R5-PKG2-T4 concurrent duplicate same-session ΓåÆ only one (51 ms)
+    ΓêÜ R5-PKG2-T5 different packages do not conflict (58 ms)
+    ΓêÜ R5-PKG3-T1/T2/T8 pg_policies uses app.current_tenant_id; FORCE+ENABLE+NOBYPASSRLS (64 ms)
+    ΓêÜ R5-PKG3-T3..T7 same-tenant insert/select; cross-tenant blocked (173 ms)
+    ΓêÜ R5-BIND-T1 line.appointmentId set, performance.appointmentId null ΓåÆ reject (130 ms)
+    ΓêÜ R5-BIND-T2 line.snapshotRevisionId set, performance snapshot null ΓåÆ reject (96 ms)
+    ΓêÜ R5-BIND-T3 line.clinicalServiceId set, performance service unprovable/mismatch ΓåÆ reject (35 ms)
+    ΓêÜ R5-BIND-T4 line.courseSessionId set, performance course session unprovable ΓåÆ reject (42 ms)
+    ΓêÜ R5-BIND-T5 same patient+branch+service wrong appointment ΓåÆ reject (33 ms)
+    ΓêÜ R5-BIND-T6/T7/T8 matching provenance succeeds; rebind blocked; reject zero side effects (63 ms)
+    ΓêÜ R5-CSVC-T1/T2/T3 SYSTEM_CANONICAL + same-tenant custom ok; cross-tenant reject (40 ms)
+    ΓêÜ R5-CSVC-T4/T5 parent-switch to cross-tenant custom rejected; original unchanged (32 ms)
+    ΓêÜ R5-CSVC-T6 app-role path remains valid for same-tenant custom (87 ms)
+    ΓêÜ R5-PKGC-T1..T10 package correction reuses allocation; cap unchanged; refund current source (400 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       21 passed, 21 total
+Snapshots:   0 total
+Time:        12.476 s
+Ran all test suites matching /wave-f-round5.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

@@ -787,4 +787,445 @@ CREATE TRIGGER device_treatment_records_accountability_tenant
   BEFORE INSERT OR UPDATE ON "device_treatment_records"
   FOR EACH ROW EXECUTE FUNCTION enforce_device_treatment_accountability_tenant();
 
+-- =============================================================================
+-- Phase 48 Wave F — Workforce Commercials triggers
+-- =============================================================================
+
+-- Child/parent tenant integrity: plan.user same tenant
+CREATE OR REPLACE FUNCTION enforce_staff_commission_plan_tenant_refs()
+RETURNS TRIGGER AS $$
+DECLARE
+  user_tenant UUID;
+  branch_tenant UUID;
+  svc_tenant UUID;
+  created_tenant UUID;
+  published_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO user_tenant FROM "users" WHERE "id" = NEW."userId";
+  IF user_tenant IS NULL OR user_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'staff_commission_plan_versions: userId tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  SELECT "tenantId" INTO created_tenant FROM "users" WHERE "id" = NEW."createdBy";
+  IF created_tenant IS NULL OR created_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'staff_commission_plan_versions: createdBy tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  IF NEW."publishedBy" IS NOT NULL THEN
+    SELECT "tenantId" INTO published_tenant FROM "users" WHERE "id" = NEW."publishedBy";
+    IF published_tenant IS NULL OR published_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: publishedBy tenant mismatch'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."branchId" IS NOT NULL THEN
+    SELECT "tenantId" INTO branch_tenant FROM "branches" WHERE "id" = NEW."branchId";
+    IF branch_tenant IS NULL OR branch_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: branchId tenant mismatch'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."clinicalServiceId" IS NOT NULL THEN
+    SELECT "tenantId" INTO svc_tenant FROM "canonical_clinical_service_definitions" WHERE "id" = NEW."clinicalServiceId";
+    IF svc_tenant IS NOT NULL AND svc_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: clinicalServiceId tenant mismatch'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS staff_commission_plan_versions_tenant_refs ON "staff_commission_plan_versions";
+CREATE TRIGGER staff_commission_plan_versions_tenant_refs
+  BEFORE INSERT OR UPDATE ON "staff_commission_plan_versions"
+  FOR EACH ROW EXECUTE FUNCTION enforce_staff_commission_plan_tenant_refs();
+
+-- Published plans immutable except supersede path (Round 1 F5)
+CREATE OR REPLACE FUNCTION enforce_staff_commission_plan_immutability()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD."status" = 'SUPERSEDED' THEN
+    RAISE EXCEPTION 'staff_commission_plan_versions: SUPERSEDED plan immutable'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF OLD."status" = 'ACTIVE' THEN
+    IF NEW."percentage" IS DISTINCT FROM OLD."percentage"
+      OR NEW."calculationBasis" IS DISTINCT FROM OLD."calculationBasis"
+      OR NEW."earningTrigger" IS DISTINCT FROM OLD."earningTrigger"
+      OR NEW."rateType" IS DISTINCT FROM OLD."rateType"
+      OR NEW."userId" IS DISTINCT FROM OLD."userId"
+      OR NEW."enabled" IS DISTINCT FROM OLD."enabled"
+      OR NEW."effectiveFrom" IS DISTINCT FROM OLD."effectiveFrom"
+      OR NEW."effectiveTo" IS DISTINCT FROM OLD."effectiveTo"
+      OR NEW."branchId" IS DISTINCT FROM OLD."branchId"
+      OR NEW."clinicalServiceId" IS DISTINCT FROM OLD."clinicalServiceId"
+    THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: ACTIVE plan immutable — publish a new version'
+        USING ERRCODE = '23514';
+    END IF;
+
+    IF NEW."status" IS DISTINCT FROM OLD."status" AND NEW."status" <> 'SUPERSEDED' THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: ACTIVE plan may only transition to SUPERSEDED'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS staff_commission_plan_versions_immutability ON "staff_commission_plan_versions";
+CREATE TRIGGER staff_commission_plan_versions_immutability
+  BEFORE UPDATE ON "staff_commission_plan_versions"
+  FOR EACH ROW EXECUTE FUNCTION enforce_staff_commission_plan_immutability();
+
+CREATE OR REPLACE FUNCTION enforce_commission_accrual_tenant_refs()
+RETURNS TRIGGER AS $$
+DECLARE
+  user_tenant UUID;
+  perf_tenant UUID;
+  plan_tenant UUID;
+  created_tenant UUID;
+  rev_tenant UUID;
+  ref_tenant UUID;
+BEGIN
+  SELECT "tenantId" INTO user_tenant FROM "users" WHERE "id" = NEW."userId";
+  IF user_tenant IS NULL OR user_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_accruals: userId tenant mismatch' USING ERRCODE = '23514';
+  END IF;
+  SELECT "tenantId" INTO perf_tenant FROM "service_performances" WHERE "id" = NEW."servicePerformanceId";
+  IF perf_tenant IS NULL OR perf_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_accruals: servicePerformanceId tenant mismatch' USING ERRCODE = '23514';
+  END IF;
+  SELECT "tenantId" INTO plan_tenant FROM "staff_commission_plan_versions" WHERE "id" = NEW."commissionPlanVersionId";
+  IF plan_tenant IS NULL OR plan_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_accruals: commissionPlanVersionId tenant mismatch' USING ERRCODE = '23514';
+  END IF;
+  SELECT "tenantId" INTO created_tenant FROM "users" WHERE "id" = NEW."createdBy";
+  IF created_tenant IS NULL OR created_tenant <> NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_accruals: createdBy tenant mismatch' USING ERRCODE = '23514';
+  END IF;
+  IF NEW."reversalOfAccrualId" IS NOT NULL THEN
+    SELECT "tenantId" INTO rev_tenant FROM "commission_accruals" WHERE "id" = NEW."reversalOfAccrualId";
+    IF rev_tenant IS NULL OR rev_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: reversalOfAccrualId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  IF NEW."invoiceId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "invoices" WHERE "id" = NEW."invoiceId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: invoiceId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."invoiceLineId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "invoice_line_items" WHERE "id" = NEW."invoiceLineId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: invoiceLineId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."paymentId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "invoice_payments" WHERE "id" = NEW."paymentId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: paymentId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."refundId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "invoice_refunds" WHERE "id" = NEW."refundId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: refundId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."appointmentId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "appointments" WHERE "id" = NEW."appointmentId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: appointmentId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."branchId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "branches" WHERE "id" = NEW."branchId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: branchId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."clinicalServiceId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "canonical_clinical_service_definitions" WHERE "id" = NEW."clinicalServiceId";
+    IF ref_tenant IS NOT NULL AND ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: clinicalServiceId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM "canonical_clinical_service_definitions" WHERE "id" = NEW."clinicalServiceId"
+    ) THEN
+      RAISE EXCEPTION 'commission_accruals: clinicalServiceId missing' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF NEW."snapshotRevisionId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant FROM "appointment_service_snapshot_revisions" WHERE "id" = NEW."snapshotRevisionId";
+    IF ref_tenant IS NULL OR ref_tenant <> NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_accruals: snapshotRevisionId tenant mismatch' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS commission_accruals_tenant_refs ON "commission_accruals";
+CREATE TRIGGER commission_accruals_tenant_refs
+  BEFORE INSERT OR UPDATE ON "commission_accruals"
+  FOR EACH ROW EXECUTE FUNCTION enforce_commission_accrual_tenant_refs();
+
+-- Append-only: only EARNED→SETTLED may change status/settledAt/settlementReference (Round 1 F6)
+CREATE OR REPLACE FUNCTION enforce_commission_accrual_append_only()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'commission_accruals: hard delete forbidden' USING ERRCODE = '23514';
+  END IF;
+
+  IF OLD."status" = 'REVERSED' THEN
+    RAISE EXCEPTION 'commission_accruals: REVERSED row immutable' USING ERRCODE = '23514';
+  END IF;
+
+  IF OLD."status" = 'EARNED' AND NEW."status" = 'SETTLED' THEN
+    IF NEW."id" IS DISTINCT FROM OLD."id"
+      OR NEW."tenantId" IS DISTINCT FROM OLD."tenantId"
+      OR NEW."branchId" IS DISTINCT FROM OLD."branchId"
+      OR NEW."userId" IS DISTINCT FROM OLD."userId"
+      OR NEW."servicePerformanceId" IS DISTINCT FROM OLD."servicePerformanceId"
+      OR NEW."appointmentId" IS DISTINCT FROM OLD."appointmentId"
+      OR NEW."clinicalServiceId" IS DISTINCT FROM OLD."clinicalServiceId"
+      OR NEW."snapshotRevisionId" IS DISTINCT FROM OLD."snapshotRevisionId"
+      OR NEW."invoiceId" IS DISTINCT FROM OLD."invoiceId"
+      OR NEW."invoiceLineId" IS DISTINCT FROM OLD."invoiceLineId"
+      OR NEW."paymentId" IS DISTINCT FROM OLD."paymentId"
+      OR NEW."refundId" IS DISTINCT FROM OLD."refundId"
+      OR NEW."commissionPlanVersionId" IS DISTINCT FROM OLD."commissionPlanVersionId"
+      OR NEW."calculationBasis" IS DISTINCT FROM OLD."calculationBasis"
+      OR NEW."attributedRevenueAmount" IS DISTINCT FROM OLD."attributedRevenueAmount"
+      OR NEW."commissionPercent" IS DISTINCT FROM OLD."commissionPercent"
+      OR NEW."commissionAmount" IS DISTINCT FROM OLD."commissionAmount"
+      OR NEW."currency" IS DISTINCT FROM OLD."currency"
+      OR NEW."earnedAt" IS DISTINCT FROM OLD."earnedAt"
+      OR NEW."reversalOfAccrualId" IS DISTINCT FROM OLD."reversalOfAccrualId"
+      OR NEW."idempotencyKey" IS DISTINCT FROM OLD."idempotencyKey"
+      OR NEW."reason" IS DISTINCT FROM OLD."reason"
+      OR NEW."createdBy" IS DISTINCT FROM OLD."createdBy"
+      OR NEW."createdAt" IS DISTINCT FROM OLD."createdAt"
+    THEN
+      RAISE EXCEPTION 'commission_accruals: only status/settledAt/settlementReference may change on settle'
+        USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RAISE EXCEPTION 'commission_accruals: append-only — only EARNED→SETTLED settle update allowed'
+    USING ERRCODE = '23514';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS commission_accruals_append_only ON "commission_accruals";
+CREATE TRIGGER commission_accruals_append_only
+  BEFORE UPDATE OR DELETE ON "commission_accruals"
+  FOR EACH ROW EXECUTE FUNCTION enforce_commission_accrual_append_only();
+
+-- Wave F Round 14 — correction lineage append-only
+CREATE OR REPLACE FUNCTION enforce_commission_correction_lineage_append_only()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'commission_correction_lineages: hard delete forbidden' USING ERRCODE = '23514';
+  END IF;
+  RAISE EXCEPTION 'commission_correction_lineages: append-only — updates forbidden' USING ERRCODE = '23514';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS commission_correction_lineages_append_only ON "commission_correction_lineages";
+CREATE TRIGGER commission_correction_lineages_append_only
+  BEFORE UPDATE OR DELETE ON "commission_correction_lineages"
+  FOR EACH ROW EXECUTE FUNCTION enforce_commission_correction_lineage_append_only();
+
+-- Wave F Round 15 — lineage tenant + selected-accrual provenance
+CREATE OR REPLACE FUNCTION enforce_commission_correction_lineage_provenance()
+RETURNS TRIGGER AS $$
+DECLARE
+  acc RECORD;
+  ref_tenant UUID;
+BEGIN
+  SELECT
+    a."tenantId",
+    a."invoiceLineId",
+    a."servicePerformanceId",
+    a."calculationBasis",
+    a."packageAllocationId"
+  INTO acc
+  FROM "commission_accruals" a
+  WHERE a."id" = NEW."selectedAccrualId";
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrualId missing'
+      USING ERRCODE = '23514';
+  END IF;
+  IF acc."tenantId" IS DISTINCT FROM NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrualId tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  IF acc."invoiceLineId" IS DISTINCT FROM NEW."sourceInvoiceLineId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrual invoiceLineId/sourceInvoiceLineId mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  IF acc."servicePerformanceId" IS DISTINCT FROM NEW."servicePerformanceId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrual servicePerformanceId mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  IF acc."calculationBasis" IS DISTINCT FROM NEW."calculationBasis" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrual calculationBasis mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+  IF acc."packageAllocationId" IS DISTINCT FROM NEW."packageAllocationId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: selectedAccrual packageAllocationId NULL/value parity mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO ref_tenant
+  FROM "invoice_line_items" WHERE "id" = NEW."sourceInvoiceLineId";
+  IF ref_tenant IS NULL OR ref_tenant IS DISTINCT FROM NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: sourceInvoiceLineId tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO ref_tenant
+  FROM "invoice_line_items" WHERE "id" = NEW."replacementInvoiceLineId";
+  IF ref_tenant IS NULL OR ref_tenant IS DISTINCT FROM NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: replacementInvoiceLineId tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT "tenantId" INTO ref_tenant
+  FROM "service_performances" WHERE "id" = NEW."servicePerformanceId";
+  IF ref_tenant IS NULL OR ref_tenant IS DISTINCT FROM NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: servicePerformanceId tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW."packageAllocationId" IS NOT NULL THEN
+    SELECT "tenantId" INTO ref_tenant
+    FROM "commission_package_session_allocations" WHERE "id" = NEW."packageAllocationId";
+    IF ref_tenant IS NULL OR ref_tenant IS DISTINCT FROM NEW."tenantId" THEN
+      RAISE EXCEPTION 'commission_correction_lineages: packageAllocationId tenant mismatch'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  SELECT "tenantId" INTO ref_tenant FROM "users" WHERE "id" = NEW."createdBy";
+  IF ref_tenant IS NULL OR ref_tenant IS DISTINCT FROM NEW."tenantId" THEN
+    RAISE EXCEPTION 'commission_correction_lineages: createdBy tenant mismatch'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS commission_correction_lineages_provenance ON "commission_correction_lineages";
+CREATE TRIGGER commission_correction_lineages_provenance
+  BEFORE INSERT OR UPDATE ON "commission_correction_lineages"
+  FOR EACH ROW EXECUTE FUNCTION enforce_commission_correction_lineage_provenance();
+
 RAISE NOTICE 'Triggers applied successfully.';
+
+-- Wave F Round 2 � see migration 20260820190000_phase48_wave_f_round2_remediation
+
+CREATE OR REPLACE FUNCTION enforce_staff_commission_plan_immutability()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD."status" = 'SUPERSEDED' THEN
+    RAISE EXCEPTION 'staff_commission_plan_versions: SUPERSEDED plan immutable'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF OLD."status" = 'ACTIVE' THEN
+    IF NEW."status" = 'SUPERSEDED' THEN
+      -- Supersession may close effectiveTo + set supersededAt; financial fields stay immutable.
+      IF NEW."percentage" IS DISTINCT FROM OLD."percentage"
+        OR NEW."calculationBasis" IS DISTINCT FROM OLD."calculationBasis"
+        OR NEW."earningTrigger" IS DISTINCT FROM OLD."earningTrigger"
+        OR NEW."rateType" IS DISTINCT FROM OLD."rateType"
+        OR NEW."userId" IS DISTINCT FROM OLD."userId"
+        OR NEW."enabled" IS DISTINCT FROM OLD."enabled"
+        OR NEW."effectiveFrom" IS DISTINCT FROM OLD."effectiveFrom"
+        OR NEW."branchId" IS DISTINCT FROM OLD."branchId"
+        OR NEW."clinicalServiceId" IS DISTINCT FROM OLD."clinicalServiceId"
+      THEN
+        RAISE EXCEPTION 'staff_commission_plan_versions: ACTIVE plan immutable on supersede except effectiveTo/status'
+          USING ERRCODE = '23514';
+      END IF;
+      RETURN NEW;
+    END IF;
+
+    IF NEW."percentage" IS DISTINCT FROM OLD."percentage"
+      OR NEW."calculationBasis" IS DISTINCT FROM OLD."calculationBasis"
+      OR NEW."earningTrigger" IS DISTINCT FROM OLD."earningTrigger"
+      OR NEW."rateType" IS DISTINCT FROM OLD."rateType"
+      OR NEW."userId" IS DISTINCT FROM OLD."userId"
+      OR NEW."enabled" IS DISTINCT FROM OLD."enabled"
+      OR NEW."effectiveFrom" IS DISTINCT FROM OLD."effectiveFrom"
+      OR NEW."effectiveTo" IS DISTINCT FROM OLD."effectiveTo"
+      OR NEW."branchId" IS DISTINCT FROM OLD."branchId"
+      OR NEW."clinicalServiceId" IS DISTINCT FROM OLD."clinicalServiceId"
+    THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: ACTIVE plan immutable — publish a new version'
+        USING ERRCODE = '23514';
+    END IF;
+
+    IF NEW."status" IS DISTINCT FROM OLD."status" AND NEW."status" <> 'SUPERSEDED' THEN
+      RAISE EXCEPTION 'staff_commission_plan_versions: ACTIVE plan may only transition to SUPERSEDED'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- Wave F Round 3/4 — invoice_line_items.servicePerformanceId immutability + SUPERSEDE + provenance freeze
+CREATE OR REPLACE FUNCTION enforce_invoice_line_service_performance_immutable()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD."servicePerformanceId" IS NOT NULL
+     AND NEW."servicePerformanceId" IS DISTINCT FROM OLD."servicePerformanceId" THEN
+    RAISE EXCEPTION 'invoice_line_items: servicePerformanceId reassignment forbidden once set'
+      USING ERRCODE = '23514';
+  END IF;
+  IF OLD."performanceBindingStatus" = 'SUPERSEDED'
+     AND NEW."performanceBindingStatus" IS DISTINCT FROM OLD."performanceBindingStatus" THEN
+    RAISE EXCEPTION 'invoice_line_items: SUPERSEDED performance binding cannot change'
+      USING ERRCODE = '23514';
+  END IF;
+  IF OLD."performanceBindingStatus" = 'ACTIVE'
+     AND NEW."performanceBindingStatus" IS DISTINCT FROM OLD."performanceBindingStatus"
+     AND NEW."performanceBindingStatus" IS DISTINCT FROM 'SUPERSEDED' THEN
+    RAISE EXCEPTION 'invoice_line_items: performanceBindingStatus may only move ACTIVE→SUPERSEDED'
+      USING ERRCODE = '23514';
+  END IF;
+  IF OLD."appointmentId" IS NOT NULL AND NEW."appointmentId" IS DISTINCT FROM OLD."appointmentId" THEN
+    RAISE EXCEPTION 'invoice_line_items: appointmentId immutable once set' USING ERRCODE = '23514';
+  END IF;
+  IF OLD."clinicalServiceId" IS NOT NULL AND NEW."clinicalServiceId" IS DISTINCT FROM OLD."clinicalServiceId" THEN
+    RAISE EXCEPTION 'invoice_line_items: clinicalServiceId immutable once set' USING ERRCODE = '23514';
+  END IF;
+  IF OLD."snapshotRevisionId" IS NOT NULL AND NEW."snapshotRevisionId" IS DISTINCT FROM OLD."snapshotRevisionId" THEN
+    RAISE EXCEPTION 'invoice_line_items: snapshotRevisionId immutable once set' USING ERRCODE = '23514';
+  END IF;
+  IF OLD."courseSessionId" IS NOT NULL AND NEW."courseSessionId" IS DISTINCT FROM OLD."courseSessionId" THEN
+    RAISE EXCEPTION 'invoice_line_items: courseSessionId immutable once set' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS invoice_line_items_service_performance_immutable ON "invoice_line_items";
+CREATE TRIGGER invoice_line_items_service_performance_immutable
+  BEFORE UPDATE ON "invoice_line_items"
+  FOR EACH ROW EXECUTE FUNCTION enforce_invoice_line_service_performance_immutable();

@@ -1,0 +1,33 @@
+﻿gate	exit	status	suites	tests
+R12	0	PASS	1 passed, 1 total	19 passed, 19 total
+R11	0	PASS	1 passed, 1 total	16 passed, 16 total
+R10	0	PASS	1 passed, 1 total	15 passed, 15 total
+R9	0	PASS	1 passed, 1 total	28 passed, 28 total
+R8	0	PASS	1 passed, 1 total	19 passed, 19 total
+R7	0	PASS	1 passed, 1 total	9 passed, 9 total
+R6	0	PASS	1 passed, 1 total	14 passed, 14 total
+R5	0	PASS	1 passed, 1 total	21 passed, 21 total
+R4	0	PASS	1 passed, 1 total	27 passed, 27 total
+R3	0	PASS	1 passed, 1 total	47 passed, 47 total
+R2	0	PASS	1 passed, 1 total	22 passed, 22 total
+R1	0	PASS	1 passed, 1 total	26 passed, 26 total
+WFpg	0	PASS	15 passed, 15 total	285 passed, 285 total
+WFunit	0	PASS	1 passed, 1 total	10 passed, 10 total
+WFrls	0	PASS	1 passed, 1 total	7 passed, 7 total
+WFhttp	0	PASS	1 passed, 1 total	2 passed, 2 total
+PERM_ROUTES	0	PASS		
+PERM_PKG	0	PASS		
+CLEAN	0	PASS		
+UPGRADE	0	PASS		
+A	0	PASS	1 passed, 1 total	11 passed, 11 total
+B	0	PASS	12 passed, 12 total	268 passed, 268 total
+C	0	PASS	13 passed, 13 total	206 passed, 206 total
+D	0	PASS	6 passed, 6 total	69 passed, 69 total
+Dunit	0	PASS	2 passed, 2 total	14 passed, 14 total
+Drls	0	PASS	1 passed, 1 total	16 passed, 16 total
+ER3	0	PASS	1 passed, 1 total	19 passed, 19 total
+Eunit	0	PASS	2 passed, 2 total	22 passed, 22 total
+Epg	0	PASS	8 passed, 8 total	153 passed, 153 total
+PRIOR_PERM	0	PASS		
+BUILD	2	PASS_BASELINE		
+DIFFCHECK	0	PASS		

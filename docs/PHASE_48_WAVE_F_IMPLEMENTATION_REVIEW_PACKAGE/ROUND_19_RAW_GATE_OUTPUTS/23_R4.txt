@@ -1,0 +1,36 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round4.postgres.integration.spec.ts (10.882 s)
+  Wave F Round 4 remediation (PostgreSQL)
+    √ R4-F2-T1 DRAFT invoice post rejected (236 ms)
+    √ R4-F2-T2 same invoice after issue posts successfully (118 ms)
+    √ R4-F2-T3/T4 cancel before finalization → no EARNED; retry stays rejected (87 ms)
+    √ R4-F2-T5 COLLECTED_REVENUE path unaffected (87 ms)
+    √ R4-F2-T6 assertInvoiceChargeFinalized + controller DRAFT reject (63 ms)
+    √ R4-F3-T1 CreateInvoiceFromAppointmentHandler populates servicePerformanceId (75 ms)
+    √ R4-F3-T2 public billing DTO cannot inject servicePerformanceId (14 ms)
+    √ R4-F3-T3/T4/T5 later bind wrong appointment/service/snapshot rejected (113 ms)
+    √ R4-F3-T6 same patient+branch without durable provenance rejected (41 ms)
+    √ R4-F3-T7/T8 correct later bind + rebind rejected (51 ms)
+    √ R4-F3-T9 billing-created line → commission accrual succeeds (108 ms)
+    √ R4-F3-T10 zero side effects on rejected binding (44 ms)
+    √ R4-F4A-T1/T2/T3/T8 full correction without refund + replacement source + audit (182 ms)
+    √ R4-F4A-T4/T5 stale line blocked; forced DRAFT replacement rolls back (262 ms)
+    √ R4-F4A-T6/T7 idempotent correction replay + concurrent safe (320 ms)
+    √ R4-F4B-T1 invoice 1000 / collected 500 / refund 500 → commission net 0 (287 ms)
+    √ R4-F4B-T2/T3 partial + multiple collected refunds (203 ms)
+    √ R4-F4B-T4 refund exceeds remaining collected basis → safe cap (122 ms)
+    √ R4-F4B-T5 full-collected invoice refund regression (114 ms)
+    √ R4-F4B-T6 invoice-basis refund regression (97 ms)
+    √ R4-F4B-T7/T8 concurrent refund reverse capped + same refund idempotent (218 ms)
+    √ R4-PKG-T1/T3/T7/T9 allocated share not full package; production path (115 ms)
+    √ R4-PKG-T2/T5/T6 cumulative cap + same session cannot earn twice (99 ms)
+    √ R4-PKG-T4/T8/T10 uncompleted earns zero; refund share; no course duplication (169 ms)
+    √ R4-TRACE-T1/T2/T3/T4 non-empty inventory chain + reversal + settlement (162 ms)
+    √ R4-TRACE-T5/T6 cross-tenant hidden + zero-inventory still [] (94 ms)
+    √ R4-CLOSED F1 GoneException + F5 resolvePlanAt historical (59 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       27 passed, 27 total
+Snapshots:   0 total
+Time:        11.13 s
+Ran all test suites matching /wave-f-round4.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

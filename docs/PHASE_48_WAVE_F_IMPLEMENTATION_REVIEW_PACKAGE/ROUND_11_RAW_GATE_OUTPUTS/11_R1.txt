@@ -1,0 +1,52 @@
+GATE=R1
+START_UTC=2026-08-21T12:28:41.7327657Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round1.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round1.postgres.integration.spec.ts (11.808 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (11.808 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 1 remediation (PostgreSQL)
+    ΓêÜ F1-T1 legacy calculate throws GoneException (82 ms)
+    ΓêÜ F1-T2 legacy calculate-from-invoices throws GoneException (17 ms)
+    ΓêÜ F1-T3 legacy rules create throws GoneException (15 ms)
+    ΓêÜ F2-T1 rejects invalid basis/trigger combo on create (28 ms)
+    ΓêÜ F2-T2 rejects branchId override on create (17 ms)
+    ΓêÜ F2-T3 future-dated publish closes prior ACTIVE into non-overlapping SUPERSEDED interval (75 ms)
+    ΓêÜ F2-T4 current-dated publish supersedes prior ACTIVE (60 ms)
+    ΓêÜ F2-T5 COLLECTED_REVENUE + PAYMENT_COLLECTED posts from payment (104 ms)
+    ΓêÜ F2-T6 collected path caps cumulative at max net commission (94 ms)
+    ΓêÜ F2-T7 invoice path rejects PAYMENT_COLLECTED plan (80 ms)
+    ΓêÜ F2-T8 collected payment idempotent (105 ms)
+    ΓêÜ F3-T1 rejects patient mismatch (49 ms)
+    ΓêÜ F3-T2 rejects missing durable servicePerformanceId link (48 ms)
+    ΓêÜ F3-T3 serviceCode alone is insufficient without durable SP link (50 ms)
+    ΓêÜ F3-T4 rejects branch mismatch when both set (49 ms)
+    ΓêÜ F4-T1 reverse requires refundId (63 ms)
+    ΓêÜ F4-T2 reverse rejects caller proportion (70 ms)
+    ΓêÜ F4-T3 multi reverse capped by remaining (120 ms)
+    ΓêÜ F4-T4 reverse refund wrong invoice rejected (80 ms)
+    ΓêÜ F5-T1 ACTIVE plan financial fields immutable (38 ms)
+    ΓêÜ F5-T2 ACTIVE effectiveTo immutable (36 ms)
+    ΓêÜ F6-T1 accrual amount update rejected (66 ms)
+    ΓêÜ F6-T2 reason change on EARNED rejected (append-only whitelist) (65 ms)
+    ΓêÜ F6-T3 settle EARNEDΓåÆSETTLED still allowed (79 ms)
+    ΓêÜ F7-T1 owner report groups by currency (105 ms)
+    ΓêÜ F7-T2 owner report outstanding reduced by reversals; settled excluded (133 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        12.037 s
+Ran all test suites matching /wave-f-round1.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T12:28:55.3656082Z
+EXIT=0
+STATUS=PASS

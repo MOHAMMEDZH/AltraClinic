@@ -1,0 +1,20 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round16-refund-complete-set.unit.spec.ts (7.353 s)
+  Wave F Round 16 refund complete-set (unit)
+    √ R16-A-U1 exact 33.34+33.33+33.33 saturation absorbs 0.01 commission residual; nets 0/0 (7 ms)
+    √ R16-A-U2 saturating effect stays within remaining capacity (never exceeds root rem) (1 ms)
+    √ R16-A-U3 unsaturated partial preserves proportional min(proposal, remaining) (1 ms)
+    √ R16-A-U4 permutation of A/B/C all realize to 0/0 nets; complete-set accepts each multiset (3 ms)
+    √ R16-A-U5 asymmetric 100/1 path still allows one-zero tail without inventing over-refund on ABC (1 ms)
+    √ R16-A-U6 forged set with aggregate fit but impossible residual rejected (22 ms)
+    √ R16-B-U1 thirteen equal partials (no SET_TOO_LARGE); validation accepts (3 ms)
+    √ R16-B-U2 twenty-five effects validate within bounded timeout (3 ms)
+    √ R16-B-U3 fifty-effect stress; stable Decimal; no factorial blow-up (2 ms)
+    √ R16-B-U4 UUID order does not change acceptance of equivalent multiset (14 ms)
+    √ R16-B-U5 no SET_TOO_LARGE on n=13; forged long aggregate-fit set rejected (3 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        7.607 s, estimated 12 s
+Ran all test suites matching /wave-f-round16-refund-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

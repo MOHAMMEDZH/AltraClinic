@@ -1,0 +1,21 @@
+# ROUND_9_TEST_RESULTS
+
+| Gate | Suites / Tests | Exit |
+|------|----------------|------|
+| Round 9 | 1 / 28 PASS | 0 |
+| Round 8 | 1 / 19 PASS | 0 |
+| Round 7 | 1 / 9 PASS | 0 |
+| Round 6 | 1 / 14 PASS | 0 |
+| Round 5 | 1 / 21 PASS | 0 |
+| Round 4 | 1 / 27 PASS | 0 |
+| Round 3 | 1 / 47 PASS | 0 |
+| Round 2 | 1 / 22 PASS | 0 |
+| Round 1 | 1 / 26 PASS | 0 |
+| Wave F postgres | 12 / 235 PASS | 0 |
+| Wave F unit | 1 / 10 PASS | 0 |
+| Wave F RLS | 1 / 7 PASS | 0 |
+| Wave F HTTP | 1 / 2 PASS | 0 |
+| Clean / Upgrade | PASS / PASS | 0 / 0 |
+| Permission routes | PASS | 0 |
+
+Delta vs Round 8 Wave F postgres 11/207: +1 suite / +28 tests.

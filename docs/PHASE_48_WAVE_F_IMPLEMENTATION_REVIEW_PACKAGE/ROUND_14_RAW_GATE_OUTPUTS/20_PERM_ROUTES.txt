@@ -1,0 +1,7 @@
+GATE=PERM_ROUTES
+EXIT=0
+STATUS=PASS
+SUITES=
+TESTS=
+---
+Wave F permission-route validation PASS

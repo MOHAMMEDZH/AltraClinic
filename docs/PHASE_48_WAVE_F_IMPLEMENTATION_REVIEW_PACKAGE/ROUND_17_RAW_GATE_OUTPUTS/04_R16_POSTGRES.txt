@@ -1,0 +1,31 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round16.postgres.integration.spec.ts (17.249 s)
+  Wave F Round 16 remediation (PostgreSQL)
+    √ R16-A-T1 invoice-based exact full refund 33.34+33.33+33.33 → nets 0.00/0.00 (286 ms)
+    √ R16-A-T2 final canonical reversal absorbs commission residual within remaining capacity (133 ms)
+    √ R16-A-T3 replay each of three refunds; same row IDs; nets remain 0/0 (215 ms)
+    √ R16-A-T4 additional refund after exhaustion fails closed with snapshot equality (244 ms)
+    √ R16-A-T5 retain asymmetric 100/1 path; final legitimate -0.10/0.00 (155 ms)
+    √ R16-A-T6 revenue exhausts first on 100/10; exact full refund without over-refund (138 ms)
+    √ R16-A-T7 package COLLECTED_REVENUE exact saturation; provenance preserved (204 ms)
+    √ R16-A-T8 non-package invoice-based exact saturation (126 ms)
+    √ R16-A-T9 correction after exact saturation; carry refund effects once; nets 0/0 (277 ms)
+    √ R16-A-T10 concurrent last-refund/replay race; exactly-once; no deadlock (199 ms)
+    √ R16-A-T11 injected failure after saturation calc rolls back (121 ms)
+    √ R16-A-T12 ownerReport commission net/outstanding reconciles to 0.00 (132 ms)
+    √ R16-B-T1 thirteen valid partial refund effects; all creations succeed (314 ms)
+    √ R16-B-T2 replay canonical refund after 13 effects; no SET_TOO_LARGE (356 ms)
+    √ R16-B-T3 correct and carry valid 13-effect history (559 ms)
+    √ R16-B-T4 twenty-five valid effects within practical timeout (541 ms)
+    √ R16-B-T5 fifty-effect stress; stable runtime and exact nets (985 ms)
+    √ R16-B-T6 forged long history rejected on replay/validation path (244 ms)
+    √ R16-B-T7 long asymmetric history ending in exact cumulative full-refund saturation (279 ms)
+    √ R16-B-T8 package COLLECTED_REVENUE long history preserves provenance (372 ms)
+    √ R16-B-T9 concurrent creation around 13th effect; exactly-once (416 ms)
+    √ R16-B-T10 correction/replay/injected-failure rollback across long history (379 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        17.485 s
+Ran all test suites matching /wave-f-round16.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -1,0 +1,20 @@
+PASS src/modules/inventory/tests/wave-c-inventory-accountability.postgres.integration.spec.ts (8.45 s)
+PASS src/modules/inventory/tests/wave-c-http-permission.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-clinical-forms-http.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-consent.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-tenant-references.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-permission-contract.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-media-patient.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-injectable.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-clinical-form-version-concurrency.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-billing-production-path.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-media-owner.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-rls.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-migration.postgres.integration.spec.ts
+
+Test Suites: 13 passed, 13 total
+Tests:       206 passed, 206 total
+Snapshots:   0 total
+Time:        16.933 s
+Ran all test suites matching /wave-c-/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

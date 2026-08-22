@@ -13,6 +13,12 @@ export class CreateInvoiceCommand {
       unitPrice: number;
       discountPercent?: number;
       taxPercent?: number;
+      /** Server-derived only (appointment billing / bind). Not accepted from public DTOs. */
+      servicePerformanceId?: string | null;
+      appointmentId?: string | null;
+      clinicalServiceId?: string | null;
+      snapshotRevisionId?: string | null;
+      courseSessionId?: string | null;
     }>,
     public readonly requireActiveSubscription?: boolean,
   ) {}

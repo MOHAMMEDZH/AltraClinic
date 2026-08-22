@@ -1,0 +1,36 @@
+GATE=R6
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=14 passed, 14 total
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round6.postgres.integration.spec.ts (11.912 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (11.912 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 6 remediation (PostgreSQL)
+    ΓêÜ R6-PKGCOL-T1/T2/T3/T8 collected path capped by package allocation (309 ms)
+    ΓêÜ R6-PKGCOL-T5 missing allocation fail closed (93 ms)
+    ΓêÜ R6-PKGCOL-T6 invoice-based + collected cannot double-earn same allocation (124 ms)
+    ΓêÜ R6-PKGCOL-T4/T7 multi-session allocations + refund after collected (122 ms)
+    ΓêÜ R6-PKGCUR-T1/T4 same currency success; T2/T3/T5 mismatch reject zero side effects (166 ms)
+    ΓêÜ R6-PKGPROV-T1 course patient Γëá performance patient ΓåÆ reject (39 ms)
+    ΓêÜ R6-PKGPROV-T2 session appointment exists + performance appointment null ΓåÆ reject (32 ms)
+    ΓêÜ R6-PKGPROV-T3/T5/T6/T8 wrong appointment / line / service; zero side effects (62 ms)
+    ΓêÜ R6-PKGPROV-T4/T7 invoice patient mismatch reject; matching chain success (74 ms)
+    ΓêÜ R6-CORRBIND-T1/T6/T7 canonical validator shared; mismatch rolls back (180 ms)
+    ΓêÜ R6-CORRBIND-T8 package correction still reuses allocation (207 ms)
+    ΓêÜ R6-PKGHIST-T1/T2/T3 SUPERSEDED bound V1 still allocates V1 basis/currency (46 ms)
+    ΓêÜ R6-PKGHIST-T4 DRAFT rejected; T5 unrelated ACTIVE cannot replace bound version (57 ms)
+    ΓêÜ R6-PKGHIST-T6 new course may bind ACTIVE V2 (38 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        12.142 s
+Ran all test suites matching /wave-f-round6.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

@@ -1,0 +1,11 @@
+gate	exit	status	suites	tests	file	seconds
+R18_UNIT	0	PASS	1 passed, 1 total	10 passed, 10 total	01_R18_UNIT.txt	9.2089947
+R18_POSTGRES	0	PASS	1 passed, 1 total	4 passed, 4 total	02_R18_POSTGRES.txt	38.9526189
+R17_UNIT	0	PASS	1 passed, 1 total	14 passed, 14 total	03_R17_UNIT.txt	7.8810432
+R17_POSTGRES	0	PASS	1 passed, 1 total	10 passed, 10 total	04_R17_POSTGRES.txt	167.8539707
+WAVE_F_POSTGRES	0	PASS	21 passed, 21 total	368 passed, 368 total	05_WAVE_F_POSTGRES.txt	272.498735
+WAVE_F_UNIT	0	PASS	7 passed, 7 total	69 passed, 69 total	06_WAVE_F_UNIT.txt	14.4892097
+PRIOR_E_PG	0	PASS	8 passed, 8 total	153 passed, 153 total	07_PRIOR_E_PG.txt	16.2528222
+MIG_CLEAN	0	PASS			08_MIG_CLEAN.txt	4.0800326
+MIG_UPGRADE	0	PASS			09_MIG_UPGRADE.txt	10.5909669
+API_BUILD	2	PASS_BASELINE			10_API_BUILD.txt	23.0267052

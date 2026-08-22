@@ -2312,3 +2312,62 @@ DROP POLICY IF EXISTS tenant_update ON device_treatment_records;
 CREATE POLICY tenant_update ON device_treatment_records FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON device_treatment_records;
 CREATE POLICY tenant_delete ON device_treatment_records FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- =============================================================================
+-- Phase 48 Wave F ? Workforce Commercials RLS
+-- =============================================================================
+ALTER TABLE staff_commission_plan_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_commission_plan_versions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON staff_commission_plan_versions;
+CREATE POLICY tenant_select ON staff_commission_plan_versions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON staff_commission_plan_versions;
+CREATE POLICY tenant_insert ON staff_commission_plan_versions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON staff_commission_plan_versions;
+CREATE POLICY tenant_update ON staff_commission_plan_versions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON staff_commission_plan_versions;
+CREATE POLICY tenant_delete ON staff_commission_plan_versions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE commission_accruals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_accruals FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_accruals;
+CREATE POLICY tenant_select ON commission_accruals FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_accruals;
+CREATE POLICY tenant_insert ON commission_accruals FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_accruals;
+CREATE POLICY tenant_update ON commission_accruals FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON commission_accruals;
+CREATE POLICY tenant_delete ON commission_accruals FOR DELETE USING (false);
+
+ALTER TABLE commission_settlement_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_settlement_allocations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_settlement_allocations;
+CREATE POLICY tenant_select ON commission_settlement_allocations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_settlement_allocations;
+CREATE POLICY tenant_insert ON commission_settlement_allocations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_settlement_allocations;
+CREATE POLICY tenant_update ON commission_settlement_allocations FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON commission_settlement_allocations;
+CREATE POLICY tenant_delete ON commission_settlement_allocations FOR DELETE USING (false);
+
+ALTER TABLE commission_package_session_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_package_session_allocations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_package_session_allocations;
+CREATE POLICY tenant_select ON commission_package_session_allocations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_package_session_allocations;
+CREATE POLICY tenant_insert ON commission_package_session_allocations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_package_session_allocations;
+CREATE POLICY tenant_update ON commission_package_session_allocations FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON commission_package_session_allocations;
+CREATE POLICY tenant_delete ON commission_package_session_allocations FOR DELETE USING (false);
+
+-- Wave F Round 14 — correction request lineage (append-only; unique tenant+event)
+ALTER TABLE commission_correction_lineages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_correction_lineages FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_correction_lineages;
+CREATE POLICY tenant_select ON commission_correction_lineages FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_correction_lineages;
+CREATE POLICY tenant_insert ON commission_correction_lineages FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_correction_lineages;
+CREATE POLICY tenant_update ON commission_correction_lineages FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON commission_correction_lineages;
+CREATE POLICY tenant_delete ON commission_correction_lineages FOR DELETE USING (false);

@@ -1,0 +1,29 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round15.postgres.integration.spec.ts (14.201 s)
+  Wave F Round 15 remediation (PostgreSQL)
+    √ R15-A-T1 SERVICE_NET 1% 100 invoice; refunds 33.50/33.50/32.90 then 0.10; nets 0/0 (318 ms)
+    √ R15-A-T2 replay final refund idempotent (same id, no duplicate) (180 ms)
+    √ R15-A-T3 forged zero/zero REVERSED insert rejected by DB check (106 ms)
+    √ R15-A-T4 exact cumulative full refund 33.34+33.33+33.33 clears both dims to 0.00/0.00 (R16 supersedes residual) (195 ms)
+    √ R15-A-T5 plant invalid positive/wrong-sign existing refund row; reverseAccrual replay rejects (168 ms)
+    √ R15-A-T6 after one-dim tail, correction preserves nets (correctAndRepost) — 0/0 (328 ms)
+    √ R15-A-T7 carry one-dim tail to replacement once with canonical rev identity (255 ms)
+    √ R15-A-T8 ownerReport after asymmetric final state matches nets (165 ms)
+    √ R15-A-T9 COLLECTED_REVENUE package path with asymmetric residual (221 ms)
+    √ R15-A-T10 invoice non-package SERVICE_NET tail has packageAllocationId null (141 ms)
+    √ R15-A-T11 settlement allocate against REVERSED tail must fail (159 ms)
+    √ R15-A-T12 concurrent reverseAccrual of final tail — exactly one row; mid-tx rollback (328 ms)
+    √ R15-B-T1 valid same-tenant lineage insert via correction (177 ms)
+    √ R15-B-T2 cross-tenant selectedAccrual rejected at DB (89 ms)
+    √ R15-B-T3 semantic mismatches rejected; correction txn rolls back (98 ms)
+    √ R15-B-T4 update/delete denied on commission_correction_lineages (150 ms)
+    √ R15-C-T5 plant accruals with correctionEventId and NO lineage; correctAndRepost fails closed (105 ms)
+    √ R15-C-T6 post-lineage same-event replay returns same replacement ids (140 ms)
+    √ R15-C-T7 concurrent same-event first creation → one lineage (209 ms)
+    √ R15-C-T8 injected failure leaves snapshot unchanged (116 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       20 passed, 20 total
+Snapshots:   0 total
+Time:        14.441 s
+Ran all test suites matching /wave-f-round15.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

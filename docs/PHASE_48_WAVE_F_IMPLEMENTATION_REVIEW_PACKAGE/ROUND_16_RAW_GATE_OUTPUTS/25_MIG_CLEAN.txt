@@ -1,0 +1,222 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "test_p48wf_clean_1787357662514", schema "public" at "localhost:5433"
+
+60 migrations found in prisma/migrations
+
+Applying migration `20260709000000_baseline`
+Applying migration `20260712000000_phase28_licensing_completion`
+Applying migration `20260712100000_phase28_lifecycle_state`
+Applying migration `20260717180000_phase41d_notification_delivery_engine`
+Applying migration `20260718010000_phase42c_import_export_job_engine`
+Applying migration `20260718020000_phase42e_export_artifacts`
+Applying migration `20260718160000_phase44b_credential_engine`
+Applying migration `20260718170000_phase44c_webhook_engine`
+Applying migration `20260718180000_phase44d_gateway_quotas`
+Applying migration `20260719020000_phase46b_portal_enrollment`
+Applying migration `20260719030000_phase46d_caregiver_lifecycle`
+Applying migration `20260721180000_phase47_platform_auth`
+Applying migration `20260721200000_phase47_platform_mfa_sessions`
+Applying migration `20260721220000_phase47_platform_rbac`
+Applying migration `20260722180000_phase47_platform_rbac_db_security`
+Applying migration `20260723180000_phase47_healthcare_catalog`
+Applying migration `20260724120000_phase47_healthcare_catalog_idempotency`
+Applying migration `20260724180000_phase47_platform_plans`
+Applying migration `20260724190000_phase47_plan_entitlements`
+Applying migration `20260725140000_phase47_plan_commercial_definition_ownership`
+Applying migration `20260726010000_phase47_step15_addons_overrides`
+Applying migration `20260726120000_phase47_step16_subscription_commercial`
+Applying migration `20260730120000_phase47_step18_usage_metering`
+Applying migration `20260730230000_phase47_step17_tenant_provisioning`
+Applying migration `20260731200000_phase47_step19_tenant_lifecycle`
+Applying migration `20260803010000_phase47_step20_feature_flags_settings`
+Applying migration `20260805010000_phase47_step21_audit_center`
+Applying migration `20260809180000_phase47_step22_operations_idempotency`
+Applying migration `20260810170000_step23_sales_representatives`
+Applying migration `20260811120000_step24_sales_leads`
+Applying migration `20260811150000_step25_sales_trials`
+Applying migration `20260811200000_step26_sales_productivity_commission`
+Applying migration `20260812010000_step27_platform_notifications`
+Applying migration `20260814010000_phase48_wave_a_clinical_catalog`
+Applying migration `20260814140000_phase48_wave_a_price_commercial_checks`
+Applying migration `20260814150000_phase48_wave_a_price_scheduled_status`
+Applying migration `20260815010000_phase48_wave_b_booking_integrity`
+Applying migration `20260815120000_phase48_wave_b_pa_blockers`
+Applying migration `20260815200000_phase48_wave_b_rereview_closure`
+Applying migration `20260815210000_phase48_wave_b_final_defect_closure`
+Applying migration `20260815220000_phase48_wave_b_legacy_cancelled_lock`
+Applying migration `20260815230000_phase48_wave_b_final_2blocker_closure`
+Applying migration `20260815240000_phase48_wave_b_cutover_execution_time`
+Applying migration `20260815250000_phase48_wave_b_snapshot_write_mode`
+Applying migration `20260815260000_phase48_wave_b_snapshot_write_mode_immutable`
+Applying migration `20260816010000_phase48_wave_c_clinical_safety`
+Applying migration `20260819010000_phase48_wave_d_dental_integration`
+Applying migration `20260819163000_phase48_wave_d_round1_reference_integrity`
+Applying migration `20260819220000_phase48_wave_d_round2_child_tenant_integrity`
+Applying migration `20260820120000_phase48_wave_e_aesthetic_dermatology`
+Applying migration `20260820140000_phase48_wave_e_round1_remediation`
+Applying migration `20260820160000_phase48_wave_f_workforce_commercials`
+Applying migration `20260820180000_phase48_wave_f_round1_remediation`
+Applying migration `20260820190000_phase48_wave_f_round2_remediation`
+Applying migration `20260820200000_phase48_wave_f_round3_remediation`
+Applying migration `20260820220000_phase48_wave_f_round4_remediation`
+Applying migration `20260820230000_phase48_wave_f_round5_remediation`
+Applying migration `20260821100000_phase48_wave_f_round10_remediation`
+Applying migration `20260821180000_phase48_wave_f_round14_correction_lineage`
+Applying migration `20260821200000_phase48_wave_f_round15_final_remediation`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260709000000_baseline/
+    └─ migration.sql
+  └─ 20260712000000_phase28_licensing_completion/
+    └─ migration.sql
+  └─ 20260712100000_phase28_lifecycle_state/
+    └─ migration.sql
+  └─ 20260717180000_phase41d_notification_delivery_engine/
+    └─ migration.sql
+  └─ 20260718010000_phase42c_import_export_job_engine/
+    └─ migration.sql
+  └─ 20260718020000_phase42e_export_artifacts/
+    └─ migration.sql
+  └─ 20260718160000_phase44b_credential_engine/
+    └─ migration.sql
+  └─ 20260718170000_phase44c_webhook_engine/
+    └─ migration.sql
+  └─ 20260718180000_phase44d_gateway_quotas/
+    └─ migration.sql
+  └─ 20260719020000_phase46b_portal_enrollment/
+    └─ migration.sql
+  └─ 20260719030000_phase46d_caregiver_lifecycle/
+    └─ migration.sql
+  └─ 20260721180000_phase47_platform_auth/
+    └─ migration.sql
+  └─ 20260721200000_phase47_platform_mfa_sessions/
+    └─ migration.sql
+  └─ 20260721220000_phase47_platform_rbac/
+    └─ migration.sql
+  └─ 20260722180000_phase47_platform_rbac_db_security/
+    └─ migration.sql
+  └─ 20260723180000_phase47_healthcare_catalog/
+    └─ migration.sql
+  └─ 20260724120000_phase47_healthcare_catalog_idempotency/
+    └─ migration.sql
+  └─ 20260724180000_phase47_platform_plans/
+    └─ migration.sql
+  └─ 20260724190000_phase47_plan_entitlements/
+    └─ migration.sql
+  └─ 20260725140000_phase47_plan_commercial_definition_ownership/
+    └─ migration.sql
+  └─ 20260726010000_phase47_step15_addons_overrides/
+    └─ migration.sql
+  └─ 20260726120000_phase47_step16_subscription_commercial/
+    └─ migration.sql
+  └─ 20260730120000_phase47_step18_usage_metering/
+    └─ migration.sql
+  └─ 20260730230000_phase47_step17_tenant_provisioning/
+    └─ migration.sql
+  └─ 20260731200000_phase47_step19_tenant_lifecycle/
+    └─ migration.sql
+  └─ 20260803010000_phase47_step20_feature_flags_settings/
+    └─ migration.sql
+  └─ 20260805010000_phase47_step21_audit_center/
+    └─ migration.sql
+  └─ 20260809180000_phase47_step22_operations_idempotency/
+    └─ migration.sql
+  └─ 20260810170000_step23_sales_representatives/
+    └─ migration.sql
+  └─ 20260811120000_step24_sales_leads/
+    └─ migration.sql
+  └─ 20260811150000_step25_sales_trials/
+    └─ migration.sql
+  └─ 20260811200000_step26_sales_productivity_commission/
+    └─ migration.sql
+  └─ 20260812010000_step27_platform_notifications/
+    └─ migration.sql
+  └─ 20260814010000_phase48_wave_a_clinical_catalog/
+    └─ migration.sql
+  └─ 20260814140000_phase48_wave_a_price_commercial_checks/
+    └─ migration.sql
+  └─ 20260814150000_phase48_wave_a_price_scheduled_status/
+    └─ migration.sql
+  └─ 20260815010000_phase48_wave_b_booking_integrity/
+    └─ migration.sql
+  └─ 20260815120000_phase48_wave_b_pa_blockers/
+    └─ migration.sql
+  └─ 20260815200000_phase48_wave_b_rereview_closure/
+    └─ migration.sql
+  └─ 20260815210000_phase48_wave_b_final_defect_closure/
+    └─ migration.sql
+  └─ 20260815220000_phase48_wave_b_legacy_cancelled_lock/
+    └─ migration.sql
+  └─ 20260815230000_phase48_wave_b_final_2blocker_closure/
+    └─ migration.sql
+  └─ 20260815240000_phase48_wave_b_cutover_execution_time/
+    └─ migration.sql
+  └─ 20260815250000_phase48_wave_b_snapshot_write_mode/
+    └─ migration.sql
+  └─ 20260815260000_phase48_wave_b_snapshot_write_mode_immutable/
+    └─ migration.sql
+  └─ 20260816010000_phase48_wave_c_clinical_safety/
+    └─ migration.sql
+  └─ 20260819010000_phase48_wave_d_dental_integration/
+    └─ migration.sql
+  └─ 20260819163000_phase48_wave_d_round1_reference_integrity/
+    └─ migration.sql
+  └─ 20260819220000_phase48_wave_d_round2_child_tenant_integrity/
+    └─ migration.sql
+  └─ 20260820120000_phase48_wave_e_aesthetic_dermatology/
+    └─ migration.sql
+  └─ 20260820140000_phase48_wave_e_round1_remediation/
+    └─ migration.sql
+  └─ 20260820160000_phase48_wave_f_workforce_commercials/
+    └─ migration.sql
+  └─ 20260820180000_phase48_wave_f_round1_remediation/
+    └─ migration.sql
+  └─ 20260820190000_phase48_wave_f_round2_remediation/
+    └─ migration.sql
+  └─ 20260820200000_phase48_wave_f_round3_remediation/
+    └─ migration.sql
+  └─ 20260820220000_phase48_wave_f_round4_remediation/
+    └─ migration.sql
+  └─ 20260820230000_phase48_wave_f_round5_remediation/
+    └─ migration.sql
+  └─ 20260821100000_phase48_wave_f_round10_remediation/
+    └─ migration.sql
+  └─ 20260821180000_phase48_wave_f_round14_correction_lineage/
+    └─ migration.sql
+  └─ 20260821200000_phase48_wave_f_round15_final_remediation/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+(node:24272) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+OK table staff_commission_plan_versions
+OK table commission_accruals
+OK RLS staff_commission_plan_versions
+OK RLS commission_accruals
+OK users commission eligibility columns
+OK Wave F triggers
+OK Round 1 append-only trigger
+OK Round 1 plan immutability trigger
+OK Round 1 remediation migration applied
+OK Round 2 remediation migration applied
+OK Round 2 settlement allocation table + RLS
+OK Round 2 durable invoice_line_items.servicePerformanceId
+OK Round 3 remediation migration applied
+OK Round 3 servicePerformanceId immutability trigger
+OK Round 4 remediation migration applied
+OK Round 4 package allocation table + RLS
+OK Round 4 invoice line provenance columns
+OK Round 5 remediation migration applied
+OK Round 10 remediation migration applied
+OK Round 10 root/refund unique index
+OK Round 14 correction lineage migration applied
+OK Round 14 commission_correction_lineages table + RLS + unique index
+OK Round 15 final remediation migration applied
+OK Round 15 lineage provenance + reversed economic shape
+OK Round 5 package allocation RLS uses app.current_tenant_id
+OK Round 5 clinicalServiceId TENANT_CUSTOM integrity
+OK commission_accruals delete denied
+PHASE48_WAVE_F_CLEAN_VALIDATOR_PASSED

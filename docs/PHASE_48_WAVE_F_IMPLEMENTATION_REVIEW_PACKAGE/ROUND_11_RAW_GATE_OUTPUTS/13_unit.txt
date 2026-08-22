@@ -1,0 +1,39 @@
+GATE=WFunit
+START_UTC=2026-08-21T12:29:44.6301251Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.config.cjs --runInBand --forceExit --testPathPattern=wave-f-money.unit.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-money.unit.spec.ts (9.85 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...pec.ts (9.85 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F money / attribution helpers
+    roundMoney (half-up)
+      ΓêÜ rounds .005 up to next cent (2 ms)
+      ΓêÜ rounds .004 down
+      ΓêÜ preserves exact 2dp values (1 ms)
+    splitByShares (residual to last)
+      ΓêÜ assigns residual to the last share so parts sum to target (1 ms)
+      ΓêÜ splits 60/40 without double-count drift
+      ΓêÜ handles single share
+      ΓêÜ returns empty for empty shares
+    assertNoAppointmentProviderBlindAttribution
+      ΓêÜ rejects provider-blind attribution via appointmentProviderId (24 ms)
+      ΓêÜ rejects attributionSource mentioning appointment.provider (1 ms)
+      ΓêÜ allows participant-only attribution
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        10.064 s
+Ran all test suites matching /wave-f-money.unit.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T12:29:56.4301755Z
+EXIT=0
+STATUS=PASS

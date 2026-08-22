@@ -9,6 +9,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DentalModule } from './modules/dental/dental.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
 import { AestheticModule } from './modules/aesthetic/aesthetic.module';
+import { WorkforceCommercialsModule } from './modules/workforce-commercials/workforce-commercials.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ClinicalFormsModule } from './modules/clinical-forms/clinical-forms.module';
 import { ServicePerformanceModule } from './modules/service-performance/service-performance.module';
@@ -84,6 +85,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     DentalModule,
     BeautyModule,
     AestheticModule,
+    WorkforceCommercialsModule,
     InventoryModule,
     ClinicalFormsModule,
     ServicePerformanceModule,

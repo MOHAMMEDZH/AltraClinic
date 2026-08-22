@@ -1,0 +1,140 @@
+GATE=R12
+START_UTC=2026-08-21T16:26:58.0170097Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round12.postgres.integration.spec
+---
+  console.log
+    R12_DIAG {"test":"R12-A-T1","oldRootId":"adb564a5-ee8e-40f0-947e-7f7f7de538a1","replacementRootId":"fbb18d19-64ab-4bdb-aa29-77ce88aa7b78","refundA":"26455999-fd31-495e-8b8f-642c159c6c2b","refundB":"59759513-7e88-4519-89d7-254e8a9043ab","historicalOrderIds":["6c2f95a8-f40a-4f02-a0e6-fe05903c82ed","7c95b8d2-9d41-43b5-a765-2a6be9ef737a"],"carryA":"bbc36141-983c-469b-9e4d-f46c6e079f2c","carryB":"8b4b21e3-a996-4625-806a-85a78faf4be2","net":"0.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:659:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T2","net":"0.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:701:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T3","carryIds1":["5248c5eb-a2d3-4b37-871f-b978a1bd22bb","ede3c444-6021-45fd-a9cf-0eda823f18ca"],"countBefore":6,"countAfter":6,"repl":"4c7713b4-169e-41b5-a3b6-bc72c542c3f9","repostLineId":"4c7713b4-169e-41b5-a3b6-bc72c542c3f9"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:761:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T4","net":"80.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:794:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T5","packageAllocationId":"63ce3aa4-1e38-481f-a528-5f9b347ad818"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:822:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T6","net":"0.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:854:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T7","equal":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:929:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T8","rejected":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:965:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T9","ok":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1006:13)
+
+  console.log
+    R12_DIAG {"test":"R12-A-T10","finalRoot":"9a301c82-3227-4077-b653-5896be252581","net":"0.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1046:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T1","count":1,"postRecoveryOk":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1091:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T2","carryIds":["a68df71f-1719-423d-aa1f-308ed06eaacc"]}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1149:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T3","mode":"carry","rolledBack":true,"lineId":"ee1ad952-f38f-418b-beb0-ef1581f1e3da"}
+
+      at expectAuditBoundaryRollback (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T4","mode":"carry","rolledBack":true,"lineId":"8535198c-2582-42e3-a8f8-2edbd2fb025e"}
+
+      at expectAuditBoundaryRollback (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T5","mode":"reverse","rolledBack":true,"lineId":"408ad3ba-61a0-4e69-a9a0-1e7abfcbc615"}
+
+      at expectAuditBoundaryRollback (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T6","mode":"carry","rolledBack":true,"lineId":"3206a2a8-3b6b-4272-85f6-c5e897e091c3"}
+
+      at expectAuditBoundaryRollback (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T7","rejectsBadWinner":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1333:13)
+
+  console.log
+    R12_DIAG {"test":"R12-B-T8","auditsBefore":1}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1368:13)
+
+  console.log
+    R12_DIAG {"test":"R12-C-T1","manifestRows":378,"finalRegularFiles":380,"agree":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1378:13)
+
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts (14.915 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (14.915 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 12 remediation (PostgreSQL)
+    ΓêÜ R12-A-T1: capped two-refund correction with forced reverse UUID order ΓÇö exact -140/-20, net 0 (422 ms)
+    ΓêÜ R12-A-T2: same capped scenario with natural UUID order ΓÇö identical economics (246 ms)
+    ΓêÜ R12-A-T3: replay same correctionEventId ΓÇö same carry IDs, no duplicate rows/audits (239 ms)
+    ΓêÜ R12-A-T4: multiple uncapped refunds remain exact and order-independent (258 ms)
+    ΓêÜ R12-A-T5: package COLLECTED_REVENUE capped multi-refund; same packageAllocationId (251 ms)
+    ΓêÜ R12-A-T6: non-package invoice-based capped multi-refund correction (203 ms)
+    ΓêÜ R12-A-T7: poisoned historical capped row rejected; snapshot equality (324 ms)
+    ΓêÜ R12-A-T8: aggregate historical carries exceeding replacement-root economics fail closed (192 ms)
+    ΓêÜ R12-A-T9: existing replacement carries validated as complete set regardless of order (280 ms)
+    ΓêÜ R12-A-T10: sequential correction after capped carry preserves net and identities (337 ms)
+    ΓêÜ R12-B-T1: concurrent reverseAccrual insert race ΓÇö one semantic row (217 ms)
+    ΓêÜ R12-B-T2: concurrent correction carry insert race ΓÇö one semantic carry per refund (391 ms)
+    ΓêÜ R12-B-T3: audit P2002 target idempotencyKey rejects and rolls back (carry) (245 ms)
+    ΓêÜ R12-B-T4: audit P2002 empty target rejects and rolls back (carry) (238 ms)
+    ΓêÜ R12-B-T5: audit P2002 target id rejects and rolls back (reverse) (151 ms)
+    ΓêÜ R12-B-T6: ordinary audit Error rejects and rolls back (carry) (246 ms)
+    ΓêÜ R12-B-T7: incompatible raced winner is never returned (133 ms)
+    ΓêÜ R12-B-T8: valid idempotent replay writes no extra financial row and no extra audit (131 ms)
+    ΓêÜ R12-C-T1: collection metadata self-exclusion and final count agreement policy (13 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        15.172 s
+Ran all test suites matching /wave-f-round12.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:27:14.7043804Z
+EXIT=0
+STATUS=PASS

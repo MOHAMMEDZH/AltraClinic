@@ -1,0 +1,18 @@
+GATE=DIFF_CHECK
+EXIT=0
+STATUS=PASS
+SUITES=
+TESTS=
+---
+cmd : warning: in the working copy of 'apps/api/prisma/rls-policies.sql', LF will be replaced by CRLF the next time 
+Git touches it
+At C:\Users\mrame\AppData\Local\Temp\ps-script-eb3a3076-dd3a-44b6-b047-2dfadaf061a1.ps1:163 char:51
++ ...  'DIFF_CHECK' '34_DIFF_CHECK.txt' $repo { cmd /c 'git diff --check' }
++                                               ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'apps/api/prisma/seeds/permission-seeds.d.ts', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'apps/api/prisma/seeds/permission-seeds.js', LF will be replaced by CRLF the next time 
+Git touches it

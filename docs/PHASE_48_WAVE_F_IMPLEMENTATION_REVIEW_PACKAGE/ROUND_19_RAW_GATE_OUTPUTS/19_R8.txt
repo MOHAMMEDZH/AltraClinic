@@ -1,0 +1,28 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round8.postgres.integration.spec.ts (10.803 s)
+  Wave F Round 8 remediation (PostgreSQL)
+    √ R8-A-T1 two payments one participant package COLLECTED correction → 320 (444 ms)
+    √ R8-A-T2 one payment two participants 60/40 correction (300 ms)
+    √ R8-A-T3/T4 two payments × two participants + idempotent replay (482 ms)
+    √ R8-A-T5 idempotency conflict different replacement (259 ms)
+    √ R8-A-T6 SETTLED sibling fails closed with zero cohort mutation (277 ms)
+    √ R8-A-T7 cross-invoice payment correction rejected (179 ms)
+    √ R8-A-T8 currency mismatch correction zero side effects (132 ms)
+    √ R8-A-T9 multi-participant provenance failure full rollback (176 ms)
+    √ R8-A-T10 invoice-based multi-participant cohort correction (222 ms)
+    √ R8-A-T11 refund after multi-payment correction uses exact replacement basis (298 ms)
+    √ R8-B-T1 invoice first holds lock; collected waits on pg_blocking_pids then rejects (235 ms)
+    √ R8-B-T2 collected first holds lock; invoice waits then rejects opposing basis (264 ms)
+    √ R8-B-T3 concurrent duplicate collected remains idempotent under contention (142 ms)
+    √ R8-B-T4 package allocation lock ordering — concurrent partials no deadlock (156 ms)
+    √ R8-C-T1 collected-path pin mismatch on unconsumed allocation (95 ms)
+    √ R8-C-T2 cross-tenant line cannot satisfy package pinning (88 ms)
+    √ R8-C-T3 correction currency mismatch zero reversals/reposts/binding (163 ms)
+    √ R8-C-T4 multi-participant collected correction — two roots reversed and reposted (232 ms)
+    √ R8-C-T5 exact refund amount 80.00 after corrected 160 basis (partial collected refund) (251 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        11.046 s
+Ran all test suites matching /wave-f-round8.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

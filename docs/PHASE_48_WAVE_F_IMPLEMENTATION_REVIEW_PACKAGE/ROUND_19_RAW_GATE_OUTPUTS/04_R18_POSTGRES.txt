@@ -1,0 +1,13 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round18.postgres.integration.spec.ts (32.685 s)
+  Wave F Round 18 remediation (PostgreSQL)
+    √ R18-A-T1 25 distinct specials via production reverseAccrual path (25179 ms)
+    √ R18-B-T1 invalid historical 9.99/10 + new refund rejects with zero side effects (229 ms)
+    √ R18-B-T2 valid new refund creation validates complete set before return (128 ms)
+    √ R18-B-T3 replay on planted invalid set still fail-closed (parity with creation) (170 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        32.935 s
+Ran all test suites matching /wave-f-round18.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

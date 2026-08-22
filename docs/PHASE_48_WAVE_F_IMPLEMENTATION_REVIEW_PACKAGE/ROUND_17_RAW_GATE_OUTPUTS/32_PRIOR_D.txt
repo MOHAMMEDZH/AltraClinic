@@ -1,0 +1,13 @@
+PASS src/modules/dental/tests/wave-d-dental.postgres.integration.spec.ts (7.22 s)
+PASS src/modules/dental/tests/wave-d-rls.postgres.integration.spec.ts
+PASS src/modules/clinical-catalog/tests/wave-d-pricing-production-path.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-http.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-dental-consume.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-operatory.postgres.integration.spec.ts
+
+Test Suites: 6 passed, 6 total
+Tests:       69 passed, 69 total
+Snapshots:   0 total
+Time:        11.485 s, estimated 20 s
+Ran all test suites matching /wave-d-/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

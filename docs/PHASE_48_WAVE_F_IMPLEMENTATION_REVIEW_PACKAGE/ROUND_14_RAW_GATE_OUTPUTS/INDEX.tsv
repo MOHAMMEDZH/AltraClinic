@@ -1,0 +1,36 @@
+gate	exit	status	suites	tests	file
+R14_POSTGRES	0	PASS	1 passed, 1 total	10 passed, 10 total	01_R14_POSTGRES.txt
+R14_UNIT	0	PASS	1 passed, 1 total	9 passed, 9 total	02_R14_UNIT.txt
+R13	0	PASS	1 passed, 1 total	10 passed, 10 total	03_R13.txt
+R12	0	PASS	1 passed, 1 total	19 passed, 19 total	04_R12.txt
+R11	0	PASS	1 passed, 1 total	16 passed, 16 total	05_R11.txt
+R10	0	PASS	1 passed, 1 total	15 passed, 15 total	06_R10.txt
+R9	0	PASS	1 passed, 1 total	28 passed, 28 total	07_R9.txt
+R8	0	PASS	1 passed, 1 total	19 passed, 19 total	08_R8.txt
+R7	0	PASS	1 passed, 1 total	9 passed, 9 total	09_R7.txt
+R6	0	PASS	1 passed, 1 total	14 passed, 14 total	10_R6.txt
+R5	0	PASS	1 passed, 1 total	21 passed, 21 total	11_R5.txt
+R4	0	PASS	1 passed, 1 total	27 passed, 27 total	12_R4.txt
+R3	0	PASS	1 passed, 1 total	47 passed, 47 total	13_R3.txt
+R2	0	PASS	1 passed, 1 total	22 passed, 22 total	14_R2.txt
+R1	0	PASS	1 passed, 1 total	26 passed, 26 total	15_R1.txt
+WAVE_F_POSTGRES	0	PASS	17 passed, 17 total	305 passed, 305 total	16_WAVE_F_POSTGRES.txt
+WAVE_F_UNIT	0	PASS	3 passed, 3 total	27 passed, 27 total	17_WAVE_F_UNIT.txt
+WAVE_F_RLS	0	PASS	1 passed, 1 total	7 passed, 7 total	18_WAVE_F_RLS.txt
+WAVE_F_HTTP	0	PASS	1 passed, 1 total	2 passed, 2 total	19_WAVE_F_HTTP.txt
+PERM_ROUTES	0	PASS			20_PERM_ROUTES.txt
+PRIOR_A	0	PASS	1 passed, 1 total	11 passed, 11 total	21_PRIOR_A.txt
+PRIOR_B	0	PASS	12 passed, 12 total	268 passed, 268 total	22_PRIOR_B.txt
+PRIOR_C	0	PASS	13 passed, 13 total	206 passed, 206 total	23_PRIOR_C.txt
+PRIOR_D	0	PASS	6 passed, 6 total	69 passed, 69 total	24_PRIOR_D.txt
+PRIOR_D_UNIT	0	PASS	2 passed, 2 total	14 passed, 14 total	25_PRIOR_D_UNIT.txt
+PRIOR_D_RLS	0	PASS	1 passed, 1 total	16 passed, 16 total	26_PRIOR_D_RLS.txt
+PRIOR_E_R3	0	PASS	1 passed, 1 total	19 passed, 19 total	27_PRIOR_E_R3.txt
+PRIOR_E_UNIT	0	PASS	2 passed, 2 total	22 passed, 22 total	28_PRIOR_E_UNIT.txt
+PRIOR_E_PG	0	PASS	8 passed, 8 total	153 passed, 153 total	29_PRIOR_E_PG.txt
+PKG_PERM	0	PASS			30_PKG_PERM.txt
+MIG_CLEAN	0	PASS			31_MIG_CLEAN.txt
+MIG_UPGRADE	0	PASS			32_MIG_UPGRADE.txt
+API_BUILD	2	PASS_BASELINE			33_API_BUILD.txt
+DIFF_CHECK	0	PASS			34_DIFF_CHECK.txt
+MUTATION	0	PASS_NO_MUTATION			35_MUTATION_CHECK.txt

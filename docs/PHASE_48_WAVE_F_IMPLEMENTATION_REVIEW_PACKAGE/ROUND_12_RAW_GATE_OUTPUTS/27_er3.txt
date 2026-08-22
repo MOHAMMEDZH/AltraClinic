@@ -1,0 +1,45 @@
+GATE=ER3
+START_UTC=2026-08-21T14:13:39.8783101Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-e-round3
+---
+node.exe : PASS src/modules/aesthetic/tests/wave-e-round3.postgres.integration.spec.ts (7.8 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...spec.ts (7.8 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave E Round 3 remediation (PostgreSQL, real services)
+    ΓêÜ R3-B2-T1: min=0 max=0 same UTC day later timestamp ΓåÆ success (161 ms)
+    ΓêÜ R3-B2-T2: min=0 same exact timestamp ΓåÆ reject (80 ms)
+    ΓêÜ R3-B2-T3: min=0 Session 2 earlier timestamp ΓåÆ reject (62 ms)
+    ΓêÜ R3-B2-T4: min=1 same UTC day later time ΓåÆ reject on intervalMinDays (55 ms)
+    ΓêÜ R3-B2-T5: min=0 max=1 same-day later timestamp ΓåÆ success (56 ms)
+    ΓêÜ R3-B2-T6: next-neighbor same-day chronology valid ΓåÆ success (72 ms)
+    ΓêÜ R3-B2-T7: out-of-order current timestamp violates next chronology ΓåÆ reject (73 ms)
+    ΓêÜ R3-B2-T8: reschedule to later same-day timestamp with min=0 ΓåÆ success (66 ms)
+    ΓêÜ R3-B2-T9/T10: reschedule equal/earlier rejects; original state unchanged (81 ms)
+    ΓêÜ R3-B3-T1: tenant-owned PUBLISHED PRE_CARE ΓåÆ success (73 ms)
+    ΓêÜ R3-B3-T2: tenant-owned PUBLISHED POST_CARE ΓåÆ success (43 ms)
+    ΓêÜ R3-B3-T3/T5/T9/T10/T11: platform-pack PRE_CARE ΓåÆ success; exact version; no mutations (65 ms)
+    ΓêÜ R3-B3-T4: platform-pack PUBLISHED POST_CARE ΓåÆ success (45 ms)
+    ΓêÜ R3-B3-T6: another tenant PRE/POST version ΓåÆ reject (40 ms)
+    ΓêÜ R3-B3-T7: platform-pack DRAFT ΓåÆ reject (37 ms)
+    ΓêÜ R3-B3-T8: wrong kind ΓåÆ reject (39 ms)
+    ΓêÜ R3-B3-T12: tenant-owned + platform-pack ΓåÆ tenant precedence (50 ms)
+    ΓêÜ R3-B3: explicit platform versionId binds when tenant form also exists (51 ms)
+    ΓêÜ R3-B3: no published tenant or platform PRE_CARE ΓåÆ reject (44 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        8.045 s
+Ran all test suites matching /wave-e-round3/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:13:49.3742618Z
+EXIT=0
+STATUS=PASS

@@ -96,6 +96,12 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
             discountAmount: new Prisma.Decimal(li.discountAmount),
             taxAmount: new Prisma.Decimal(li.taxAmount),
             lineTotal: new Prisma.Decimal(li.subtotal - li.discountAmount + li.taxAmount),
+            servicePerformanceId: li.servicePerformanceId ?? null,
+            appointmentId: li.appointmentId ?? null,
+            clinicalServiceId: li.clinicalServiceId ?? null,
+            snapshotRevisionId: li.snapshotRevisionId ?? null,
+            courseSessionId: li.courseSessionId ?? null,
+            performanceBindingStatus: 'ACTIVE',
           },
           update: {
             description: li.description,
@@ -107,6 +113,14 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
             discountAmount: new Prisma.Decimal(li.discountAmount),
             taxAmount: new Prisma.Decimal(li.taxAmount),
             lineTotal: new Prisma.Decimal(li.subtotal - li.discountAmount + li.taxAmount),
+            // Reassignment blocked by Round 3/4 DB trigger when already set to a different value.
+            ...(li.servicePerformanceId
+              ? { servicePerformanceId: li.servicePerformanceId }
+              : {}),
+            ...(li.appointmentId ? { appointmentId: li.appointmentId } : {}),
+            ...(li.clinicalServiceId ? { clinicalServiceId: li.clinicalServiceId } : {}),
+            ...(li.snapshotRevisionId ? { snapshotRevisionId: li.snapshotRevisionId } : {}),
+            ...(li.courseSessionId ? { courseSessionId: li.courseSessionId } : {}),
           },
         });
       }
@@ -173,6 +187,11 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
         taxPercent: li.taxPercent.toNumber(),
         taxAmount: li.taxAmount.toNumber(),
         subtotal: li.subtotal.toNumber(),
+        servicePerformanceId: li.servicePerformanceId ?? null,
+        appointmentId: li.appointmentId ?? null,
+        clinicalServiceId: li.clinicalServiceId ?? null,
+        snapshotRevisionId: li.snapshotRevisionId ?? null,
+        courseSessionId: li.courseSessionId ?? null,
       }),
     );
 

@@ -1,0 +1,11 @@
+PASS src/modules/workforce-commercials/tests/wave-f-http.postgres.integration.spec.ts (8.749 s)
+  Wave F production-path HTTP (real services, PostgreSQL)
+    √ eligibility → plan → publish → performance → post → reverse → settle → owner-report (356 ms)
+    √ HTTP collected payment + mismatch reject + multi reverse + multi-currency report (243 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        9.003 s
+Ran all test suites matching /wave-f-http.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

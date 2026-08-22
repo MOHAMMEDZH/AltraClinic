@@ -1,0 +1,29 @@
+GATE=WAVE_F_RLS
+EXIT=0
+STATUS=PASS
+SUITES=1 passed, 1 total
+TESTS=7 passed, 7 total
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-rls.postgres.integration.spec.ts (5.733 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (5.733 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F real RLS (bypass OFF, booking_app)
+    ΓêÜ NOBYPASSRLS context is active (current_user, rolbypassrls=false, tenant) (12 ms)
+    ΓêÜ same-tenant SELECT sees plan versions and accruals (14 ms)
+    ΓêÜ same-tenant CRUD (delete accrual denied) (43 ms)
+    ΓêÜ cross-tenant SELECT hidden / INSERT reject (31 ms)
+    ΓêÜ rolbypassrls = false for booking_app (4 ms)
+    ΓêÜ R3-F6B settlement_allocations ENABLE+FORCE RLS and NOBYPASSRLS (5 ms)
+    ΓêÜ R3-F6B same-tenant settlement allocation insert+select; cross-tenant hidden; update/delete denied (28 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        5.974 s
+Ran all test suites matching /wave-f-rls.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

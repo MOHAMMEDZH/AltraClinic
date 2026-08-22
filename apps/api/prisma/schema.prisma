@@ -170,6 +170,43 @@ enum CommissionRateType {
   @@map("commission_rate_type")
 }
 
+/// Phase 48 Wave F — AR-22 plan lifecycle
+enum StaffCommissionPlanStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+
+  @@map("staff_commission_plan_status")
+}
+
+/// Phase 48 Wave F — AR-22 calculation basis (frozen default SERVICE_NET_AFTER_DISCOUNT)
+enum CommissionCalculationBasis {
+  SERVICE_GROSS
+  SERVICE_NET_AFTER_DISCOUNT
+  SERVICE_NET_EXCLUDING_TAX
+  COLLECTED_REVENUE
+
+  @@map("commission_calculation_basis")
+}
+
+/// Phase 48 Wave F — AR-22 earning trigger
+enum CommissionEarningTrigger {
+  INVOICE_OR_CHARGE_FINALIZED
+  PAYMENT_COLLECTED
+
+  @@map("commission_earning_trigger")
+}
+
+/// Phase 48 Wave F — AR-22 append-only accrual status
+enum CommissionAccrualStatus {
+  PENDING
+  EARNED
+  SETTLED
+  REVERSED
+
+  @@map("commission_accrual_status")
+}
+
 enum QueueTicketStatus {
   WAITING
   CALLED
@@ -524,6 +561,11 @@ model Tenant {
   billingSequences     TenantBillingSequence[]
   commissionRules      CommissionRule[]
   commissions          CommissionCalculation[]
+  staffCommissionPlanVersions StaffCommissionPlanVersion[]
+  commissionAccruals   CommissionAccrual[]
+  commissionSettlementAllocations CommissionSettlementAllocation[]
+  commissionPackageSessionAllocations CommissionPackageSessionAllocation[]
+  commissionCorrectionLineages CommissionCorrectionLineage[]
   queueTickets         QueueTicket[]
   loyaltyAccounts      LoyaltyAccount[]
   loyaltyRewards       LoyaltyReward[]
@@ -824,11 +866,17 @@ model User {
   passwordChangedAt   DateTime  @default(now())
   lastLoginAt         DateTime?
   lastLoginIp         String?   @db.VarChar(45)
+  /// Phase 48 Wave F — owner commission eligibility (default OFF; ≠ provider eligibility)
+  commissionEnabled           Boolean   @default(false)
+  defaultCommissionPercent    Decimal?  @db.Decimal(5, 2)
+  commissionEffectiveFrom     DateTime? @db.Date
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
 
   tenant                  Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  staffCommissionPlanVersions StaffCommissionPlanVersion[]
+  commissionAccruals          CommissionAccrual[]
   department              Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   branchAccess            UserBranchAccess[]
   customRoles             UserCustomRole[]
@@ -2183,6 +2231,8 @@ model ServicePerformance {
   snapshotRevision AppointmentServiceSnapshotRevision? @relation(fields: [snapshotRevisionId], references: [id], onDelete: Restrict)
   participants ServicePerformanceParticipant[]
   corrections  ServicePerformanceCorrection[]
+  commissionAccruals CommissionAccrual[]
+  invoiceLineItems InvoiceLineItem[]
 
   @@index([tenantId, status])
   @@index([tenantId, appointmentId])
@@ -3007,13 +3057,27 @@ model InvoiceLineItem {
   /// Optional service classification code for commission rule matching
   serviceCode     String?  @db.VarChar(50)
   encounterId     String?  @db.Uuid
+  /// Wave F Round 2 — durable ServicePerformance ↔ InvoiceLine attribution (AR-22)
+  servicePerformanceId String? @db.Uuid
+  /// Wave F Round 4 — durable later-bind provenance (server-authored)
+  appointmentId       String? @db.Uuid
+  clinicalServiceId   String? @db.Uuid
+  snapshotRevisionId  String? @db.Uuid
+  courseSessionId     String? @db.Uuid
+  /// ACTIVE binding participates in unique SP constraint; SUPERSEDED frees slot for correction replacement
+  performanceBindingStatus String @default("ACTIVE") @db.VarChar(20)
   createdAt       DateTime @default(now())
 
   invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  servicePerformance ServicePerformance? @relation(fields: [servicePerformanceId], references: [id], onDelete: Restrict)
   usageLedgerEntries InventoryUsageLedger[]
+  packageAllocations CommissionPackageSessionAllocation[]
 
   @@index([invoiceId])
   @@index([tenantId])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, courseSessionId])
   @@map("invoice_line_items")
 }
 
@@ -3603,6 +3667,169 @@ model CommissionLineItem {
   @@index([commissionId])
   @@index([tenantId])
   @@map("commission_line_items")
+}
+
+/// Phase 48 Wave F AR-22 — versioned staff commission plan (IMPROVE; legacy CommissionRule preserved).
+model StaffCommissionPlanVersion {
+  id                   String                     @id @default(uuid()) @db.Uuid
+  tenantId             String                     @db.Uuid
+  userId               String                     @db.Uuid
+  branchId             String?                    @db.Uuid
+  clinicalServiceId    String?                    @db.Uuid
+  enabled              Boolean                    @default(true)
+  percentage           Decimal                    @db.Decimal(5, 2)
+  rateType             CommissionRateType         @default(PERCENTAGE)
+  calculationBasis     CommissionCalculationBasis @default(SERVICE_NET_AFTER_DISCOUNT)
+  earningTrigger       CommissionEarningTrigger   @default(INVOICE_OR_CHARGE_FINALIZED)
+  effectiveFrom        DateTime                   @db.Date
+  effectiveTo          DateTime?                  @db.Date
+  status               StaffCommissionPlanStatus  @default(DRAFT)
+  createdBy            String                     @db.Uuid
+  publishedAt          DateTime?
+  publishedBy          String?                    @db.Uuid
+  supersededAt         DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  accruals CommissionAccrual[]
+
+  @@index([tenantId, userId, status])
+  @@index([tenantId, effectiveFrom])
+  @@index([tenantId, branchId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("staff_commission_plan_versions")
+}
+
+/// Phase 48 Wave F AR-22 — append-only commission accrual ledger.
+model CommissionAccrual {
+  id                       String                     @id @default(uuid()) @db.Uuid
+  tenantId                 String                     @db.Uuid
+  branchId                 String?                    @db.Uuid
+  userId                   String                     @db.Uuid
+  servicePerformanceId     String                     @db.Uuid
+  appointmentId            String?                    @db.Uuid
+  clinicalServiceId        String                     @db.Uuid
+  snapshotRevisionId       String?                    @db.Uuid
+  invoiceId                String?                    @db.Uuid
+  invoiceLineId            String?                    @db.Uuid
+  paymentId                String?                    @db.Uuid
+  refundId                 String?                    @db.Uuid
+  /// Wave F Round 4 — correction event identity (distinct from refund)
+  correctionEventId        String?                    @db.Uuid
+  /// Wave F Round 4 — explicit package/course session allocation when applicable
+  packageAllocationId      String?                    @db.Uuid
+  commissionPlanVersionId  String                     @db.Uuid
+  calculationBasis         CommissionCalculationBasis
+  attributedRevenueAmount  Decimal                    @db.Decimal(18, 4)
+  commissionPercent        Decimal                    @db.Decimal(5, 2)
+  commissionAmount         Decimal                    @db.Decimal(18, 4)
+  currency                 String                     @db.VarChar(3)
+  status                   CommissionAccrualStatus    @default(EARNED)
+  earnedAt                 DateTime?
+  settledAt                DateTime?
+  settlementReference      String?                    @db.VarChar(255)
+  reversalOfAccrualId      String?                    @db.Uuid
+  idempotencyKey           String                     @db.VarChar(200)
+  reason                   String?                    @db.Text
+  createdBy                String                     @db.Uuid
+  createdAt                DateTime                   @default(now())
+
+  tenant               Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user                 User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  servicePerformance   ServicePerformance          @relation(fields: [servicePerformanceId], references: [id], onDelete: Restrict)
+  planVersion          StaffCommissionPlanVersion  @relation(fields: [commissionPlanVersionId], references: [id], onDelete: Restrict)
+  reversalOf           CommissionAccrual?          @relation("CommissionAccrualReversal", fields: [reversalOfAccrualId], references: [id], onDelete: Restrict)
+  reversals            CommissionAccrual[]         @relation("CommissionAccrualReversal")
+  packageAllocation    CommissionPackageSessionAllocation? @relation(fields: [packageAllocationId], references: [id], onDelete: Restrict)
+
+  settlementAllocations CommissionSettlementAllocation[]
+
+  @@unique([tenantId, idempotencyKey])
+  /// Wave F Round 10 — semantic exactly-once refund effect per root
+  @@index([tenantId, reversalOfAccrualId, refundId])
+  @@index([tenantId, userId, status])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, invoiceLineId])
+  @@index([tenantId, commissionPlanVersionId])
+  @@index([tenantId, reversalOfAccrualId])
+  @@index([tenantId, correctionEventId])
+  @@index([tenantId, packageAllocationId])
+  @@map("commission_accruals")
+}
+
+/// Wave F Round 4 — explicit per-session package/course revenue allocation (frozen: no invented equal-split).
+model CommissionPackageSessionAllocation {
+  id                           String    @id @default(uuid()) @db.Uuid
+  tenantId                     String    @db.Uuid
+  treatmentCourseId            String    @db.Uuid
+  courseSessionId              String    @db.Uuid
+  servicePerformanceId         String    @db.Uuid
+  invoiceLineId                String?   @db.Uuid
+  allocatedRevenueAmount       Decimal   @db.Decimal(18, 4)
+  packageCommercialBasisAmount Decimal   @db.Decimal(18, 4)
+  currency                     String    @db.VarChar(3)
+  idempotencyKey               String    @db.VarChar(200)
+  reason                       String?   @db.Text
+  createdBy                    String    @db.Uuid
+  createdAt                    DateTime  @default(now())
+  financiallyConsumedAt        DateTime?
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  invoiceLine InvoiceLineItem? @relation(fields: [invoiceLineId], references: [id], onDelete: Restrict)
+  accruals    CommissionAccrual[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, courseSessionId])
+  @@unique([tenantId, servicePerformanceId])
+  @@index([tenantId, treatmentCourseId])
+  @@map("commission_package_session_allocations")
+}
+
+/// Wave F Round 2 — append-only settlement allocations (net settleable ledger).
+model CommissionSettlementAllocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  accrualId           String   @db.Uuid
+  amount              Decimal  @db.Decimal(18, 4)
+  currency            String   @db.VarChar(3)
+  settlementReference String   @db.VarChar(255)
+  idempotencyKey      String   @db.VarChar(200)
+  reason              String?  @db.Text
+  createdBy           String   @db.Uuid
+  createdAt           DateTime @default(now())
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  accrual CommissionAccrual @relation(fields: [accrualId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, accrualId])
+  @@map("commission_settlement_allocations")
+}
+
+/// Wave F Round 14/15 — durable correction request lineage for same-event idempotent replay
+/// (including rem=0 selected roots in mixed cohorts). Append-only; unique per tenant+event.
+/// Round 15: DB trigger enforces same-tenant parents + selected-accrual provenance parity.
+model CommissionCorrectionLineage {
+  id                        String                     @id @default(uuid()) @db.Uuid
+  tenantId                  String                     @db.Uuid
+  correctionEventId         String                     @db.Uuid
+  selectedAccrualId         String                     @db.Uuid
+  sourceInvoiceLineId       String                     @db.Uuid
+  replacementInvoiceLineId  String                     @db.Uuid
+  servicePerformanceId      String                     @db.Uuid
+  calculationBasis          CommissionCalculationBasis
+  packageAllocationId       String?                    @db.Uuid
+  createdBy                 String                     @db.Uuid
+  createdAt                 DateTime                   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, correctionEventId])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, selectedAccrualId])
+  @@map("commission_correction_lineages")
 }
 
 // =============================================================================

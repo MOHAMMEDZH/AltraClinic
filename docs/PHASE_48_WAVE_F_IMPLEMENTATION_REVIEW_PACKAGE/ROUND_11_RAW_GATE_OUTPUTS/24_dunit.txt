@@ -1,0 +1,26 @@
+GATE=Dunit
+START_UTC=2026-08-21T12:31:41.3161637Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.config.cjs --runInBand --forceExit --testPathPattern='wave-d-lab-transitions|pricing-unit-applicability'
+---
+node.exe : PASS src/modules/clinical-catalog/tests/pricing-unit-applicability.unit.spec.ts (5.503 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (5.503 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/modules/dental/tests/wave-d-lab-transitions.unit.spec.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        5.835 s, estimated 7 s
+Ran all test suites matching /wave-d-lab-transitions|pricing-unit-applicability/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T12:31:48.5254074Z
+EXIT=0
+STATUS=PASS

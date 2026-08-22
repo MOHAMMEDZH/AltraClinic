@@ -1,0 +1,15 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round19.postgres.integration.spec.ts (14.525 s)
+  Wave F Round 19 remediation (PostgreSQL)
+    √ R19-PG-T1 production reverseAccrual proves mandatory counterexample end to end (553 ms)
+    √ R19-PG-T2 replay every refund — same row IDs, unchanged count, no duplicate economics or audit (368 ms)
+    √ R19-PG-T3 correction carry on replacement root preserves refundId set and nets (474 ms)
+    √ R19-PG-T4 concurrent replay remains exactly-once (223 ms)
+    √ R19-PG-T5 injected failure after economic create rolls back reversal and audit (292 ms)
+    √ R19-PG-T6 aggregate-fitting unrealizable fixture rejects NOT_SEQUENTIALLY_REALIZABLE with zero side effects (177 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        14.775 s, estimated 18 s
+Ran all test suites matching /wave-f-round19.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

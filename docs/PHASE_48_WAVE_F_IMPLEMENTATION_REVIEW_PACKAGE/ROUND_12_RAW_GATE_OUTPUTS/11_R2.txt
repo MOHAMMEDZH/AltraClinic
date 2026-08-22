@@ -1,0 +1,48 @@
+GATE=R2
+START_UTC=2026-08-21T14:09:54.7932354Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round2.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round2.postgres.integration.spec.ts (13.71 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (13.71 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 2 remediation (PostgreSQL)
+    ΓêÜ R2-F1 legacy calculate still GoneException (80 ms)
+    ΓêÜ F3-R2-T1 exact durable performanceΓåöinvoice-line link ΓåÆ success (118 ms)
+    ΓêÜ F3-R2-T2 same patient/service different encounter ΓåÆ reject (100 ms)
+    ΓêÜ F3-R2-T3 serviceCode only without durable SP link ΓåÆ reject (58 ms)
+    ΓêÜ F3-R2-T4 wrong appointment context ΓåÆ reject (62 ms)
+    ΓêÜ F3-R2-T5 wrong snapshot revision ΓåÆ reject (59 ms)
+    ΓêÜ F3-R2-T7 same performance cannot post against second unrelated line (74 ms)
+    ΓêÜ F3-R2-T8 rejection leaves zero accrual side effects (48 ms)
+    ΓêÜ F4-R2-T1/T2 dual caps on commission and attributed revenue (103 ms)
+    ΓêÜ F4-R2-T5 full reversal then another ΓåÆ reject (88 ms)
+    ΓêÜ F4-R2-T6 concurrent reversals never over-reverse (109 ms)
+    ΓêÜ F4-R2-T7 same refund replay idempotent (129 ms)
+    ΓêÜ F4-R2-T8 correction reverse+repost append-only (124 ms)
+    ΓêÜ F5-R2-T1/T3 historical SUPERSEDED plan resolves for past date (75 ms)
+    ΓêÜ F5-R2-T2 new version resolves on/after effectiveFrom (72 ms)
+    ΓêÜ F5-R2-T7 concurrent publishes same scope deterministic (38 ms)
+    ΓêÜ F5-R2-T9 published immutability still rejects rate change (37 ms)
+    ΓêÜ F6-R2 complete tenant-ref INSERT mixed-parent matrix (77 ms)
+    ΓêÜ F6-R2 parent-switch UPDATE rejected for each mutable attempt path (64 ms)
+    ΓêÜ F7-R2-T2 partial reversal then settlement settles only net remaining (94 ms)
+    ΓêÜ F7-R2-T3 full reversal then settlement rejected (87 ms)
+    ΓêÜ F7-R2-T6..T12 owner report dimensions + attributed revenue + multi-currency + legacy excluded (72 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       22 passed, 22 total
+Snapshots:   0 total
+Time:        13.939 s
+Ran all test suites matching /wave-f-round2.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:10:10.3442701Z
+EXIT=0
+STATUS=PASS

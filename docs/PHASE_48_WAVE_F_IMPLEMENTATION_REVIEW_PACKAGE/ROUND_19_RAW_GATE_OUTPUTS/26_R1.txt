@@ -1,0 +1,35 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round1.postgres.integration.spec.ts (9.16 s)
+  Wave F Round 1 remediation (PostgreSQL)
+    √ F1-T1 legacy calculate throws GoneException (108 ms)
+    √ F1-T2 legacy calculate-from-invoices throws GoneException (22 ms)
+    √ F1-T3 legacy rules create throws GoneException (46 ms)
+    √ F2-T1 rejects invalid basis/trigger combo on create (43 ms)
+    √ F2-T2 rejects branchId override on create (18 ms)
+    √ F2-T3 future-dated publish closes prior ACTIVE into non-overlapping SUPERSEDED interval (82 ms)
+    √ F2-T4 current-dated publish supersedes prior ACTIVE (66 ms)
+    √ F2-T5 COLLECTED_REVENUE + PAYMENT_COLLECTED posts from payment (124 ms)
+    √ F2-T6 collected path caps cumulative at max net commission (116 ms)
+    √ F2-T7 invoice path rejects PAYMENT_COLLECTED plan (92 ms)
+    √ F2-T8 collected payment idempotent (100 ms)
+    √ F3-T1 rejects patient mismatch (54 ms)
+    √ F3-T2 rejects missing durable servicePerformanceId link (75 ms)
+    √ F3-T3 serviceCode alone is insufficient without durable SP link (59 ms)
+    √ F3-T4 rejects branch mismatch when both set (55 ms)
+    √ F4-T1 reverse requires refundId (75 ms)
+    √ F4-T2 reverse rejects caller proportion (77 ms)
+    √ F4-T3 multi reverse capped by remaining (151 ms)
+    √ F4-T4 reverse refund wrong invoice rejected (86 ms)
+    √ F5-T1 ACTIVE plan financial fields immutable (43 ms)
+    √ F5-T2 ACTIVE effectiveTo immutable (39 ms)
+    √ F6-T1 accrual amount update rejected (75 ms)
+    √ F6-T2 reason change on EARNED rejected (append-only whitelist) (73 ms)
+    √ F6-T3 settle EARNED→SETTLED still allowed (86 ms)
+    √ F7-T1 owner report groups by currency (122 ms)
+    √ F7-T2 owner report outstanding reduced by reversals; settled excluded (157 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        9.457 s
+Ran all test suites matching /wave-f-round1.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

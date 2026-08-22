@@ -1,0 +1,53 @@
+GATE=R4
+START_UTC=2026-08-21T12:27:56.1618430Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round4.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round4.postgres.integration.spec.ts (13.668 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (13.668 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 4 remediation (PostgreSQL)
+    ΓêÜ R4-F2-T1 DRAFT invoice post rejected (189 ms)
+    ΓêÜ R4-F2-T2 same invoice after issue posts successfully (83 ms)
+    ΓêÜ R4-F2-T3/T4 cancel before finalization ΓåÆ no EARNED; retry stays rejected (69 ms)
+    ΓêÜ R4-F2-T5 COLLECTED_REVENUE path unaffected (75 ms)
+    ΓêÜ R4-F2-T6 assertInvoiceChargeFinalized + controller DRAFT reject (55 ms)
+    ΓêÜ R4-F3-T1 CreateInvoiceFromAppointmentHandler populates servicePerformanceId (60 ms)
+    ΓêÜ R4-F3-T2 public billing DTO cannot inject servicePerformanceId (12 ms)
+    ΓêÜ R4-F3-T3/T4/T5 later bind wrong appointment/service/snapshot rejected (88 ms)
+    ΓêÜ R4-F3-T6 same patient+branch without durable provenance rejected (30 ms)
+    ΓêÜ R4-F3-T7/T8 correct later bind + rebind rejected (43 ms)
+    ΓêÜ R4-F3-T9 billing-created line ΓåÆ commission accrual succeeds (89 ms)
+    ΓêÜ R4-F3-T10 zero side effects on rejected binding (34 ms)
+    ΓêÜ R4-F4A-T1/T2/T3/T8 full correction without refund + replacement source + audit (128 ms)
+    ΓêÜ R4-F4A-T4/T5 stale line blocked; forced DRAFT replacement rolls back (222 ms)
+    ΓêÜ R4-F4A-T6/T7 idempotent correction replay + concurrent safe (228 ms)
+    ΓêÜ R4-F4B-T1 invoice 1000 / collected 500 / refund 500 ΓåÆ commission net 0 (139 ms)
+    ΓêÜ R4-F4B-T2/T3 partial + multiple collected refunds (112 ms)
+    ΓêÜ R4-F4B-T4 refund exceeds remaining collected basis ΓåÆ safe cap (91 ms)
+    ΓêÜ R4-F4B-T5 full-collected invoice refund regression (97 ms)
+    ΓêÜ R4-F4B-T6 invoice-basis refund regression (87 ms)
+    ΓêÜ R4-F4B-T7/T8 concurrent refund reverse capped + same refund idempotent (199 ms)
+    ΓêÜ R4-PKG-T1/T3/T7/T9 allocated share not full package; production path (113 ms)
+    ΓêÜ R4-PKG-T2/T5/T6 cumulative cap + same session cannot earn twice (100 ms)
+    ΓêÜ R4-PKG-T4/T8/T10 uncompleted earns zero; refund share; no course duplication (172 ms)
+    ΓêÜ R4-TRACE-T1/T2/T3/T4 non-empty inventory chain + reversal + settlement (195 ms)
+    ΓêÜ R4-TRACE-T5/T6 cross-tenant hidden + zero-inventory still [] (192 ms)
+    ΓêÜ R4-CLOSED F1 GoneException + F5 resolvePlanAt historical (98 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       27 passed, 27 total
+Snapshots:   0 total
+Time:        13.883 s
+Ran all test suites matching /wave-f-round4.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T12:28:11.6216066Z
+EXIT=0
+STATUS=PASS

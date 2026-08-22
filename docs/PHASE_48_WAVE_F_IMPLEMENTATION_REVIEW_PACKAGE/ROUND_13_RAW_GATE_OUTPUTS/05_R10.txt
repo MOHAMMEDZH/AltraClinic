@@ -1,0 +1,139 @@
+GATE=R10
+START_UTC=2026-08-21T16:27:35.8742667Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round10.postgres.integration.spec
+---
+  console.log
+    R10_DIAG {"test":"R10-A-T1","originalRootId":"cb3119fc-9ba5-43c9-a2e9-9505b6857cd5","replacementRootId":"77125f09-45a6-4372-980f-08bc44c82e19","refundId":"a869a32e-cb4a-457b-9509-9b9bf72ecff1","carryId":"6cffec43-ca97-489e-8ea5-36b3cfbaaf95","idempotencyKey":"rev:77125f09-45a6-4372-980f-08bc44c82e19:a869a32e-cb4a-457b-9509-9b9bf72ecff1"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:652:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T2","reversedBefore":2,"carriedBefore":1,"reversedAfter":2,"carriedAfter":1}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:723:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T3","replacementRootId":"74b18262-b32a-483e-9d85-fe06b11c91a0","refundId":"c5635d3d-1ea0-4094-8a5a-aab6045eba14","rowId":"cb8d9858-2ce7-4683-b764-1ea821a97520","count":1}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:799:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T4","rootId":"0c129194-33e8-4215-bda5-8ba0a733a5fd","refundId":"40139a5e-1be0-4758-84aa-83bf45013ee5","mismatch":"userId"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:860:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T5","finalRootId":"b4b9d869-ea62-45f8-8476-dfc09a7d1acd","refundId":"0b3e7489-80d3-4af0-b763-a5949e2aaf89","countAfter":1}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:937:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T6","primaryCarry":1,"assistCarry":0,"refundId":"6e81f814-5881-424d-b6b6-3f683dda06b8"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1008:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T7","pay1Carry":1,"pay2Carry":0,"refundId":"a9323dd1-b35b-4f7e-8175-5001c0f1c6f9","paymentIds":["3fe24897-e0ca-4a65-8c7c-37fd0ff18f0d","becb20d6-cf11-4cd1-a7bc-aa0adfa5af67"]}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1072:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T8","packageAllocationId":"aa6d54ba-f5f2-4746-ba35-fa79ac2dc196","net":"80.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1123:13)
+
+  console.log
+    R10_DIAG {"test":"R10-A-T9","code":"P2002","err":"PrismaClientKnownRequestError: \nInvalid `c.commissionAccrual.create()` invocation in\nC:\\Users\\mrame\\Projects\\AltraClinic\\apps\\api\\src\\modules\\workforce-commercials\\tests\\wave-f-rou"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1214:13)
+
+  console.log
+    R10_DIAG {"test":"R10-B-T1","srcPath":"C:\\Users\\mrame\\Projects\\AltraClinic\\apps\\api\\src\\modules\\workforce-commercials\\services\\commission-accrual.service.ts","ok":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1227:13)
+
+  console.log
+    R10_DIAG {"test":"R10-B-T2","beforeCount":2,"beforeNet":"80.00","rolledBack":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1293:13)
+
+  console.log
+    R10_DIAG {"test":"R10-C-T1","pidA":1058346,"pidB":1058362,"blockers":[1058346],"net":"80.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1393:13)
+
+  console.log
+    R10_DIAG {"test":"R10-C-T2","pidA":1058346,"pidB":1058365,"blockers":[1058346],"staleErr":"BadRequestException: Accrual has no remaining commission/attributed revenue to reverse","net":"80.00"}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1514:13)
+
+  console.log
+    R10_DIAG {"test":"R10-C-T3","pidLineCount":2,"outcomes":["R10-C-T1 ok net=80.00","R10-C-T2 ok net=80.00 staleRejected=true"],"noDeadlock":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1535:13)
+
+  console.log
+    R10_DIAG {"test":"R10-D-T1","evidencePath":"C:\\Users\\mrame\\Projects\\AltraClinic\\docs\\PHASE_48_WAVE_F_IMPLEMENTATION_REVIEW_PACKAGE\\ROUND_9_RAW_PG_BLOCKING_EVIDENCE.md","sha256":"920dcdd74a2de56b1e94fa7bbce93ef242b2e3f684eaa3e281fae01350b8c521","unchanged":true}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1560:13)
+
+  console.log
+    R10_BLOCKING_DIAGNOSTICS_BEGIN
+    R10-C-T1 pidA=1058346 pidB=1058362 blockers=[1058346]
+    R10-C-T2 pidA=1058346 pidB=1058365 blockers=[1058346]
+    R10_BLOCKING_DIAGNOSTICS_END
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:562:13)
+
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts (17.699 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (17.699 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 10 remediation (PostgreSQL)
+    ΓêÜ R10-A-T1: Prior refund carried; replay same refundId on replacement root ΓÇö same row, zero new rows, net 
+80.00 attributed, commission 8.00. Log originalRootId, replacementRootId, refundId, carryId, idempotencyKey (must be 
+rev:{replacement}:{refundId}). (537 ms)
+    ΓêÜ R10-A-T2: Same as T1 focus ΓÇö audit count for staff_commission.accrual.reversed and refund_carried unchanged 
+on replay; nets preserved. (345 ms)
+    ΓêÜ R10-A-T3: Two concurrent reverseAccrual on same replacement root+refundId after correction ΓÇö exactly one 
+semantic reversal (count of rows with that reversalOfAccrualId+refundId === 1). Use two clients, barriers optional but 
+prove one result. (403 ms)
+    ΓêÜ R10-A-T4: insert bogus reversal with wrong userId and key rev:root:refundId before reverseAccrual ΓÇö throws 
+/idempotency conflict|userId/ (222 ms)
+    ΓêÜ R10-A-T5: Three sequential invoice corrections with prior refund ΓÇö each current successor has exactly one 
+refund carry; replay idempotent. Use SERVICE_NET plan, refund proportion on invoice. (519 ms)
+    ΓêÜ R10-A-T6: two participants + refund on one primary root before correction; after correction each participant 
+root has correct carry (primary has refund carry, assistant may not if refund only on primary's old root). Refunding 
+one root only carries to matching participant. (285 ms)
+    ΓêÜ R10-A-T7: two payments; refund only payment1 root; correction; carry only on replacement for payment1, not 
+payment2. Assert payment2 replacement has zero refundId reversals. (288 ms)
+    ΓêÜ R10-A-T8: packageAllocationId same after correction+carry; net 80. (243 ms)
+    ΓêÜ R10-A-T9: after carry exists, try INSERT another row same tenantId, reversalOfAccrualId, refundId with 
+different idempotencyKey ΓÇö expect unique violation (P2002 or 23505). (243 ms)
+    ΓêÜ R10-B-T1: read commission-accrual.service.ts source via fs.readFileSync from __dirname relative path and 
+assert it does NOT contain `__testFailAfterRepostBeforeRefundCarry`. Reading production source for assertion is OK 
+(read-only). (15 ms)
+    ΓêÜ R10-B-T2: failing audit on refund_carried ΓåÆ full rollback (same as updated R9-A-T8). (212 ms)
+    ΓêÜ R10-C-T1: Refund wins first: (338 ms)
+    ΓêÜ R10-C-T2: Correction wins first: (380 ms)
+    ΓêÜ R10-C-T3: assert from C-T1/T2 evidence no deadlock; log final nets. Can be a simple test that checks 
+R10_BLOCKING buffer has pid lines and no 40P01 in outcomes. (12 ms)
+    ΓêÜ R10-D-T1: hash ROUND_9_RAW_PG_BLOCKING_EVIDENCE.md before a noop and after (or at start/end of this test), 
+assert equal. Use crypto.createHash('sha256') and fs.readFileSync ΓÇö reading is OK, not writing. (27 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+Snapshots:   0 total
+Time:        17.957 s
+Ran all test suites matching /wave-f-round10.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:27:55.7543813Z
+EXIT=0
+STATUS=PASS
