@@ -164,7 +164,7 @@ export function DayScheduleGrid({
 
         <div
           className={styles.gridCol}
-          role="grid"
+          role="group"
           aria-label={t('scheduling.views.day')}
           style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
         >

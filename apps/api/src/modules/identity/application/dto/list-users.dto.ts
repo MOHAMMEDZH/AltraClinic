@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { EmploymentStatus, UserRole } from '../../domain/user.entity';
 import type { UserDirectoryStatus } from '../../domain/user.repository.interface';
@@ -36,11 +37,13 @@ export class ListUsersQueryDTO {
   cursor?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)

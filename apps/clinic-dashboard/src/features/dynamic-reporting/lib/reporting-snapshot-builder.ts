@@ -150,8 +150,9 @@ function buildTemplatesByCategory(
 }
 
 function filterStaticEntries(catalog: readonly ReportCatalogEntry[], roles: string[]): ReportCatalogEntry[] {
+  const normalizedRoles = roles.map((role) => role.trim().toLowerCase()).filter(Boolean);
   return catalog.filter((entry) =>
-    hasPermission(roles, entry.permissionResource as never, entry.permissionAction as never),
+    hasPermission(normalizedRoles, entry.permissionResource as never, entry.permissionAction as never),
   );
 }
 

@@ -513,11 +513,51 @@ test.describe('Dynamic reporting — registry, cache, and resilience', () => {
   });
 
   test('registry unavailable fallback', async ({ page }) => {
-    await page.route('**/tenant/modules/registry/bootstrap', (route) => route.abort('failed'));
-    await login(page, DEMO_OWNER);
+    // Contract: registry bootstrap failure → static-fallback catalog (nonzero for owner),
+    // never a silent empty success. Simulate unavailable with HTTP 503 (not a fake catalog).
+    const bootstrapStatuses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/tenant/modules/registry/bootstrap') && response.request().method() === 'GET') {
+        bootstrapStatuses.push(response.status());
+      }
+    });
+
+    await loginAndReporting(page, DEMO_OWNER);
     await gotoReportingHome(page);
-    const count = await countReportCatalogCards(page);
-    expect(count).toBeGreaterThan(5);
+    expect(await countReportCatalogCards(page)).toBeGreaterThan(5);
+    const baselineSource = await page.locator('#reports-region').getAttribute('data-reporting-source');
+    expect(baselineSource === 'registry' || baselineSource === 'static-fallback' || baselineSource === 'static-only').toBeTruthy();
+
+    await page.route('**/tenant/modules/registry/bootstrap', async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'registry unavailable' }),
+      });
+    });
+    await page.evaluate(() => {
+      for (const key of [...Object.keys(sessionStorage)]) {
+        if (/registry|moduleRegistry|reporting/i.test(key)) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    });
+
+    // Full navigation remounts providers so load() hits the 503 path.
+    await page.goto('/reports', { waitUntil: 'domcontentloaded' });
+    await waitForReportingLoaded(page);
+    await expect(page.locator('#reports-region')).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 });
+    await expect(page.locator('#reports-region')).toHaveAttribute('data-reporting-source', 'static-fallback', {
+      timeout: 45_000,
+    });
+    await expect(page.locator('#reports-region')).toHaveAttribute('data-registry-status', 'error');
+    expect(bootstrapStatuses.some((status) => status === 503)).toBeTruthy();
+    await expect
+      .poll(async () => countReportCatalogCards(page), {
+        timeout: 45_000,
+        intervals: [500, 1000, 2000],
+      })
+      .toBeGreaterThan(5);
   });
 
   test('dependency blocked reporting', async ({ request }) => {

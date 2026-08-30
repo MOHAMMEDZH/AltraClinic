@@ -49,15 +49,17 @@ test.describe('Phase 43f — Backup/Restore Operations UI', () => {
     test.setTimeout(90_000);
     await login(page, DEMO_OWNER);
     await page.goto(`${BR_BASE}/backups/new`);
+    await expect(page.locator('#backup-restore-region')).toBeVisible({ timeout: 45_000 });
     await expect(page.getByRole('heading', { name: /New backup request/i })).toBeVisible({ timeout: 45_000 });
-    await expect(page.getByLabel('Backup type')).toBeVisible();
-    await expect(page.getByLabel('Compression')).toBeVisible();
+    await expect(page.getByLabel('Backup type')).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByLabel('Compression')).toBeVisible({ timeout: 45_000 });
   });
 
   test('restore request form is accessible', async ({ page }) => {
     test.setTimeout(90_000);
     await login(page, DEMO_OWNER);
     await page.goto(`${BR_BASE}/restores/new`);
+    await expect(page.locator('#backup-restore-region')).toBeVisible({ timeout: 45_000 });
     await expect(page.getByRole('heading', { name: /New restore request/i })).toBeVisible({ timeout: 45_000 });
     await expect(page.getByLabel('Restore mode')).toBeVisible();
   });

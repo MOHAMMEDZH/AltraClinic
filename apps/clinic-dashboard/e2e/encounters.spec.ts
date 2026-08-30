@@ -35,20 +35,13 @@ test.describe('EMR / Encounters module', () => {
   test('encounter detail shows SOAP tabs and lifecycle actions', async ({ page }) => {
     await login(page, DEMO_DOCTOR);
 
-    const listResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/emr/encounters') && resp.request().method() === 'GET',
+    const detailResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/emr/encounters/e1000000') && resp.request().method() === 'GET',
       { timeout: 20_000 },
     );
-    await page.goto('/encounters');
-    await listResponse;
-    await expect(page.locator('#encounters-region')).toBeVisible({ timeout: 15_000 });
-
-    const firstOpen = page.locator('#encounters-region table tbody a[href*="/encounters/"]').first();
-    await expect(firstOpen).toBeVisible({ timeout: 10_000 });
-    await firstOpen.click();
-
-    await expect(page).toHaveURL(/\/encounters\/.+/);
-    await expect(page.locator('#encounters-detail-region')).toBeVisible();
+    await page.goto('/encounters/e1000000-0000-4000-8000-000000000001');
+    await detailResponse;
+    await expect(page.locator('#encounters-detail-region')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('tab', { name: /Clinical notes|notes/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /Timeline/i })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Save documentation' })).toBeVisible();

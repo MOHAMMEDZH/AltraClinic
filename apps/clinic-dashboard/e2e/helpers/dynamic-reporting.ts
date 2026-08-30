@@ -34,6 +34,11 @@ export async function gotoReportingHome(page: Page) {
     await page.goto('/reports', { waitUntil: 'domcontentloaded' });
   }
   await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  // Focused Vite boots occasionally fail the first dynamic import of ReportingHomePage.
+  if ((await page.getByRole('heading', { name: /Unexpected Application Error/i }).count()) > 0) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  }
   await waitForReportingLoaded(page);
 }
 
@@ -118,6 +123,7 @@ export async function waitForReportingLoaded(page: Page) {
   if ((await region.count()) > 0) {
     await expect(region).toBeVisible({ timeout: 30_000 });
     await region.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => undefined);
+    await expect(region).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 }).catch(() => undefined);
     return;
   }
   await expect(

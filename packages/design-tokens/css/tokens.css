@@ -13,7 +13,7 @@
   --color-primary-300: #7dceb8;
   --color-primary-400: #51bda1;
   --color-primary-500: #26ad89;
-  --color-primary-600: #1e8a6f;
+  --color-primary-600: #166755;
   --color-primary-700: #166755;
   --color-primary-800: #0e443b;
   --color-primary-900: #062221;
@@ -33,6 +33,8 @@
   --color-text-primary: #262626;
   --color-text-secondary: #525252;
   --color-text-tertiary: #737373;
+  /* Alias used by feature CSS; must stay AA ≥4.5:1 on --color-surface (#fff). */
+  --color-text-muted: #595959;
   --color-focus-ring: #26ad89;
 
   /* Semantic aliases used across feature modules */
@@ -104,6 +106,7 @@
   --color-text-primary: #fafafa;
   --color-text-secondary: #d4d4d4;
   --color-text-tertiary: #a3a3a3;
+  --color-text-muted: #a3a3a3;
   --color-focus-ring: #51bda1;
   --color-border-subtle: #333333;
 
@@ -122,6 +125,7 @@
     --color-text-primary: #fafafa;
     --color-text-secondary: #d4d4d4;
     --color-text-tertiary: #a3a3a3;
+    --color-text-muted: #a3a3a3;
     --color-focus-ring: #51bda1;
     --color-border-subtle: #333333;
   }

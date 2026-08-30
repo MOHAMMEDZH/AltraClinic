@@ -13,7 +13,8 @@
     "./node": "./src/node.ts"
   },
   "scripts": {
-    "test": "vitest run"
+    "check:source-only": "node scripts/check-no-stale-js.mjs",
+    "test": "npm run check:source-only && vitest run"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

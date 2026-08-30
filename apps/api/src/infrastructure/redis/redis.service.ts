@@ -1,6 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import Redis, { Cluster } from 'ioredis';
-import { loadRedisConfig, RedisConfig } from './redis-config';
+import {
+  loadRedisConfig,
+  RedisConfig,
+  formatRedisUrlForLog,
+  CI_REDIS_ABSENCE_ENFORCEMENT_ENV,
+} from './redis-config';
 
 export type RedisClient = Redis | Cluster;
 
@@ -266,7 +271,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    this.logger.log(`Connecting to Redis: ${url}`);
+    const absenceEnforced =
+      process.env[CI_REDIS_ABSENCE_ENFORCEMENT_ENV] === '1' ||
+      process.env[CI_REDIS_ABSENCE_ENFORCEMENT_ENV] === 'true' ||
+      process.env[CI_REDIS_ABSENCE_ENFORCEMENT_ENV] === 'TRUE';
+    this.logger.log(
+      `Connecting to Redis: ${formatRedisUrlForLog(url)}` +
+        (absenceEnforced ? ' (CI_REDIS_ABSENCE_ENFORCEMENT)' : ''),
+    );
     return new Redis(url, {
       password,
       db,

@@ -1,7 +1,24 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { login } from './helpers/auth';
 import { E2E_SKIP_REASON, isE2eApiReady } from './helpers/api-ready';
 import { DEMO_OWNER } from './helpers/demo-credentials';
+
+async function waitForUserDirectoryReady(page: Page) {
+  const usersResponse = page.waitForResponse(
+    (resp) =>
+      /\/identity\/users(?:\?|$)/.test(resp.url()) && resp.request().method() === 'GET',
+    { timeout: 45_000 },
+  );
+  await page.goto('/settings/users/directory');
+  const response = await usersResponse;
+  expect(response.ok(), `GET /identity/users failed: ${response.status()}`).toBeTruthy();
+  const body = (await response.json()) as { items?: Array<{ email?: string }>; total?: number };
+  expect((body.items?.length ?? 0) > 0 || (body.total ?? 0) > 0).toBeTruthy();
+  await expect(page.locator('#user-management-region')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'User directory', level: 2 })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Email' })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByText(DEMO_OWNER.email)).toBeVisible({ timeout: 45_000 });
+}
 
 test.describe('User management smoke', () => {
   test.beforeEach(async ({ page }, testInfo) => {
@@ -22,24 +39,18 @@ test.describe('User management smoke', () => {
 
     await expect(page.getByRole('heading', { name: 'User management', level: 1 })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'User management' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Overview', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Overview', level: 2 }).first()).toBeVisible();
   });
 
   test('directory lists users with filters', async ({ page }) => {
-    const usersResponse = page.waitForResponse(
-      (resp) => resp.url().includes('/identity/users') && resp.request().method() === 'GET',
-      { timeout: 20_000 },
-    );
-    await page.goto('/settings/users/directory');
-    await usersResponse;
+    await waitForUserDirectoryReady(page);
 
     await expect(page.getByRole('heading', { name: 'User directory', level: 2 })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Email' })).toBeVisible();
     await expect(page.getByText(DEMO_OWNER.email)).toBeVisible({ timeout: 15_000 });
   });
 
   test('user detail shows tabbed profile', async ({ page }) => {
-    await page.goto('/settings/users/directory');
+    await waitForUserDirectoryReady(page);
     await expect(page.getByText(DEMO_OWNER.email)).toBeVisible({ timeout: 15_000 });
     await page.getByRole('link', { name: 'View profile' }).first().click();
 
@@ -77,7 +88,9 @@ test.describe('User management smoke', () => {
   test('roles page loads custom roles section', async ({ page }) => {
     await page.goto('/settings/users/roles');
     await expect(page.getByRole('heading', { name: 'Roles & permissions', level: 2 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Custom roles', level: 3 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Custom roles', level: 2 })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test('overview shows regions admin for managers', async ({ page }) => {
@@ -86,7 +99,7 @@ test.describe('User management smoke', () => {
   });
 
   test('user detail employment tab shows region access', async ({ page }) => {
-    await page.goto('/settings/users/directory');
+    await waitForUserDirectoryReady(page);
     await expect(page.getByText(DEMO_OWNER.email)).toBeVisible({ timeout: 15_000 });
     await page.getByRole('link', { name: 'View profile' }).first().click();
     await page.getByRole('tab', { name: 'Employment' }).click();

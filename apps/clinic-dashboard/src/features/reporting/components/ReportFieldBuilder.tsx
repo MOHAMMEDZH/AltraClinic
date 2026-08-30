@@ -99,7 +99,7 @@ export function ReportFieldBuilder({ dimensions, measures, onChange }: ReportFie
                 else if (dragFieldId) handleDrop(list);
               }}
             >
-              <span
+              <div
                 className={styles.fieldChipActive}
                 draggable
                 onDragStart={() => setReorderTarget({ list, index })}
@@ -107,8 +107,8 @@ export function ReportFieldBuilder({ dimensions, measures, onChange }: ReportFie
               >
                 <span aria-hidden className={styles.dragHandle}>⋮⋮</span>
                 {field ? t(field.labelKey as 'reports.fieldBuilder.branch') : id}
-                <button type="button" aria-label={t('reports.fieldBuilder.remove')} onClick={() => removeField(id, list)}>×</button>
-              </span>
+              </div>
+              <button type="button" aria-label={t('reports.fieldBuilder.remove')} onClick={() => removeField(id, list)}>×</button>
             </li>
           );
         })}

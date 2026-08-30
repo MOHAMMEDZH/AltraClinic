@@ -35,7 +35,22 @@ export async function gotoShellRoute(page: Page, path: string) {
 }
 
 export async function assertShellVisible(page: Page) {
-  await expect(userMenu(page)).toBeVisible({ timeout: 30_000 });
+  await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  await page
+    .waitForFunction(
+      () => Boolean(sessionStorage.getItem('booking.refreshToken')),
+      undefined,
+      { timeout: 20_000 },
+    )
+    .catch(() => undefined);
+  const path = new URL(page.url()).pathname;
+  if (path.startsWith('/login')) {
+    throw new Error(`assertShellVisible: redirected to login (session lost). url=${page.url()}`);
+  }
+  const menu = userMenu(page).or(
+    page.getByRole('button', { name: /^(User menu|قائمة المستخدم)$/ }),
+  );
+  await expect(menu.first()).toBeVisible({ timeout: 30_000 });
   await expect(mainContent(page)).toBeVisible();
 }
 

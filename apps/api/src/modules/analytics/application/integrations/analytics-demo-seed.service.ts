@@ -26,9 +26,6 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const existing = await this.reports.count(DEMO_TENANT_ID);
-    if (existing > 0) return;
-
     const seeds = [
       {
         name: 'Monthly revenue summary',
@@ -50,7 +47,14 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
       },
     ];
 
+    const existing = await this.reports.listByTenant(DEMO_TENANT_ID, undefined, 100, 0);
+    const existingNames = new Set(existing.map((report) => report.name));
+    let created = 0;
+
     for (const seed of seeds) {
+      if (existingNames.has(seed.name)) continue;
+      created += 1;
+
       const report = AnalyticsReport.create({
         tenantId: DEMO_TENANT_ID,
         name: seed.name,
@@ -74,6 +78,8 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
       );
     }
 
-    this.logger.log(`Seeded ${seeds.length} demo analytics reports with files`);
+    if (created > 0) {
+      this.logger.log(`Seeded ${created} demo analytics reports with files`);
+    }
   }
 }

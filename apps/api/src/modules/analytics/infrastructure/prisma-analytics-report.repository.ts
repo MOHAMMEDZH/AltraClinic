@@ -100,7 +100,10 @@ export class PrismaAnalyticsReportRepository implements AnalyticsReportRepositor
     offset = 0,
   ): Promise<AnalyticsReport[]> {
     const rows = await this.prisma.analyticsReportRecord.findMany({
-      where: { tenantId, ...(branchId ? { branchId } : {}) },
+      where: {
+        tenantId,
+        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
@@ -119,7 +122,7 @@ export class PrismaAnalyticsReportRepository implements AnalyticsReportRepositor
       where: {
         tenantId,
         reportType,
-        ...(branchId ? { branchId } : {}),
+        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: limit,

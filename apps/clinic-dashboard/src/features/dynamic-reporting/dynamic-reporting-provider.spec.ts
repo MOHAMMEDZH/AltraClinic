@@ -148,6 +148,24 @@ describe('DynamicReportingProvider integration', () => {
     expect(result.current.canViewReporting).toBe(false);
     expect(result.current.templates).toEqual([]);
 
+    vi.mocked(useModuleRegistry).mockReturnValue({
+      isLoading: false,
+      isError: true,
+      error: new Error('registry unavailable'),
+      snapshot: null,
+      modules: [],
+      refresh,
+      getModule: vi.fn(),
+    });
+    rerender();
+    expect(result.current.isRegistrySource).toBe(false);
+    expect(result.current.source).toBe('static-fallback');
+    expect(result.current.registryStatus).toBe('error');
+    expect(result.current.templates.length).toBeGreaterThan(5);
+    for (const template of result.current.templates) {
+      expect(staticPermittedIds.has(template.reportId), template.reportId).toBe(true);
+    }
+
     vi.stubEnv('VITE_USE_STATIC_REPORTING_ONLY', 'true');
     rerender();
     expect(result.current.isRegistrySource).toBe(false);

@@ -4,7 +4,13 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
   test: {
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', 'playwright.config.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'e2e/**',
+      'e2e-diagnostics/**',
+      'playwright.config.ts',
+    ],
   },
   resolve: {
     alias: {

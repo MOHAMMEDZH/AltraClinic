@@ -72,6 +72,17 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
+.cardShell {
+  position: relative;
+}
+
+.cardShell > .iconBtn {
+  position: absolute;
+  top: var(--space-4);
+  inset-inline-end: var(--space-4);
+  z-index: 1;
+}
+
 .card,
 .cardButton {
   display: grid;
@@ -121,6 +132,44 @@
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-primary-600);
+}
+
+.kpiPreviewCard {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.kpiMetricToggle {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.kpiPreviewValue {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.drillLink {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+}
+
+.drillLink:hover {
+  text-decoration: underline;
 }
 
 .iconBtn {
@@ -385,6 +434,20 @@
   gap: var(--space-2);
 }
 
+.fieldList li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.fieldList li > button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+}
+
 .fieldChip,
 .fieldChipActive {
   display: inline-flex;
@@ -404,7 +467,7 @@
 }
 
 .dragHandle {
-  opacity: 0.5;
+  color: var(--color-text-tertiary);
   font-size: 10px;
   letter-spacing: -2px;
   user-select: none;

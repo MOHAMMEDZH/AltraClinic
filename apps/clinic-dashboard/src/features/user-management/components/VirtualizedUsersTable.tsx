@@ -48,10 +48,6 @@ export function VirtualizedUsersTable({
     [users, selected, canManage, branchName, onToggle, t, locale],
   );
 
-  if (users.length === 0) {
-    return <p className={styles.empty}>{t('users.directory.empty')}</p>;
-  }
-
   return (
     <div className={styles.virtualTableWrap} role="region" aria-label={t('users.directory.title')}>
       <div className={styles.virtualTableHeader} role="row">
@@ -73,31 +69,37 @@ export function VirtualizedUsersTable({
         <span role="columnheader">{t('users.directory.lastLogin')}</span>
         <span role="columnheader">{t('users.directory.actions')}</span>
       </div>
-      <FixedSizeList
-        height={Math.min(height, users.length * ROW_HEIGHT + 8)}
-        itemCount={users.length}
-        itemSize={ROW_HEIGHT}
-        width="100%"
-        itemData={itemData}
-        onItemsRendered={({ visibleStopIndex }) => {
-          if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= users.length - 5) {
-            onLoadMore();
-          }
-        }}
-      >
-        {UserRow}
-      </FixedSizeList>
-      {hasMore && (
-        <div className={styles.actions} style={{ marginTop: 'var(--space-3)' }}>
-          <button
-            type="button"
-            className={styles.tab}
-            disabled={loadingMore}
-            onClick={() => onLoadMore?.()}
+      {users.length === 0 ? (
+        <p className={styles.empty}>{t('users.directory.empty')}</p>
+      ) : (
+        <>
+          <FixedSizeList
+            height={Math.min(height, users.length * ROW_HEIGHT + 8)}
+            itemCount={users.length}
+            itemSize={ROW_HEIGHT}
+            width="100%"
+            itemData={itemData}
+            onItemsRendered={({ visibleStopIndex }) => {
+              if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= users.length - 5) {
+                onLoadMore();
+              }
+            }}
           >
-            {loadingMore ? t('users.directory.loadingMore') : t('users.directory.loadMore')}
-          </button>
-        </div>
+            {UserRow}
+          </FixedSizeList>
+          {hasMore && (
+            <div className={styles.actions} style={{ marginTop: 'var(--space-3)' }}>
+              <button
+                type="button"
+                className={styles.tab}
+                disabled={loadingMore}
+                onClick={() => onLoadMore?.()}
+              >
+                {loadingMore ? t('users.directory.loadingMore') : t('users.directory.loadMore')}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
