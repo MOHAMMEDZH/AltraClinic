@@ -28,7 +28,7 @@ jobs:
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -40,16 +40,272 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: C1 Redis-present limiter gates (20/20)
+        working-directory: apps/api
+        run: >-
+          npx jest --runInBand
+          src/modules/subscription/tests/api-rate-limit.service.spec.ts
+          src/infrastructure/redis/tests/rate-limiter.service.spec.ts
+
+      - name: C1 source-only (module-registry)
+        working-directory: packages/module-registry
+        run: npm run check:source-only
+
+      - name: C1 source-only (dashboard-export)
+        working-directory: packages/dashboard-export
+        run: npm run check:source-only
+
       - name: Run clinic-dashboard unit tests
         run: npm run test:dashboard
 
       - name: Build clinic-dashboard
         run: npm run build:dashboard
 
+  progressive-inventory:
+    name: Progressive Inventory A-E
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    timeout-minutes: 240
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_emr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_emr"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_emr?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES: '900'
+      JWT_REFRESH_EXPIRES: '604800'
+      REDIS_OPTIONAL: 'true'
+      NODE_ENV: test
+      PLAYWRIGHT_API_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+      # CI-parity full webServer stack (do not reduce workers/concurrency)
+      PLAYWRIGHT_WEBSERVER_PROFILE: full
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Prepare database schema
+        working-directory: apps/api
+        run: npx prisma db push --skip-generate
+
+      - name: Install Playwright browser
+        working-directory: apps/clinic-dashboard
+        run: npx playwright install --with-deps chromium
+
+      # Ordered C2: stop at first failed batch (bash -e). retries=0 on CLI.
+      - name: C2 Progressive Batch A (retries=0)
+        working-directory: apps/api
+        run: npx prisma db seed
+      - name: C2 Progressive Batch A — Playwright
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx playwright test --retries=0
+          e2e/auth-security.spec.ts
+          e2e/dynamic-reporting.spec.ts
+          e2e/encounters-workflow.spec.ts
+          e2e/dynamic-branch.spec.ts
+          e2e/dynamic-white-label.spec.ts
+
+      - name: C2 Progressive Batch B — seed
+        working-directory: apps/api
+        run: npx prisma db seed
+      - name: C2 Progressive Batch B — Playwright
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx playwright test --retries=0
+          e2e/auth-security.spec.ts
+          e2e/dynamic-reporting.spec.ts
+          e2e/encounters-workflow.spec.ts
+          e2e/dynamic-branch.spec.ts
+          e2e/dynamic-white-label.spec.ts
+          e2e/appointments.spec.ts
+          e2e/patients.spec.ts
+          e2e/user-management.spec.ts
+          e2e/licensing-matrix.spec.ts
+          e2e/qa-export-ui.spec.ts
+
+      - name: C2 Progressive Batch C — seed
+        working-directory: apps/api
+        run: npx prisma db seed
+      - name: C2 Progressive Batch C — Playwright
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx playwright test --retries=0
+          e2e/auth-security.spec.ts
+          e2e/dynamic-reporting.spec.ts
+          e2e/encounters-workflow.spec.ts
+          e2e/dynamic-branch.spec.ts
+          e2e/dynamic-white-label.spec.ts
+          e2e/appointments.spec.ts
+          e2e/patients.spec.ts
+          e2e/user-management.spec.ts
+          e2e/licensing-matrix.spec.ts
+          e2e/qa-export-ui.spec.ts
+          e2e/auth-mfa.spec.ts
+          e2e/dashboard-a11y.spec.ts
+          e2e/dynamic-routing.spec.ts
+          e2e/dynamic-navigation.spec.ts
+          e2e/analytics.spec.ts
+          e2e/reporting.spec.ts
+          e2e/subscription-licensing.spec.ts
+          e2e/inventory-operations.spec.ts
+          e2e/encounters.spec.ts
+          e2e/workflows.spec.ts
+
+      - name: C2 Progressive Batch D — seed
+        working-directory: apps/api
+        run: npx prisma db seed
+      - name: C2 Progressive Batch D — Playwright
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx playwright test --retries=0
+          e2e/auth-security.spec.ts
+          e2e/dynamic-reporting.spec.ts
+          e2e/encounters-workflow.spec.ts
+          e2e/dynamic-branch.spec.ts
+          e2e/dynamic-white-label.spec.ts
+          e2e/appointments.spec.ts
+          e2e/patients.spec.ts
+          e2e/user-management.spec.ts
+          e2e/licensing-matrix.spec.ts
+          e2e/qa-export-ui.spec.ts
+          e2e/auth-mfa.spec.ts
+          e2e/dashboard-a11y.spec.ts
+          e2e/dynamic-routing.spec.ts
+          e2e/dynamic-navigation.spec.ts
+          e2e/analytics.spec.ts
+          e2e/reporting.spec.ts
+          e2e/subscription-licensing.spec.ts
+          e2e/inventory-operations.spec.ts
+          e2e/encounters.spec.ts
+          e2e/workflows.spec.ts
+          e2e/ai-a11y.spec.ts
+          e2e/analytics-a11y.spec.ts
+          e2e/api-integrations-a11y.spec.ts
+          e2e/auth-a11y.spec.ts
+          e2e/auth-forgot.spec.ts
+          e2e/auth-login.spec.ts
+          e2e/auth-reset.spec.ts
+          e2e/auth-verify-email.spec.ts
+          e2e/backup-restore-a11y.spec.ts
+          e2e/backup-restore-ops.spec.ts
+          e2e/beauty-a11y.spec.ts
+          e2e/beauty-workspace-a11y.spec.ts
+          e2e/dashboard.spec.ts
+          e2e/dashboard-roles.spec.ts
+          e2e/dental-a11y.spec.ts
+          e2e/dental-workflow.spec.ts
+          e2e/dynamic-activity.spec.ts
+          e2e/dynamic-analytics.spec.ts
+          e2e/dynamic-audit.spec.ts
+          e2e/dynamic-dashboard.spec.ts
+
+      - name: C2 Progressive Batch E — seed
+        working-directory: apps/api
+        run: npx prisma db seed
+      - name: C2 Progressive Batch E — Playwright (tracked official Inventory matrix)
+        working-directory: apps/clinic-dashboard
+        run: >-
+          npx playwright test --retries=0
+          e2e/ai-a11y.spec.ts
+          e2e/analytics.spec.ts
+          e2e/analytics-a11y.spec.ts
+          e2e/api-integrations-a11y.spec.ts
+          e2e/appointments.spec.ts
+          e2e/auth-a11y.spec.ts
+          e2e/auth-forgot.spec.ts
+          e2e/auth-login.spec.ts
+          e2e/auth-mfa.spec.ts
+          e2e/auth-reset.spec.ts
+          e2e/auth-security.spec.ts
+          e2e/auth-verify-email.spec.ts
+          e2e/backup-restore-a11y.spec.ts
+          e2e/backup-restore-ops.spec.ts
+          e2e/beauty-a11y.spec.ts
+          e2e/beauty-workspace-a11y.spec.ts
+          e2e/dashboard.spec.ts
+          e2e/dashboard-a11y.spec.ts
+          e2e/dashboard-roles.spec.ts
+          e2e/dental-a11y.spec.ts
+          e2e/dental-workflow.spec.ts
+          e2e/dynamic-activity.spec.ts
+          e2e/dynamic-analytics.spec.ts
+          e2e/dynamic-audit.spec.ts
+          e2e/dynamic-branch.spec.ts
+          e2e/dynamic-dashboard.spec.ts
+          e2e/dynamic-journey.spec.ts
+          e2e/dynamic-navigation.spec.ts
+          e2e/dynamic-notification.spec.ts
+          e2e/dynamic-notification-delivery.spec.ts
+          e2e/dynamic-reporting.spec.ts
+          e2e/dynamic-routing.spec.ts
+          e2e/dynamic-search.spec.ts
+          e2e/dynamic-white-label.spec.ts
+          e2e/encounters.spec.ts
+          e2e/encounters-a11y.spec.ts
+          e2e/encounters-workflow.spec.ts
+          e2e/import-export-a11y.spec.ts
+          e2e/import-export-ops.spec.ts
+          e2e/inventory-catalog.spec.ts
+          e2e/inventory-dashboard.spec.ts
+          e2e/inventory-operations.spec.ts
+          e2e/inventory-workflows.spec.ts
+          e2e/inventory-workspaces.spec.ts
+          e2e/licensing-matrix.spec.ts
+          e2e/notifications.spec.ts
+          e2e/patients.spec.ts
+          e2e/patients-a11y.spec.ts
+          e2e/patients-qa.spec.ts
+          e2e/qa-download-only.spec.ts
+          e2e/qa-export-ui.spec.ts
+          e2e/reporting.spec.ts
+          e2e/reporting-a11y.spec.ts
+          e2e/scheduling-a11y.spec.ts
+          e2e/subscription-licensing.spec.ts
+          e2e/user-management.spec.ts
+          e2e/user-management-a11y.spec.ts
+          e2e/workflows.spec.ts
+
+      - name: Upload progressive Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: progressive-inventory-report
+          path: |
+            apps/clinic-dashboard/playwright-report/
+            apps/clinic-dashboard/test-results/
+          retention-days: 7
+
   inventory-e2e:
     name: Inventory E2E
     runs-on: ubuntu-latest
-    needs: unit-tests
+    needs: [unit-tests, progressive-inventory]
     timeout-minutes: 30
     services:
       postgres:
