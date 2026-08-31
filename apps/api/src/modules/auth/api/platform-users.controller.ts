@@ -4,7 +4,7 @@ import { PlatformAuthRoute } from './decorators/platform-auth-route.decorator';
 import { RequirePlatformPermission } from './decorators/require-platform-permission.decorator';
 import { PlatformPermissionGuard } from './guards/platform-permission.guard';
 import { JwtClaimsVO } from '../domain/value-objects/jwt-claims.vo';
-import { PrismaPlatformUserRepository } from '../infrastructure/repositories/prisma-platform-user.repository';
+import { PlatformUserRepository } from '../domain/repositories/platform-user.repository.interface';
 import { PlatformUserRoleRepository, PlatformInvitationRepository, PlatformMfaResetRepository } from '../infrastructure/repositories/prisma-platform-rbac.repositories';
 import { PlatformAuthorizationService } from '../platform-rbac/platform-authorization.service';
 import { PlatformSodService } from '../platform-rbac/platform-sod.service';
@@ -12,7 +12,7 @@ import { PLATFORM_ROLE_KEY_SET, HIGH_IMPACT_ROLE_KEYS } from '../platform-rbac/p
 import { PlatformAssuranceService } from '../application/services/platform-assurance.service';
 import { PlatformSessionRevocationService } from '../application/services/platform-session-revocation.service';
 import { PlatformRefreshTokenRepository } from '../domain/repositories/platform-refresh-token.repository.interface';
-import { PLATFORM_REFRESH_TOKEN_REPOSITORY } from '../platform-auth.tokens';
+import { PLATFORM_REFRESH_TOKEN_REPOSITORY, PLATFORM_USER_REPOSITORY } from '../platform-auth.tokens';
 import { summarizeUserAgent } from '../application/platform-device-summary';
 import { PrismaService } from '../../../infrastructure/prisma.service';
 import { createHash, randomBytes, randomUUID } from 'crypto';
@@ -41,7 +41,7 @@ export class PlatformUsersController {
   private readonly logger = new Logger(PlatformUsersController.name);
 
   constructor(
-    private readonly users: PrismaPlatformUserRepository,
+    @Inject(PLATFORM_USER_REPOSITORY) private readonly users: PlatformUserRepository,
     private readonly roles: PlatformUserRoleRepository,
     private readonly invitations: PlatformInvitationRepository,
     private readonly resets: PlatformMfaResetRepository,

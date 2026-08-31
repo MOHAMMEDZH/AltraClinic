@@ -70,9 +70,12 @@ test.describe('Auth security settings smoke', () => {
   test('owner can revoke a single non-current session', async ({ page, browser }) => {
     const secondContext = await browser.newContext();
     const secondPage = await secondContext.newPage();
-    await login(secondPage, DEMO_OWNER);
+    await login(secondPage, DEMO_OWNER, { isolatedSession: true });
 
     await page.goto('/settings/security/sessions');
+    await expect(page.getByRole('heading', { name: 'Session management', level: 2 })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByText('Current session')).toBeVisible({ timeout: 15_000 });
 
     const revokeButtons = page.getByRole('button', { name: 'Sign out session' });
@@ -107,7 +110,10 @@ test.describe('Auth security settings smoke', () => {
 
       const response = await changeResponse;
       expect(response.ok()).toBeTruthy();
-      await expect(page.getByRole('status')).toContainText(/Password changed/i, { timeout: 15_000 });
+      // AuthAlert concatenates title + body in the status node ("Updated" + message).
+      await expect(page.getByRole('status')).toContainText(/password was changed successfully/i, {
+        timeout: 15_000,
+      });
 
       await logout(page);
       await page.getByLabel('Organization ID').fill(DEMO_TENANT_ID);
@@ -123,9 +129,12 @@ test.describe('Auth security settings smoke', () => {
   test('owner can sign out other sessions', async ({ page, browser }) => {
     const secondContext = await browser.newContext();
     const secondPage = await secondContext.newPage();
-    await login(secondPage, DEMO_OWNER);
+    await login(secondPage, DEMO_OWNER, { isolatedSession: true });
 
     await page.goto('/settings/security/sessions');
+    await expect(page.getByRole('heading', { name: 'Session management', level: 2 })).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByText('Current session')).toBeVisible({ timeout: 15_000 });
 
     const revokeResponse = page.waitForResponse(
