@@ -120,22 +120,21 @@ export async function gotoReportingPath(page: Page, path: string) {
 
 export async function waitForReportingLoaded(page: Page) {
   const region = reportsRegion(page);
+  // Poll #reports-region (incl. Suspense fallback). Use .first() so .or() chains
+  // that match multiple nodes do not trip Playwright strict mode.
+  await expect(
+    region
+      .or(page.getByRole('region', { name: /report catalog/i }))
+      .or(page.getByText(/do not have permission|access denied|ليس لديك/i))
+      .or(page.getByRole('heading', { name: /Report builder|Export center|Reporting|التقارير/i, level: 1 }))
+      .first(),
+  ).toBeVisible({ timeout: 45_000 });
+
   if ((await region.count()) > 0) {
     await expect(region).toBeVisible({ timeout: 30_000 });
     await region.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => undefined);
     await expect(region).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 }).catch(() => undefined);
-    return;
   }
-  await expect(
-    page
-      .getByRole('region', { name: /report catalog/i })
-      .first()
-      .or(page.getByText(/do not have permission|access denied|ليس لديك/i))
-      .or(page.getByRole('heading', { name: 'Report builder', level: 1 }))
-      .or(page.getByRole('heading', { name: 'Export center', level: 1 }))
-      .or(page.getByRole('heading', { name: 'Reporting', level: 1 }))
-      .first(),
-  ).toBeVisible({ timeout: 30_000 });
 }
 
 export async function reportCatalogTitles(page: Page): Promise<string[]> {

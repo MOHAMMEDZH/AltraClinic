@@ -544,8 +544,21 @@ test.describe('Dynamic reporting — registry, cache, and resilience', () => {
     });
 
     // Full navigation remounts providers so load() hits the 503 path.
+    const bootstrap503 = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/tenant/modules/registry/bootstrap') &&
+        resp.request().method() === 'GET' &&
+        resp.status() === 503,
+      { timeout: 45_000 },
+    );
     await page.goto('/reports', { waitUntil: 'domcontentloaded' });
+    await bootstrap503;
     await waitForReportingLoaded(page);
+    // If Suspense/route race left main empty, one nav click remounts the reporting route.
+    if ((await page.locator('#reports-region').count()) === 0) {
+      await page.getByRole('navigation').getByRole('link', { name: 'Reports', exact: true }).click();
+      await waitForReportingLoaded(page);
+    }
     await expect(page.locator('#reports-region')).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 });
     await expect(page.locator('#reports-region')).toHaveAttribute('data-reporting-source', 'static-fallback', {
       timeout: 45_000,

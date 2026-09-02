@@ -18,7 +18,11 @@ const ReportDetailPage = lazy(() =>
 );
 
 function ReportingFallback() {
-  return <div style={{ padding: 'var(--space-6)' }} aria-busy="true" />;
+  return (
+    <div style={{ padding: 'var(--space-6)' }} id="reports-region" aria-busy="true" role="status">
+      Loading
+    </div>
+  );
 }
 
 export function LazyReportingHomePage() {

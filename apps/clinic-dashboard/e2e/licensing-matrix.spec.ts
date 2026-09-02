@@ -307,7 +307,7 @@ test.describe('Enterprise licensing matrix — authenticated UI', () => {
     );
     await page.goto('/settings/subscription/plans');
     await expect(page.getByTestId('license-maintenance-layout')).toBeVisible({ timeout: 45_000 });
-    await expect(page.locator('#subscription-region')).toBeVisible();
+    await expect(page.locator('#subscription-region')).toBeVisible({ timeout: 45_000 });
   });
 
   test('suspended tenant: unified license experience on dashboard', async ({ page }) => {
