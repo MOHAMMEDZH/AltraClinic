@@ -15,7 +15,10 @@ test.describe('Reporting module', () => {
     await page.goto('/reports');
     await expect(page.getByRole('heading', { name: 'Reporting', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report builder' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Export center' })).toBeVisible();
+    // Header CTA + quick-nav both expose "Export center"; scope to reporting nav.
+    await expect(
+      page.getByRole('navigation', { name: 'Reporting navigation' }).getByRole('link', { name: 'Export center' }),
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Report catalog', level: 2 })).toBeVisible();
   });
 
@@ -37,6 +40,6 @@ test.describe('Reporting module', () => {
   test('category page loads billing reports', async ({ page }) => {
     await login(page, DEMO_OWNER);
     await page.goto('/reports/category/billing');
-    await expect(page.getByRole('heading', { name: /billing/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Billing', exact: true, level: 1 })).toBeVisible();
   });
 });

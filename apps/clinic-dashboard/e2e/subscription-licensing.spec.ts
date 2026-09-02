@@ -4,40 +4,43 @@ import { DEMO_OWNER, DEMO_TENANT_ID } from './helpers/demo-credentials';
 
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://127.0.0.1:3000';
 
+/** SPA guest login path is `/login` (not `/auth/login`; that is the API POST route). */
+const LOGIN_PATH = /\/login(?:\?|$)/;
+
 test.describe('Phase 28 licensing E2E baseline', () => {
   test('unauthenticated users cannot reach subscription center', async ({ page }) => {
     await page.goto('/settings/subscription');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('unauthenticated users cannot reach settings branding', async ({ page }) => {
     await page.goto('/settings/branding');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('unauthenticated users cannot reach identity custom roles API surface', async ({ page }) => {
     await page.goto('/settings/users');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('unauthenticated users cannot reach developer API settings', async ({ page }) => {
     await page.goto('/settings/developer');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('unauthenticated users cannot reach audit logs', async ({ page }) => {
     await page.goto('/settings/audit');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('unauthenticated users cannot reach AI assistant', async ({ page }) => {
     await page.goto('/ai');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('login page loads for licensed tenant flow entry', async ({ page }) => {
-    await page.goto('/auth/login');
-    await expect(page).toHaveURL(/auth\/login/);
+    await page.goto('/login');
+    await expect(page).toHaveURL(LOGIN_PATH);
     await expect(page.locator('body')).toBeVisible();
   });
 });
@@ -48,7 +51,7 @@ test.describe('Licensing fail-closed UI (offline entitlements)', () => {
       route.fulfill({ status: 503, body: JSON.stringify({ message: 'unavailable' }) }),
     );
     await page.goto('/settings/subscription');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('dashboard route requires auth when entitlements unavailable', async ({ page }) => {
@@ -56,27 +59,27 @@ test.describe('Licensing fail-closed UI (offline entitlements)', () => {
       route.fulfill({ status: 503, body: JSON.stringify({ message: 'unavailable' }) }),
     );
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('scheduling route requires auth before module access', async ({ page }) => {
     await page.goto('/scheduling');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('billing route requires auth before module access', async ({ page }) => {
     await page.goto('/billing');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('analytics route requires auth before module access', async ({ page }) => {
     await page.goto('/analytics');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 
   test('workflow route requires auth before module access', async ({ page }) => {
     await page.goto('/workflow');
-    await expect(page).toHaveURL(/auth\/login/);
+    await expect(page).toHaveURL(LOGIN_PATH);
   });
 });
 
@@ -94,7 +97,7 @@ test.describe('Licensing route protection (unauthenticated = denied)', () => {
   for (const route of protectedRoutes) {
     test(`${route.label} (${route.path}) redirects unauthenticated users`, async ({ page }) => {
       await page.goto(route.path);
-      await expect(page).toHaveURL(/auth\/login/);
+      await expect(page).toHaveURL(LOGIN_PATH);
     });
   }
 });
@@ -136,7 +139,7 @@ test.describe('Licensed tenant API enforcement', () => {
 
   test('white label custom domain denied on professional plan', async ({ request }) => {
     const { accessToken } = await ownerToken(request);
-    const res = await request.patch(`${API_BASE}/settings`, {
+    const res = await request.patch(`${API_BASE}/settings/tenant`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'x-tenant-id': DEMO_TENANT_ID,
