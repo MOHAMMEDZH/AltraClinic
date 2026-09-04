@@ -120,17 +120,23 @@ export async function gotoReportingPath(page: Page, path: string) {
 
 export async function waitForReportingLoaded(page: Page) {
   const region = reportsRegion(page);
-  // Poll #reports-region (incl. Suspense fallback). Use .first() so .or() chains
-  // that match multiple nodes do not trip Playwright strict mode.
-  await expect(
-    region
-      .or(page.getByRole('region', { name: /report catalog/i }))
-      .or(page.getByText(/do not have permission|access denied|ليس لديك/i))
-      .or(page.getByRole('heading', { name: /Report builder|Export center|Reporting|التقارير/i, level: 1 }))
-      .first(),
-  ).toBeVisible({ timeout: 45_000 });
+  const reportCatalogRegion = page.getByRole('region', { name: /report catalog/i }).first();
+  const accessDenied = page.getByText(/do not have permission|access denied|ليس لديك/i).first();
+  const topHeading = page
+    .getByRole('heading', { name: /Report builder|Export center|Reporting|التقارير/i, level: 1 })
+    .first();
+
+  // Wait for either the reporting region itself or an access-denied / fallback UI.
+  // CI sometimes renders #reports-region in the DOM but keeps it hidden while
+  // the permission UI is visible.
+  await expect(region.or(reportCatalogRegion).or(accessDenied).or(topHeading).first()).toBeVisible({
+    timeout: 45_000,
+  });
 
   if ((await region.count()) > 0) {
+    // If the user is explicitly access denied, #reports-region may intentionally remain hidden.
+    if (await accessDenied.isVisible().catch(() => false)) return;
+
     await expect(region).toBeVisible({ timeout: 30_000 });
     await region.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => undefined);
     await expect(region).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 }).catch(() => undefined);
