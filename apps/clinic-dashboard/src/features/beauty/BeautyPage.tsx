@@ -77,7 +77,7 @@ export function BeautyPage() {
 
   if (!canViewBeauty(perm)) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} id="beauty-region">
         <AuthAlert variant="error">{t('beauty.errors.accessDenied')}</AuthAlert>
       </div>
     );
