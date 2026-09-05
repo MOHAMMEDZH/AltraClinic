@@ -161,6 +161,7 @@ describe('DynamicReportingProvider integration', () => {
     expect(result.current.isRegistrySource).toBe(false);
     expect(result.current.source).toBe('static-fallback');
     expect(result.current.registryStatus).toBe('error');
+    expect(result.current.isLoading).toBe(false);
     expect(result.current.templates.length).toBeGreaterThan(5);
     for (const template of result.current.templates) {
       expect(staticPermittedIds.has(template.reportId), template.reportId).toBe(true);

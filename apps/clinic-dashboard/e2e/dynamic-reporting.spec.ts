@@ -554,8 +554,13 @@ test.describe('Dynamic reporting — registry, cache, and resilience', () => {
     await page.goto('/reports', { waitUntil: 'domcontentloaded' });
     await bootstrap503;
     await waitForReportingLoaded(page);
-    // If Suspense/route race left main empty, one nav click remounts the reporting route.
-    if ((await page.locator('#reports-region').count()) === 0) {
+    // Suspense must not own #reports-region; if home never mounts, remount via nav.
+    const region = page.locator('#reports-region');
+    const needsRemount =
+      (await region.count()) === 0 ||
+      ((await region.getAttribute('aria-busy')) === 'true' &&
+        !(await region.getAttribute('data-reporting-source')));
+    if (needsRemount) {
       await page.getByRole('navigation').getByRole('link', { name: 'Reports', exact: true }).click();
       await waitForReportingLoaded(page);
     }

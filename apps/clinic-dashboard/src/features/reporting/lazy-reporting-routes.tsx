@@ -18,8 +18,11 @@ const ReportDetailPage = lazy(() =>
 );
 
 function ReportingFallback() {
+  // Do not reuse #reports-region — that id is the loaded reporting contract
+  // (data-reporting-source / data-registry-status). Claiming it here makes
+  // Suspense look "ready" and blocks remount recovery when the lazy page hangs.
   return (
-    <div style={{ padding: 'var(--space-6)' }} id="reports-region" aria-busy="true" role="status">
+    <div style={{ padding: 'var(--space-6)' }} id="reports-suspense" aria-busy="true" role="status">
       Loading
     </div>
   );
