@@ -21,7 +21,7 @@ test.describe('Scheduling accessibility', () => {
   test('list view table has accessible caption', async ({ page }) => {
     await gotoAppointments(page);
 
-    await page.getByRole('button', { name: 'List' }).click();
+    await page.getByRole('button', { name: 'List', exact: true }).click();
     await expect(page.getByRole('table')).toBeVisible();
   });
 

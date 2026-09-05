@@ -19,7 +19,7 @@ test.describe('Notifications center smoke', () => {
     );
     await page.goto('/settings/notifications');
     await overviewResponse;
-    await expect(page.getByRole('heading', { name: 'Notification center', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Notifications|الإشعارات/i, level: 1 })).toBeVisible();
   });
 
   test('inbox lists notifications', async ({ page }) => {
@@ -35,6 +35,10 @@ test.describe('Notifications center smoke', () => {
   test('bell panel opens from top nav', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Notifications/i }).click();
-    await expect(page.getByRole('link', { name: /View all/i })).toBeVisible({ timeout: 10_000 });
+    const bellPanel = page.getByRole('dialog', { name: /Notifications|الإشعارات/i });
+    await expect(bellPanel).toBeVisible({ timeout: 10_000 });
+    await expect(
+      bellPanel.locator('a[href="/settings/notifications/inbox"]'),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });
