@@ -81,9 +81,11 @@ export function ScheduleSettingsPanel({ providers }: ScheduleSettingsPanelProps)
       </label>
 
       <ul className={styles.grid}>
-        {activeDays.map((day) => (
+        {activeDays.map((day) => {
+          const dayName = t(`scheduling.scheduleSettings.days.${DAY_KEYS[day.dayOfWeek]}`);
+          return (
           <li key={day.dayOfWeek} className={styles.row}>
-            <span className={styles.dayLabel}>{t(`scheduling.scheduleSettings.days.${DAY_KEYS[day.dayOfWeek]}`)}</span>
+            <span className={styles.dayLabel}>{dayName}</span>
             <label className={styles.check}>
               <input
                 type="checkbox"
@@ -102,6 +104,7 @@ export function ScheduleSettingsPanel({ providers }: ScheduleSettingsPanelProps)
               <>
                 <input
                   type="time"
+                  aria-label={`${dayName} ${t('scheduling.scheduleSettings.startTime')}`}
                   value={`${String(day.startHour).padStart(2, '0')}:${String(day.startMin).padStart(2, '0')}`}
                   onChange={(e) => {
                     const [h, m] = e.target.value.split(':').map(Number);
@@ -115,6 +118,7 @@ export function ScheduleSettingsPanel({ providers }: ScheduleSettingsPanelProps)
                 <span>–</span>
                 <input
                   type="time"
+                  aria-label={`${dayName} ${t('scheduling.scheduleSettings.endTime')}`}
                   value={`${String(day.endHour).padStart(2, '0')}:${String(day.endMin).padStart(2, '0')}`}
                   onChange={(e) => {
                     const [h, m] = e.target.value.split(':').map(Number);
@@ -128,7 +132,8 @@ export function ScheduleSettingsPanel({ providers }: ScheduleSettingsPanelProps)
               </>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {saved && <AuthAlert variant="success">{t('scheduling.scheduleSettings.saved')}</AuthAlert>}
