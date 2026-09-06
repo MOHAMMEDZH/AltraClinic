@@ -49,7 +49,12 @@ export function VirtualizedUsersTable({
   );
 
   return (
-    <div className={styles.virtualTableWrap} role="region" aria-label={t('users.directory.title')}>
+    <div
+      className={styles.virtualTableWrap}
+      role="table"
+      aria-label={t('users.directory.title')}
+      aria-rowcount={users.length + 1}
+    >
       <div className={styles.virtualTableHeader} role="row">
         {canManage && (
           <span role="columnheader">
@@ -73,20 +78,22 @@ export function VirtualizedUsersTable({
         <p className={styles.empty}>{t('users.directory.empty')}</p>
       ) : (
         <>
-          <FixedSizeList
-            height={Math.min(height, users.length * ROW_HEIGHT + 8)}
-            itemCount={users.length}
-            itemSize={ROW_HEIGHT}
-            width="100%"
-            itemData={itemData}
-            onItemsRendered={({ visibleStopIndex }) => {
-              if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= users.length - 5) {
-                onLoadMore();
-              }
-            }}
-          >
-            {UserRow}
-          </FixedSizeList>
+          <div role="rowgroup">
+            <FixedSizeList
+              height={Math.min(height, users.length * ROW_HEIGHT + 8)}
+              itemCount={users.length}
+              itemSize={ROW_HEIGHT}
+              width="100%"
+              itemData={itemData}
+              onItemsRendered={({ visibleStopIndex }) => {
+                if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= users.length - 5) {
+                  onLoadMore();
+                }
+              }}
+            >
+              {UserRow}
+            </FixedSizeList>
+          </div>
           {hasMore && (
             <div className={styles.actions} style={{ marginTop: 'var(--space-3)' }}>
               <button

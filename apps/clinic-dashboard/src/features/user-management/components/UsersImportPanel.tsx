@@ -61,6 +61,7 @@ export function UsersImportPanel() {
         type="file"
         accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         className="visually-hidden"
+        aria-label={t('users.import.chooseFile')}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);
