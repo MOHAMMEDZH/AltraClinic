@@ -306,7 +306,8 @@ jobs:
     name: Inventory E2E
     runs-on: ubuntu-latest
     needs: [unit-tests, progressive-inventory]
-    timeout-minutes: 30
+    # Align with progressive-inventory: full `npm run test:e2e` exceeds the prior 30m job ceiling.
+    timeout-minutes: 240
     services:
       postgres:
         image: postgres:16-alpine
