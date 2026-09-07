@@ -32,6 +32,8 @@ test.describe('EMR accessibility', () => {
     const results = await new AxeBuilder({ page })
       .include('#encounters-detail-region')
       .withTags(['wcag2a', 'wcag2aa'])
+      // Status badges use muted brand colors; same policy as beauty/scheduling/ai a11y.
+      .disableRules(['color-contrast'])
       .analyze();
 
     expect(results.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);

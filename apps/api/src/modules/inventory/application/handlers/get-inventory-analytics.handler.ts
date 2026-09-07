@@ -51,7 +51,7 @@ export class GetInventoryAnalyticsHandler {
           category: { select: { key: true, nameEn: true } },
         },
       }),
-      this.prisma.inventoryConsumptionLog.findMany({
+      this.prisma.inventoryUsageLedger.findMany({
         where: { tenantId, consumedAt: { gte: since } },
         select: {
           quantityUsed: true,

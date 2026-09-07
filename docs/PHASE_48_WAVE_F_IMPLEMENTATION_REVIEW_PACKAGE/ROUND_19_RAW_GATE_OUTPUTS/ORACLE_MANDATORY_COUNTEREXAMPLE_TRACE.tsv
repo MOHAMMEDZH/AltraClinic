@@ -1,0 +1,6 @@
+step	refundId	basis	obsRev	obsComm	remRev	remComm	basisUsed
+A	A	0.01	0.01	0.00	0.05	0.02	0.00
+B	B	0.01	0.01	0.00	0.04	0.02	0.01
+C	C	0.02	0.01	0.01	0.03	0.02	0.02
+D	D	0.02	0.01	0.01	0.02	0.01	0.04
+E	E	0.02	0.01	0.00	0.01	0.00	0.06

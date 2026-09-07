@@ -35,6 +35,16 @@ export class InAppAdapter implements NotificationProviderAdapter {
       };
     }
 
+    // Step 27: platform principals have no clinic inbox row — skip in-app safely.
+    if (input.metadata?.recipientType === 'platform_user') {
+      return {
+        success: true,
+        providerKey: this.providerKey,
+        channel: this.channelId,
+        raw: { skipped: 'platform_user_no_clinic_inbox' },
+      };
+    }
+
     const now = new Date();
 
     if (input.notificationId) {

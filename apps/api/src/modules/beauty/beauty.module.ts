@@ -32,11 +32,10 @@ import { BeautyPolicyService } from './policies/beauty-policy.service';
 import { BeautyPermissionGuard } from './api/beauty-permission.guard';
 
 import { InventoryModule } from '../inventory/inventory.module';
-
 import { PatientsModule } from '../patients/patients.module';
-
 import { LoyaltyModule } from '../loyalty/loyalty.module';
-
+import { SchedulingModule } from '../scheduling/scheduling.module';
+import { ClinicalFormsModule } from '../clinical-forms/clinical-forms.module';
 import {
   ConsumeBeautyMaterialHandler,
   CreateBeautyProcedureMaterialHandler,
@@ -46,7 +45,7 @@ import {
 } from './application/handlers/beauty-material.handlers';
 
 @Module({
-  imports: [InventoryModule, PatientsModule, LoyaltyModule],
+  imports: [InventoryModule, PatientsModule, LoyaltyModule, SchedulingModule, ClinicalFormsModule],
   controllers: [BeautyController],
   providers: [
     BeautyRecordService,

@@ -194,7 +194,7 @@ function buildJwtConfig(): JwtConfig {
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),   // JwtTokenService handles signing config directly
-    IdentityModule,           // exports USER_REPOSITORY
+    forwardRef(() => IdentityModule),           // exports USER_REPOSITORY
     forwardRef(() => SettingsModule),
     RedisModule,
   ],
@@ -342,6 +342,13 @@ function buildJwtConfig(): JwtConfig {
     PLATFORM_REFRESH_TOKEN_REPOSITORY,
     RATE_LIMITER,
     TENANT_RESOLVER,
+    // Flexible Step 23 — Sales Representative Management reuses these existing
+    // Platform invite/role/session SoRs rather than duplicating them.
+    PlatformUserRoleRepository,
+    PlatformInvitationRepository,
+    PLATFORM_RBAC_CONFIG,
+    PLATFORM_INVITATION_DELIVERY,
+    PlatformSessionRevocationService,
   ],
 })
 export class AuthModule {}

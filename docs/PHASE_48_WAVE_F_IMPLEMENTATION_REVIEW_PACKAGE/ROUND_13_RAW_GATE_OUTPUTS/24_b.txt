@@ -1,0 +1,36 @@
+GATE=B
+START_UTC=2026-08-21T16:32:09.7392760Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-b-
+---
+node.exe : PASS src/modules/scheduling/tests/wave-b-final-defect-closure.postgres.integration.spec.ts (12.582 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.582 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/modules/scheduling/tests/wave-b-final-2blocker-closure.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-queue-beauty-integrity.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-pa-blockers.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-rereview-closure.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-lifecycle-audit-tenant-resource.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-lifecycle-beauty-elig.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-concurrency.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-final-narrow-residual.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-snapshot.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-assignroom-event-tx.postgres.integration.spec.ts
+PASS src/modules/scheduling/tests/wave-b-migration.postgres.integration.spec.ts
+
+Test Suites: 12 passed, 12 total
+Tests:       268 passed, 268 total
+Snapshots:   0 total
+Time:        37.967 s, estimated 41 s
+Ran all test suites matching /wave-b-/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:32:49.0530462Z
+EXIT=0
+STATUS=PASS

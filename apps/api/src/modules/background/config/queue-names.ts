@@ -10,6 +10,10 @@ export const BACKGROUND_QUEUES = {
   SCHEDULED_REPORTS: 'scheduled-reports',
   NOTIFICATION_AUTOMATION: 'notification-automation',
   WORKFLOW_ESCALATION: 'workflow-escalation',
+  /** Flexible Step 25 — governed sales trial expiry enforcement. */
+  SALES_TRIAL_EXPIRY: 'sales-trial-expiry',
+  /** Flexible Step 27 — platform notification advance warnings / reminders. */
+  PLATFORM_NOTIFICATION_WARNINGS: 'platform-notification-warnings',
 } as const;
 
 export type BackgroundQueueName = (typeof BACKGROUND_QUEUES)[keyof typeof BACKGROUND_QUEUES];
@@ -26,4 +30,6 @@ export const BACKGROUND_JOBS = {
   SCHEDULED_REPORTS_SCAN: 'scan-scheduled-reports',
   NOTIFICATION_AUTOMATION_SCAN: 'scan-automation-schedules',
   WORKFLOW_ESCALATION_SCAN: 'scan-workflow-escalations',
+  SALES_TRIAL_EXPIRY_SCAN: 'scan-due-sales-trials',
+  PLATFORM_NOTIFICATION_WARNING_SCAN: 'scan-platform-notification-warnings',
 } as const;

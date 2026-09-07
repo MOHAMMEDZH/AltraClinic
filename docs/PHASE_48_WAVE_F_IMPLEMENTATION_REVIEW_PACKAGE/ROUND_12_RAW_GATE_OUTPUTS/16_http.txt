@@ -1,0 +1,28 @@
+GATE=WFhttp
+START_UTC=2026-08-21T14:11:42.8737368Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-http.postgres
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-http.postgres.integration.spec.ts (7.789 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (7.789 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F production-path HTTP (real services, PostgreSQL)
+    ΓêÜ eligibility ΓåÆ plan ΓåÆ publish ΓåÆ performance ΓåÆ post ΓåÆ reverse ΓåÆ settle ΓåÆ owner-report (326 ms)
+    ΓêÜ HTTP collected payment + mismatch reject + multi reverse + multi-currency report (216 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        8.021 s
+Ran all test suites matching /wave-f-http.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:11:52.2389257Z
+EXIT=0
+STATUS=PASS

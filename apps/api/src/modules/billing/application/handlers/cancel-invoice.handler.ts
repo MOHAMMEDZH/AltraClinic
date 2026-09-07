@@ -28,9 +28,12 @@ export class CancelInvoiceHandler {
     invoice.cancel();
 
     await this.repo.save(invoice);
-    await this.prisma.inventoryConsumptionLog.updateMany({
-      where: { tenantId, invoiceId: invoice.invoiceId },
-      data: { invoiceId: null, invoiceLineItemId: null },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT set_config('app.allow_inventory_usage_invoice_link', 'true', true)`;
+      await tx.inventoryUsageLedger.updateMany({
+        where: { tenantId, invoiceId: invoice.invoiceId },
+        data: { invoiceId: null, invoiceLineItemId: null },
+      });
     });
 
     await this.eventPublisher.publish(new InvoiceCancelledEvent(tenantId, invoice.invoiceId, invoice.status.status));

@@ -40,6 +40,15 @@ export class MediaCategoryVO {
     return this.value !== 'medical_document' && this.value !== 'invoice_attachment';
   }
 
+  /** Patient/clinical photo categories require signed PHOTO_CONSENT (AR-10). */
+  requiresPhotoConsent(): boolean {
+    return (
+      this.value === 'dental_image' ||
+      this.value === 'beauty_before_after' ||
+      this.value === 'patient_attachment'
+    );
+  }
+
   toPrisma(): string {
     return PRISMA_MAP[this.value];
   }

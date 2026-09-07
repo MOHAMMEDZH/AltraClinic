@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+﻿import { Module, forwardRef } from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../common/tenant-scoped-access.guard';
 import { PlatformAdminModule } from '../platform-admin/platform-admin.module';
 import { InfrastructureModule } from '../../infrastructure/infrastructure.module';
@@ -34,15 +34,24 @@ import { LicensingAuditService } from './application/services/licensing-audit.se
 import { LicensingExecutionGuard } from './application/services/licensing-execution.guard';
 import { CommunicationDispatchService } from './application/services/communication-dispatch.service';
 import { ApiRateLimitService } from './application/services/api-rate-limit.service';
+import {
+  API_RATE_LIMIT_TEST_BYPASS,
+  isApiRateLimitTestBypassActive,
+} from './application/services/api-rate-limit-test-bypass';
 import { LicensingCommercialAuditService } from './application/services/licensing-commercial-audit.service';
 import { LicensingLifecycleStateService } from './application/services/licensing-lifecycle-state.service';
 import { LicensingCommercialAuditListener } from './application/listeners/licensing-commercial-audit.listener';
 import { SUBSCRIPTION_REPOSITORY } from '../../infrastructure/provider.tokens';
 
 @Module({
-  imports: [PlatformAdminModule, InfrastructureModule, EffectiveEntitlementRuntimeModule, UsageMeteringModule],
+  imports: [PlatformAdminModule, InfrastructureModule, EffectiveEntitlementRuntimeModule, forwardRef(() => UsageMeteringModule)],
   controllers: [SubscriptionController, TenantSubscriptionController],
   providers: [
+    {
+      // Dual-gate only (JEST_WORKER_ID + API_RATE_LIMIT_ALLOW_TEST_BYPASS). NODE_ENV=test alone = false.
+      provide: API_RATE_LIMIT_TEST_BYPASS,
+      useFactory: () => isApiRateLimitTestBypassActive(),
+    },
     TenantScopedAccessGuard,
     SubscriptionPolicy,
     SubscriptionPermissionGuard,

@@ -6,7 +6,6 @@ import { MfaChallengePage } from '../../pages/MfaChallengePage';
 import { SecuritySessionsPage } from '../../pages/SecuritySessionsPage';
 import { UnauthorizedPage } from '../../pages/UnauthorizedPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
-import { PlaceholderPage } from '../../pages/PlaceholderPage';
 import {
   AuditCenterPage,
   AuditCorrelationPage,
@@ -33,6 +32,7 @@ import {
   TenantOnboardingPage,
 } from '../../pages/TenantOnboardingPage';
 import { CatalogPage } from '../../pages/CatalogPage';
+import { ClinicalCatalogPage } from '../../pages/ClinicalCatalogPage';
 import { PlansPage } from '../../pages/PlansPage';
 import { PlanCreatePage } from '../../pages/plans/PlanCreatePage';
 import { PlanDetailPage } from '../../pages/plans/PlanDetailPage';
@@ -78,6 +78,23 @@ import { PlatformUsersPage } from '../../pages/PlatformUsersPage';
 import { PlatformUserInvitePage } from '../../pages/PlatformUserInvitePage';
 import { PlatformUserDetailPage } from '../../pages/PlatformUserDetailPage';
 import { PlatformRolesPage } from '../../pages/PlatformRolesPage';
+import { SalesRepresentativesListPage } from '../../pages/sales/SalesRepresentativesListPage';
+import { SalesRepresentativeCreatePage } from '../../pages/sales/SalesRepresentativeCreatePage';
+import { SalesRepresentativeDetailPage } from '../../pages/sales/SalesRepresentativeDetailPage';
+import { SalesLeadsListPage } from '../../pages/sales/leads/SalesLeadsListPage';
+import { SalesLeadCreatePage } from '../../pages/sales/leads/SalesLeadCreatePage';
+import { SalesLeadDetailPage } from '../../pages/sales/leads/SalesLeadDetailPage';
+import { SalesTrialsListPage } from '../../pages/sales/trials/SalesTrialsListPage';
+import { SalesTrialCreatePage } from '../../pages/sales/trials/SalesTrialCreatePage';
+import { SalesTrialDetailPage } from '../../pages/sales/trials/SalesTrialDetailPage';
+import { SalesProductivitySelfPage } from '../../pages/sales/productivity/SalesProductivitySelfPage';
+import { SalesProductivityTeamPage } from '../../pages/sales/productivity/SalesProductivityTeamPage';
+import { SalesCommissionSnapshotsListPage } from '../../pages/sales/productivity/SalesCommissionSnapshotsListPage';
+import { SalesCommissionSnapshotDetailPage } from '../../pages/sales/productivity/SalesCommissionSnapshotDetailPage';
+import { NotificationTemplatesPage } from '../../pages/notifications/NotificationTemplatesPage';
+import { NotificationTemplateDetailPage } from '../../pages/notifications/NotificationTemplateDetailPage';
+import { NotificationPreferencesPage } from '../../pages/notifications/NotificationPreferencesPage';
+import { NotificationDeliveriesPage } from '../../pages/notifications/NotificationDeliveriesPage';
 import { ActivateInvitationPage } from '../../pages/ActivateInvitationPage';
 import { MfaResetApprovePage } from '../../pages/MfaResetApprovePage';
 import {
@@ -204,6 +221,14 @@ export function AppRouter() {
           element={
             <RequirePermissionPolicy policy={requireRoute('catalog').policy}>
               <CatalogPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('clinical-catalog')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('clinical-catalog').policy}>
+              <ClinicalCatalogPage />
             </RequirePermissionPolicy>
           }
         />
@@ -592,6 +617,38 @@ export function AppRouter() {
           }
         />
         <Route
+          path={relativePath('notification-templates')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-templates').policy}>
+              <NotificationTemplatesPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-templates-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-templates-detail').policy}>
+              <NotificationTemplateDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-preferences')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-preferences').policy}>
+              <NotificationPreferencesPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('notification-deliveries')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('notification-deliveries').policy}>
+              <NotificationDeliveriesPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
           path="audit/entries/:entryId"
           element={
             <RequirePermissionPolicy policy={requireRoute('audit').policy}>
@@ -637,7 +694,105 @@ export function AppRouter() {
           path={relativePath('sales')}
           element={
             <RequirePermissionPolicy policy={requireRoute('sales').policy}>
-              <PlaceholderPage routeId="sales" />
+              <SalesRepresentativesListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads').policy}>
+              <SalesLeadsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads-new').policy}>
+              <SalesLeadCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-leads-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-leads-detail').policy}>
+              <SalesLeadDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials').policy}>
+              <SalesTrialsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials-new').policy}>
+              <SalesTrialCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-trials-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-trials-detail').policy}>
+              <SalesTrialDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-productivity-team')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-productivity-team').policy}>
+              <SalesProductivityTeamPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-productivity')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-productivity').policy}>
+              <SalesProductivitySelfPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-commission-snapshots')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-commission-snapshots').policy}>
+              <SalesCommissionSnapshotsListPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-commission-snapshots-detail')}
+          element={
+            <RequirePermissionPolicy
+              policy={requireRoute('sales-commission-snapshots-detail').policy}
+            >
+              <SalesCommissionSnapshotDetailPage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-representatives-new')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-representatives-new').policy}>
+              <SalesRepresentativeCreatePage />
+            </RequirePermissionPolicy>
+          }
+        />
+        <Route
+          path={relativePath('sales-representatives-detail')}
+          element={
+            <RequirePermissionPolicy policy={requireRoute('sales-representatives-detail').policy}>
+              <SalesRepresentativeDetailPage />
             </RequirePermissionPolicy>
           }
         />

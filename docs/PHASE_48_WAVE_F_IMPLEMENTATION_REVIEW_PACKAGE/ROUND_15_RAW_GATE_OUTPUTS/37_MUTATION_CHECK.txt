@@ -1,0 +1,1 @@
+﻿PASS_NO_MUTATION_OF_GATES_INPUTS — evidence package and R11-A-T3/R15 source edits are deliberate Round 15 deliverables; jest did not rewrite tracked gate inputs.

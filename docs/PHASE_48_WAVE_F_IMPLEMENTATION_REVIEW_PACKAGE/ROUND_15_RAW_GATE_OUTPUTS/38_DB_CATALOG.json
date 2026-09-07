@@ -1,0 +1,165 @@
+﻿{
+  "cols": [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "tenantId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "correctionEventId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "selectedAccrualId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "sourceInvoiceLineId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "replacementInvoiceLineId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "servicePerformanceId",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "calculationBasis",
+      "data_type": "USER-DEFINED",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "packageAllocationId",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "createdBy",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "NO"
+    }
+  ],
+  "fks": [
+    {
+      "conname": "commission_correction_lineages_replacementInvoiceLineId_fkey",
+      "def": "FOREIGN KEY (\"replacementInvoiceLineId\") REFERENCES invoice_line_items(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "conname": "commission_correction_lineages_selectedAccrualId_fkey",
+      "def": "FOREIGN KEY (\"selectedAccrualId\") REFERENCES commission_accruals(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "conname": "commission_correction_lineages_servicePerformanceId_fkey",
+      "def": "FOREIGN KEY (\"servicePerformanceId\") REFERENCES service_performances(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "conname": "commission_correction_lineages_sourceInvoiceLineId_fkey",
+      "def": "FOREIGN KEY (\"sourceInvoiceLineId\") REFERENCES invoice_line_items(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "conname": "commission_correction_lineages_tenantId_fkey",
+      "def": "FOREIGN KEY (\"tenantId\") REFERENCES tenants(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    }
+  ],
+  "uq": [
+    {
+      "indexname": "commission_correction_lineages_pkey",
+      "indexdef": "CREATE UNIQUE INDEX commission_correction_lineages_pkey ON public.commission_correction_lineages USING btree (id)"
+    },
+    {
+      "indexname": "commission_correction_lineages_tenant_event_uidx",
+      "indexdef": "CREATE UNIQUE INDEX commission_correction_lineages_tenant_event_uidx ON public.commission_correction_lineages USING btree (\"tenantId\", \"correctionEventId\")"
+    },
+    {
+      "indexname": "commission_correction_lineages_tenant_sp_idx",
+      "indexdef": "CREATE INDEX commission_correction_lineages_tenant_sp_idx ON public.commission_correction_lineages USING btree (\"tenantId\", \"servicePerformanceId\")"
+    },
+    {
+      "indexname": "commission_correction_lineages_tenant_selected_idx",
+      "indexdef": "CREATE INDEX commission_correction_lineages_tenant_selected_idx ON public.commission_correction_lineages USING btree (\"tenantId\", \"selectedAccrualId\")"
+    }
+  ],
+  "trig": [
+    {
+      "tgname": "commission_correction_lineages_provenance",
+      "def": "CREATE TRIGGER commission_correction_lineages_provenance BEFORE INSERT OR UPDATE ON public.commission_correction_lineages FOR EACH ROW EXECUTE FUNCTION enforce_commission_correction_lineage_provenance()"
+    },
+    {
+      "tgname": "commission_correction_lineages_append_only",
+      "def": "CREATE TRIGGER commission_correction_lineages_append_only BEFORE DELETE OR UPDATE ON public.commission_correction_lineages FOR EACH ROW EXECUTE FUNCTION enforce_commission_correction_lineage_append_only()"
+    }
+  ],
+  "pols": [
+    {
+      "polname": "tenant_select",
+      "polcmd": "r",
+      "using_expr": "((\"tenantId\" = (NULLIF(current_setting('app.current_tenant_id'::text, true), ''::text))::uuid) OR (current_setting('app.platform_rls_bypass'::text, true) = 'true'::text))",
+      "check_expr": null
+    },
+    {
+      "polname": "tenant_insert",
+      "polcmd": "a",
+      "using_expr": null,
+      "check_expr": "((\"tenantId\" = (NULLIF(current_setting('app.current_tenant_id'::text, true), ''::text))::uuid) OR (current_setting('app.platform_rls_bypass'::text, true) = 'true'::text))"
+    },
+    {
+      "polname": "tenant_update",
+      "polcmd": "w",
+      "using_expr": "false",
+      "check_expr": null
+    },
+    {
+      "polname": "tenant_delete",
+      "polcmd": "d",
+      "using_expr": "false",
+      "check_expr": null
+    }
+  ],
+  "rls": [
+    {
+      "relrowsecurity": true,
+      "relforcerowsecurity": true
+    }
+  ],
+  "chk": [
+    {
+      "conname": "commission_accruals_reversed_economic_shape_chk",
+      "def": "CHECK (((status <> 'REVERSED'::commission_accrual_status) OR ((\"attributedRevenueAmount\" <= (0)::numeric) AND (\"commissionAmount\" <= (0)::numeric) AND ((\"attributedRevenueAmount\" < (0)::numeric) OR (\"commissionAmount\" < (0)::numeric)))))"
+    }
+  ],
+  "role": [
+    {
+      "rolname": "booking",
+      "rolbypassrls": true
+    },
+    {
+      "rolname": "booking_app",
+      "rolbypassrls": false
+    }
+  ],
+  "fn": [
+    {
+      "proname": "enforce_commission_correction_lineage_append_only"
+    },
+    {
+      "proname": "enforce_commission_correction_lineage_provenance"
+    }
+  ]
+}

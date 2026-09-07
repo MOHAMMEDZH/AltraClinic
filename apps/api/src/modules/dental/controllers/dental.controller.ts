@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, NotFoundException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, NotFoundException, UseGuards } from '@nestjs/common';
 
 import { DentalPermissionGuard } from '../api/dental-permission.guard';
 
@@ -296,9 +296,12 @@ export class DentalController {
       quantity: body.quantity,
       procedureCode: body.procedureCode ?? null,
       encounterId: body.encounterId ?? null,
+      appointmentId: body.appointmentId ?? null,
+      clinicalServiceId: body.clinicalServiceId ?? null,
       notes: body.notes ?? null,
       warehouseId: body.warehouseId ?? null,
       consumedBy: user.sub,
+      usedByUserId: body.usedByUserId,
     });
   }
 
@@ -311,6 +314,12 @@ export class DentalController {
   ) {
     const results = [];
     for (const line of body.items) {
+      const usedBy = line.usedByUserId ?? body.usedByUserId;
+      if (!usedBy?.trim()) {
+        throw new BadRequestException(
+          'usedByUserId is required for clinical dental material consumption',
+        );
+      }
       const result = await this.consumeMaterialHandler.execute(patientId, {
         itemId: line.itemId,
         quantity: line.quantity,
@@ -318,6 +327,7 @@ export class DentalController {
         encounterId: body.encounterId ?? null,
         notes: body.notes ?? null,
         consumedBy: user.sub,
+        usedByUserId: usedBy,
       });
       results.push(result);
     }

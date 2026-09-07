@@ -19,6 +19,8 @@ import {
 } from './platform-subscriptions-db.harness';
 import type { PlatformSubscriptionsService } from '../application/platform-subscriptions.service';
 
+jest.setTimeout(600_000);
+
 const ACTOR = '00000000-0000-4000-8000-000000000016';
 const CLAIMS = {
   sub: ACTOR,

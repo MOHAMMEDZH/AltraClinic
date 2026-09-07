@@ -28,7 +28,7 @@ export class EmrBillingService {
           invoiceDate: true,
         },
       }),
-      this.prisma.inventoryConsumptionLog.findMany({
+      this.prisma.inventoryUsageLedger.findMany({
         where: { tenantId, encounterId },
         orderBy: { consumedAt: 'desc' },
         take: 50,

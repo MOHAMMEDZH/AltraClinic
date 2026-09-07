@@ -19,12 +19,18 @@
 
 | Identity | Status |
 |----------|--------|
-| Flexible Steps **01–20** | **Complete** |
+| Flexible Steps **01–23** | **Accepted / Complete** |
 | Flexible Step **20** — Feature Flags and Global Settings | **Accepted / Complete** — Model B hook containment + P01–P12; Case B one-pass green; see `FEATURE_FLAGS_AND_GLOBAL_SETTINGS.md` |
 | Flexible Step **21** — Audit Center | **Accepted / Complete** — Case C one-pass 2026-08-09 exit 0; A08 D11 audit delta = 1; evidence = 0; see `AUDIT_CENTER.md` |
-| Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test`; Step 23 unauthorized |
+| Flexible Step **22** — Operations Console | **Accepted and complete** (2026-08-10). Durable idempotency D-A/D-B, INT health, F24-B N/A, provisioning retry UI, UI-CACHE-B; Case C one-pass green on frozen `booking_test` |
 | Supplemental Capability U01 — Usage Metering and Limit Enforcement | **Implemented out of roadmap order**; additive; feature-flagged (defaults OFF); final validation passed; not a numbered Flexible step |
-| Flexible Steps **23–29** | **Not authorized** |
+| Flexible Step **23** — Sales Representative Management | **Accepted and complete** (2026-08-11). Authoritative Case C attempt **6** on frozen `booking_test` (`exitCode=0`, all counters 0; Step 23 suite 128/128). Contract: `docs/SALES_REPRESENTATIVE_MANAGEMENT.md` |
+| Flexible Step **24** — Leads and Sales Pipeline | **Accepted / Complete** — Case C Attempt 2 authoritative (`booking_test`, freeze `2026-08-11T10:29:23.970Z`). Contract: `docs/LEADS_AND_SALES_PIPELINE.md` |
+| Flexible Step **25** — Trial Creation and Customer Conversion | **Accepted / Complete** — narrow matrix closure passed; Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-11T19:27:21.900Z`; Attempt 2 invalidated for I09 product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md` |
+| Flexible Step **26** — Sales Productivity and Commission Snapshot | **Accepted / Complete** — Case C Attempt 1 remains authoritative; narrow F02–F09 / F19 / F20 / H21 closure passed (contained Model B hooks; no Case C rerun). Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md` |
+| Flexible Step **27** — Notifications and Templates | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, freeze `2026-08-12T17:30:45.723Z`, SHA `bd7f35a`); Attempt 2 invalidated (C07 + Strategy B product fixes). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md` |
+| Flexible Step **28** — Security Hardening and Compliance Review | **Accepted / Complete** — Case C Attempt 3 authoritative (`booking_test`, executable freeze `6dafb44`); final repository checkpoint `2a332be`. Contract: `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md` |
+| Flexible Step **29** — Release Readiness and Operational Handover | **Handover complete / Acceptance Pending External Final Review** — freeze `ea076b0`; acceptance blockers = 0; production cutover gates assigned in `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
 
 **Authority hierarchy:** (1) Flexible Playbook v4 numbered roadmap → (2) this execution plan → (3) step-specific architecture docs → (4) historical internal prompt numbering (non-authoritative on conflict).
 
@@ -88,24 +94,24 @@ Security foundation (05–09)
 
 ## 5. Non-Negotiable Constraints
 
-1. Security foundation precedes protected commercial administration.  
-2. Catalog → Plan Versions → Entitlements/Limits → Add-ons/Overrides → Subscriptions → Provisioning.  
-3. Commercial SoR modeling precedes enforcement cutover.  
-4. Existing licensing enforcement remains operational until resolver verified.  
-5. Published Plan Versions are immutable.  
-6. Feature Flags MUST NOT grant commercial access.  
-7. Tenant configuration MUST NOT grant license-denied capability.  
-8. Tenant APIs MUST NOT self-grant Plans, Versions, Add-ons, Overrides, Specialties, Modules, Features, or commercial Limits.  
-9. No display-name-based authorization.  
-10. No fourth independent Plan vocabulary.  
-11. No universal `super_admin` bypass on **new** platform paths.  
-12. Cross-tenant ops require explicit platform authorization and audit.  
-13. PHI excluded from ordinary Super Admin workflows.  
-14. Risky migrations MUST have rollback/compensation.  
-15. Every step MUST preserve previously passing release behavior.  
-16. No later domain MAY be pulled into an earlier step.  
-17. Schema migrations MUST be additive until verified cutover.  
-18. `ClinicSubscription` remains out of SaaS SoR.  
+1. Security foundation precedes protected commercial administration.
+2. Catalog → Plan Versions → Entitlements/Limits → Add-ons/Overrides → Subscriptions → Provisioning.
+3. Commercial SoR modeling precedes enforcement cutover.
+4. Existing licensing enforcement remains operational until resolver verified.
+5. Published Plan Versions are immutable.
+6. Feature Flags MUST NOT grant commercial access.
+7. Tenant configuration MUST NOT grant license-denied capability.
+8. Tenant APIs MUST NOT self-grant Plans, Versions, Add-ons, Overrides, Specialties, Modules, Features, or commercial Limits.
+9. No display-name-based authorization.
+10. No fourth independent Plan vocabulary.
+11. No universal `super_admin` bypass on **new** platform paths.
+12. Cross-tenant ops require explicit platform authorization and audit.
+13. PHI excluded from ordinary Super Admin workflows.
+14. Risky migrations MUST have rollback/compensation.
+15. Every step MUST preserve previously passing release behavior.
+16. No later domain MAY be pulled into an earlier step.
+17. Schema migrations MUST be additive until verified cutover.
+18. `ClinicSubscription` remains out of SaaS SoR.
 
 ---
 
@@ -142,10 +148,10 @@ Security foundation (05–09)
                                               Phase 28 guards until cutover
 ```
 
-- **Reuse:** Tenant, platform-admin lifecycle, licensing engine, module-registry, audit, notifications, observability, backup, RLS for tenant data  
-- **Extend:** Auth (platform principal), RBAC, PlatformSubscription, privileged access enforcement  
-- **New:** Super Admin app, catalog, Plan/Plan Version, Add-on, Override, sales MVP entities, explainable resolver  
-- **Bridge:** Plan aliases, `Tenant.features`, static `LICENSED_*`, FE matrices  
+- **Reuse:** Tenant, platform-admin lifecycle, licensing engine, module-registry, audit, notifications, observability, backup, RLS for tenant data
+- **Extend:** Auth (platform principal), RBAC, PlatformSubscription, privileged access enforcement
+- **New:** Super Admin app, catalog, Plan/Plan Version, Add-on, Override, sales MVP entities, explainable resolver
+- **Bridge:** Plan aliases, `Tenant.features`, static `LICENSED_*`, FE matrices
 
 ---
 
@@ -234,7 +240,7 @@ Security foundation (05–09)
                                                      28 → 29
 ```
 
-**Safe parallel after 09:** Steps 10 and 11 (read-only).  
+**Safe parallel after 09:** Steps 10 and 11 (read-only).
 **Unsafe to parallelize:** 12∥13, 13∥14, 15∥16, 16∥18, 06∥ protected commercial APIs, 18 enforcement∥ unverified bridge.
 
 ---
@@ -669,19 +675,19 @@ Step 29 delivers: deploy topology notes; least-privilege prod access; alert runb
 
 ## 33. Global Definition of Done
 
-- Conventions followed; changed files reported  
-- Build, lint, typecheck, unit, integration, relevant e2e pass  
-- RLS + authz + migration tests pass where applicable  
-- Rollback tested or documented  
-- No unresolved Critical/High security blocker  
-- No PHI/secrets in logs/fixtures/analytics/notifications/FE config  
-- Deny-by-default server authz; platform principal enforced  
-- Tenant isolation verified; published Plan Versions immutable  
-- No display-name authz; tenant self-grant prevented  
-- Flags ≠ entitlements; entitlements explainable; cache tenant-isolated  
-- Phase 28 licensing regression passes; Patient Portal unaffected  
-- Audit for sensitive actions; runbooks updated  
-- Deferred scope + limitations documented; least-privilege prod access  
+- Conventions followed; changed files reported
+- Build, lint, typecheck, unit, integration, relevant e2e pass
+- RLS + authz + migration tests pass where applicable
+- Rollback tested or documented
+- No unresolved Critical/High security blocker
+- No PHI/secrets in logs/fixtures/analytics/notifications/FE config
+- Deny-by-default server authz; platform principal enforced
+- Tenant isolation verified; published Plan Versions immutable
+- No display-name authz; tenant self-grant prevented
+- Flags ≠ entitlements; entitlements explainable; cache tenant-isolated
+- Phase 28 licensing regression passes; Patient Portal unaffected
+- Audit for sensitive actions; runbooks updated
+- Deferred scope + limitations documented; least-privilege prod access
 
 ---
 
@@ -1474,48 +1480,60 @@ Ops adapters only — no engine rewrite. Step 23 unauthorized.
 
 ## 52. Step 23 — Sales Representative Management
 
+### Status
+**Accepted and complete** (2026-08-11). Contract: [`docs/SALES_REPRESENTATIVE_MANAGEMENT.md`](./SALES_REPRESENTATIVE_MANAGEMENT.md).
+
 ### Objective
-Sales rep records; least privilege; D-19 start.
+Sales rep records linked 1:1 to Platform users; least privilege; D-19 commercial ownership start; suspension revokes sessions.
 
 ### Prerequisites
-08, 16–18 (commercial configs valid).
+08, 16–18 (commercial configs valid); Steps 17–22 accepted.
 
 ### Non-Goals
-Full CRM; payroll.
+Full CRM; payroll; Leads/Opportunities/Pipeline (Step 24); Trials (Step 25).
 
 ### Tests
-Peer isolation ST-33.
+Peer isolation ST-33; matrices A/S/M/C/F/H; ORD01–ORD05; EMAIL01–EMAIL08; QUERY01; suspension old-token gate.
+
+### Final Case C
+Attempt **6** on frozen `booking_test` (freeze `2026-08-11T07:30:56.215Z`); duration ~2730s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Attempts 1–5 historical/invalidated. List: `createdAt DESC, id DESC`; email SEARCH-A (`contains`/ILIKE); roles batched. Hygiene = 0.
 
 ### Rollback
-File/feature flag.
+File/feature flag; preserve accounts/audits; never restore revoked sessions.
 
 ### Blocks
 24–26.
 
 ### Commit Boundary
-Sales reps only.
+Sales reps only. Step 24 remains unauthorized.
 
 ---
 
 ## 53. Step 24 — Leads and Sales Pipeline
 
 ### Objective
-Leads, opportunities, pipeline stages; no marketing automation.
+Leads aggregate, stage progression, ownership, advisory Plan-fit; no marketing automation; no Trials.
+
+### Status
+**Accepted / Complete.** Narrow C11–C24 / F13–F30 / H19–H50 / UI01–UI55 / P01–P12 / query-index closure passed. Contract: `docs/LEADS_AND_SALES_PIPELINE.md`.
 
 ### Prerequisites
 23.
 
 ### Tests
-AuthZ; no PHI.
+V/R/PF/WON + C01–C24 + F01–F30 + H01–H50 + P01–P12 + query/index + UI01–UI55; clean/upgrade validators.
+
+### Final Case C
+Attempt **1** INVALIDATED (product UI + Cache-Control during closure). Attempt **2** authoritative: freeze `2026-08-11T10:29:23.970Z`; duration ~2744s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Step 24 DB **174/174**. Hygiene = 0.
 
 ### Rollback
-Feature flag.
+Feature flag / additive schema only.
 
 ### Blocks
 25.
 
 ### Commit Boundary
-Leads/pipeline only.
+Leads/pipeline only. Steps 25–29 remain Not Authorized.
 
 ---
 
@@ -1524,70 +1542,92 @@ Leads/pipeline only.
 ### Objective
 Governed trials → paid subscription; attribution preserved; uses Step 16 subscription path.
 
+### Status
+**Accepted / Complete.** Narrow matrix evidence closure passed. Case C Attempt 3 authoritative on frozen `booking_test` (freeze `2026-08-11T19:27:21.900Z`; ~50.4 min; all counters 0). Attempt 2 invalidated (I09 durable conflict enforcement product fix). Contract: `docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md`. Steps 26–29 Not Authorized.
+
 ### Prerequisites
 24, 16.
 
 ### Evidence
-Trial grant APIs.
+Trial governance aggregate + provisioning/lifecycle/EER handoff; expiry job; conversion + entitlement comparison; matrices E/X/PV/RTE/U25/A/I/C/F/H/P/UI including explicit A11–A26, I09–I16, C06–C24, F09–F30, H25–H50, P01–P12, RTE01–RTE08.
 
 ### Tests
-ST-34–35; trial expiry.
+Step 25 DB **272/272**; UI **62/62**; clean/upgrade validators; Case C one-pass.
+
+### Final Case C
+Attempt **1** INVALIDATED (ops/sales-rep validators forbade Step 25 tables). Attempt **2** INVALIDATED (I09 product fix during narrow closure). Attempt **3**: freeze `2026-08-11T19:27:21.900Z`; duration ~3027s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
 
 ### Rollback
-Compensating cancel trial.
+Disable routes/UI; pause expiry job; compensating cancel trial. No destructive DB reset.
 
 ### Blocks
 26.
 
 ### Commit Boundary
-Trials/conversion only.
+Trials/conversion only. Steps 26–29 remain Not Authorized.
 
 ---
 
 ## 55. Step 26 — Sales Productivity and Commission Snapshot
 
-### Objective
-Reviewable monthly commission **snapshots** (not payroll); D-20.
+### Status
+**Accepted / Complete.** Case C Attempt 1 remains authoritative on frozen `booking_test` (freeze `2026-08-11T21:07:48.684Z`; ~53.2 min; all counters 0). Narrow F02–F09 / F19 / F20 / H21 closure passed with independent Model B selectors; no happy-path product behavior change; no Case C rerun. Contract: `docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md`. Steps 27–29 Not Authorized. Commission snapshots are review records, not payroll; paid status is administrative metadata only.
 
 ### Prerequisites
 25.
 
 ### Non-Goals
-Advanced commission engines; payroll.
+Advanced commission engines; payroll; payment ledgers; Step 27 notifications.
+
+### Evidence
+Metric dictionary M01–M20; period T01–T12; Plan/Add-on PA01–PA08; visibility V01–V16; reconciliation REC01–REC12; snapshot CS01–CS16; export EX01–EX12; audit/idempotency/concurrency/failure/HTTP/privacy/UI matrices; Case C one-pass.
 
 ### Tests
-Formula unit tests; SoD review.
+Step 26 DB **267/267**; UI **60/60**; clean/upgrade validators; Case C one-pass.
+
+### Final Case C
+Attempt **1**: freeze `2026-08-11T21:07:48.684Z`; duration ~3195s; `failures=0 retries=0 dbRestarts=0 commandReruns=0 productEdits=0 databaseSwitches=0 exitCode=0`. Hygiene = 0.
 
 ### Rollback
-Disable snapshot job.
+Disable snapshot routes/job; no destructive DB reset.
 
 ### Blocks
-27 optional.
+27.
 
 ### Commit Boundary
-Snapshots only.
+Snapshots/productivity reporting only. Steps 27–29 remain Not Authorized.
 
 ---
 
 ## 56. Step 27 — Notifications and Templates
 
+### Status
+**Accepted / Complete.** Case C Attempt 3 authoritative on frozen `booking_test` (freeze `2026-08-12T17:30:45.723Z`; SHA `bd7f35a`; ~53.6 min; all counters 0). Attempt 2 invalidated (C07 send-time Trial revalidation + Strategy B ambiguous delivery). Contract: `docs/NOTIFICATIONS_AND_TEMPLATES.md`. Steps 28–29 Not Authorized.
+
 ### Objective
-Reuse notification infrastructure for platform/sales events; redaction; no PHI.
+Reuse notification infrastructure for platform/sales/commercial events; redaction; no PHI; advance Add-on/Override warnings; effective-limit alerts via EER/U01.
 
 ### Prerequisites
-Prior events exist; notification center.
+Steps 01–26 + U01; notification center / Phase 41d engine.
 
 ### Tests
-Template render without PHI/secrets.
+N01–N24, TW01–TW16, L01–L16, I/R/T/A/F/C/H/P/UI matrices; Case C one-pass; narrow evidence closure matrices.
+
+### Evidence
+Step 27 DB **321/321**; UI **60/60**; clean/upgrade validators; `realExternalDeliveriesDuringTests=0`; prohibited evidence = 0; Catalog `68/136/68/13`; C07 stale-warning fix + Strategy B ambiguous PASS; Case C Attempt 3 PASS.
+
+### Final Case C
+Attempt **1** INVALIDATED (sentinel `notifications_tenantId_fkey` residue).
+Attempt **2** INVALIDATED (final product correction: C07 send-time Trial revalidation + Strategy B durable `ambiguous`; prior freeze `2026-08-12T06:41:22.728Z` historical only). Re-run required.
 
 ### Rollback
-Disable templates.
+Disable adapters/scheduler/UI; preserve intents/attempts/prefs/audit.
 
 ### Blocks
 28.
 
 ### Commit Boundary
-Notifications only.
+Notifications only. Steps 28–29 remain Not Authorized.
 
 ---
 
@@ -1628,19 +1668,19 @@ Security-only commits; split by gap ID.
 CI for super-admin; deploy notes; rollback drills; limitations; deferred backlog; G-09.
 
 ### Prerequisites
-28 green.
+28 green (**Accepted / Complete**; checkpoint `2a332be`).
 
 ### In Scope
-CI/CD updates; runbooks; access review; smoke; D-17 topology documentation.
+CI/CD updates; runbooks; access review; smoke; D-17 topology documentation; release acceptance matrix; final release-readiness runner.
 
 ### Non-Goals
-New product scope.
+New product scope. No Step 30.
 
 ### Tests
-Ops smoke; rollback verification ST-36 equivalent.
+Ops smoke; rollback documentation/tooling verification; Step 29 final one-pass (`test:step29-release-final-onepass`).
 
 ### Rollback
-Deployment rollback.
+Deployment rollback + DB restore/compensation per `docs/RELEASE_47_STEP29_RELEASE_READINESS.md`.
 
 ### Gates
 G-09.
@@ -1652,7 +1692,14 @@ Production.
 28.
 
 ### Commit Boundary
-Ops/CI/docs; no feature code.
+Ops/CI/docs/test-runner; no feature code.
+
+### Contract
+`docs/RELEASE_47_STEP29_RELEASE_READINESS.md`
+
+### Status
+**Implementation/validation/handover complete; acceptance pending external final review.**
+Executable freeze `ea076b0` remains authoritative. Step 29 acceptance blockers = 0. Production cutover gates remain mandatory at deploy time (`docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §§7–14).
 
 ---
 

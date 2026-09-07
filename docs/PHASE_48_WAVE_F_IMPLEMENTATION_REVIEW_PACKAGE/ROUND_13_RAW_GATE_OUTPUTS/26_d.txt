@@ -1,0 +1,30 @@
+GATE=D
+START_UTC=2026-08-21T16:33:06.7655620Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-d-
+---
+node.exe : PASS src/modules/dental/tests/wave-d-dental.postgres.integration.spec.ts (7.637 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (7.637 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/modules/dental/tests/wave-d-rls.postgres.integration.spec.ts
+PASS src/modules/clinical-catalog/tests/wave-d-pricing-production-path.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-http.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-dental-consume.postgres.integration.spec.ts
+PASS src/modules/dental/tests/wave-d-operatory.postgres.integration.spec.ts
+
+Test Suites: 6 passed, 6 total
+Tests:       69 passed, 69 total
+Snapshots:   0 total
+Time:        12.04 s, estimated 19 s
+Ran all test suites matching /wave-d-/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:33:20.2191506Z
+EXIT=0
+STATUS=PASS

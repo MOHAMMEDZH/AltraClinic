@@ -1,0 +1,3 @@
+error TS6059: File 'C:/Users/mrame/Projects/AltraClinic/apps/api/prisma/seeds/permission-seeds.ts' is not under 'rootDir' 'C:/Users/mrame/Projects/AltraClinic/apps/api/src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by default include pattern '**/*'

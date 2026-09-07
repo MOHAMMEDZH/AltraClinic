@@ -52,31 +52,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const sessionRef = useRef<AuthSession | null>(null);
+  /** Shared mutex: Strict Mode + parallel getValidAccessToken must not double-rotate. */
+  const refreshInFlightRef = useRef<Promise<AuthSession | null> | null>(null);
+
+  const rotateSession = useCallback(async (): Promise<AuthSession | null> => {
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
+    }
+
+    const run = (async (): Promise<AuthSession | null> => {
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) return null;
+
+      try {
+        const session = await refreshRequest(refreshToken);
+        const tenantId = getStoredTenantId();
+        if (tenantId) session.tenantId = tenantId;
+        sessionRef.current = session;
+        persistSession(session);
+        return session;
+      } catch {
+        // Only clear when this attempt still owns the stored refresh token.
+        // A racing twin may have already rotated it successfully.
+        if (getRefreshToken() === refreshToken) {
+          clearModuleRegistryCaches();
+          clearSession();
+          sessionRef.current = null;
+        }
+        return null;
+      }
+    })();
+
+    refreshInFlightRef.current = run;
+    try {
+      return await run;
+    } finally {
+      if (refreshInFlightRef.current === run) {
+        refreshInFlightRef.current = null;
+      }
+    }
+  }, []);
 
   const bootstrap = useCallback(async () => {
     setIsLoading(true);
     try {
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) return;
-
-      const session = await refreshRequest(refreshToken);
-      const tenantId = getStoredTenantId();
-      if (tenantId) session.tenantId = tenantId;
-
-      sessionRef.current = session;
-      persistSession(session);
-
+      let session = await rotateSession();
+      // A racing rotator may have won with a newer token while this attempt failed;
+      // retry once against whatever is now stored before treating as logged out.
+      if (!session && getRefreshToken()) {
+        session = await rotateSession();
+      }
+      if (!session) {
+        setUser(null);
+        return;
+      }
       const me = await fetchMe(session.accessToken);
       setUser(me);
     } catch {
-      clearModuleRegistryCaches();
-      clearSession();
-      setUser(null);
-      sessionRef.current = null;
+      if (!sessionRef.current) {
+        clearModuleRegistryCaches();
+        clearSession();
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [rotateSession]);
 
   useEffect(() => {
     void bootstrap();
@@ -90,24 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return token;
     }
 
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) return null;
-
-    try {
-      const session = await refreshRequest(refreshToken);
-      const tenantId = getStoredTenantId();
-      if (tenantId) session.tenantId = tenantId;
-      sessionRef.current = session;
-      persistSession(session);
-      return session.accessToken;
-    } catch {
-      clearModuleRegistryCaches();
-      clearSession();
+    const session = await rotateSession();
+    if (!session) {
       setUser(null);
-      sessionRef.current = null;
       return null;
     }
-  }, []);
+    return session.accessToken;
+  }, [rotateSession]);
 
   const refreshUser = useCallback(async () => {
     const token = await getValidAccessToken();

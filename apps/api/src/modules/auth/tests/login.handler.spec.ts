@@ -1,4 +1,4 @@
-import { LoginHandler } from '../application/handlers/login.handler';
+﻿import { LoginHandler } from '../application/handlers/login.handler';
 import { TrustedDevice } from '../domain/entities/trusted-device.entity';
 import { UserRepository } from '../../identity/domain/user.repository.interface';
 import { LoginAttemptRepository } from '../domain/repositories/login-attempt.repository.interface';
@@ -45,6 +45,7 @@ describe('LoginHandler', () => {
   let events: jest.Mocked<EventPublisherInterface>;
   let loginCompletion: jest.Mocked<LoginCompletionService>;
   let tenantPolicy: jest.Mocked<TenantPolicyService>;
+  let platformTenantFindUnique: jest.Mock;
 
   beforeEach(() => {
     userRepo = mockUserRepository();
@@ -81,9 +82,10 @@ describe('LoginHandler', () => {
       isMaintenanceMode: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<TenantPolicyService>;
 
+    platformTenantFindUnique = jest.fn().mockResolvedValue(null);
     const prisma = {
       platformTenant: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: platformTenantFindUnique,
       },
     };
 
@@ -191,7 +193,16 @@ describe('LoginHandler', () => {
     await expect(handler.execute(baseCmd)).rejects.toThrow(AccountInactiveException);
   });
 
-  it('throws RateLimitExceeded when IP has too many failures', async () => {
+  
+  it('throws AccountInactive when PlatformTenant status is SUSPENDED', async () => {
+    const user = makeUser();
+    userRepo.findByEmail.mockResolvedValue(user);
+    jest.spyOn(PasswordHasher, 'compare').mockResolvedValue(true);
+    platformTenantFindUnique.mockResolvedValue({ status: 'SUSPENDED' });
+
+    await expect(handler.execute(baseCmd)).rejects.toThrow(AccountInactiveException);
+  });
+it('throws RateLimitExceeded when IP has too many failures', async () => {
     attemptRepo.countRecentFailuresByIp.mockResolvedValue(30);
 
     await expect(handler.execute(baseCmd)).rejects.toThrow(RateLimitExceededException);

@@ -510,7 +510,7 @@ export class AnalyticsDomainService {
       if (item.expiryDate && item.expiryDate <= expiringBefore && item.expiryDate >= now) expiringSoon++;
     }
 
-    const consumptions = await this.prisma.inventoryConsumptionLog.findMany({
+    const consumptions = await this.prisma.inventoryUsageLedger.findMany({
       where: { tenantId, consumedAt: { gte: since } },
       select: { consumedAt: true, quantityUsed: true },
     });

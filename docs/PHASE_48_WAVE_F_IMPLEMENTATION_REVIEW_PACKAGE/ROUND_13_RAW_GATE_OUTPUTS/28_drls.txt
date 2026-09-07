@@ -1,0 +1,42 @@
+GATE=Drls
+START_UTC=2026-08-21T16:33:28.3148281Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-d-rls
+---
+node.exe : PASS src/modules/dental/tests/wave-d-rls.postgres.integration.spec.ts (6.906 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (6.906 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave D real RLS (bypass OFF, booking_app)
+    ΓêÜ same-tenant SELECT sees Wave D rows (36 ms)
+    ΓêÜ cross-tenant SELECT is empty (27 ms)
+    ΓêÜ NOBYPASSRLS context is active (12 ms)
+    ΓêÜ cross-tenant INSERT/UPDATE/DELETE are denied for Wave D tables (107 ms)
+    ΓêÜ same-tenant INSERT succeeds for all six Wave D tables under RLS (55 ms)
+    ΓêÜ mixed-tenant parent INSERT is rejected when child.tenantId matches current tenant (38 ms)
+    ΓêÜ R3-T1 attachment mixed-tenant labCaseId INSERT rejected under tenant B (34 ms)
+    ΓêÜ R3-T2 participant mixed-tenant performanceId INSERT rejected under tenant B (25 ms)
+    ΓêÜ R3-T3 correction mixed-tenant performanceId INSERT rejected under tenant B (13 ms)
+    ΓêÜ R3-T4 participant wrong child tenantId INSERT rejected by RLS under tenant B (11 ms)
+    ΓêÜ R3-T5 correction wrong child tenantId INSERT rejected by RLS under tenant B (10 ms)
+    ΓêÜ R3 parent-switch UPDATE rejected for attachment labCaseId and participant performanceId (25 ms)
+    ΓêÜ R3 parent-switch UPDATE rejected for link appointmentId (13 ms)
+    ΓêÜ R3 service_performance_corrections UPDATE is intentionally immutable via RLS (append-only) (20 ms)
+    ΓêÜ R3 six-table RLS lifecycle matrix has explicit per-operation proof (140 ms)
+    ΓêÜ parent-switch UPDATE is rejected for child Wave D relations (18 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        7.16 s
+Ran all test suites matching /wave-d-rls/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:33:36.9378130Z
+EXIT=0
+STATUS=PASS

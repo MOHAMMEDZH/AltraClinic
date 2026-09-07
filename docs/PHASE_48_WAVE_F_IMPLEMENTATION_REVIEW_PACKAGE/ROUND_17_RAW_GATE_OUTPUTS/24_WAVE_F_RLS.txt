@@ -1,0 +1,24 @@
+PASS src/modules/workforce-commercials/tests/wave-f-rls.postgres.integration.spec.ts (6.133 s)
+  Wave F real RLS (bypass OFF, booking_app)
+    √ NOBYPASSRLS context is active (current_user, rolbypassrls=false, tenant) (13 ms)
+    √ same-tenant SELECT sees plan versions and accruals (17 ms)
+    √ same-tenant CRUD (delete accrual denied) (51 ms)
+    √ cross-tenant SELECT hidden / INSERT reject (33 ms)
+    √ rolbypassrls = false for booking_app (4 ms)
+    √ R3-F6B settlement_allocations ENABLE+FORCE RLS and NOBYPASSRLS (5 ms)
+    √ R3-F6B same-tenant settlement allocation insert+select; cross-tenant hidden; update/delete denied (29 ms)
+  Wave F Round 15 commission_correction_lineages RLS (booking_app)
+    √ R15-RLS booking_app NOBYPASSRLS; ENABLE+FORCE on commission_correction_lineages (12 ms)
+    √ R15-RLS same-tenant insert+select of valid lineage (16 ms)
+    √ R15-RLS cross-tenant select count 0; cross-tenant insert fail (16 ms)
+    √ R15-RLS cross-tenant selectedAccrual / source / replacement / SP / createdBy rejected (23 ms)
+    √ R15-RLS semantic mismatch selectedAccrual fields rejected (9 ms)
+    √ R15-RLS update/delete denied (18 ms)
+    √ R15-RLS platform bypass select works under admin (6 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        6.373 s
+Ran all test suites matching /wave-f-rls.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

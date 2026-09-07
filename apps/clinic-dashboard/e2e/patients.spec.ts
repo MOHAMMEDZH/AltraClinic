@@ -3,6 +3,7 @@ import { login } from './helpers/auth';
 import { E2E_SKIP_REASON, isE2eApiReady } from './helpers/api-ready';
 import { DEMO_OWNER, DEMO_RECEPTIONIST } from './helpers/demo-credentials';
 import { patientNameFromRowLink } from './helpers/patients';
+import { globalSearchInput, openGlobalSearch } from './helpers/dynamic-search';
 
 test.describe('Patients module', () => {
   test.beforeEach(({ }, testInfo) => {
@@ -31,9 +32,9 @@ test.describe('Patients module', () => {
     await page.goto('/patients');
     await expect(page.locator('#patients-region')).toBeVisible({ timeout: 15_000 });
 
-    await page.keyboard.press('Control+K');
-    await expect(page.getByRole('dialog', { name: 'Search patients' })).toBeVisible();
-    await expect(page.getByPlaceholder('Search patients by name, phone, or ID…')).toBeVisible();
+    await openGlobalSearch(page);
+    await expect(globalSearchInput(page)).toBeVisible();
+    await expect(page.getByPlaceholder(/Search patients|patients by name/i)).toBeVisible();
   });
 
   test('navigating to patient detail shows profile actions', async ({ page }) => {
@@ -149,12 +150,14 @@ test.describe('Patients module', () => {
     const patientName = await patientNameFromRowLink(firstPatientLink);
     await firstPatientLink.click();
     await expect(page).toHaveURL(/\/patients\/.+/);
+    await expect(page.locator('#patients-detail-region')).toBeVisible({ timeout: 15_000 });
 
     await page.goto('/patients');
     await expect(page.locator('#patients-region')).toBeVisible({ timeout: 15_000 });
     if (patientName) {
-      await expect(page.getByRole('region', { name: 'Recent patients' })).toBeVisible();
-      await expect(page.getByRole('link', { name: patientName })).toBeVisible();
+      const recent = page.getByRole('region', { name: 'Recent patients' });
+      await expect(recent).toBeVisible({ timeout: 15_000 });
+      await expect(recent.getByRole('link', { name: patientName })).toBeVisible({ timeout: 15_000 });
     }
   });
 

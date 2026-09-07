@@ -34,6 +34,7 @@ test.describe('Workflow center smoke', () => {
 
   test('builder page loads', async ({ page }) => {
     await page.goto('/workflows/builder');
-    await expect(page.getByRole('heading', { name: 'Builder', level: 2 })).toBeVisible({ timeout: 15_000 });
+    // WorkflowPageHeader renders the page title as h1.
+    await expect(page.getByRole('heading', { name: 'Builder', level: 1 })).toBeVisible({ timeout: 15_000 });
   });
 });

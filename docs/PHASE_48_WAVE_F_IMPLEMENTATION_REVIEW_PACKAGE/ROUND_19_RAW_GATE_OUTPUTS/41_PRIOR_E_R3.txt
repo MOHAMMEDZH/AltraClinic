@@ -1,0 +1,28 @@
+PASS src/modules/aesthetic/tests/wave-e-round3.postgres.integration.spec.ts (8.552 s)
+  Wave E Round 3 remediation (PostgreSQL, real services)
+    √ R3-B2-T1: min=0 max=0 same UTC day later timestamp → success (175 ms)
+    √ R3-B2-T2: min=0 same exact timestamp → reject (86 ms)
+    √ R3-B2-T3: min=0 Session 2 earlier timestamp → reject (62 ms)
+    √ R3-B2-T4: min=1 same UTC day later time → reject on intervalMinDays (57 ms)
+    √ R3-B2-T5: min=0 max=1 same-day later timestamp → success (61 ms)
+    √ R3-B2-T6: next-neighbor same-day chronology valid → success (77 ms)
+    √ R3-B2-T7: out-of-order current timestamp violates next chronology → reject (89 ms)
+    √ R3-B2-T8: reschedule to later same-day timestamp with min=0 → success (67 ms)
+    √ R3-B2-T9/T10: reschedule equal/earlier rejects; original state unchanged (93 ms)
+    √ R3-B3-T1: tenant-owned PUBLISHED PRE_CARE → success (82 ms)
+    √ R3-B3-T2: tenant-owned PUBLISHED POST_CARE → success (49 ms)
+    √ R3-B3-T3/T5/T9/T10/T11: platform-pack PRE_CARE → success; exact version; no mutations (78 ms)
+    √ R3-B3-T4: platform-pack PUBLISHED POST_CARE → success (52 ms)
+    √ R3-B3-T6: another tenant PRE/POST version → reject (45 ms)
+    √ R3-B3-T7: platform-pack DRAFT → reject (42 ms)
+    √ R3-B3-T8: wrong kind → reject (41 ms)
+    √ R3-B3-T12: tenant-owned + platform-pack → tenant precedence (57 ms)
+    √ R3-B3: explicit platform versionId binds when tenant form also exists (60 ms)
+    √ R3-B3: no published tenant or platform PRE_CARE → reject (36 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        8.842 s
+Ran all test suites matching /wave-e-round3.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

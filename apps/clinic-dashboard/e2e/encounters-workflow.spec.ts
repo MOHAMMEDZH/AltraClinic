@@ -11,8 +11,11 @@ test.describe('EMR full clinical workflow', () => {
   });
 
   test('create → document SOAP → complete → sign', async ({ page }) => {
+    // Use a non-canonical demo encounter so combined batches do not mutate e1000000-…001
+    // relied on by encounters.spec.ts lifecycle assertions.
+    const workflowEncounterId = 'e1000000-0000-4000-8000-000000000003';
     await login(page, DEMO_DOCTOR);
-    await page.goto('/encounters/e1000000-0000-4000-8000-000000000001');
+    await page.goto(`/encounters/${workflowEncounterId}`);
     await expect(page.locator('#encounters-detail-region')).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('tab', { name: /Clinical notes|notes/i }).click();
@@ -26,10 +29,12 @@ test.describe('EMR full clinical workflow', () => {
 
     page.once('dialog', (d) => d.accept());
     await page.getByRole('button', { name: 'Mark complete' }).click();
-    await expect(page.getByText(/complete|marked complete/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/complete|marked complete/i).first()).toBeVisible({ timeout: 10_000 });
 
     page.once('dialog', (d) => d.accept());
     await page.getByRole('button', { name: 'Sign & finalize' }).click();
-    await expect(page.getByText(/signed|finalized|read-only/i)).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.locator('#encounters-detail-region').getByText(/signed|finalized|read-only/i).first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

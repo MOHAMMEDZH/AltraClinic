@@ -5,7 +5,8 @@ import { PrismaService } from '../../../infrastructure/prisma.service';
 import { TenantExecutionService } from '../../../infrastructure/tenant-execution.service';
 import { CommunicationDispatchService } from '../../subscription/application/services/communication-dispatch.service';
 import { CommunicationChannel } from '../../subscription/domain/exceptions/communication-limit-exceeded.exception';
-import { DELIVERY_JOB_NAME, DELIVERY_QUEUE_NAME, NotificationChannelId } from './delivery.types';
+import { isPlatformAuditSentinelTenantId } from '../../platform-tenants/platform-tenants.tokens';
+import { DELIVERY_JOB_NAME, DELIVERY_QUEUE_NAME, FailureClass, NotificationChannelId } from './delivery.types';
 import { DeliveryJobService } from './delivery-job.service';
 import { ReceiptService } from './receipt.service';
 import { truncateForChannel } from './template-render.service';
@@ -31,6 +32,11 @@ const LEDGER_CHANNEL_BY_ID: Partial<Record<NotificationChannelId, CommunicationC
   push: 'PUSH',
 };
 
+const TRIAL_EXPIRY_EVENT_KEYS = new Set([
+  'platform.trial.approaching_expiry',
+  'platform.trial.expired',
+]);
+
 interface DeliveryJobContext {
   job: { id: string; tenantId: string; intentId: string; messageId: string; channel: NotificationChannelId; providerKey: string; attemptCount: number; maxAttempts: number };
   intent: { id: string; tenantId: string; recipientId: string; branchId: string | null; metadata: Record<string, unknown> };
@@ -38,14 +44,23 @@ interface DeliveryJobContext {
 }
 
 export interface ProcessDeliveryJobResult {
-  status: 'delivered' | 'skipped_leased' | 'not_found' | 'retryable' | 'permanent' | 'dead_letter' | 'fallback';
+  status:
+    | 'delivered'
+    | 'skipped_leased'
+    | 'not_found'
+    | 'retryable'
+    | 'permanent'
+    | 'dead_letter'
+    | 'fallback'
+    | 'ambiguous'
+    | 'suppressed';
 }
 
 /**
  * Consumes the `notification-delivery` BullMQ queue populated by DeliveryOrchestratorService.
  * For each job: lease → invoke the channel adapter → record the attempt/receipt → update the
  * legacy Notification row (IN_APP) → commit the CommunicationDispatchLedger (non-IN_APP) →
- * dead-letter or schedule a jittered retry on failure.
+ * dead-letter, mark ambiguous, suppress obsolete trial warnings, or schedule a jittered retry.
  */
 @Injectable()
 export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
@@ -204,6 +219,56 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  /**
+   * C07 send-time revalidation: suppress obsolete Trial expiry warnings before provider call.
+   * Suppress only when the trial row is found and obsolete — synthetic UUID tests still send.
+   */
+  private async resolveObsoleteTrialSuppressReason(
+    metadata: Record<string, unknown>,
+  ): Promise<string | null> {
+    const eventKey = typeof metadata.eventKey === 'string' ? metadata.eventKey : '';
+    const templateKey = typeof metadata.templateKey === 'string' ? metadata.templateKey : '';
+    const sourceType =
+      typeof metadata.sourceType === 'string'
+        ? metadata.sourceType
+        : typeof metadata.source_type === 'string'
+          ? metadata.source_type
+          : '';
+    const sourceId =
+      typeof metadata.sourceId === 'string'
+        ? metadata.sourceId
+        : typeof metadata.source_id === 'string'
+          ? metadata.source_id
+          : '';
+
+    const isTrialExpiryEvent =
+      TRIAL_EXPIRY_EVENT_KEYS.has(eventKey) ||
+      /trial\.(approaching_expiry|expired)|trial_approaching|trial_expired/i.test(templateKey);
+    if (!isTrialExpiryEvent) return null;
+    if (sourceType !== 'platform_sales_trial' || !sourceId) return null;
+
+    const root = this.prisma.getRootClient() as unknown as {
+      platformSalesTrial?: {
+        findUnique: (args: unknown) => Promise<{ status: string } | null>;
+      };
+    };
+    if (!root.platformSalesTrial) return null;
+
+    const trial = await root.platformSalesTrial.findUnique({
+      where: { id: sourceId },
+      select: { status: true },
+    });
+    if (!trial) return null;
+
+    if (trial.status === 'CONVERTED' || trial.status === 'CANCELLED') {
+      return `trial_obsolete:${trial.status}`;
+    }
+    if (eventKey === 'platform.trial.approaching_expiry' && trial.status === 'EXPIRED') {
+      return `trial_obsolete:${trial.status}`;
+    }
+    return null;
+  }
+
   private async executeJob(context: DeliveryJobContext): Promise<ProcessDeliveryJobResult> {
     const leased = await this.deliveryJobs.leaseJob(context.job.id);
     if (!leased) {
@@ -212,13 +277,53 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
 
     const adapter = this.adapters[context.job.channel];
     const now = new Date();
+    let providerSendSucceeded = false;
 
     try {
+      // Send-time Trial revalidation before any provider failure inject or send.
+      const suppressReason = await this.resolveObsoleteTrialSuppressReason(context.intent.metadata);
+      if (suppressReason) {
+        await this.deliveryJobs.suppressJob(context.job.id, suppressReason);
+        try {
+          await this.receipts.upsert({
+            tenantId: context.intent.tenantId,
+            jobId: context.job.id,
+            channel: context.job.channel,
+            status: 'FAILED',
+          });
+        } catch {
+          // optional receipt
+        }
+        await this.activity.emit('failed', {
+          tenantId: context.intent.tenantId,
+          branchId: context.intent.branchId,
+          intentId: context.job.intentId,
+          jobId: context.job.id,
+          channel: context.job.channel,
+          providerKey: context.job.providerKey,
+          reasonCode: suppressReason.slice(0, 120),
+        });
+        return { status: 'suppressed' };
+      }
+
+      if (
+        process.env.NODE_ENV === 'test' &&
+        process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'before_provider_send'
+      ) {
+        throw new Error('Injected before_provider_send failure');
+      }
+
       if (!adapter) {
         throw new Error(`No adapter registered for channel "${context.job.channel}"`);
       }
 
-      const ledgerChannel = LEDGER_CHANNEL_BY_ID[context.job.channel];
+      // Governed production invariant: the Platform audit sentinel is not a licensable tenant
+      // (see LicensingEngineService.resolveLicense). Step 27 platform-principal notifications
+      // route through this sentinel tenantId and must never be metered/limited by tenant
+      // communication quotas that do not apply to them.
+      const ledgerChannel = isPlatformAuditSentinelTenantId(context.intent.tenantId)
+        ? undefined
+        : LEDGER_CHANNEL_BY_ID[context.job.channel];
       if (ledgerChannel) {
         await this.communicationLimits.assertCanDispatch(context.intent.tenantId, ledgerChannel, context.job.id);
       }
@@ -240,10 +345,52 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (!result.success) {
-        const error = new Error(result.error ?? 'adapter reported an unsuccessful send') as Error & { failureClassHint?: string };
+        const error = new Error(result.error ?? 'adapter reported an unsuccessful send') as Error & {
+          failureClassHint?: FailureClass;
+        };
         error.failureClassHint = result.failureClass;
+
+        if (result.failureClass === 'ambiguous') {
+          try {
+            await this.deliveryJobs.recordAttempt(context.job.id, context.intent.tenantId, {
+              success: false,
+              providerKey: result.providerKey,
+              error: result.error,
+            });
+          } catch {
+            // best-effort attempt row
+          }
+          try {
+            await this.receipts.upsert({
+              tenantId: context.intent.tenantId,
+              jobId: context.job.id,
+              channel: context.job.channel,
+              status: 'FAILED',
+            });
+          } catch {
+            // optional
+          }
+          await this.deliveryJobs.failJob(
+            { id: context.job.id, attemptCount: context.job.attemptCount + 1, maxAttempts: context.job.maxAttempts },
+            error,
+          );
+          await this.activity.emit('failed', {
+            tenantId: context.intent.tenantId,
+            branchId: context.intent.branchId,
+            intentId: context.job.intentId,
+            jobId: context.job.id,
+            channel: context.job.channel,
+            providerKey: context.job.providerKey,
+            reasonCode: (result.error ?? 'ambiguous').slice(0, 120),
+          });
+          return { status: 'ambiguous' };
+        }
+
         throw error;
       }
+
+      // Provider accepted — any subsequent local persist failure is Strategy B ambiguous.
+      providerSendSucceeded = true;
 
       await this.deliveryJobs.recordAttempt(context.job.id, context.intent.tenantId, {
         success: true,
@@ -283,17 +430,65 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Delivery job ${context.job.id} (${context.job.channel}) failed: ${message}`);
 
-      await this.deliveryJobs.recordAttempt(context.job.id, context.intent.tenantId, {
-        success: false,
-        providerKey: context.job.providerKey,
-        error: message,
-      });
-      await this.receipts.upsert({
-        tenantId: context.intent.tenantId,
-        jobId: context.job.id,
-        channel: context.job.channel,
-        status: 'FAILED',
-      });
+      // Strategy B: if the provider already accepted, never blind-schedule an auto-resend.
+      if (providerSendSucceeded) {
+        try {
+          await this.deliveryJobs.recordAttempt(context.job.id, context.intent.tenantId, {
+            success: false,
+            providerKey: context.job.providerKey,
+            error: message,
+          });
+        } catch {
+          // persist seam may still be injected
+        }
+        try {
+          await this.receipts.upsert({
+            tenantId: context.intent.tenantId,
+            jobId: context.job.id,
+            channel: context.job.channel,
+            status: 'FAILED',
+          });
+        } catch {
+          // optional
+        }
+        const ambErr = Object.assign(new Error(message), {
+          failureClassHint: 'ambiguous' as FailureClass,
+        });
+        await this.deliveryJobs.failJob(
+          { id: context.job.id, attemptCount: context.job.attemptCount + 1, maxAttempts: context.job.maxAttempts },
+          ambErr,
+        );
+        await this.activity.emit('failed', {
+          tenantId: context.intent.tenantId,
+          branchId: context.intent.branchId,
+          intentId: context.job.intentId,
+          jobId: context.job.id,
+          channel: context.job.channel,
+          providerKey: context.job.providerKey,
+          reasonCode: message.slice(0, 120),
+        });
+        return { status: 'ambiguous' };
+      }
+
+      try {
+        await this.deliveryJobs.recordAttempt(context.job.id, context.intent.tenantId, {
+          success: false,
+          providerKey: context.job.providerKey,
+          error: message,
+        });
+      } catch {
+        // best-effort
+      }
+      try {
+        await this.receipts.upsert({
+          tenantId: context.intent.tenantId,
+          jobId: context.job.id,
+          channel: context.job.channel,
+          status: 'FAILED',
+        });
+      } catch {
+        // optional
+      }
 
       if (context.job.channel === 'in-app' && context.message.notificationId) {
         await this.prisma.notification.update({
@@ -306,14 +501,16 @@ export class DeliveryWorkerService implements OnModuleInit, OnModuleDestroy {
         { id: context.job.id, attemptCount: context.job.attemptCount + 1, maxAttempts: context.job.maxAttempts },
         error,
       );
-      const status =
+      const status: ProcessDeliveryJobResult['status'] =
         outcome.failureClass === 'permanent'
           ? 'permanent'
           : outcome.failureClass === 'fallback'
             ? 'fallback'
-            : outcome.retry
-              ? 'retryable'
-              : 'dead_letter';
+            : outcome.failureClass === 'ambiguous'
+              ? 'ambiguous'
+              : outcome.retry
+                ? 'retryable'
+                : 'dead_letter';
       await this.activity.emit(
         status === 'retryable' ? 'retry' : status === 'fallback' ? 'fallback' : status === 'dead_letter' ? 'dead_letter' : 'failed',
         {

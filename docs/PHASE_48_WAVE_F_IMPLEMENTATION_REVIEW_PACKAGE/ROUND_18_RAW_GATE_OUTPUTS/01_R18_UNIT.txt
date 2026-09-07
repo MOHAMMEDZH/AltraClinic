@@ -1,0 +1,19 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round18-refund-complete-set.unit.spec.ts (7.21 s)
+  Wave F Round 18 refund complete-set (unit)
+    √ R18-A-U1 25 distinct one-zero specials after commission exhaust accepts (86 ms)
+    √ R18-A-U2 50 distinct one-zero specials accepts under 5s (83 ms)
+    √ R18-A-U3 100 distinct specials with exact final saturation accepts (140 ms)
+    √ R18-A-U1/U2/U3 shuffled representations accept (20 seeds each for 25-special) (1282 ms)
+    √ R18-A-U4 invalid exact-only 9.99/10 rejects SATURATED_COMMISSION_NOT_EXHAUSTED (14 ms)
+    √ R18-A-U5 valid 3.33+3.33+3.34 accepts all permutations (1 ms)
+    √ R18-A-U6 aggregate-fit forged swap rejects with invariant not budget (112 ms)
+    √ R18-A-U7 property: authoritative histories accept; forged aggregate-fit rejects (2 ms)
+    √ R18-A no exploreBudget in production validator source
+    √ R18 preserves R17 100 exact + 25 one-zero repeated-signature history (82 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        7.449 s, estimated 13 s
+Ran all test suites matching /wave-f-round18-refund-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

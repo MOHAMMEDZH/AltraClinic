@@ -1,0 +1,14 @@
+
+> @booking/permissions@0.0.1 test
+> vitest run
+
+
+ RUN  v1.6.1 C:/Users/mrame/Projects/AltraClinic/packages/permissions
+
+ ✓ src/permissions.test.ts  (6 tests) 4ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  11:05:06
+   Duration  556ms (transform 60ms, setup 0ms, collect 74ms, tests 4ms, environment 0ms, prepare 121ms)
+

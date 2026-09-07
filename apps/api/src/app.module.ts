@@ -8,7 +8,11 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { DentalModule } from './modules/dental/dental.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
+import { AestheticModule } from './modules/aesthetic/aesthetic.module';
+import { WorkforceCommercialsModule } from './modules/workforce-commercials/workforce-commercials.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { ClinicalFormsModule } from './modules/clinical-forms/clinical-forms.module';
+import { ServicePerformanceModule } from './modules/service-performance/service-performance.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CommissionModule } from './modules/commission/commission.module';
@@ -36,6 +40,7 @@ import { ObservabilityModule } from './modules/observability/observability.modul
 import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
 import { PlatformTenantsModule } from './modules/platform-tenants/platform-tenants.module';
 import { PlatformHealthcareCatalogModule } from './modules/platform-healthcare-catalog/platform-healthcare-catalog.module';
+import { ClinicalCatalogModule } from './modules/clinical-catalog/clinical-catalog.module';
 import { PlatformPlansModule } from './modules/platform-plans/platform-plans.module';
 import { PlatformAddonsModule } from './modules/platform-addons/platform-addons.module';
 import { PlatformSubscriptionsModule } from './modules/platform-subscriptions/platform-subscriptions.module';
@@ -46,6 +51,11 @@ import { TenantLifecycleModule } from './modules/tenant-lifecycle/tenant-lifecyc
 import { FeatureFlagsSettingsModule } from './modules/feature-flags-settings/feature-flags-settings.module';
 import { PlatformAuditCenterModule } from './modules/platform-audit-center/platform-audit-center.module';
 import { PlatformOperationsConsoleModule } from './modules/platform-operations-console/platform-operations-console.module';
+import { PlatformSalesRepresentativesModule } from './modules/platform-sales-representatives/platform-sales-representatives.module';
+import { PlatformSalesLeadsModule } from './modules/platform-sales-leads/platform-sales-leads.module';
+import { PlatformSalesTrialsModule } from './modules/platform-sales-trials/platform-sales-trials.module';
+import { PlatformSalesProductivityModule } from './modules/platform-sales-productivity/platform-sales-productivity.module';
+import { PlatformNotificationsModule } from './modules/platform-notifications/platform-notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/api/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/api/guards/roles.guard';
@@ -74,7 +84,11 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     AuditModule,
     DentalModule,
     BeautyModule,
+    AestheticModule,
+    WorkforceCommercialsModule,
     InventoryModule,
+    ClinicalFormsModule,
+    ServicePerformanceModule,
     BillingModule,
     CommissionModule,
     LoyaltyModule,
@@ -101,6 +115,7 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     PlatformDashboardModule,
     PlatformTenantsModule,
     PlatformHealthcareCatalogModule,
+    ClinicalCatalogModule,
     PlatformPlansModule,
     PlatformAddonsModule,
     PlatformSubscriptionsModule,
@@ -111,6 +126,11 @@ import { IntegrationsApiKeyAuthGuard } from './modules/integrations/api/guards/i
     FeatureFlagsSettingsModule,
     PlatformAuditCenterModule,
     PlatformOperationsConsoleModule,
+    PlatformSalesRepresentativesModule,
+    PlatformSalesLeadsModule,
+    PlatformSalesTrialsModule,
+    PlatformSalesProductivityModule,
+    PlatformNotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: IntegrationsApiKeyAuthGuard },

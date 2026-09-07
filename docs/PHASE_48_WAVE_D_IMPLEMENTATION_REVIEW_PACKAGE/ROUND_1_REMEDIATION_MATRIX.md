@@ -1,0 +1,10 @@
+﻿# Round 1 Remediation Matrix
+
+| blocker | root cause | production fix | test proof | files | result |
+|---|---|---|---|---|---|
+| B1 complete-from-appointment status safety | appointment lifecycle status not checked | require linked appointment status `COMPLETED` before item completion; reject otherwise | wave-d-dental postgres: completed succeeds; confirmed/cancelled/pending reject; no-link no mutation; no success audit on failure | treatment-plan-appointment-link.service.ts; wave-d-dental.postgres.integration.spec.ts | PASS |
+| B2 service performance reference integrity | references individually valid but mutually inconsistent | enforce appointment/patient/branch/encounter/snapshot/service consistency; no silent patient overwrite | wave-d-dental postgres mismatch tests + consistent success | service-performance.service.ts; wave-d-reference.validation.ts; wave-d-dental.postgres.integration.spec.ts | PASS |
+| B3 correction concurrency/serializability | correction read/replace lacked row lock serialization | lock target `service_performances` row (`FOR UPDATE`) before mutable read; keep history/participants/audit in single tx | wave-d-dental postgres concurrent correction + rollback-on-failure tests | service-performance.service.ts; wave-d-dental.postgres.integration.spec.ts | PASS |
+| B4 RLS QA coverage | child-table lifecycle coverage missing | expand booking_app NOBYPASSRLS tests for all six Wave D tables and write operations | wave-d-rls postgres lifecycle tests + role proof | wave-d-rls.postgres.integration.spec.ts | PASS |
+| B5 pricing production-path proof | external evidence mostly unit-level | add postgres integration for publish + booking resolver path incl. PER_COURSE/PER_PACKAGE fail-closed | wave-d-pricing-production-path postgres suite | wave-d-pricing-production-path.postgres.integration.spec.ts | PASS |
+| B6 QA evidence gaps | missing direct proofs for rollback/foreign refs/canonical path | added targeted integration assertions for no mutation/no audit on failure and foreign mismatches | wave-d-dental + wave-d-rls + wave-d-pricing-production-path | tests + evidence docs | PASS |

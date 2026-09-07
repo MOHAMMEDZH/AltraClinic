@@ -71,6 +71,45 @@ export interface PlatformPrincipal {
   authzRevision: number;
 }
 
+/** Phase 48 Wave A — platform clinical procedure catalog. */
+export interface ClinicalCatalogTranslation {
+  locale: string;
+  displayName: string;
+  shortDescription?: string | null;
+  longDescription?: string | null;
+}
+
+export interface ClinicalCatalogServiceDetail {
+  id: string;
+  stableKey: string;
+  provenance: string;
+  domain: string;
+  categoryKey: string | null;
+  defaultDurationMin: number | null;
+  lifecycle: string;
+  tenantId: string | null;
+  translations: ClinicalCatalogTranslation[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateClinicalCatalogServiceDraftRequest {
+  provenance: 'SYSTEM_CANONICAL';
+  stableKey: string;
+  domain?: string;
+  categoryKey?: string | null;
+  defaultDurationMin?: number | null;
+  translations: ClinicalCatalogTranslation[];
+}
+
+export interface UpdateClinicalCatalogServiceDraftRequest {
+  stableKey?: string;
+  domain?: string;
+  categoryKey?: string | null;
+  defaultDurationMin?: number | null;
+  translations?: ClinicalCatalogTranslation[];
+}
+
 export interface HealthcareCatalogItemDetail {
   id: string;
   canonicalKey: string;
@@ -330,6 +369,423 @@ function readCsrfCookie(): string | null {
   return decodeURIComponent(match.slice('sa_platform_csrf='.length));
 }
 
+/** Flexible Step 23 — Sales Representative Management. */
+export interface SalesRepresentative {
+  id: string;
+  platformUserId: string;
+  email: string;
+  displayName: string | null;
+  status: string;
+  managerRepresentativeId: string | null;
+  regionCode: string | null;
+  territoryCode: string | null;
+  targetAmount: string | null;
+  targetCurrency: string | null;
+  targetPeriod: string | null;
+  roleKeys: string[];
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesRepresentativesListResponse {
+  items: SalesRepresentative[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesCustomerOwnership {
+  id: string;
+  representativeId: string;
+  platformTenantId: string;
+  rowVersion: number;
+  assignedAt: string;
+  assignedById: string;
+  reason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesCustomerOwnershipLookup {
+  platformTenantId: string;
+  representativeId: string | null;
+  rowVersion?: number;
+}
+
+/** Flexible Step 24 — Sales Lead. */
+export interface SalesLead {
+  id: string;
+  stage: string;
+  source: string;
+  ownerRepresentativeId: string | null;
+  organizationName: string;
+  contactName: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactJobTitle: string | null;
+  facilityTypeKey: string | null;
+  specialtyKeys: string[];
+  desiredModuleKeys: string[];
+  estimatedUsers: number | null;
+  estimatedProviders: number | null;
+  estimatedLocations: number | null;
+  nextActionType: string | null;
+  nextActionDueAt: string | null;
+  nextActionNote: string | null;
+  demoScheduledAt: string | null;
+  demoTimezone: string | null;
+  demoStatus: string;
+  demoNote: string | null;
+  wonLostReason: string | null;
+  linkedPlatformTenantId: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesLeadsListResponse {
+  items: SalesLead[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesLeadNote {
+  id: string;
+  leadId: string;
+  body: string;
+  createdById: string;
+  createdAt: string;
+}
+
+export interface SalesLeadPlanFit {
+  leadId: string;
+  valid: boolean;
+  violations: Array<{ reasonCode: string; message: string }>;
+  warnings: Array<{ reasonCode: string; message: string }>;
+  applicableRuleIds: string[];
+  candidatePublishedPlanVersions: Array<{ id: string; planKey: string; version: number }>;
+  disclaimer: {
+    advisoryOnly: true;
+    notEntitlementDecision: true;
+    notProvisioningDecision: true;
+    notRuntimeLicenseDecision: true;
+    doesNotMutateCommercialSoR: true;
+  };
+}
+
+export interface SalesLeadStageHistoryEntry {
+  id: string;
+  leadId: string;
+  fromStage: string | null;
+  toStage: string;
+  actorPlatformUserId: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface SalesLeadOwnershipHistoryEntry {
+  id: string;
+  leadId: string;
+  fromOwnerRepresentativeId: string | null;
+  toOwnerRepresentativeId: string | null;
+  actorPlatformUserId: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+// ─── Flexible Step 25 — Trial Creation and Customer Conversion ───────────────
+
+export type SalesTrialStatus =
+  | 'DRAFT'
+  | 'PENDING_PROVISIONING'
+  | 'ACTIVE'
+  | 'EXPIRED'
+  | 'CONVERTED'
+  | 'CANCELLED';
+
+export type SalesTrialGrantDisposition =
+  | 'EXPIRE_ON_TRIAL_EXPIRY'
+  | 'EXPIRE_ON_CONVERSION'
+  | 'MIGRATE_TO_PAID_EQUIVALENT'
+  | 'RETAIN_NOT_TRIAL_ONLY';
+
+export interface SalesTrialOnlyGrant {
+  grantKey: string;
+  kind: 'ADD_ON' | 'OVERRIDE';
+  referenceId?: string | null;
+  trialOnly: boolean;
+}
+
+export interface SalesTrial {
+  id: string;
+  status: SalesTrialStatus;
+  organizationName: string;
+  platformTenantId: string | null;
+  originatingLeadId: string | null;
+  ownerRepresentativeId: string | null;
+  trialPlanVersionId: string;
+  facilityTypeKey: string;
+  selectedSpecialtyKeys: string[];
+  selectedModuleKeys: string[];
+  startsAt: string | null;
+  expiresAt: string | null;
+  maxExtensions: number;
+  extensionCount: number;
+  commercialConfigId: string | null;
+  provisioningRequestId: string | null;
+  trialOnlyGrants: SalesTrialOnlyGrant[];
+  attributionSnapshot: {
+    originatingLeadId: string | null;
+    ownerRepresentativeId: string | null;
+    salesAttributionId: string | null;
+    createdByPlatformUserId: string;
+    frozenAt: string;
+  } | null;
+  expiredAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesTrialsListResponse {
+  items: SalesTrial[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesTrialExtension {
+  id: string;
+  trialId: string;
+  previousExpiresAt: string;
+  newExpiresAt: string;
+  extensionDays: number;
+  reason: string;
+  exceptional: boolean;
+  actorPlatformUserId: string;
+  createdAt: string;
+}
+
+export interface SalesTrialGrantDispositionEntry {
+  grantKey: string;
+  disposition: SalesTrialGrantDisposition;
+  paidEquivalentKey?: string | null;
+  note?: string | null;
+}
+
+export interface SalesTrialConversion {
+  id: string;
+  trialId: string;
+  targetPaidPlanVersionId: string;
+  dispositions: SalesTrialGrantDispositionEntry[];
+  actorPlatformUserId: string;
+  convertedAt: string;
+  correlationId: string | null;
+  outboxEventId: string | null;
+  commercialConfigId: string | null;
+}
+
+export interface SalesTrialConversionResult {
+  trialId: string;
+  status: 'CONVERTED';
+  conversion: SalesTrialConversion;
+  replayed: boolean;
+}
+
+export type SalesTrialLimitState = 'CONFIGURED' | 'UNLIMITED' | 'UNCONFIGURED';
+
+export interface SalesTrialLimitComparison {
+  canonicalKey: string;
+  trialState: SalesTrialLimitState;
+  trialValue: string | null;
+  paidState: SalesTrialLimitState;
+  paidValue: string | null;
+  classification: 'RETAINED' | 'ADDED' | 'REMOVED' | 'CHANGED';
+}
+
+/** Read-only comparison: never an entitlement or runtime license decision. */
+export interface SalesTrialEntitlementPreview {
+  trialId: string;
+  trialPlanVersionId: string;
+  targetPaidPlanVersionId: string;
+  retainedEntitlements: string[];
+  addedEntitlements: string[];
+  removedEntitlements: string[];
+  limits: SalesTrialLimitComparison[];
+  trialOnlyExpiring: string[];
+  trialOnlyMigrating: string[];
+  incompatibilities: Array<{ reasonCode: string; message: string; subjectKey?: string }>;
+  unconfiguredVsUnlimited: Array<{
+    canonicalKey: string;
+    trialState: SalesTrialLimitState;
+    paidState: SalesTrialLimitState;
+  }>;
+  requiredDispositionGrantKeys: string[];
+  runtimeSource: 'STEP16_SNAPSHOT_STEP18_EER';
+  disclaimer: {
+    readOnly: true;
+    doesNotMutateProtectedSoR: true;
+    notEntitlementDecision: true;
+    notRuntimeLicenseDecision: true;
+  };
+}
+
+export interface SalesTrialHistory {
+  trialId: string;
+  audits: Array<{
+    id: string;
+    action: string;
+    actorId: string | null;
+    reason: string | null;
+    correlationId: string | null;
+    createdAt: string;
+  }>;
+  extensions: SalesTrialExtension[];
+  conversion: SalesTrialConversion | null;
+}
+
+/** Flexible Step 26 — Sales Productivity + Commission Snapshot. */
+export type SalesMetricCompleteness =
+  | 'COMPLETE'
+  | 'PARTIAL'
+  | 'UNAVAILABLE'
+  | 'NOT_APPLICABLE';
+
+export type SalesMetricKey =
+  | 'leads_created'
+  | 'activities'
+  | 'demos_scheduled'
+  | 'demos_completed'
+  | 'trials_created'
+  | 'won'
+  | 'lost'
+  | 'paid_conversions'
+  | 'lead_to_won_rate'
+  | 'trial_to_paid_rate'
+  | 'time_to_convert_days'
+  | 'active_customers'
+  | 'cancellations'
+  | 'plan_version_mix'
+  | 'addon_sales'
+  | 'target_progress'
+  | 'converted_customers'
+  | 'cancellation_attribution'
+  | 'period_source_completeness'
+  | 'reporting_completeness';
+
+export interface SalesMetricValue {
+  id: string;
+  key: SalesMetricKey;
+  value: number | null;
+  completeness: SalesMetricCompleteness;
+  numerator?: number | null;
+  denominator?: number | null;
+  explanation?: string | null;
+  rankingEligible: boolean;
+}
+
+export interface SalesPlanVersionAttribution {
+  planVersionId: string;
+  count: number;
+}
+
+export interface SalesAddOnAttribution {
+  addOnVersionId: string;
+  count: number;
+  basis: 'assignment_created' | 'conversion_disposition_migrate' | 'conversion_disposition_retain';
+}
+
+export interface SalesCancellationAttribution {
+  count: number;
+  basis: 'ownership_at_cancel_history' | 'current_ownership_partial';
+  completeness: SalesMetricCompleteness;
+}
+
+export interface SalesCompletenessBundle {
+  metrics: Partial<Record<SalesMetricKey, SalesMetricCompleteness>>;
+  period_source_completeness: SalesMetricCompleteness;
+  reporting_completeness: SalesMetricCompleteness;
+  notes?: string[];
+}
+
+export interface SalesProductivityMetricsBundle {
+  representativeId: string;
+  periodKey: string;
+  periodTimezone: string;
+  periodStart: string;
+  periodEnd: string;
+  sourceCutoffAt: string;
+  metrics: SalesMetricValue[];
+  metricsByKey: Partial<Record<SalesMetricKey, SalesMetricValue>>;
+  planVersionAttribution: SalesPlanVersionAttribution[];
+  addOnAttribution: SalesAddOnAttribution[];
+  cancellationAttribution: SalesCancellationAttribution;
+  completeness: SalesCompletenessBundle;
+}
+
+export interface SalesProductivityTeamResponse {
+  items: SalesProductivityMetricsBundle[];
+  periodKey: string;
+}
+
+export interface SalesProductivityExportResult {
+  body: string;
+  filename: string;
+  contentType: string;
+}
+
+export type SalesCommissionSnapshotStatus = 'DRAFT' | 'FINALIZED' | 'SUPERSEDED';
+export type SalesCommissionReviewStatus = 'NONE' | 'IN_REVIEW' | 'REVIEWED' | 'REJECTED';
+export type SalesCommissionPaidStatus = 'UNPAID' | 'PAID';
+export type SalesCommissionCalculationStatus = 'UNCONFIGURED';
+
+export interface SalesCommissionSnapshot {
+  id: string;
+  representativeId: string;
+  periodKey: string;
+  periodTimezone: string;
+  periodStart: string;
+  periodEnd: string;
+  sourceCutoffAt: string;
+  formulaVersion: string;
+  calculationStatus: SalesCommissionCalculationStatus;
+  ruleReference: string | null;
+  computedAmount: string | null;
+  metrics: Record<string, unknown>;
+  planVersionAttribution: SalesPlanVersionAttribution[];
+  addOnAttribution: SalesAddOnAttribution[];
+  completeness: SalesCompletenessBundle;
+  reconciliation: Record<string, unknown> | null;
+  reviewStatus: SalesCommissionReviewStatus;
+  paidStatus: SalesCommissionPaidStatus;
+  paidReason: string | null;
+  paidReference: string | null;
+  paidAt: string | null;
+  paidByPlatformUserId: string | null;
+  status: SalesCommissionSnapshotStatus;
+  supersedesSnapshotId: string | null;
+  rowVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  finalizedAt: string | null;
+}
+
+export interface SalesCommissionSnapshotsListResponse {
+  items: SalesCommissionSnapshot[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SalesCommissionSnapshotMutationResult extends SalesCommissionSnapshot {
+  replayed: boolean;
+  correlationId: string;
+}
+
 export function createPlatformAuthClient(apiBaseUrl: string) {
   const base = apiBaseUrl.replace(/\/$/, '');
 
@@ -391,6 +847,49 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
     }
 
     return data as T;
+  }
+
+  async function requestText(
+    path: string,
+    init: RequestInit & { accessToken?: string | null; csrf?: boolean } = {},
+  ): Promise<SalesProductivityExportResult> {
+    const headers = new Headers(init.headers);
+    headers.set('Accept', 'text/csv, text/plain, */*');
+    if (init.accessToken) {
+      headers.set('Authorization', `Bearer ${init.accessToken}`);
+    }
+    if (init.csrf) {
+      const csrf = readCsrfCookie();
+      if (csrf) headers.set('X-Platform-CSRF', csrf);
+    }
+
+    const response = await fetch(`${base}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include',
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+      let message = 'Request failed.';
+      let code: string | undefined;
+      try {
+        const payload = JSON.parse(text) as Record<string, unknown>;
+        if (typeof payload.message === 'string') message = payload.message;
+        if (typeof payload.code === 'string') code = payload.code;
+      } catch {
+        if (text) message = text;
+      }
+      throw new PlatformAuthApiError(message, response.status, code);
+    }
+
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const match = /filename="([^"]+)"/i.exec(disposition);
+    return {
+      body: text,
+      filename: match?.[1] ?? 'sales-productivity-export.csv',
+      contentType: response.headers.get('Content-Type') ?? 'text/csv; charset=utf-8',
+    };
   }
 
   return {
@@ -866,6 +1365,71 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         method: 'GET',
         accessToken,
       });
+    },
+
+    listClinicalCatalogServices(
+      accessToken: string,
+      query: { lifecycle?: string; provenance?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      const qs = params.toString();
+      return request<ClinicalCatalogServiceDetail[]>(
+        `/platform/clinical-catalog/services${qs ? `?${qs}` : ''}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    createClinicalCatalogServiceDraft(
+      accessToken: string,
+      body: CreateClinicalCatalogServiceDraftRequest,
+    ) {
+      return request<ClinicalCatalogServiceDetail>('/platform/clinical-catalog/services', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateClinicalCatalogServiceDraft(
+      accessToken: string,
+      id: string,
+      body: UpdateClinicalCatalogServiceDraftRequest,
+    ) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}`,
+        { method: 'PATCH', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    publishClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/publish`,
+        { method: 'POST', accessToken },
+      );
+    },
+
+    deprecateClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/deprecate`,
+        { method: 'POST', accessToken },
+      );
+    },
+
+    inactivateClinicalCatalogService(accessToken: string, id: string) {
+      return request<ClinicalCatalogServiceDetail>(
+        `/platform/clinical-catalog/services/${encodeURIComponent(id)}/inactivate`,
+        { method: 'POST', accessToken },
+      );
     },
 
     listPlatformUsers(
@@ -2503,6 +3067,714 @@ export function createPlatformAuthClient(apiBaseUrl: string) {
         method: 'GET',
         accessToken,
       });
+    },
+
+    /** Flexible Step 23 — Sales Representative Management. */
+    listSalesRepresentatives(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesRepresentativesListResponse>(
+        `/platform/sales/representatives?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesRepresentative(accessToken: string, id: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesRepresentative(
+      accessToken: string,
+      body: {
+        email: string;
+        displayName?: string;
+        regionCode?: string;
+        territoryCode?: string;
+        targetAmount?: number;
+        targetCurrency?: string;
+        targetPeriod?: 'MONTH' | 'QUARTER' | 'YEAR';
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesRepresentative>('/platform/sales/representatives', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesRepresentativeProfile(
+      accessToken: string,
+      id: string,
+      body: {
+        regionCode?: string | null;
+        territoryCode?: string | null;
+        displayName?: string;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/profile`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateSalesRepresentativeTarget(
+      accessToken: string,
+      id: string,
+      body: {
+        targetAmount?: number | null;
+        targetCurrency?: string | null;
+        targetPeriod?: 'MONTH' | 'QUARTER' | 'YEAR' | null;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/target`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    assignSalesRepresentativeManager(
+      accessToken: string,
+      id: string,
+      body: { managerRepresentativeId: string | null; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/manager`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    activateSalesRepresentative(accessToken: string, id: string, reason?: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/activate`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    suspendSalesRepresentative(accessToken: string, id: string, reason: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/suspend`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    reactivateSalesRepresentative(accessToken: string, id: string, reason: string) {
+      return request<SalesRepresentative>(`/platform/sales/representatives/${encodeURIComponent(id)}/reactivate`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    revokeSalesRepresentativeSessions(accessToken: string, id: string, reason: string) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/${encodeURIComponent(id)}/sessions/revoke-all`,
+        { method: 'POST', accessToken, body: JSON.stringify({ reason }) },
+      );
+    },
+
+    assignSalesRepresentativeRole(accessToken: string, id: string, roleKey: string, reason?: string) {
+      return request<{ ok: true }>(`/platform/sales/representatives/${encodeURIComponent(id)}/roles`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ roleKey, reason }),
+      });
+    },
+
+    removeSalesRepresentativeRole(accessToken: string, id: string, roleKey: string) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/${encodeURIComponent(id)}/roles/${encodeURIComponent(roleKey)}`,
+        { method: 'DELETE', accessToken },
+      );
+    },
+
+    getSalesCustomerOwnership(accessToken: string, platformTenantId: string) {
+      return request<SalesCustomerOwnershipLookup>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    assignSalesCustomerOwnership(
+      accessToken: string,
+      body: { representativeId: string; platformTenantId: string; reason?: string },
+    ) {
+      return request<SalesCustomerOwnership>('/platform/sales/representatives/customer-ownership', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    reassignSalesCustomerOwnership(
+      accessToken: string,
+      platformTenantId: string,
+      body: { representativeId: string; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesCustomerOwnership>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'PUT', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    removeSalesCustomerOwnership(
+      accessToken: string,
+      platformTenantId: string,
+      body: { expectedRowVersion: number; reason?: string },
+    ) {
+      return request<{ ok: true }>(
+        `/platform/sales/representatives/customer-ownership/${encodeURIComponent(platformTenantId)}`,
+        { method: 'DELETE', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    /** Flexible Step 24 — Leads and Sales Pipeline. */
+    listSalesLeads(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; stage?: string; source?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesLeadsListResponse>(`/platform/sales/leads?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    getSalesLead(accessToken: string, id: string) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesLead(
+      accessToken: string,
+      body: {
+        organizationName: string;
+        contactName: string;
+        contactEmail?: string;
+        contactPhone?: string;
+        contactJobTitle?: string;
+        source?: string;
+        facilityTypeKey?: string;
+        specialtyKeys?: string[];
+        desiredModuleKeys?: string[];
+        estimatedUsers?: number;
+        estimatedProviders?: number;
+        estimatedLocations?: number;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>('/platform/sales/leads', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesLead(
+      accessToken: string,
+      id: string,
+      body: Record<string, unknown> & { expectedRowVersion: number },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    changeSalesLeadStage(
+      accessToken: string,
+      id: string,
+      body: { stage: string; expectedRowVersion: number; reason?: string; wonLostReason?: string },
+      idempotencyKey?: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/stage`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+      });
+    },
+
+    assignSalesLeadOwner(
+      accessToken: string,
+      id: string,
+      body: { ownerRepresentativeId: string | null; expectedRowVersion: number; reason?: string },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/owner`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    listSalesLeadNotes(accessToken: string, id: string) {
+      return request<SalesLeadNote[]>(`/platform/sales/leads/${encodeURIComponent(id)}/notes`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    addSalesLeadNote(accessToken: string, id: string, body: { body: string }) {
+      return request<SalesLeadNote>(`/platform/sales/leads/${encodeURIComponent(id)}/notes`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    updateSalesLeadDemo(
+      accessToken: string,
+      id: string,
+      body: {
+        demoStatus: string;
+        demoScheduledAt?: string | null;
+        demoTimezone?: string | null;
+        demoNote?: string | null;
+        expectedRowVersion: number;
+      },
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/demo`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    markSalesLeadWon(
+      accessToken: string,
+      id: string,
+      body: { expectedRowVersion: number; wonLostReason: string },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/won`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    markSalesLeadLost(
+      accessToken: string,
+      id: string,
+      body: { expectedRowVersion: number; wonLostReason: string },
+      idempotencyKey: string,
+    ) {
+      return request<SalesLead>(`/platform/sales/leads/${encodeURIComponent(id)}/lost`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    getSalesLeadPlanFit(accessToken: string, id: string) {
+      return request<SalesLeadPlanFit>(`/platform/sales/leads/${encodeURIComponent(id)}/plan-fit`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    getSalesLeadStageHistory(accessToken: string, id: string) {
+      return request<SalesLeadStageHistoryEntry[]>(
+        `/platform/sales/leads/${encodeURIComponent(id)}/stage-history`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesLeadOwnershipHistory(accessToken: string, id: string) {
+      return request<SalesLeadOwnershipHistoryEntry[]>(
+        `/platform/sales/leads/${encodeURIComponent(id)}/ownership-history`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    /** Flexible Step 25 — Trial Creation and Customer Conversion. */
+    listSalesTrials(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string; search?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesTrialsListResponse>(`/platform/sales/trials?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    getSalesTrial(accessToken: string, id: string) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    createSalesTrial(
+      accessToken: string,
+      body: {
+        organizationName: string;
+        facilityTypeKey: string;
+        trialPlanVersionId: string;
+        selectedSpecialtyKeys?: string[];
+        selectedModuleKeys?: string[];
+        originatingLeadId?: string | null;
+        ownerRepresentativeId?: string | null;
+        durationDays?: number | null;
+        maxExtensions?: number | null;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>('/platform/sales/trials', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    updateSalesTrial(
+      accessToken: string,
+      id: string,
+      body: Record<string, unknown> & { expectedRowVersion: number },
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+      });
+    },
+
+    extendSalesTrial(
+      accessToken: string,
+      id: string,
+      body: {
+        extensionDays: number;
+        reason: string;
+        expectedRowVersion: number;
+        exceptional?: boolean;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}/extend`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    cancelSalesTrial(
+      accessToken: string,
+      id: string,
+      body: { reason: string; expectedRowVersion: number },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrial>(`/platform/sales/trials/${encodeURIComponent(id)}/cancel`, {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    /** Read-only: never mutates a protected SoR. */
+    getSalesTrialEntitlementPreview(
+      accessToken: string,
+      id: string,
+      targetPaidPlanVersionId: string,
+    ) {
+      const params = new URLSearchParams({ targetPaidPlanVersionId });
+      return request<SalesTrialEntitlementPreview>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/entitlement-preview?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    convertSalesTrial(
+      accessToken: string,
+      id: string,
+      body: {
+        targetPaidPlanVersionId: string;
+        expectedRowVersion: number;
+        dispositions?: SalesTrialGrantDispositionEntry[];
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesTrialConversionResult>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/convert`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    listSalesTrialExtensions(accessToken: string, id: string) {
+      return request<SalesTrialExtension[]>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/extensions`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesTrialHistory(accessToken: string, id: string) {
+      return request<SalesTrialHistory>(
+        `/platform/sales/trials/${encodeURIComponent(id)}/history`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    /** Flexible Step 26 — Sales Productivity + Commission Snapshot. */
+    getSalesProductivitySelf(accessToken: string, query: { periodKey: string }) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      return request<SalesProductivityMetricsBundle>(
+        `/platform/sales/productivity/self?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesProductivityTeam(
+      accessToken: string,
+      query: { periodKey: string; representativeId?: string },
+    ) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      if (query.representativeId) params.set('representativeId', query.representativeId);
+      return request<SalesProductivityTeamResponse>(
+        `/platform/sales/productivity/team?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    exportSalesProductivity(
+      accessToken: string,
+      query: { periodKey: string; representativeId?: string },
+    ) {
+      const params = new URLSearchParams();
+      params.set('periodKey', query.periodKey);
+      if (query.representativeId) params.set('representativeId', query.representativeId);
+      return requestText(`/platform/sales/productivity/export?${params.toString()}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    listSalesCommissionSnapshots(
+      accessToken: string,
+      query: {
+        page?: number;
+        pageSize?: number;
+        periodKey?: string;
+        representativeId?: string;
+        status?: string;
+      } = {},
+    ) {
+      const params = new URLSearchParams();
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+      return request<SalesCommissionSnapshotsListResponse>(
+        `/platform/sales/commission-snapshots?${params.toString()}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getSalesCommissionSnapshot(accessToken: string, id: string) {
+      return request<SalesCommissionSnapshot>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    generateSalesCommissionSnapshot(
+      accessToken: string,
+      body: {
+        representativeId: string;
+        periodKey: string;
+        periodTimezone?: string;
+        finalize?: boolean;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        '/platform/sales/commission-snapshots/generate',
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    reviewSalesCommissionSnapshot(
+      accessToken: string,
+      id: string,
+      body: {
+        reviewStatus: SalesCommissionReviewStatus;
+        expectedRowVersion: number;
+        reason?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}/review`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    markSalesCommissionSnapshotPaid(
+      accessToken: string,
+      id: string,
+      body: {
+        paidStatus: SalesCommissionPaidStatus;
+        expectedRowVersion: number;
+        paidReason?: string;
+        paidReference?: string;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<SalesCommissionSnapshotMutationResult>(
+        `/platform/sales/commission-snapshots/${encodeURIComponent(id)}/mark-paid`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+
+    listPlatformNotificationTemplates(accessToken: string) {
+      return request<{ key: string; category: string; mandatory: boolean; version: string }[]>(
+        '/platform/notifications/templates',
+        { method: 'GET', accessToken },
+      );
+    },
+
+    getPlatformNotificationTemplate(accessToken: string, key: string) {
+      return request<Record<string, unknown>>(
+        `/platform/notifications/templates/${encodeURIComponent(key)}`,
+        { method: 'GET', accessToken },
+      );
+    },
+
+    previewPlatformNotificationTemplate(
+      accessToken: string,
+      key: string,
+      body: { locale?: string } = {},
+    ) {
+      return request<{ templateKey: string; subject: string; body: string; variables: Record<string, string> }>(
+        `/platform/notifications/templates/${encodeURIComponent(key)}/preview`,
+        { method: 'POST', accessToken, body: JSON.stringify(body) },
+      );
+    },
+
+    listPlatformNotificationPreferences(accessToken: string) {
+      return request<
+        Array<{
+          id: string;
+          category: string;
+          channel: string;
+          enabled: boolean;
+          locale: string;
+          rowVersion: number;
+        }>
+      >('/platform/notifications/preferences', { method: 'GET', accessToken });
+    },
+
+    patchPlatformNotificationPreference(
+      accessToken: string,
+      body: {
+        category: string;
+        channel: string;
+        enabled: boolean;
+        locale?: string;
+        expectedRowVersion?: number;
+      },
+      idempotencyKey: string,
+    ) {
+      return request<Record<string, unknown>>('/platform/notifications/preferences', {
+        method: 'PATCH',
+        accessToken,
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
+    },
+
+    listPlatformNotificationDeliveries(
+      accessToken: string,
+      query: { page?: number; pageSize?: number; status?: string } = {},
+    ) {
+      const params = new URLSearchParams();
+      if (query.page) params.set('page', String(query.page));
+      if (query.pageSize) params.set('pageSize', String(query.pageSize));
+      if (query.status) params.set('status', query.status);
+      const qs = params.toString();
+      return request<{
+        page: number;
+        pageSize: number;
+        total: number;
+        items: Array<Record<string, unknown>>;
+      }>(`/platform/notifications/deliveries${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+        accessToken,
+      });
+    },
+
+    retryPlatformNotificationDelivery(
+      accessToken: string,
+      id: string,
+      body: { reason: string; jobId?: string },
+      idempotencyKey: string,
+    ) {
+      return request<{ accepted: boolean; jobId: string; intentId: string }>(
+        `/platform/notifications/deliveries/${encodeURIComponent(id)}/retry`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
     },
   };
 }

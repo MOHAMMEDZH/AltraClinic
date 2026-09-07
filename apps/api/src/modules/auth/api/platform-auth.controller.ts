@@ -13,10 +13,10 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { randomBytes } from 'crypto';
-import { Public } from '../decorators/public.decorator';
-import { PlatformAuthRoute } from '../decorators/platform-auth-route.decorator';
-import { CurrentUser } from '../decorators/current-user.decorator';
-import { JwtClaimsVO } from '../../domain/value-objects/jwt-claims.vo';
+import { Public } from './decorators/public.decorator';
+import { PlatformAuthRoute } from './decorators/platform-auth-route.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtClaimsVO } from '../domain/value-objects/jwt-claims.vo';
 import {
   PlatformMfaChallengeDto,
   PlatformMfaEnrollmentBeginDto,
@@ -24,14 +24,14 @@ import {
   PlatformLoginDto,
   PlatformRefreshBodyDto,
 } from './dto/platform-auth.dto';
-import { PlatformMfaBeginEnrollmentHandler } from '../../application/handlers/platform-mfa-begin-enrollment.handler';
-import { PlatformMfaConfirmEnrollmentHandler } from '../../application/handlers/platform-mfa-confirm-enrollment.handler';
-import { PlatformMfaVerifyChallengeHandler } from '../../application/handlers/platform-mfa-verify-challenge.handler';
-import { PlatformLoginHandler } from '../../application/handlers/platform-login.handler';
-import { PlatformRefreshHandler } from '../../application/handlers/platform-refresh.handler';
-import { PlatformLogoutHandler } from '../../application/handlers/platform-logout.handler';
-import { PlatformMeHandler } from '../../application/handlers/platform-me.handler';
-import { JwtTokenService } from '../../infrastructure/services/jwt-token.service';
+import { PlatformMfaBeginEnrollmentHandler } from '../application/handlers/platform-mfa-begin-enrollment.handler';
+import { PlatformMfaConfirmEnrollmentHandler } from '../application/handlers/platform-mfa-confirm-enrollment.handler';
+import { PlatformMfaVerifyChallengeHandler } from '../application/handlers/platform-mfa-verify-challenge.handler';
+import { PlatformLoginHandler } from '../application/handlers/platform-login.handler';
+import { PlatformRefreshHandler } from '../application/handlers/platform-refresh.handler';
+import { PlatformLogoutHandler } from '../application/handlers/platform-logout.handler';
+import { PlatformMeHandler } from '../application/handlers/platform-me.handler';
+import { JwtTokenService } from '../infrastructure/services/jwt-token.service';
 import { PlatformInvitationRepository } from '../infrastructure/repositories/prisma-platform-rbac.repositories';
 import { createHash } from 'crypto';
 import { PlatformInvitationAcceptanceService } from '../application/services/platform-invitation-acceptance.service';
@@ -51,7 +51,7 @@ import {
   PLATFORM_CSRF_COOKIE_NAME,
   PLATFORM_CSRF_HEADER,
   PLATFORM_REFRESH_COOKIE_NAME,
-} from '../../platform-auth.tokens';
+} from '../platform-auth.tokens';
 
 const TRUSTED_PROXY_IPS = new Set(
   (process.env['TRUSTED_PROXY_IPS'] ?? '').split(',').map((s) => s.trim()).filter(Boolean),

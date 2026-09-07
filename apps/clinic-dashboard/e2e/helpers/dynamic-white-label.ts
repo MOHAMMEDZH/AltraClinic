@@ -23,6 +23,10 @@ export function lockedBrandingPanel(page: Page) {
 export async function gotoBrandingRoute(page: Page) {
   await page.goto('/settings/branding', { waitUntil: 'domcontentloaded' });
   await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  const path = new URL(page.url()).pathname;
+  if (path.startsWith('/login')) {
+    throw new Error(`gotoBrandingRoute redirected to login (session lost). url=${page.url()}`);
+  }
 }
 
 export async function gotoBrandingSettings(page: Page) {

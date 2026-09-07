@@ -162,7 +162,7 @@ jobs:
 
       - name: Verify licensing E2E seed present
         working-directory: apps/api
-        run: node -e "const {PrismaClient}=require('@prisma/client'); const p=new PrismaClient(); p.user.findFirst({where:{email:'expired@lic-e2e.clinic'}}).then(u=>{if(!u){process.exit(1)}}).finally(()=>p.$disconnect())"
+        run: node scripts/verify-licensing-e2e-seed.mjs
 
       - name: Install Playwright browser
         working-directory: apps/clinic-dashboard

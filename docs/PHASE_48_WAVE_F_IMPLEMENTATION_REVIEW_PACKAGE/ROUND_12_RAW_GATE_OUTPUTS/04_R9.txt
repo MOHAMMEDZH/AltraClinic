@@ -1,0 +1,91 @@
+GATE=R9
+START_UTC=2026-08-21T14:15:33.2630850Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round9.postgres.integration.spec
+---
+  console.log
+    R9_BLOCKING_DIAGNOSTICS_BEGIN
+    ## R9-C-T1
+    - pidA=1024370
+    - pidB=1024385
+    - pg_blocking_pids(pidB)=[1024370]
+    - barrierReached=2026-08-21T14:15:51.293Z
+    - blockedByA=true
+    - releaseAt=2026-08-21T14:15:51.349Z
+    - loserResult=BadRequestException: No open correctable accruals in economic cohort
+    - finalOpenCount=2
+    - finalNetAttributed=320.00
+    - deadlock=false
+    
+    ## R9-C-T2
+    - pidA=1024370
+    - pidB=1024388
+    - pg_blocking_pids(pidB)=[1024370]
+    - blockedByA=true
+    - outcome=correction_won_settlement_rejected
+    - finalOpen=2
+    
+    ## R9-C-T5
+    - pidA=1024370
+    - pidB=1024391
+    - blockedByA=true
+    - note=performance-then-package lock order preserved
+    
+    ## R9-E-T2
+    - assertedBufferLines=26
+    - containsPidA=true
+    - containsBlockingPids=true
+    
+    R9_BLOCKING_DIAGNOSTICS_END
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts:560:13)
+
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts (19.225 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (19.225 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 9 remediation (PostgreSQL)
+    ΓêÜ R9-A-T1 one payment prior partial refund then correction keeps net 80 (418 ms)
+    ΓêÜ R9-A-T2 two payments prior refund then correction preserves net (312 ms)
+    ΓêÜ R9-A-T3 two payments ├ù two participants prior refund reconcile (443 ms)
+    ΓêÜ R9-A-T4 full prior refund then correction carries refund economics (R12 rem=0 path) (230 ms)
+    ΓêÜ R9-A-T5 exact replay same correctionEventId (215 ms)
+    ΓêÜ R9-A-T6 conflicting replay different replacement fails closed (234 ms)
+    ΓêÜ R9-A-T7 refund after refund-aware correction targets replacement only (301 ms)
+    ΓêÜ R9-A-T8 rollback after repost before refund carry (236 ms)
+    ΓêÜ R9-B-T1 selected root partially settled blocks correction (144 ms)
+    ΓêÜ R9-B-T2 sibling partially settled blocks whole cohort (152 ms)
+    ΓêÜ R9-B-T3 fully SETTLED still fails closed (165 ms)
+    ΓêÜ R9-B-T4 multiple settlement allocations block correction (136 ms)
+    ΓêÜ R9-B-T5 settlement replay still blocks correction (129 ms)
+    ΓêÜ R9-B-T6 owner-report unchanged after rejected partial-settlement correction (148 ms)
+    ΓêÜ R9-C-T1 concurrent sibling corrections serialize without deadlock (399 ms)
+    ΓêÜ R9-C-T2 correction versus partial settlement ΓÇö blocking + safe outcome (428 ms)
+    ΓêÜ R9-C-T3 refund-before-correction sequential post-lock carry preserves net 80 (210 ms)
+    ΓêÜ R9-C-T4 exact correction replay under contention (424 ms)
+    ΓêÜ R9-C-T5 lock-order regression correction vs collected post (298 ms)
+    ΓêÜ R9-D-T1 invoice correction1 then correction2 creates new open successor (189 ms)
+    ΓêÜ R9-D-T2 three sequential invoice corrections (266 ms)
+    ΓêÜ R9-D-T3 multi-participant sequential corrections (281 ms)
+    ΓêÜ R9-D-T4 package invoice-based sequential corrections (348 ms)
+    ΓêÜ R9-D-T5 exact replay of correction 2 (197 ms)
+    ΓêÜ R9-D-T6 concurrent correction events serialize; loser defined conflict (318 ms)
+    ΓêÜ R9-D-T7 unique-conflict cannot accept fully reversed stale successor (132 ms)
+    ΓêÜ R9-E-T1 isolated same-invoice package currency mismatch (137 ms)
+    ΓêÜ R9-E-T2 raw pg_blocking_pids evidence emitted (12 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       28 passed, 28 total
+Snapshots:   0 total
+Time:        19.458 s
+Ran all test suites matching /wave-f-round9.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:15:54.9627584Z
+EXIT=0
+STATUS=PASS

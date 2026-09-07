@@ -1,0 +1,22 @@
+PASS src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts (6.437 s)
+  PA-04 helpers — commercialEnd / never-effective / interval
+    √ T37/T38 — commercialEnd uses earliest of explicitTo, next From, inactivatedAt (2 ms)
+    √ T21 — canceled-never-effective when inactivatedAt < effectiveFrom
+    √ T34 — ACTIVE outside explicit effectiveTo is not interval-valid
+  PA-04 lookup — ACTIVE-only after reconcile gate
+    √ T1 — returns single interval-valid ACTIVE (1 ms)
+    √ T27 — zero ACTIVE fails closed (1 ms)
+    √ T28 — multiple ACTIVE fails closed
+    √ rejects invalid commercial dims (1 ms)
+    √ PA-06 foreign branch fail-closed before lookup
+    √ PA04-AT-04 — future at rejected
+    √ PA04-IMP-02 — manual supersede method removed (1 ms)
+  PA-04 lock key
+    √ builds deterministic commercial lock key
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        6.691 s, estimated 7 s
+Ran all test suites matching /clinical-price.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

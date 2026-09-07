@@ -68,6 +68,10 @@ test.describe('Auth MFA', () => {
       timeout: 15_000,
     });
 
+    // Login already consumed this TOTP window; wait for the next period before disable.
+    const totpStepMs = 30_000;
+    await page.waitForTimeout(totpStepMs - (Date.now() % totpStepMs) + 250);
+
     await page.goto('/settings/security/mfa');
     await page.getByLabel('Current password').fill(DEMO_OWNER.password);
     const disableCode = generateSync({ secret: mfaSecret });
@@ -75,8 +79,14 @@ test.describe('Auth MFA', () => {
     for (let i = 0; i < 6; i++) {
       await disableInputs.nth(i).fill(disableCode[i] ?? '');
     }
+    const disableResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/auth/mfa/disable') && resp.request().method() === 'POST',
+      { timeout: 20_000 },
+    );
     await page.getByRole('button', { name: 'Disable two-factor' }).click();
-    await expect(page.getByText('Two-factor authentication has been disabled.')).toBeVisible({
+    expect((await disableResponse).ok()).toBeTruthy();
+    // Success toast can remount away after refreshUser; durable UX is the setup CTA.
+    await expect(page.getByRole('button', { name: 'Set up authenticator' })).toBeVisible({
       timeout: 10_000,
     });
   });

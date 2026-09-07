@@ -32,6 +32,9 @@ export function ReportingHomePage() {
     canViewReporting: canView,
     canCreateReports: canCreate,
     canExportReports: canExport,
+    isLoading,
+    source,
+    registryStatus,
   } = useDynamicReporting();
 
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
@@ -126,14 +129,26 @@ export function ReportingHomePage() {
 
   if (!canView) {
     return (
-      <div className={styles.reportingPage} id="reports-region">
+      <div
+        className={styles.reportingPage}
+        id="reports-region"
+        aria-busy={isLoading || undefined}
+        data-reporting-source={source}
+        data-registry-status={registryStatus}
+      >
         <AuthAlert variant="error">{t('reports.accessDenied')}</AuthAlert>
       </div>
     );
   }
 
   return (
-    <div className={styles.reportingPage} id="reports-region">
+    <div
+      className={styles.reportingPage}
+      id="reports-region"
+      aria-busy={isLoading || undefined}
+      data-reporting-source={source}
+      data-registry-status={registryStatus}
+    >
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('reports.home.title')}</h1>

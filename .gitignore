@@ -29,3 +29,16 @@ out/
 /apps/api/br-step21-*
 /apps/api/step21-*.txt
 /apps/api/step21-audit-export*
+/apps/api/step27-final-onepass*
+/apps/api/br-step27-*
+/apps/api/step27-*.log
+/apps/api/step27-case-c*
+/apps/api/step27-db-run*
+/apps/api/step28-final-onepass*
+/apps/api/br-step28-*
+/apps/api/step28-*.log
+/apps/api/step28-case-c*
+/apps/api/step29-final-onepass*
+/apps/api/step29-*.log
+# Temporary Step 28 evidence attachment packs (outside committed docs; regenerate via script)
+/.step28-evidence-attachments/

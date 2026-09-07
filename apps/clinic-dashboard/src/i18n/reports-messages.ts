@@ -180,6 +180,7 @@ export const reportsMessagesEn = {
       patients: 'Patient growth',
     },
     crossFilterHint: 'Click a KPI to cross-filter charts below.',
+    openMetric: 'Open in analytics',
   },
   templates: {
     executiveDashboard: { title: 'Executive dashboard', desc: 'Cross-clinic KPIs, revenue, and operational health.' },
@@ -450,6 +451,7 @@ export const reportsMessagesAr = {
       patients: 'نمو المرضى',
     },
     crossFilterHint: 'انقر على مؤشر KPI لتصفية المخططات أدناه.',
+    openMetric: 'فتح في التحليلات',
   },
   templates: {
     executiveDashboard: { title: 'لوحة تنفيذية', desc: 'مؤشرات شاملة للإيرادات وصحة العمليات.' },

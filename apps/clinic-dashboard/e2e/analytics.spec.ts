@@ -87,7 +87,10 @@ test.describe('Clinic analytics page', () => {
     await login(page, DEMO_OWNER);
     await page.goto('/reports');
 
-    await page.getByRole('link', { name: 'Clinic analytics' }).click();
+    await page
+      .getByRole('navigation', { name: 'Reporting navigation' })
+      .getByRole('link', { name: 'Live analytics' })
+      .click();
     await expect(page).toHaveURL(/\/analytics/);
   });
 });

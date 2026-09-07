@@ -1,0 +1,474 @@
+GATE=WFpg
+START_UTC=2026-08-21T14:15:54.9777567Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-.*postgres
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts (12.998 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.998 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Console
+
+    console.log
+      R9_BLOCKING_DIAGNOSTICS_BEGIN
+      ## R9-C-T1
+      - pidA=1024442
+      - pidB=1024457
+      - pg_blocking_pids(pidB)=[1024442]
+      - barrierReached=2026-08-21T14:16:06.258Z
+      - blockedByA=true
+      - releaseAt=2026-08-21T14:16:06.314Z
+      - loserResult=BadRequestException: No open correctable accruals in economic cohort
+      - finalOpenCount=2
+      - finalNetAttributed=320.00
+      - deadlock=false
+      
+      ## R9-C-T2
+      - pidA=1024442
+      - pidB=1024460
+      - pg_blocking_pids(pidB)=[1024442]
+      - blockedByA=true
+      - outcome=correction_won_settlement_rejected
+      - finalOpen=2
+      
+      ## R9-C-T5
+      - pidA=1024442
+      - pidB=1024464
+      - blockedByA=true
+      - note=performance-then-package lock order preserved
+      
+      ## R9-E-T2
+      - assertedBufferLines=26
+      - containsPidA=true
+      - containsBlockingPids=true
+      
+      R9_BLOCKING_DIAGNOSTICS_END
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round9.postgres.integration.spec.ts:560:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-http.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-rls.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round3.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts
+  ΓùÅ Console
+
+    console.log
+      R12_DIAG {"test":"R12-A-T1","oldRootId":"82e0d339-e8d8-410d-942e-32210d631717","replacementRootId":"1cb90cbd-4c4c
+-4f09-8247-b6473ea33434","refundA":"b9d3481d-6dc9-4048-85f7-a55751e50ec4","refundB":"d93ce1a4-246c-4c08-b182-8db4d27142
+05","historicalOrderIds":["4af9ec01-561f-4616-a9c9-cf1c9dcd354f","c1b9d056-3534-4b57-80b4-5ba7eef6c964"],"carryA":"c145
+78b9-45c4-4625-8b2b-ee8f3ea68e3d","carryB":"5cb8c297-d6d2-4b4a-9145-a1819c71664a","net":"0.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:659:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T2","net":"0.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:701:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T3","carryIds1":["54b8b0af-a725-48f6-a5c3-58ae662e6d10","67180724-c362-4880-93be-ab34e4bc
+e7df"],"countBefore":6,"countAfter":6,"repl":"e4a34c90-851c-4630-82c9-1272e529c64c","repostLineId":"e4a34c90-851c-4630-
+82c9-1272e529c64c"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:761:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T4","net":"80.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:794:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T5","packageAllocationId":"f950bd99-062b-47c5-9fe5-2b687783d04b"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:822:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T6","net":"0.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:854:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T7","equal":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:929:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T8","rejected":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:965:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T9","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1006:13)
+
+    console.log
+      R12_DIAG {"test":"R12-A-T10","finalRoot":"7e7b98f6-b5a3-4bb7-a43c-ec6dd1cf3c94","net":"0.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1046:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T1","count":1,"postRecoveryOk":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1091:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T2","carryIds":["a5be58e0-a934-43e8-a81b-8ee40d8dcce5"]}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1149:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T3","mode":"carry","rolledBack":true,"lineId":"35f8c81f-aab8-42f2-8602-35f46f5707c1"}
+
+      at expectAuditBoundaryRollback 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T4","mode":"carry","rolledBack":true,"lineId":"cbed5b31-6d19-44b2-9f72-13863458833d"}
+
+      at expectAuditBoundaryRollback 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T5","mode":"reverse","rolledBack":true,"lineId":"181d37f0-7589-45f1-b4b4-ea7bdb4dbd75"}
+
+      at expectAuditBoundaryRollback 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T6","mode":"carry","rolledBack":true,"lineId":"92a4eff3-08c1-4970-8a9c-539011b5c983"}
+
+      at expectAuditBoundaryRollback 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1229:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T7","rejectsBadWinner":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1333:13)
+
+    console.log
+      R12_DIAG {"test":"R12-B-T8","auditsBefore":1}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1368:13)
+
+    console.log
+      R12_DIAG {"test":"R12-C-T1","manifestRows":378,"finalRegularFiles":380,"agree":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round12.postgres.integration.spec.ts:1378:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round8.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts
+  ΓùÅ Console
+
+    console.log
+      R11_DIAG {"test":"R11-A-T1","tenantId":"f0d01ee1-dc8c-4213-ac65-f92ab1372b49","rootId":"9af71a98-8d41-4438-bd13-b
+0088757bf79","refundId":"a6221440-5786-44ca-90e8-8269b581d6c1","existingRowId":"b072b8a4-7cb1-4dad-a6b5-0a42de35ecbf","
+mismatch":"attributedRevenueAmount","beforeCount":2,"afterCount":2,"beforeNet":"159.00","afterNet":"159.00"}
+
+      at expectRejectZeroSideEffects 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:670:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T2","tenantId":"1bdec447-6c2c-42e8-8724-b5b903497045","rootId":"69662f43-5b09-4d1d-862d-7
+cc9c1021c6a","refundId":"fb3b945e-e637-4203-b729-eac2e8110c3e","existingRowId":"dd699a86-035c-47ba-9772-c344606312bc","
+mismatch":"commissionAmount","beforeCount":2,"afterCount":2,"beforeNet":"80.00","afterNet":"80.00"}
+
+      at expectRejectZeroSideEffects 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:670:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T3","tenantId":"cdee1b33-d42f-4e7f-827b-6c3c37ba106c","rootId":"bc4e8ba8-b225-4811-a366-f
+5e0c79009d5","refundId":"bc6c8555-85aa-4eb5-9fee-4c5cf5f19727","existingRowId":"c89ed015-26e6-40dd-b147-fd20dc23d858","
+mismatch":"sign","beforeCount":2,"afterCount":2,"beforeNet":"80.00","afterNet":"80.00"}
+
+      at expectRejectZeroSideEffects 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:670:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T4","tenantId":"cf5444ad-2c9f-419b-8fe6-56715cc8369f","rootId":"44c12aac-e32a-4a78-a6d0-3
+b6706b1fa66","refundId":"0b41ae0b-f7bc-48a2-8cbe-169b995d67b1","existingRowId":"83e8208f-a05f-4aef-8d9e-c00744657a01","
+mismatch":"status","beforeCount":2,"afterCount":2,"beforeNet":"160.00","afterNet":"160.00"}
+
+      at expectRejectZeroSideEffects 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:670:13)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"servicePerformanceId","plantedId":"d3d36563-2595-4381-88c1-448f263ce0bc","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T5","field":"invoiceLineId","plantedId":"23daf8f4-40ba-4ab5-b3ed-d565e558a94e","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"commissionPlanVersionId","plantedId":"f67f520d-9e98-4edd-99d6-379e843f293f","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"calculationBasis","plantedId":"592bf71b-ca0c-4981-99b2-f7c40b9ce5e2","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"commissionPercent","plantedId":"bd73b4e9-b4f1-4b03-a3cd-b9a7e1cd0c89","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T5","field":"appointmentId","plantedId":"66a6cd47-2a86-4de4-aa58-76ad9afaf059","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"clinicalServiceId","plantedId":"17f4b769-aba5-4588-8005-9e0dedc1aa8d","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:895:15)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-A-T5","field":"packageAllocationId","plantedId":"894a371a-6346-4de8-a5e3-ed3f98bc5459","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:878:17)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T6","returnedId":"194ea087-8029-42ac-b116-9bd5a97ff5d3","amounts":{"attributed":"-80","co
+mmission":"-8"}}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:941:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T7","carryId":"4d6e119c-eec2-4e24-8e89-aac71b83aef0","replacementRootId":"6310900f-827b-4
+d1d-aadb-cb82b5f05662","refundId":"bfa163e9-ad41-4a02-86c9-8b35baa3e16b"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:994:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T8","refundA":"c6755d2c-b5cf-4ec4-a6f1-292b38b31459","refundB":"025b7c9c-e772-42f4-bdcd-c
+097737ef0e8","amountA":"-80.00","amountB":"-40.00","netAfter":"40.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1049:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T9","goodId":"9b9bde45-4cb0-418d-9637-66265b27b936","badId":"bf7e28eb-dc9b-44bb-b15c-23fd
+f0cfe72f","legacyKey":"rev_corr_refund:d0ab134d-8915-4206-b559-50c727512c82:21f9480d-e245-43c6-a9f0-4b1677e0cecb:4a3756
+a4-3055-4e63-b503-3ae5bad4cf28","badKey":"rev_corr_refund:26625d3b-2bd7-421c-9248-1f46f30025e4:30e3090a-7e18-43fa-82bd-
+eb59dcbe165e:ac0cb34d-9522-4b65-b6d7-744fcd170531"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1113:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T10","rowId":"2ce8bb8f-560b-4595-9e36-74a8f53be07f","count":1,"postRecoveryOk":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1166:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T11","refundOk":true,"unrelated":false,"rejectsBadEconomics":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1212:13)
+
+    console.log
+      R11_DIAG {"test":"R11-A-T12","count":1,"auditsBefore":1}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1267:13)
+
+    console.log
+      R11_DIAG 
+{"test":"R11-B-T1","beforeAccrualCount":2,"afterAccrualCount":2,"beforeAuditCount":0,"afterAuditCount":0,"equal":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1323:13)
+
+    console.log
+      R11_DIAG {"test":"R11-B-T2","beforeAccrualCount":2,"afterAccrualCount":2,"equal":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1381:13)
+
+    console.log
+      R11_DIAG {"test":"R11-C-T1","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1410:13)
+
+    console.log
+      R11_DIAG {"test":"R11-C-T2","reported":2,"recounted":2}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round11.postgres.integration.spec.ts:1436:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts
+  ΓùÅ Console
+
+    console.log
+      R10_DIAG {"test":"R10-A-T1","originalRootId":"5096f85e-b765-4815-beaf-ee070fc6d7f3","replacementRootId":"c49f7066
+-6846-4146-9de6-7f7a5502e079","refundId":"e86eb516-932f-48c2-9d3b-7821047934a5","carryId":"5ec16520-9871-4ada-82c1-6e9a
+dd234268","idempotencyKey":"rev:c49f7066-6846-4146-9de6-7f7a5502e079:e86eb516-932f-48c2-9d3b-7821047934a5"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:652:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T2","reversedBefore":2,"carriedBefore":1,"reversedAfter":2,"carriedAfter":1}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:723:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T3","replacementRootId":"72833d65-1f47-4264-96bf-55321c5e1857","refundId":"f3f98ce6-ad34-
+4bca-bb4f-caff94fd9616","rowId":"07283c45-8b00-42ad-ba83-012af80e7b45","count":1}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:799:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T4","rootId":"a5c7d391-feb5-45c4-9ef4-dcb4e6d83c5e","refundId":"f20a6b30-358e-405e-9eb7-e
+e000bd90478","mismatch":"userId"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:860:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T5","finalRootId":"c06f53fe-6da9-44c1-afc3-be5227894feb","refundId":"565dfa13-8bd6-47b0-a
+a76-40658050d24f","countAfter":1}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:937:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T6","primaryCarry":1,"assistCarry":0,"refundId":"5036e044-fd22-4ea2-8b51-7d7bd3065641"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1008:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T7","pay1Carry":1,"pay2Carry":0,"refundId":"2e4193d2-bdae-4e5d-bf90-548df9544fbd","paymen
+tIds":["980180bd-4adc-44ca-bf19-31dff9bf9f43","57b247ae-3d7a-4cbc-94c4-970c32b0e2da"]}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1072:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T8","packageAllocationId":"087e7d6d-2170-495e-8769-ba21f7a4e1bd","net":"80.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1123:13)
+
+    console.log
+      R10_DIAG {"test":"R10-A-T9","code":"P2002","err":"PrismaClientKnownRequestError: \nInvalid 
+`c.commissionAccrual.create()` invocation 
+in\nC:\\Users\\mrame\\Projects\\AltraClinic\\apps\\api\\src\\modules\\workforce-commercials\\tests\\wave-f-rou"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1214:13)
+
+    console.log
+      R10_DIAG {"test":"R10-B-T1","srcPath":"C:\\Users\\mrame\\Projects\\AltraClinic\\apps\\api\\src\\modules\\workforc
+e-commercials\\services\\commission-accrual.service.ts","ok":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1227:13)
+
+    console.log
+      R10_DIAG {"test":"R10-B-T2","beforeCount":2,"beforeNet":"80.00","rolledBack":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1293:13)
+
+    console.log
+      R10_DIAG {"test":"R10-C-T1","pidA":1024574,"pidB":1024589,"blockers":[1024574],"net":"80.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1393:13)
+
+    console.log
+      R10_DIAG {"test":"R10-C-T2","pidA":1024574,"pidB":1024591,"blockers":[1024574],"staleErr":"BadRequestException: 
+Accrual has no remaining commission/attributed revenue to reverse","net":"80.00"}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1514:13)
+
+    console.log
+      R10_DIAG {"test":"R10-C-T3","pidLineCount":2,"outcomes":["R10-C-T1 ok net=80.00","R10-C-T2 ok net=80.00 
+staleRejected=true"],"noDeadlock":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1535:13)
+
+    console.log
+      R10_DIAG {"test":"R10-D-T1","evidencePath":"C:\\Users\\mrame\\Projects\\AltraClinic\\docs\\PHASE_48_WAVE_F_IMPLEM
+ENTATION_REVIEW_PACKAGE\\ROUND_9_RAW_PG_BLOCKING_EVIDENCE.md","sha256":"920dcdd74a2de56b1e94fa7bbce93ef242b2e3f684eaa3e
+281fae01350b8c521","unchanged":true}
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:1560:13)
+
+    console.log
+      R10_BLOCKING_DIAGNOSTICS_BEGIN
+      R10-C-T1 pidA=1024574 pidB=1024589 blockers=[1024574]
+      R10-C-T2 pidA=1024574 pidB=1024591 blockers=[1024574]
+      R10_BLOCKING_DIAGNOSTICS_END
+
+      at Object.<anonymous> 
+(src/modules/workforce-commercials/tests/wave-f-round10.postgres.integration.spec.ts:562:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round4.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-workforce.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round2.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round7.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round1.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round5.postgres.integration.spec.ts
+PASS src/modules/workforce-commercials/tests/wave-f-round6.postgres.integration.spec.ts
+
+Test Suites: 15 passed, 15 total
+Tests:       285 passed, 285 total
+Snapshots:   0 total
+Time:        51.615 s, estimated 69 s
+Ran all test suites matching /wave-f-.*postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:16:48.1523178Z
+EXIT=0
+STATUS=PASS

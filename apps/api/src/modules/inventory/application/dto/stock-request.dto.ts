@@ -62,6 +62,10 @@ export class FulfillStockRequestLineDTO {
   @IsPositive()
   quantity!: number;
 
+  /** Explicit accountable human. Must not be inferred from the authenticated fulfiller. */
+  @IsUUID()
+  usedByUserId!: string;
+
   @IsOptional()
   @IsString()
   notes?: string | null;

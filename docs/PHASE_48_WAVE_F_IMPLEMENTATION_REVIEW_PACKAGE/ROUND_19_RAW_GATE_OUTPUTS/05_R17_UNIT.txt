@@ -1,0 +1,23 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round17-refund-complete-set.unit.spec.ts (6.289 s)
+  Wave F Round 17 refund complete-set (unit)
+    √ R17-A-T1 100 exact + 25 valid one-zero specials; creation multiset accepted (24 ms)
+    √ R17-A-T2 replay multiset order independence for 100+25 history (8 ms)
+    √ R17-A-T6 valid 50-special one-zero history within practical time bound (7 ms)
+    √ R17-A-T7 valid 100-special one-zero history within practical time bound (8 ms)
+    √ R17-A-T8 forged aggregate-fit but unrealizable history rejected (27 ms)
+    √ R17-A no TOO_MANY_NON_EXACT_EFFECTS on 125-effect valid history (6 ms)
+    √ R17-B-U1 invalid exact-only 3.33+3.33+3.33 saturated commission set rejects (1 ms)
+    √ R17-B-U2 valid 3.33+3.33+3.34 saturation set accepts
+    √ R17-B-U3 all permutations of valid saturation multiset accept (1 ms)
+    √ R17-B-U4 exact-only unsaturated partial set accepts
+    √ R17-B-U5 saturated set leaving revenue residual rejects
+    √ R17-B-U6 saturated set leaving commission residual rejects (1 ms)
+    √ R17-B-U7 one starting capacity dimension zero; saturation exhausts remaining (20 ms)
+    √ R17-D valid 125-effect history validates within documented bound (8 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        6.531 s
+Ran all test suites matching /wave-f-round17-refund-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

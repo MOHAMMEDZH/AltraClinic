@@ -15,6 +15,8 @@ import { IsIn, IsUUID } from 'class-validator';
 import { TenantScopedAccessGuard } from '../../../common/tenant-scoped-access.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
+import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import { ListWaitingQueueHandler } from '../application/handlers/list-waiting-queue.handler';
 import { UpdateQueueStatusHandler } from '../application/handlers/update-queue-status.handler';
 import {
@@ -142,14 +144,17 @@ export class QueueController {
 
   @Post('check-in')
   @RequirePermission('api.queue', 'update')
-  async postCheckIn(@Body() body: CheckInQueueDTO) {
-    return this.checkIn.execute(body.appointmentId);
+  async postCheckIn(
+    @Body() body: CheckInQueueDTO,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.checkIn.execute(body.appointmentId, user.sub);
   }
 
   @Post('walk-in')
   @RequirePermission('api.queue', 'create')
-  async postWalkIn(@Body() body: WalkInQueueDTO) {
-    return this.walkIn.execute(body);
+  async postWalkIn(@Body() body: WalkInQueueDTO, @CurrentUser() user: JwtClaimsVO) {
+    return this.walkIn.execute(body, user.sub);
   }
 
   @Post('call-next')
@@ -157,9 +162,14 @@ export class QueueController {
   async postCallNext(
     @Query('branchId') branchId?: string,
     @Query('providerId') providerId?: string,
+    @CurrentUser() user: JwtClaimsVO,
   ) {
     try {
-      return await this.callNext.execute(providerId?.trim() || null, branchId?.trim() || null);
+      return await this.callNext.execute(
+        providerId?.trim() || null,
+        branchId?.trim() || null,
+        user.sub,
+      );
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
       throw err;
@@ -174,8 +184,12 @@ export class QueueController {
 
   @Patch(':id/status')
   @RequirePermission('api.queue', 'update')
-  async patchStatus(@Param('id') id: string, @Body() body: UpdateQueueStatusDTO) {
-    const result = await this.updateStatus.execute(id, body.status);
+  async patchStatus(
+    @Param('id') id: string,
+    @Body() body: UpdateQueueStatusDTO,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    const result = await this.updateStatus.execute(id, body.status, user.sub);
     if (!result) throw new NotFoundException('Queue ticket not found');
     return result;
   }
@@ -197,14 +211,18 @@ export class QueueController {
 
   @Patch(':id/room')
   @RequirePermission('api.queue', 'update')
-  async patchRoom(@Param('id') id: string, @Body() body: AssignQueueRoomDTO) {
+  async patchRoom(
+    @Param('id') id: string,
+    @Body() body: AssignQueueRoomDTO,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
     const resourceId = body.resourceId?.trim() || null;
-    return this.assignRoom.execute(id, resourceId);
+    return this.assignRoom.execute(id, resourceId, user.sub);
   }
 
   @Delete(':id')
   @RequirePermission('api.queue', 'delete')
-  async deleteTicket(@Param('id') id: string) {
-    return this.removeTicket.execute(id);
+  async deleteTicket(@Param('id') id: string, @CurrentUser() user: JwtClaimsVO) {
+    return this.removeTicket.execute(id, user.sub);
   }
 }

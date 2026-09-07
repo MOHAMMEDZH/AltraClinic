@@ -1,0 +1,23 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round6.postgres.integration.spec.ts (13.342 s)
+  Wave F Round 6 remediation (PostgreSQL)
+    √ R6-PKGCOL-T1/T2/T3/T8 collected path capped by package allocation (359 ms)
+    √ R6-PKGCOL-T5 missing allocation fail closed (129 ms)
+    √ R6-PKGCOL-T6 invoice-based + collected cannot double-earn same allocation (162 ms)
+    √ R6-PKGCOL-T4/T7 multi-session allocations + refund after collected (141 ms)
+    √ R6-PKGCUR-T1/T4 same currency success; T2/T3/T5 mismatch reject zero side effects (152 ms)
+    √ R6-PKGPROV-T1 course patient ≠ performance patient → reject (52 ms)
+    √ R6-PKGPROV-T2 session appointment exists + performance appointment null → reject (36 ms)
+    √ R6-PKGPROV-T3/T5/T6/T8 wrong appointment / line / service; zero side effects (85 ms)
+    √ R6-PKGPROV-T4/T7 invoice patient mismatch reject; matching chain success (97 ms)
+    √ R6-CORRBIND-T1/T6/T7 canonical validator shared; mismatch rolls back (213 ms)
+    √ R6-CORRBIND-T8 package correction still reuses allocation (182 ms)
+    √ R6-PKGHIST-T1/T2/T3 SUPERSEDED bound V1 still allocates V1 basis/currency (38 ms)
+    √ R6-PKGHIST-T4 DRAFT rejected; T5 unrelated ACTIVE cannot replace bound version (61 ms)
+    √ R6-PKGHIST-T6 new course may bind ACTIVE V2 (39 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        13.595 s
+Ran all test suites matching /wave-f-round6.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

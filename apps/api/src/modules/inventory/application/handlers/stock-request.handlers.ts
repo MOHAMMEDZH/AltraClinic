@@ -9,7 +9,9 @@ import { InventoryWarehouseRepository } from '../../domain/repositories/inventor
 import { StockRequestRepository } from '../../domain/repositories/stock-request.repository.interface';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
 import { TenantContextContract } from '../../../../contracts/tenant-context.contract';
+import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { mapStockRequestResponse } from '../utils/map-stock-request-response';
+import { InventoryUsagePostingService } from '../services/inventory-usage-posting.service';
 
 @Injectable()
 export class ListStockRequestsHandler {
@@ -214,75 +216,91 @@ export class FulfillStockRequestLineHandler {
     @Inject(INVENTORY_ITEM_REPOSITORY) private readonly itemRepo: InventoryItemRepository,
     @Inject(INVENTORY_WAREHOUSE_REPOSITORY) private readonly warehouseRepo: InventoryWarehouseRepository,
     private readonly tenantContext: TenantContextService,
+    private readonly usagePosting: InventoryUsagePostingService,
+    private readonly prisma: PrismaService,
   ) {}
 
-  async execute(input: { lineId: string; quantity: number; fulfilledBy: string; notes?: string | null }) {
+  async execute(input: {
+    lineId: string;
+    quantity: number;
+    fulfilledBy: string;
+    usedByUserId: string;
+    notes?: string | null;
+    /** Test-only: fail after posting, before line/status mutation, to prove shared rollback. */
+    forceFailAfterUsage?: boolean;
+  }) {
     const tenantCtx = (await this.tenantContext.resolve()) as TenantContextContract;
     const tenantId = tenantCtx?.tenantId;
     if (!tenantId) throw new BadRequestException('tenant context could not be resolved');
     if (!input.fulfilledBy?.trim()) throw new BadRequestException('User context is required');
-
-    const line = await this.requestRepo.findLineById(tenantId, input.lineId);
-    if (!line) throw new NotFoundException('Request line not found');
-    if (line.status !== 'APPROVED') {
-      throw new BadRequestException('Only approved requests can be fulfilled');
+    if (!input.usedByUserId?.trim()) {
+      throw new BadRequestException(
+        'usedByUserId is required for stock-request fulfillment (recorder must not be inferred as accountable user)',
+      );
     }
 
-    const remaining = line.quantityRequested - line.quantityFulfilled;
-    if (input.quantity <= 0 || input.quantity > remaining + 0.0001) {
-      throw new BadRequestException('Invalid fulfillment quantity');
-    }
+    const actor = input.fulfilledBy.trim();
+    const usedByUserId = input.usedByUserId.trim();
 
-    const item = await this.itemRepo.findById(tenantId, line.itemId);
-    if (!item) throw new NotFoundException('Inventory item not found');
+    return this.prisma.$transaction(
+      async (tx) => {
+        const line = await this.requestRepo.lockLineForUpdate(tenantId, input.lineId, tx);
+        if (!line) throw new NotFoundException('Request line not found');
+        if (line.status !== 'APPROVED') {
+          throw new BadRequestException('Only approved requests can be fulfilled');
+        }
 
-    const warehouseId =
-      line.warehouseId?.trim() || (await this.warehouseRepo.ensureDefaultWarehouseId(tenantId));
-    const warehouseOk = await this.warehouseRepo.existsActive(tenantId, warehouseId);
-    if (!warehouseOk) throw new BadRequestException('Warehouse not found or inactive');
+        const remaining = line.quantityRequested - line.quantityFulfilled;
+        if (input.quantity <= 0 || input.quantity > remaining + 0.0001) {
+          throw new BadRequestException('Invalid fulfillment quantity');
+        }
 
-    await this.itemRepo.consumeFifoBatches(tenantId, line.itemId, input.quantity);
+        const item = await this.itemRepo.findById(tenantId, line.itemId);
+        if (!item) throw new NotFoundException('Inventory item not found');
 
-    let delta;
-    try {
-      delta = await this.warehouseRepo.applyStockDelta({
-        tenantId,
-        warehouseId,
-        itemId: line.itemId,
-        delta: -input.quantity,
-      });
-    } catch {
-      throw new BadRequestException('Insufficient stock at selected warehouse');
-    }
+        const warehouseId =
+          line.warehouseId?.trim() || (await this.warehouseRepo.ensureDefaultWarehouseId(tenantId, tx));
+        const warehouseOk = await this.warehouseRepo.existsActive(tenantId, warehouseId, tx);
+        if (!warehouseOk) throw new BadRequestException('Warehouse not found or inactive');
 
-    await this.itemRepo.recordStockMovement({
-      tenantId,
-      inventoryItemId: line.itemId,
-      movementType: 'CONSUME',
-      quantity: input.quantity,
-      quantityBefore: delta.itemQtyBefore,
-      quantityAfter: delta.itemQtyAfter,
-      reason: `Stock request ${line.requestNumber}`,
-      notes: input.notes ?? null,
-      patientId: line.patientId,
-      performedBy: input.fulfilledBy,
-      warehouseId,
-    });
+        await this.usagePosting.postUsageInTx(tx, {
+          tenantId,
+          inventoryItemId: line.itemId,
+          quantity: input.quantity,
+          usageType: 'OPERATIONAL_CONSUMPTION',
+          recordedByUserId: actor,
+          usedByUserId,
+          warehouseId,
+          patientId: line.patientId,
+          reasonCode: `Stock request ${line.requestNumber}`,
+          notes: input.notes ?? null,
+          unit: item.unit,
+        });
 
-    await this.requestRepo.incrementLineFulfilled(tenantId, input.lineId, input.quantity);
-    await this.requestRepo.recomputeStatus(tenantId, line.requestId);
+        if (
+          input.forceFailAfterUsage === true &&
+          process.env.ALLOW_TEST_DATABASE_RESET === 'true'
+        ) {
+          throw new Error('TEST_FORCE_FAIL_AFTER_STOCK_REQUEST_FULFILLMENT');
+        }
 
-    const requestId = line.requestId;
-    const updated = await this.requestRepo.findById(tenantId, requestId);
-    if (!updated) throw new NotFoundException('Stock request not found');
+        await this.requestRepo.incrementLineFulfilled(tenantId, input.lineId, input.quantity, tx);
+        await this.requestRepo.recomputeStatus(tenantId, line.requestId, tx);
 
-    if (updated.status === 'FULFILLED' && !updated.fulfilledBy) {
-      await this.requestRepo.markFulfilled(tenantId, requestId, input.fulfilledBy);
-      const finalRow = await this.requestRepo.findById(tenantId, requestId);
-      if (!finalRow) throw new NotFoundException('Stock request not found');
-      return mapStockRequestResponse(finalRow);
-    }
+        const requestId = line.requestId;
+        const updated = await this.requestRepo.findById(tenantId, requestId, tx);
+        if (!updated) throw new NotFoundException('Stock request not found');
 
-    return mapStockRequestResponse(updated);
+        if (updated.status === 'FULFILLED' && !updated.fulfilledBy) {
+          await this.requestRepo.markFulfilled(tenantId, requestId, actor, tx);
+          const finalRow = await this.requestRepo.findById(tenantId, requestId, tx);
+          if (!finalRow) throw new NotFoundException('Stock request not found');
+          return mapStockRequestResponse(finalRow);
+        }
+
+        return mapStockRequestResponse(updated);
+      },
+      { maxWait: 20_000, timeout: 60_000 },
+    );
   }
 }

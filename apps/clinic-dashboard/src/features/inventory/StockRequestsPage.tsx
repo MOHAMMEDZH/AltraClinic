@@ -18,6 +18,8 @@ import {
   resolveInventoryWorkspaceMode,
 } from './config/inventory-config';
 import { fetchStockRequest, mapInventoryApiError } from './api/inventory-api';
+import { assertAccountableStaffSelected } from './api/fulfill-stock-request-body';
+import { AccountableStaffSelect } from './components/AccountableStaffSelect';
 import type { InventoryItem, StockRequest, StockRequestLine } from './types/inventory.types';
 import {
   useApproveStockRequest,
@@ -76,6 +78,8 @@ export function StockRequestsPage() {
   const [pickQty, setPickQty] = useState(1);
   const [rejectReason, setRejectReason] = useState('');
   const [fulfillQty, setFulfillQty] = useState<Record<string, number>>({});
+  const [usedByUserId, setUsedByUserId] = useState('');
+  const [usedByError, setUsedByError] = useState<string | null>(null);
   const [poSupplierId, setPoSupplierId] = useState('');
 
   useEffect(() => {
@@ -169,11 +173,23 @@ export function StockRequestsPage() {
       else if (action === 'reject') updated = await rejectMutation.mutateAsync({ requestId: request.requestId, reason: rejectReason });
       else if (action === 'cancel') updated = await cancelMutation.mutateAsync(request.requestId);
       else {
+        let usedBy: string;
+        try {
+          usedBy = assertAccountableStaffSelected(usedByUserId);
+          setUsedByError(null);
+        } catch {
+          setUsedByError(t('inventory.stockRequests.accountableStaffRequired'));
+          return;
+        }
         updated = request;
         for (const line of request.lines) {
           if (line.quantityRemaining <= 0) continue;
           const qty = fulfillQty[line.lineId] ?? line.quantityRemaining;
-          updated = await fulfillMutation.mutateAsync({ lineId: line.lineId, quantity: qty });
+          updated = await fulfillMutation.mutateAsync({
+            lineId: line.lineId,
+            quantity: qty,
+            usedByUserId: usedBy,
+          });
         }
       }
       setDetailRequest(updated);
@@ -200,9 +216,21 @@ export function StockRequestsPage() {
 
   async function fulfillLine(line: StockRequestLine) {
     setErrorKey(null);
+    let usedBy: string;
+    try {
+      usedBy = assertAccountableStaffSelected(usedByUserId);
+      setUsedByError(null);
+    } catch {
+      setUsedByError(t('inventory.stockRequests.accountableStaffRequired'));
+      return;
+    }
     const qty = fulfillQty[line.lineId] ?? line.quantityRemaining;
     try {
-      const updated = await fulfillMutation.mutateAsync({ lineId: line.lineId, quantity: qty });
+      const updated = await fulfillMutation.mutateAsync({
+        lineId: line.lineId,
+        quantity: qty,
+        usedByUserId: usedBy,
+      });
       setDetailRequest(updated);
       void listQuery.refetch();
     } catch (err) {
@@ -377,7 +405,15 @@ export function StockRequestsPage() {
       )}
 
       {detailRequest && (
-        <Modal open={Boolean(detailRequest)} title={detailRequest.requestNumber} onClose={() => setDetailRequest(null)}>
+        <Modal
+          open={Boolean(detailRequest)}
+          title={detailRequest.requestNumber}
+          onClose={() => {
+            setDetailRequest(null);
+            setUsedByUserId('');
+            setUsedByError(null);
+          }}
+        >
           <p>
             <span className={statusBadgeClass(detailRequest.status)}>
               {t(`inventory.stockRequests.status.${detailRequest.status}` as 'inventory.stockRequests.status.DRAFT')}
@@ -387,6 +423,18 @@ export function StockRequestsPage() {
           {detailRequest.rejectionReason && (
             <AuthAlert variant="warning">{detailRequest.rejectionReason}</AuthAlert>
           )}
+          {detailRequest.status === 'APPROVED' &&
+            detailRequest.lines.some((l) => l.quantityRemaining > 0) &&
+            canFulfill && (
+              <AccountableStaffSelect
+                value={usedByUserId}
+                onChange={(next) => {
+                  setUsedByUserId(next);
+                  if (next.trim()) setUsedByError(null);
+                }}
+                error={usedByError}
+              />
+            )}
           {detailRequest.lines.map((line) => (
             <div key={line.lineId} className={styles.lineRow}>
               <span>{line.sku} — {line.itemName}</span>

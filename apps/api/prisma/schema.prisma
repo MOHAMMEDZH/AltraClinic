@@ -90,6 +90,14 @@ enum AppointmentStatus {
   @@map("appointment_status")
 }
 
+/// Wave B — appointment-level commercial snapshot write provenance (not global cutover).
+enum AppointmentSnapshotWriteMode {
+  LEGACY
+  CANONICAL_REQUIRED
+
+  @@map("appointment_snapshot_write_mode")
+}
+
 enum WaitlistStatus {
   OPEN
   SCHEDULED
@@ -101,6 +109,8 @@ enum WaitlistStatus {
 enum SchedulingResourceType {
   ROOM
   EQUIPMENT
+  /// Wave D AR-12 / P1-03 — dental chair/operatory; same concurrency model as ROOM.
+  OPERATORY
 
   @@map("scheduling_resource_type")
 }
@@ -158,6 +168,43 @@ enum CommissionRateType {
   FIXED_AMOUNT
 
   @@map("commission_rate_type")
+}
+
+/// Phase 48 Wave F — AR-22 plan lifecycle
+enum StaffCommissionPlanStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+
+  @@map("staff_commission_plan_status")
+}
+
+/// Phase 48 Wave F — AR-22 calculation basis (frozen default SERVICE_NET_AFTER_DISCOUNT)
+enum CommissionCalculationBasis {
+  SERVICE_GROSS
+  SERVICE_NET_AFTER_DISCOUNT
+  SERVICE_NET_EXCLUDING_TAX
+  COLLECTED_REVENUE
+
+  @@map("commission_calculation_basis")
+}
+
+/// Phase 48 Wave F — AR-22 earning trigger
+enum CommissionEarningTrigger {
+  INVOICE_OR_CHARGE_FINALIZED
+  PAYMENT_COLLECTED
+
+  @@map("commission_earning_trigger")
+}
+
+/// Phase 48 Wave F — AR-22 append-only accrual status
+enum CommissionAccrualStatus {
+  PENDING
+  EARNED
+  SETTLED
+  REVERSED
+
+  @@map("commission_accrual_status")
 }
 
 enum QueueTicketStatus {
@@ -470,12 +517,29 @@ model Tenant {
   patients             Patient[]
   appointments         Appointment[]
   appointmentWaitlist  AppointmentWaitlist[]
+  appointmentSnapshotRevisions AppointmentServiceSnapshotRevision[]
+  providerServiceEligibilities ProviderServiceEligibility[]
+  serviceResourceRequirements ServiceResourceRequirement[]
+  appointmentResourceAllocations AppointmentResourceAllocation[]
+  portalSchedulingIdempotencyLedger PortalSchedulingIdempotencyLedger[]
   schedulingResources  SchedulingResource[]
   appointmentTemplates AppointmentTemplate[]
   branchOperatingHours BranchOperatingHours[]
   providerWeeklySchedules ProviderWeeklySchedule[]
   encounters           Encounter[]
   clinicalNoteTemplates ClinicalNoteTemplate[]
+  clinicalFormTemplates ClinicalFormTemplate[]
+  patientFormInstances  PatientFormInstance[]
+  clinicalServiceFormRequirements ClinicalServiceFormRequirement[]
+  treatmentPlanItemAppointments TreatmentPlanItemAppointment[]
+  dentalLabCases        DentalLabCase[]
+  dentalLabCaseAttachments DentalLabCaseAttachment[]
+  servicePerformances   ServicePerformance[]
+  servicePerformanceParticipants ServicePerformanceParticipant[]
+  servicePerformanceCorrections ServicePerformanceCorrection[]
+  treatmentCourses      TreatmentCourse[]
+  courseSessions        CourseSession[]
+  deviceTreatmentRecords DeviceTreatmentRecord[]
   inventoryItems       InventoryItem[]
   inventorySuppliers   InventorySupplier[]
   purchaseOrders       PurchaseOrder[]
@@ -487,10 +551,21 @@ model Tenant {
   invoiceWriteOffs     InvoiceWriteOff[]
   paymentPlans         PaymentPlan[]
   servicePrices        ServicePrice[]
+  clinicalServiceDefinitions CanonicalClinicalServiceDefinition[]
+  clinicalServiceConfigs     TenantServiceConfiguration[]
+  clinicalPriceVersions      ClinicalServicePriceVersion[]
+  clinicalServicePresentationOverrides TenantServicePresentationOverride[]
+  legacyClinicalServiceMappings LegacyClinicalServiceMapping[]
+  legacyClinicalPriceMappings   LegacyClinicalPriceMapping[]
   paymentReceipts      PaymentReceipt[]
   billingSequences     TenantBillingSequence[]
   commissionRules      CommissionRule[]
   commissions          CommissionCalculation[]
+  staffCommissionPlanVersions StaffCommissionPlanVersion[]
+  commissionAccruals   CommissionAccrual[]
+  commissionSettlementAllocations CommissionSettlementAllocation[]
+  commissionPackageSessionAllocations CommissionPackageSessionAllocation[]
+  commissionCorrectionLineages CommissionCorrectionLineage[]
   queueTickets         QueueTicket[]
   loyaltyAccounts      LoyaltyAccount[]
   loyaltyRewards       LoyaltyReward[]
@@ -577,6 +652,10 @@ model Branch {
   region      Region?   @relation(fields: [regionId], references: [id], onDelete: SetNull)
   departments Department[]
   userBranchAccess UserBranchAccess[]
+  clinicalServiceConfigs TenantServiceConfiguration[]
+  clinicalPriceVersions  ClinicalServicePriceVersion[]
+  providerServiceEligibilities ProviderServiceEligibility[]
+  servicePerformances ServicePerformance[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -787,11 +866,17 @@ model User {
   passwordChangedAt   DateTime  @default(now())
   lastLoginAt         DateTime?
   lastLoginIp         String?   @db.VarChar(45)
+  /// Phase 48 Wave F — owner commission eligibility (default OFF; ≠ provider eligibility)
+  commissionEnabled           Boolean   @default(false)
+  defaultCommissionPercent    Decimal?  @db.Decimal(5, 2)
+  commissionEffectiveFrom     DateTime? @db.Date
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
 
   tenant                  Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  staffCommissionPlanVersions StaffCommissionPlanVersion[]
+  commissionAccruals          CommissionAccrual[]
   department              Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   branchAccess            UserBranchAccess[]
   customRoles             UserCustomRole[]
@@ -973,6 +1058,8 @@ model PlatformUser {
   mfaResetRequestsAsTarget    PlatformMfaResetRequest[] @relation("MfaResetTarget")
   mfaResetRequestsAsRequester PlatformMfaResetRequest[] @relation("MfaResetRequester")
   mfaResetRequestsAsApprover  PlatformMfaResetRequest[] @relation("MfaResetApprover")
+  salesRepresentative         PlatformSalesRepresentative?
+  notificationPreferences     PlatformNotificationPreference[]
 
   @@index([isActive])
   @@index([status])
@@ -1227,8 +1314,13 @@ model Patient {
   waitlistEntries     AppointmentWaitlist[]
   clinicSubscriptions ClinicSubscription[]
   mediaAssets         MediaAsset[]
+  formInstances       PatientFormInstance[]
   problems            PatientProblem[]
   labResults          LabResult[]
+  dentalLabCases      DentalLabCase[]
+  servicePerformances ServicePerformance[]
+  treatmentCourses    TreatmentCourse[]
+  deviceTreatmentRecords DeviceTreatmentRecord[]
 
   @@index([tenantId])
   @@index([tenantId, deletedAt])
@@ -1272,20 +1364,36 @@ model Appointment {
   notes           String?             @db.Text
   cancellationReason String?          @db.VarChar(500)
   /// consultation, follow_up, procedure, imaging, lab, cleaning, etc.
+  /// Preserved for legacy/display; Wave B canonical bookings also set clinicalServiceId.
   serviceType     String?             @db.VarChar(100)
+  /// Wave B canonical clinical service identity (null for legacy-only rows).
+  clinicalServiceId String?           @db.Uuid
+  /// Wave B effective commercial snapshot pointer (append-only revisions).
+  effectiveSnapshotRevisionId String? @db.Uuid
   isEmergency     Boolean             @default(false)
   /// Groups recurring series appointments
   recurrenceSeriesId String?          @db.Uuid
   /// Room or equipment resource
   resourceId      String?             @db.Uuid
+  /// Wave B — set when appointment first reaches CONFIRMED (irreversible commercial lock).
+  commercialLockedAt DateTime?
+  /// Wave B — write provenance for snapshot backfill classification (not createdAt/cutover).
+  /// LEGACY = bounded legacy booking (revision 1 not mandatory). CANONICAL_REQUIRED = revision 1 must exist.
+  snapshotWriteMode AppointmentSnapshotWriteMode @default(LEGACY)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   deletedAt       DateTime?
 
   tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient         Patient             @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  effectiveSnapshotRevision AppointmentServiceSnapshotRevision? @relation("AppointmentEffectiveSnapshot", fields: [effectiveSnapshotRevisionId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[] @relation("AppointmentSnapshotHistory")
+  resourceAllocations AppointmentResourceAllocation[]
   encounters      Encounter[]
   queueTicket     QueueTicket?
+  planItemLinks   TreatmentPlanItemAppointment[]
+  servicePerformances ServicePerformance[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -1293,9 +1401,159 @@ model Appointment {
   @@index([tenantId, providerId])
   @@index([tenantId, scheduledStart])
   @@index([tenantId, recurrenceSeriesId])
+  @@index([tenantId, recurrenceSeriesId, scheduledStart, id], map: "appointments_tenant_series_start_idx")
   @@index([tenantId, resourceId])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, effectiveSnapshotRevisionId])
+  @@index([tenantId, commercialLockedAt])
+  @@index([tenantId, snapshotWriteMode, effectiveSnapshotRevisionId])
   @@map("appointments")
+}
+
+/// Wave B — migration-owned runtime markers (e.g. snapshot backfill cutover watermark).
+model Phase48WaveBRuntimeMarker {
+  key               String   @id @db.Text
+  valueTimestamptz  DateTime @db.Timestamptz(6)
+  note              String?  @db.Text
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("phase48_wave_b_runtime_markers")
+}
+
+/// Wave B AR-05 — append-only appointment commercial snapshot revisions.
+model AppointmentServiceSnapshotRevision {
+  id                           String   @id @default(uuid()) @db.Uuid
+  tenantId                     String   @db.Uuid
+  appointmentId                String   @db.Uuid
+  revisionNumber               Int
+  previousRevisionId           String?  @db.Uuid
+  /// null allowed for LEGACY_UNMAPPED historical records
+  clinicalServiceId            String?  @db.Uuid
+  stableKey                    String   @db.VarChar(160)
+  displayNameAr                String   @db.VarChar(255)
+  displayNameEn                String   @db.VarChar(255)
+  tenantServiceConfigurationId String?  @db.Uuid
+  priceVersionId               String?  @db.Uuid
+  pricingUnit                  ClinicalPricingUnit @default(PER_VISIT)
+  quantity                     Decimal  @db.Decimal(18, 4)
+  currency                     String   @db.VarChar(3)
+  unitPrice                    Decimal  @db.Decimal(18, 4)
+  taxPercent                   Decimal? @db.Decimal(5, 2)
+  lineBasisAmount              Decimal  @db.Decimal(18, 4)
+  commercialReason             String?  @db.VarChar(255)
+  changeReason                 String?  @db.VarChar(500)
+  actorId                      String   @db.Uuid
+  capturedAt                   DateTime @default(now())
+  changeCommandContext         String?  @db.VarChar(120)
+  createdAt                    DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  appointment     Appointment @relation("AppointmentSnapshotHistory", fields: [appointmentId], references: [id], onDelete: Restrict)
+  previousRevision AppointmentServiceSnapshotRevision? @relation("SnapshotRevisionChain", fields: [previousRevisionId], references: [id], onDelete: Restrict)
+  nextRevisions   AppointmentServiceSnapshotRevision[] @relation("SnapshotRevisionChain")
+  effectiveForAppointments Appointment[] @relation("AppointmentEffectiveSnapshot")
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  tenantServiceConfiguration TenantServiceConfiguration? @relation(fields: [tenantServiceConfigurationId], references: [id], onDelete: Restrict)
+  priceVersion    ClinicalServicePriceVersion? @relation(fields: [priceVersionId], references: [id], onDelete: Restrict)
+  servicePerformances ServicePerformance[]
+
+  @@unique([appointmentId, revisionNumber])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("appointment_service_snapshot_revisions")
+}
+
+/// Wave B AR-07 — first-class provider×service eligibility.
+model ProviderServiceEligibility {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @db.Uuid
+  providerUserId          String   @db.Uuid
+  clinicalServiceId       String   @db.Uuid
+  /// null = tenant-level eligibility (applies to all branches)
+  branchId                String?  @db.Uuid
+  specialtyRequirementRef String?  @db.VarChar(120)
+  active                  Boolean  @default(true)
+  effectiveFrom           DateTime
+  effectiveTo             DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  inactivatedAt           DateTime?
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  /// Ownership validated in ProviderEligibilityService (tenant-scoped user lookup).
+  /// No Prisma FK: historical/synthetic provider UUIDs may exist without users rows.
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  branch          Branch? @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, providerUserId, clinicalServiceId, active])
+  @@index([tenantId, clinicalServiceId, active])
+  @@index([tenantId, branchId])
+  @@map("provider_service_eligibilities")
+}
+
+/// Wave B PA — multi-resource allocations (Appointment.resourceId remains primary/legacy = resourceIds[0]).
+model AppointmentResourceAllocation {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  appointmentId         String   @db.Uuid
+  schedulingResourceId  String   @db.Uuid
+  createdAt             DateTime @default(now())
+
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  appointment         Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  schedulingResource  SchedulingResource @relation(fields: [schedulingResourceId], references: [id], onDelete: Restrict)
+
+  @@unique([appointmentId, schedulingResourceId])
+  @@index([tenantId, schedulingResourceId])
+  @@map("appointment_resource_allocations")
+}
+
+/// Wave B PA — portal scheduling mutation idempotency (DB-backed, tenant+patient scoped).
+model PortalSchedulingIdempotencyLedger {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  patientId       String   @db.Uuid
+  operation       String   @db.VarChar(64)
+  idempotencyKey  String   @db.VarChar(255)
+  fingerprint     String   @db.VarChar(64)
+  /// IN_PROGRESS | COMPLETED | FAILED
+  status          String   @default("IN_PROGRESS") @db.VarChar(32)
+  responseJson    Json?
+  expiresAt       DateTime?
+  completedAt     DateTime?
+  /// CAS ownership for stale reclaim / complete / fail
+  attemptVersion  BigInt   @default(0)
+  ownerToken      String?  @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, patientId, operation, idempotencyKey])
+  @@index([tenantId, patientId])
+  @@index([status, expiresAt])
+  @@index([ownerToken])
+  @@map("portal_scheduling_idempotency_ledger")
+}
+
+/// Wave B AR-12 — service resource requirement foundation (not P1-03 OPERATORY workflow).
+model ServiceResourceRequirement {
+  id                String                 @id @default(uuid()) @db.Uuid
+  tenantId          String                 @db.Uuid
+  clinicalServiceId String                 @db.Uuid
+  resourceType      SchedulingResourceType
+  quantity          Int                    @default(1)
+  constraints       Json?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, resourceType])
+  @@index([tenantId, clinicalServiceId])
+  @@map("service_resource_requirements")
 }
 
 /// Patient waitlist when preferred slots are full.
@@ -1321,13 +1579,15 @@ model AppointmentWaitlist {
   @@map("appointment_waitlist")
 }
 
-/// Bookable rooms and equipment (chairs, imaging units, etc.).
+/// Bookable rooms, equipment, and operatories (Wave D AR-12).
 model SchedulingResource {
   id           String                 @id @default(uuid()) @db.Uuid
   tenantId     String                 @db.Uuid
   branchId     String?                @db.Uuid
   name         String                 @db.VarChar(120)
   resourceType SchedulingResourceType
+  /// Optional display subtype (e.g. chair label) — not a competing enum.
+  displaySubtype String?              @db.VarChar(80)
   isActive     Boolean                @default(true)
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
@@ -1336,6 +1596,7 @@ model SchedulingResource {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   queueTickets QueueTicket[]
+  appointmentAllocations AppointmentResourceAllocation[]
 
   @@index([tenantId, resourceType])
   @@index([tenantId, branchId])
@@ -1469,6 +1730,7 @@ model Encounter {
   tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient         Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
   appointment     Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  servicePerformances ServicePerformance[]
   events          EncounterEvent[]
 
   @@index([tenantId])
@@ -1849,14 +2111,252 @@ model TreatmentPlanItem {
   patientPortion    Decimal?                @db.Decimal(12, 2)
   requiresPreAuth   Boolean                 @default(false)
   preAuthStatus     String?                 @db.VarChar(30)
+  /// Wave D — nullable historical dental service FK (canonical write ON requires it for new links).
+  clinicalServiceId String?                 @db.Uuid
 
   phase      TreatmentPhase     @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   dependsOn  TreatmentPlanItem? @relation("PlanItemDependency", fields: [dependsOnItemId], references: [id], onDelete: SetNull)
   dependents TreatmentPlanItem[] @relation("PlanItemDependency")
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  appointmentLinks TreatmentPlanItemAppointment[]
+  labCases   DentalLabCase[]
 
   @@index([phaseId])
   @@index([tenantId, status])
+  @@index([tenantId, clinicalServiceId])
   @@map("treatment_plan_items")
+}
+
+/// Wave D AR-08 — M:N plan item ↔ appointment. Links survive reschedule of the same appointment row.
+model TreatmentPlanItemAppointment {
+  id              String                               @id @default(uuid()) @db.Uuid
+  tenantId        String                               @db.Uuid
+  planItemId      String                               @db.Uuid
+  appointmentId   String                               @db.Uuid
+  linkRole        TreatmentPlanItemAppointmentLinkRole @default(PRIMARY)
+  sortOrder       Int                                  @default(0)
+  createdAt       DateTime                             @default(now())
+  createdBy       String                               @db.Uuid
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  planItem    TreatmentPlanItem @relation(fields: [planItemId], references: [id], onDelete: Restrict)
+  appointment Appointment       @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+
+  @@unique([planItemId, appointmentId])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, planItemId])
+  @@map("treatment_plan_item_appointments")
+}
+
+/// Wave D AR-16 / P1-07 — dental laboratory case. Not a procurement engine.
+model DentalLabCase {
+  id           String              @id @default(uuid()) @db.Uuid
+  tenantId     String              @db.Uuid
+  branchId     String?             @db.Uuid
+  patientId    String              @db.Uuid
+  providerId   String              @db.Uuid
+  planItemId   String?             @db.Uuid
+  labVendor    String              @db.VarChar(200)
+  caseType     String              @db.VarChar(80)
+  toothOrArch  String?             @db.VarChar(80)
+  shade        String?             @db.VarChar(80)
+  specs        String?             @db.Text
+  sentAt       DateTime?
+  expectedAt   DateTime?
+  receivedAt   DateTime?
+  status       DentalLabCaseStatus @default(DRAFT)
+  notes        String?             @db.Text
+  /// External cost reference only — not a second procurement SoR.
+  costRef      String?             @db.VarChar(120)
+  createdBy    String              @db.Uuid
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  deletedAt    DateTime?
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient    Patient            @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  planItem   TreatmentPlanItem? @relation(fields: [planItemId], references: [id], onDelete: Restrict)
+  attachments DentalLabCaseAttachment[]
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, status])
+  @@index([tenantId, planItemId])
+  @@map("dental_lab_cases")
+}
+
+model DentalLabCaseAttachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  labCaseId    String   @db.Uuid
+  mediaAssetId String   @db.Uuid
+  attachedBy   String   @db.Uuid
+  attachedAt   DateTime @default(now())
+
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  labCase    DentalLabCase @relation(fields: [labCaseId], references: [id], onDelete: Restrict)
+  mediaAsset MediaAsset    @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([labCaseId, mediaAssetId])
+  @@index([tenantId, labCaseId])
+  @@map("dental_lab_case_attachments")
+}
+
+/// Wave D AR-21 start — actual performer attribution (commission accruals are Wave F).
+model ServicePerformance {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  tenantId            String                   @db.Uuid
+  branchId            String?                  @db.Uuid
+  appointmentId       String?                  @db.Uuid
+  encounterId         String?                  @db.Uuid
+  patientId           String?                  @db.Uuid
+  clinicalServiceId   String                   @db.Uuid
+  snapshotRevisionId  String?                  @db.Uuid
+  performedAt         DateTime
+  status              ServicePerformanceStatus @default(DRAFT)
+  createdBy           String                   @db.Uuid
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  completedAt         DateTime?
+  completedBy         String?                  @db.Uuid
+  cancelledAt         DateTime?
+  cancelledBy         String?                  @db.Uuid
+  deletedAt           DateTime?
+
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch       Branch?           @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  appointment  Appointment?      @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  encounter    Encounter?        @relation(fields: [encounterId], references: [id], onDelete: Restrict)
+  patient      Patient?          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  snapshotRevision AppointmentServiceSnapshotRevision? @relation(fields: [snapshotRevisionId], references: [id], onDelete: Restrict)
+  participants ServicePerformanceParticipant[]
+  corrections  ServicePerformanceCorrection[]
+  commissionAccruals CommissionAccrual[]
+  invoiceLineItems InvoiceLineItem[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, encounterId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("service_performances")
+}
+
+model ServicePerformanceParticipant {
+  id               String                            @id @default(uuid()) @db.Uuid
+  tenantId         String                            @db.Uuid
+  performanceId    String                            @db.Uuid
+  userId           String                            @db.Uuid
+  role             ServicePerformanceParticipantRole
+  /// 0–100; sum of revenue shares on a performance must be ≤ 100.
+  attributionShare Decimal?                          @db.Decimal(5, 2)
+  recordedBy       String                            @db.Uuid
+  recordedAt       DateTime                          @default(now())
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  performance ServicePerformance @relation(fields: [performanceId], references: [id], onDelete: Restrict)
+
+  @@unique([performanceId, userId])
+  @@index([tenantId, userId])
+  @@map("service_performance_participants")
+}
+
+model ServicePerformanceCorrection {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  performanceId         String   @db.Uuid
+  reason                String   @db.VarChar(500)
+  actorId               String   @db.Uuid
+  previousParticipants  Json
+  createdAt             DateTime @default(now())
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  performance ServicePerformance @relation(fields: [performanceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, performanceId])
+  @@map("service_performance_corrections")
+}
+
+/// Phase 48 Wave E / AR-13 — multi-session treatment course SoR (cross-specialty).
+model TreatmentCourse {
+  id                     String               @id @default(uuid()) @db.Uuid
+  tenantId               String               @db.Uuid
+  patientId              String               @db.Uuid
+  clinicalServiceId      String               @db.Uuid
+  plannedSessions        Int
+  intervalMinDays        Int?
+  intervalMaxDays        Int?
+  packagePriceVersionId  String?              @db.Uuid
+  status                 TreatmentCourseStatus @default(DRAFT)
+  createdBy              String               @db.Uuid
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  deletedAt              DateTime?
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient  Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  sessions CourseSession[]
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, status])
+  @@map("treatment_courses")
+}
+
+model CourseSession {
+  id            String              @id @default(uuid()) @db.Uuid
+  tenantId      String              @db.Uuid
+  courseId      String              @db.Uuid
+  sequence      Int
+  appointmentId String?             @db.Uuid
+  status        CourseSessionStatus @default(PLANNED)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  course TreatmentCourse @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([courseId, sequence])
+  @@index([tenantId, courseId])
+  @@index([tenantId, appointmentId])
+  @@map("course_sessions")
+}
+
+/// Phase 48 Wave E / AR-14 — device/laser treatment parameter SoR.
+model DeviceTreatmentRecord {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @db.Uuid
+  /// Opaque external device identifier (not an internal FK / resource authority).
+  deviceId           String?   @db.VarChar(120)
+  deviceType         String    @db.VarChar(80)
+  clinicalServiceId  String    @db.Uuid
+  bodyArea           String?   @db.VarChar(120)
+  parameterPayload   Json      @default("{}")
+  parameterSchemaKey String    @db.VarChar(120)
+  patientId          String    @db.Uuid
+  /// Clinical provider/performer (not inferred from authenticated recorder).
+  providerId         String    @db.Uuid
+  branchId           String?   @db.Uuid
+  recordedAt         DateTime  @default(now())
+  /// Authenticated recorder (accountability).
+  recordedBy         String    @db.Uuid
+  beautyAnnotationId String?   @db.Uuid
+  encounterId        String?   @db.Uuid
+  correctionReason   String?   @db.VarChar(500)
+  correctedAt        DateTime?
+  correctedBy        String?   @db.Uuid
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, deviceType])
+  @@index([tenantId, encounterId])
+  @@map("device_treatment_records")
 }
 
 /// Periodontal charting exam — full-mouth probing with historical snapshots.
@@ -2001,7 +2501,7 @@ model InventoryItem {
   tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   category          InventoryCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   supplier          InventorySupplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  consumptionLogs   InventoryConsumptionLog[]
+  usageLedgerEntries InventoryUsageLedger[]
   stockMovements    InventoryStockMovement[]
   batches           InventoryBatch[]
   disposalLogs      InventoryDisposalLog[]
@@ -2026,32 +2526,77 @@ model InventoryItem {
   @@map("inventory_items")
 }
 
-/// Immutable consumption event — triggered automatically on treatment completion.
-model InventoryConsumptionLog {
-  id              String        @id @default(uuid()) @db.Uuid
-  tenantId        String        @db.Uuid
-  inventoryItemId String        @db.Uuid
-  encounterId     String?       @db.Uuid
-  patientId       String?       @db.Uuid
-  procedureCode   String?       @db.VarChar(30)
-  quantityUsed    Decimal       @db.Decimal(18, 4)
-  /// userId of staff who triggered the consumption
-  consumedBy      String        @db.Uuid
-  notes           String?       @db.Text
-  consumedAt      DateTime      @default(now())
-  invoiceId       String?       @db.Uuid
-  invoiceLineItemId String?     @db.Uuid
+/// Inventory usage ledger (evolved from InventoryConsumptionLog) — append-only accountability (AR-20).
+/// Table name preserved as inventory_consumption_logs (non-destructive).
+model InventoryUsageLedger {
+  id                    String        @id @default(uuid()) @db.Uuid
+  tenantId              String        @db.Uuid
+  branchId              String?       @db.Uuid
+  warehouseId           String?       @db.Uuid
+  inventoryItemId       String        @db.Uuid
+  inventoryBatchId      String?       @db.Uuid
+  encounterId           String?       @db.Uuid
+  patientId             String?       @db.Uuid
+  procedureCode         String?       @db.VarChar(30)
+  /// Conceptual quantity; column name preserved for non-destructive migration.
+  quantityUsed          Decimal       @db.Decimal(18, 4)
+  unit                  String?       @db.VarChar(30)
+  /// CLINICAL_CONSUMPTION | OPERATIONAL_CONSUMPTION | WASTAGE | DAMAGE | EXPIRED | SAMPLE_OR_PROMOTIONAL | CORRECTION | REVERSAL
+  usageType             String        @default("CLINICAL_CONSUMPTION") @db.VarChar(40)
+  /// Legacy compat: staff who triggered; new code prefers usedByUserId / recordedByUserId.
+  consumedBy            String        @db.Uuid
+  usedByUserId          String?       @db.Uuid
+  recordedByUserId      String?       @db.Uuid
+  appointmentId         String?       @db.Uuid
+  clinicalServiceId     String?       @db.Uuid
+  beautyAnnotationId    String?       @db.Uuid
+  reasonCode            String?       @db.VarChar(100)
+  notes                 String?       @db.Text
+  consumedAt            DateTime      @default(now())
+  occurredAt            DateTime?
+  recordedAt            DateTime?
+  sourceStockMovementId String?       @unique @db.Uuid
+  reversalOfUsageId     String?       @db.Uuid
+  /// POSTED | REVERSED
+  status                String        @default("POSTED") @db.VarChar(20)
+  /// ATTRIBUTED | LEGACY_UNATTRIBUTED
+  attributionStatus     String        @default("ATTRIBUTED") @db.VarChar(30)
+  invoiceId             String?       @db.Uuid
+  invoiceLineItemId     String?       @db.Uuid
 
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  invoice         Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  invoiceLineItem InvoiceLineItem? @relation(fields: [invoiceLineItemId], references: [id], onDelete: SetNull)
+  inventoryItem         InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  inventoryBatch        InventoryBatch? @relation(fields: [inventoryBatchId], references: [id], onDelete: Restrict)
+  sourceStockMovement   InventoryStockMovement? @relation(fields: [sourceStockMovementId], references: [id], onDelete: Restrict)
+  reversalOf            InventoryUsageLedger? @relation("UsageReversal", fields: [reversalOfUsageId], references: [id], onDelete: Restrict)
+  reversals             InventoryUsageLedger[] @relation("UsageReversal")
+  injectableDetail      InjectableUsageDetail?
+  invoice               Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  invoiceLineItem       InvoiceLineItem? @relation(fields: [invoiceLineItemId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([inventoryItemId])
   @@index([tenantId, consumedAt])
   @@index([tenantId, patientId])
   @@index([tenantId, invoiceId])
+  @@index([tenantId, usageType])
+  @@index([tenantId, usedByUserId])
+  @@index([tenantId, attributionStatus])
+  @@index([inventoryBatchId])
+  @@index([reversalOfUsageId])
   @@map("inventory_consumption_logs")
+}
+
+/// Clinical/injectable specialization of InventoryUsageLedger (AR-11) — no independent stock decrement.
+model InjectableUsageDetail {
+  usageLedgerId       String   @id @db.Uuid
+  dose                Decimal? @db.Decimal(18, 4)
+  anatomicalSite      String?  @db.VarChar(100)
+  beautyAnnotationId  String?  @db.Uuid
+  notes               String?  @db.Text
+
+  usageLedger InventoryUsageLedger @relation(fields: [usageLedgerId], references: [id], onDelete: Restrict)
+
+  @@map("injectable_usage_details")
 }
 
 /// Immutable stock movement ledger — all quantity changes (receive, consume, adjust, initial).
@@ -2074,6 +2619,7 @@ model InventoryStockMovement {
   createdAt       DateTime      @default(now())
 
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  usageLedgerEntry InventoryUsageLedger?
 
   @@index([tenantId])
   @@index([inventoryItemId])
@@ -2094,17 +2640,21 @@ model InventoryBatch {
   quantityOnHand   Decimal   @default(0) @db.Decimal(18, 4)
   /// ACTIVE | DEPLETED | DISPOSED
   status           String    @default("ACTIVE") @db.VarChar(20)
+  recalled         Boolean   @default(false)
+  recalledAt       DateTime?
   receivedAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   inventoryItem    InventoryItem          @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   disposalLogs     InventoryDisposalLog[]
+  usageLedgerEntries InventoryUsageLedger[]
 
   @@index([tenantId])
   @@index([inventoryItemId])
   @@index([tenantId, expiryDate])
   @@index([tenantId, status])
+  @@index([tenantId, recalled])
   @@map("inventory_batches")
 }
 
@@ -2479,7 +3029,7 @@ model Invoice {
   writeOffs      InvoiceWriteOff[]
   paymentPlans   PaymentPlan[]
   receipts       PaymentReceipt[]
-  consumptionLogs InventoryConsumptionLog[]
+  usageLedgerEntries InventoryUsageLedger[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -2507,13 +3057,27 @@ model InvoiceLineItem {
   /// Optional service classification code for commission rule matching
   serviceCode     String?  @db.VarChar(50)
   encounterId     String?  @db.Uuid
+  /// Wave F Round 2 — durable ServicePerformance ↔ InvoiceLine attribution (AR-22)
+  servicePerformanceId String? @db.Uuid
+  /// Wave F Round 4 — durable later-bind provenance (server-authored)
+  appointmentId       String? @db.Uuid
+  clinicalServiceId   String? @db.Uuid
+  snapshotRevisionId  String? @db.Uuid
+  courseSessionId     String? @db.Uuid
+  /// ACTIVE binding participates in unique SP constraint; SUPERSEDED frees slot for correction replacement
+  performanceBindingStatus String @default("ACTIVE") @db.VarChar(20)
   createdAt       DateTime @default(now())
 
   invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  consumptionLogs InventoryConsumptionLog[]
+  servicePerformance ServicePerformance? @relation(fields: [servicePerformanceId], references: [id], onDelete: Restrict)
+  usageLedgerEntries InventoryUsageLedger[]
+  packageAllocations CommissionPackageSessionAllocation[]
 
   @@index([invoiceId])
   @@index([tenantId])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, appointmentId])
+  @@index([tenantId, courseSessionId])
   @@map("invoice_line_items")
 }
 
@@ -2699,10 +3263,306 @@ model ServicePrice {
   updatedAt     DateTime @updatedAt
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  legacyPriceMappings LegacyClinicalPriceMapping[]
 
   @@unique([tenantId, serviceCode])
   @@index([tenantId, isActive])
   @@map("service_prices")
+}
+
+/// Phase 48 Wave A — Clinical procedure / service Source of Record (NOT HealthcareCatalog).
+enum ClinicalServiceProvenance {
+  SYSTEM_CANONICAL
+  TENANT_CUSTOM
+}
+
+enum ClinicalServiceLifecycle {
+  DRAFT
+  PUBLISHED
+  DEPRECATED
+  INACTIVE
+}
+
+enum ClinicalServiceDomain {
+  GENERAL
+  DENTAL
+  AESTHETIC
+  DIAGNOSTIC
+  OTHER
+}
+
+/// Wave A vocabulary + Wave D P1-02 dental/aesthetic/course units.
+enum ClinicalPricingUnit {
+  PER_VISIT
+  PER_PROCEDURE
+  PER_TOOTH
+  PER_SESSION
+  PER_UNIT
+  PER_SURFACE
+  PER_QUADRANT
+  PER_ARCH
+  PER_AREA
+  PER_COURSE
+  PER_PACKAGE
+  OTHER
+}
+
+enum TreatmentPlanItemAppointmentLinkRole {
+  PRIMARY
+  SUPPORTING
+}
+
+enum DentalLabCaseStatus {
+  DRAFT
+  SENT
+  IN_LAB
+  RECEIVED
+  SEATED
+  CANCELLED
+}
+
+enum ServicePerformanceStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+}
+
+enum ServicePerformanceParticipantRole {
+  PRIMARY
+  ASSISTING
+}
+
+enum TreatmentCourseStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CourseSessionStatus {
+  PLANNED
+  BOOKED
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum ClinicalPriceVersionStatus {
+  DRAFT
+  /// Published and currently in the ACTIVE commercial schedule (non-overlapping ranges).
+  ACTIVE
+  /// Published for a future effectiveFrom; not ACTIVE until its boundary (AR-04).
+  SCHEDULED
+  SUPERSEDED
+  INACTIVE
+}
+
+enum LegacyClinicalMappingStatus {
+  MAPPED
+  LEGACY_UNMAPPED
+  AMBIGUOUS
+}
+
+model CanonicalClinicalServiceDefinition {
+  id              String                     @id @default(uuid()) @db.Uuid
+  /// SYSTEM_CANONICAL: null. TENANT_CUSTOM: owning tenant.
+  tenantId        String?                    @db.Uuid
+  provenance      ClinicalServiceProvenance
+  /// canonical.<domain>.<key> | tenant.<tenantId>.custom.<key>
+  stableKey       String                     @db.VarChar(200)
+  domain          ClinicalServiceDomain      @default(GENERAL)
+  categoryKey     String?                    @db.VarChar(100)
+  lifecycle       ClinicalServiceLifecycle   @default(DRAFT)
+  defaultDurationMin Int?
+  publishedAt     DateTime?
+  publishedBy     String?                    @db.Uuid
+  deprecatedAt    DateTime?
+  deprecatedBy    String?                    @db.Uuid
+  inactivatedAt   DateTime?
+  inactivatedBy   String?                    @db.Uuid
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  tenant          Tenant?                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  translations    ClinicalServiceTranslation[]
+  aliases         ClinicalServiceAlias[]
+  tenantConfigs   TenantServiceConfiguration[]
+  priceVersions   ClinicalServicePriceVersion[]
+  presentationOverrides TenantServicePresentationOverride[]
+  legacyServiceMappings LegacyClinicalServiceMapping[]
+  legacyPriceMappings   LegacyClinicalPriceMapping[]
+  appointments    Appointment[]
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
+  providerEligibilities ProviderServiceEligibility[]
+  resourceRequirements ServiceResourceRequirement[]
+  treatmentPlanItems TreatmentPlanItem[]
+  servicePerformances ServicePerformance[]
+
+  @@unique([stableKey])
+  @@index([provenance, lifecycle])
+  @@index([tenantId, lifecycle])
+  @@index([domain, lifecycle])
+  @@map("canonical_clinical_service_definitions")
+}
+
+model ClinicalServiceTranslation {
+  id              String   @id @default(uuid()) @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  displayName     String   @db.VarChar(255)
+  shortDescription String? @db.VarChar(500)
+  longDescription String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([clinicalServiceId, locale])
+  @@index([locale, displayName])
+  @@map("clinical_service_translations")
+}
+
+/// Search/marketing only — never identity-bearing.
+model ClinicalServiceAlias {
+  id              String   @id @default(uuid()) @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  aliasText       String   @db.VarChar(255)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([clinicalServiceId, locale])
+  @@index([locale, aliasText])
+  @@map("clinical_service_aliases")
+}
+
+/// Display-only tenant override — never changes stableKey / identity.
+model TenantServicePresentationOverride {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  clinicalServiceId String @db.Uuid
+  locale          String   @db.VarChar(10)
+  displayNameOverride String? @db.VarChar(255)
+  shortDescriptionOverride String? @db.VarChar(500)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, locale])
+  @@index([tenantId, clinicalServiceId])
+  @@map("tenant_service_presentation_overrides")
+}
+
+model TenantServiceConfiguration {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  clinicalServiceId String @db.Uuid
+  /// null = tenant default; non-null = branch override
+  branchId        String?  @db.Uuid
+  enabled         Boolean  @default(true)
+  defaultDurationOverride Int?
+  /// Foundation-only JSON array of resource type keys (Wave B behavior not activated).
+  requiresResourceTypes Json @default("[]")
+  bookingVisibleOnPortal Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
+
+  @@index([tenantId, clinicalServiceId])
+  @@index([tenantId, branchId])
+  @@index([clinicalServiceId, enabled])
+  @@map("tenant_service_configurations")
+}
+
+model ClinicalServicePriceVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  /// null = tenant default; non-null = branch override
+  branchId        String?  @db.Uuid
+  clinicalServiceId String @db.Uuid
+  /// P1-02 variant foundation reserved — null in Wave A.
+  serviceVariantId String? @db.Uuid
+  pricingUnit     ClinicalPricingUnit @default(PER_VISIT)
+  currency        String   @db.VarChar(3)
+  unitPrice       Decimal  @db.Decimal(18, 4)
+  taxPercent      Decimal  @default(0) @db.Decimal(5, 2)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  status          ClinicalPriceVersionStatus @default(DRAFT)
+  publishedAt     DateTime?
+  publishedBy     String?  @db.Uuid
+  supersededAt    DateTime?
+  supersededByVersionId String? @db.Uuid
+  inactivatedAt   DateTime?
+  inactivatedBy   String?  @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch          Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  snapshotRevisions AppointmentServiceSnapshotRevision[]
+
+  @@index([tenantId, clinicalServiceId, status, effectiveFrom])
+  @@index([tenantId, branchId, clinicalServiceId, status])
+  @@index([clinicalServiceId, status])
+  @@map("clinical_service_price_versions")
+}
+
+model LegacyClinicalServiceMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String?  @db.Uuid
+  sourceSystem    String   @db.VarChar(64)
+  sourceCode      String   @db.VarChar(100)
+  sourceLabelEn   String?  @db.VarChar(255)
+  sourceLabelAr   String?  @db.VarChar(255)
+  status          LegacyClinicalMappingStatus
+  clinicalServiceId String? @db.Uuid
+  decisionNote    String?  @db.VarChar(500)
+  decidedBy       String?  @db.Uuid
+  decidedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@index([sourceSystem, sourceCode])
+  @@index([status])
+  @@index([clinicalServiceId])
+  @@map("legacy_clinical_service_mappings")
+}
+
+model LegacyClinicalPriceMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  servicePriceId  String   @db.Uuid
+  status          LegacyClinicalMappingStatus
+  clinicalServiceId String? @db.Uuid
+  priceVersionId  String?  @db.Uuid
+  decisionNote    String?  @db.VarChar(500)
+  decidedBy       String?  @db.Uuid
+  decidedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  servicePrice    ServicePrice @relation(fields: [servicePriceId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+
+  @@unique([servicePriceId])
+  @@index([tenantId, status])
+  @@index([clinicalServiceId])
+  @@map("legacy_clinical_price_mappings")
 }
 
 model PaymentReceipt {
@@ -2807,6 +3667,169 @@ model CommissionLineItem {
   @@index([commissionId])
   @@index([tenantId])
   @@map("commission_line_items")
+}
+
+/// Phase 48 Wave F AR-22 — versioned staff commission plan (IMPROVE; legacy CommissionRule preserved).
+model StaffCommissionPlanVersion {
+  id                   String                     @id @default(uuid()) @db.Uuid
+  tenantId             String                     @db.Uuid
+  userId               String                     @db.Uuid
+  branchId             String?                    @db.Uuid
+  clinicalServiceId    String?                    @db.Uuid
+  enabled              Boolean                    @default(true)
+  percentage           Decimal                    @db.Decimal(5, 2)
+  rateType             CommissionRateType         @default(PERCENTAGE)
+  calculationBasis     CommissionCalculationBasis @default(SERVICE_NET_AFTER_DISCOUNT)
+  earningTrigger       CommissionEarningTrigger   @default(INVOICE_OR_CHARGE_FINALIZED)
+  effectiveFrom        DateTime                   @db.Date
+  effectiveTo          DateTime?                  @db.Date
+  status               StaffCommissionPlanStatus  @default(DRAFT)
+  createdBy            String                     @db.Uuid
+  publishedAt          DateTime?
+  publishedBy          String?                    @db.Uuid
+  supersededAt         DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  accruals CommissionAccrual[]
+
+  @@index([tenantId, userId, status])
+  @@index([tenantId, effectiveFrom])
+  @@index([tenantId, branchId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("staff_commission_plan_versions")
+}
+
+/// Phase 48 Wave F AR-22 — append-only commission accrual ledger.
+model CommissionAccrual {
+  id                       String                     @id @default(uuid()) @db.Uuid
+  tenantId                 String                     @db.Uuid
+  branchId                 String?                    @db.Uuid
+  userId                   String                     @db.Uuid
+  servicePerformanceId     String                     @db.Uuid
+  appointmentId            String?                    @db.Uuid
+  clinicalServiceId        String                     @db.Uuid
+  snapshotRevisionId       String?                    @db.Uuid
+  invoiceId                String?                    @db.Uuid
+  invoiceLineId            String?                    @db.Uuid
+  paymentId                String?                    @db.Uuid
+  refundId                 String?                    @db.Uuid
+  /// Wave F Round 4 — correction event identity (distinct from refund)
+  correctionEventId        String?                    @db.Uuid
+  /// Wave F Round 4 — explicit package/course session allocation when applicable
+  packageAllocationId      String?                    @db.Uuid
+  commissionPlanVersionId  String                     @db.Uuid
+  calculationBasis         CommissionCalculationBasis
+  attributedRevenueAmount  Decimal                    @db.Decimal(18, 4)
+  commissionPercent        Decimal                    @db.Decimal(5, 2)
+  commissionAmount         Decimal                    @db.Decimal(18, 4)
+  currency                 String                     @db.VarChar(3)
+  status                   CommissionAccrualStatus    @default(EARNED)
+  earnedAt                 DateTime?
+  settledAt                DateTime?
+  settlementReference      String?                    @db.VarChar(255)
+  reversalOfAccrualId      String?                    @db.Uuid
+  idempotencyKey           String                     @db.VarChar(200)
+  reason                   String?                    @db.Text
+  createdBy                String                     @db.Uuid
+  createdAt                DateTime                   @default(now())
+
+  tenant               Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user                 User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  servicePerformance   ServicePerformance          @relation(fields: [servicePerformanceId], references: [id], onDelete: Restrict)
+  planVersion          StaffCommissionPlanVersion  @relation(fields: [commissionPlanVersionId], references: [id], onDelete: Restrict)
+  reversalOf           CommissionAccrual?          @relation("CommissionAccrualReversal", fields: [reversalOfAccrualId], references: [id], onDelete: Restrict)
+  reversals            CommissionAccrual[]         @relation("CommissionAccrualReversal")
+  packageAllocation    CommissionPackageSessionAllocation? @relation(fields: [packageAllocationId], references: [id], onDelete: Restrict)
+
+  settlementAllocations CommissionSettlementAllocation[]
+
+  @@unique([tenantId, idempotencyKey])
+  /// Wave F Round 10 — semantic exactly-once refund effect per root
+  @@index([tenantId, reversalOfAccrualId, refundId])
+  @@index([tenantId, userId, status])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, invoiceLineId])
+  @@index([tenantId, commissionPlanVersionId])
+  @@index([tenantId, reversalOfAccrualId])
+  @@index([tenantId, correctionEventId])
+  @@index([tenantId, packageAllocationId])
+  @@map("commission_accruals")
+}
+
+/// Wave F Round 4 — explicit per-session package/course revenue allocation (frozen: no invented equal-split).
+model CommissionPackageSessionAllocation {
+  id                           String    @id @default(uuid()) @db.Uuid
+  tenantId                     String    @db.Uuid
+  treatmentCourseId            String    @db.Uuid
+  courseSessionId              String    @db.Uuid
+  servicePerformanceId         String    @db.Uuid
+  invoiceLineId                String?   @db.Uuid
+  allocatedRevenueAmount       Decimal   @db.Decimal(18, 4)
+  packageCommercialBasisAmount Decimal   @db.Decimal(18, 4)
+  currency                     String    @db.VarChar(3)
+  idempotencyKey               String    @db.VarChar(200)
+  reason                       String?   @db.Text
+  createdBy                    String    @db.Uuid
+  createdAt                    DateTime  @default(now())
+  financiallyConsumedAt        DateTime?
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  invoiceLine InvoiceLineItem? @relation(fields: [invoiceLineId], references: [id], onDelete: Restrict)
+  accruals    CommissionAccrual[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, courseSessionId])
+  @@unique([tenantId, servicePerformanceId])
+  @@index([tenantId, treatmentCourseId])
+  @@map("commission_package_session_allocations")
+}
+
+/// Wave F Round 2 — append-only settlement allocations (net settleable ledger).
+model CommissionSettlementAllocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  accrualId           String   @db.Uuid
+  amount              Decimal  @db.Decimal(18, 4)
+  currency            String   @db.VarChar(3)
+  settlementReference String   @db.VarChar(255)
+  idempotencyKey      String   @db.VarChar(200)
+  reason              String?  @db.Text
+  createdBy           String   @db.Uuid
+  createdAt           DateTime @default(now())
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  accrual CommissionAccrual @relation(fields: [accrualId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, accrualId])
+  @@map("commission_settlement_allocations")
+}
+
+/// Wave F Round 14/15 — durable correction request lineage for same-event idempotent replay
+/// (including rem=0 selected roots in mixed cohorts). Append-only; unique per tenant+event.
+/// Round 15: DB trigger enforces same-tenant parents + selected-accrual provenance parity.
+model CommissionCorrectionLineage {
+  id                        String                     @id @default(uuid()) @db.Uuid
+  tenantId                  String                     @db.Uuid
+  correctionEventId         String                     @db.Uuid
+  selectedAccrualId         String                     @db.Uuid
+  sourceInvoiceLineId       String                     @db.Uuid
+  replacementInvoiceLineId  String                     @db.Uuid
+  servicePerformanceId      String                     @db.Uuid
+  calculationBasis          CommissionCalculationBasis
+  packageAllocationId       String?                    @db.Uuid
+  createdBy                 String                     @db.Uuid
+  createdAt                 DateTime                   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, correctionEventId])
+  @@index([tenantId, servicePerformanceId])
+  @@index([tenantId, selectedAccrualId])
+  @@map("commission_correction_lineages")
 }
 
 // =============================================================================
@@ -2970,6 +3993,11 @@ model PlatformTenant {
   /// Step 16 commercial configuration plane (runtime licensing does not read these).
   commercialConfigs     PlatformSubscriptionCommercialConfig[]
   lifecycleRequests     PlatformTenantLifecycleRequest[]
+  salesOwnership        PlatformSalesCustomerOwnership?
+  /// Flexible Step 24 — optional commercial lead links (never auto-created).
+  salesLeads            PlatformSalesLead[]
+  /// Flexible Step 25 — governed Trial links (never auto-created).
+  salesTrials           PlatformSalesTrial[]
 
   @@index([status])
   @@index([plan])
@@ -4178,6 +5206,109 @@ model AiTenantSettings {
 // ── DOMAIN 19 · MEDIA & ATTACHMENTS ──────────────────────────────────────────
 // =============================================================================
 
+// =============================================================================
+// ── CLINICAL FORMS / CONSENT (Phase 48 Wave C · AR-09 / AR-10) ───────────────
+// =============================================================================
+
+/// Form template identity (kind + stableKey). Versions carry publishable content.
+model ClinicalFormTemplate {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String?  @db.Uuid
+  /// CONSENT | PHOTO_CONSENT | TREATMENT_CONSENT | INTAKE | PRE_CARE | POST_CARE | OTHER
+  kind            String   @db.VarChar(40)
+  stableKey       String   @db.VarChar(100)
+  /// DRAFT | ACTIVE | DEPRECATED
+  status          String   @default("DRAFT") @db.VarChar(20)
+  nameEn          String   @db.VarChar(255)
+  nameAr          String?  @db.VarChar(255)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String?  @db.Uuid
+
+  tenant   Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  versions ClinicalFormVersion[]
+
+  @@unique([tenantId, kind, stableKey])
+  @@index([tenantId])
+  @@index([tenantId, kind, status])
+  @@map("clinical_form_templates")
+}
+
+/// Immutable after PUBLISHED (DB trigger). contentEn + contentAr required to publish.
+model ClinicalFormVersion {
+  id                String    @id @default(uuid()) @db.Uuid
+  templateId        String    @db.Uuid
+  version           Int
+  /// DRAFT | PUBLISHED | SUPERSEDED
+  status            String    @default("DRAFT") @db.VarChar(20)
+  contentEn         String    @db.Text
+  contentAr         String    @db.Text
+  publishedAt       DateTime?
+  publishedByUserId String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+
+  template  ClinicalFormTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  instances PatientFormInstance[]
+
+  @@unique([templateId, version])
+  @@index([templateId, status])
+  @@map("clinical_form_versions")
+}
+
+/// Patient-signed (or draft) instance pinned to a published version. SIGNED is immutable.
+model PatientFormInstance {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @db.Uuid
+  patientId         String    @db.Uuid
+  versionId         String    @db.Uuid
+  appointmentId     String?   @db.Uuid
+  clinicalServiceId String?   @db.Uuid
+  /// DRAFT | SIGNED | VOID
+  status            String    @default("DRAFT") @db.VarChar(20)
+  signedAt          DateTime?
+  signerUserId      String?   @db.Uuid
+  signerPatientId   String?   @db.Uuid
+  method            String?   @db.VarChar(40)
+  signedContentEn   String?   @db.Text
+  signedContentAr   String?   @db.Text
+  voidedAt          DateTime?
+  voidedByUserId    String?   @db.Uuid
+  voidReason        String?   @db.Text
+  createdAt         DateTime  @default(now())
+  createdByUserId   String?   @db.Uuid
+
+  tenant  Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient Patient             @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  version ClinicalFormVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, patientId, status])
+  @@index([versionId])
+  @@index([tenantId, clinicalServiceId])
+  @@map("patient_form_instances")
+}
+
+/// Which form kinds are required before completing a clinical service.
+model ClinicalServiceFormRequirement {
+  id                String  @id @default(uuid()) @db.Uuid
+  tenantId          String  @db.Uuid
+  clinicalServiceId String  @db.Uuid
+  formKind          String  @db.VarChar(40)
+  required          Boolean @default(true)
+  active            Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, clinicalServiceId, formKind])
+  @@index([tenantId, clinicalServiceId, active])
+  @@map("clinical_service_form_requirements")
+}
+
+// =============================================================================
+// ── MEDIA ───────────────────────────────────────────────────────────────────
+// =============================================================================
+
 /// Tenant-scoped media asset with processing variants stored as JSONB.
 /// Storage keys point to object storage (local filesystem or S3); never serve directly.
 model MediaAsset {
@@ -4189,6 +5320,8 @@ model MediaAsset {
   ownerType           String                @db.VarChar(50)
   ownerId             String                @db.Uuid
   patientId           String?               @db.Uuid
+  /// When true, get/download requires signed PHOTO_CONSENT for the patient (AR-10).
+  requiresPhotoConsent Boolean              @default(false)
   originalFilename    String                @db.VarChar(500)
   mimeType            String                @db.VarChar(127)
   sizeBytes           BigInt
@@ -4212,6 +5345,7 @@ model MediaAsset {
 
   tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient             Patient?              @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  labCaseAttachments  DentalLabCaseAttachment[]
 
   @@index([tenantId])
   @@index([tenantId, category])
@@ -4846,6 +5980,10 @@ model PlatformPlanVersion {
   limits       PlatformPlanVersionLimit[]
   /// Step 16 commercial Plan Version assignments (definition remains immutable).
   commercialConfigs PlatformSubscriptionCommercialConfig[]
+  /// Flexible Step 25 — Trial Plan Version selections (immutable at activation).
+  salesTrials       PlatformSalesTrial[]
+  /// Flexible Step 25 — conversion target paid Plan Versions.
+  trialConversionTargets PlatformSalesTrialConversion[] @relation("TrialConversionTargetPlanVersion")
 
   @@unique([planId, versionNumber])
   @@index([planId, lifecycle])
@@ -5853,4 +6991,421 @@ model PlatformOperationsIdempotencyRecord {
   @@unique([actorId, operation, idempotencyKey])
   @@index([expiresAt])
   @@map("platform_operations_idempotency")
+}
+
+/// Flexible Step 23 — Sales Representative profile (Platform identity extension; no credentials).
+/// Contract: docs/SALES_REPRESENTATIVE_MANAGEMENT.md
+enum PlatformSalesRepresentativeStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  SUSPENDED
+  DISABLED
+
+  @@map("platform_sales_representative_status")
+}
+
+enum PlatformSalesTargetPeriod {
+  MONTH
+  QUARTER
+  YEAR
+
+  @@map("platform_sales_target_period")
+}
+
+model PlatformSalesRepresentative {
+  id                      String                            @id @default(uuid()) @db.Uuid
+  platformUserId          String                            @unique @db.Uuid
+  status                  PlatformSalesRepresentativeStatus @default(PENDING_ACTIVATION)
+  managerRepresentativeId String?                           @db.Uuid
+  regionCode              String?                           @db.VarChar(64)
+  territoryCode           String?                           @db.VarChar(64)
+  targetAmount            Decimal?                          @db.Decimal(18, 4)
+  targetCurrency          String?                           @db.VarChar(8)
+  targetPeriod            PlatformSalesTargetPeriod?
+  rowVersion              Int                               @default(1)
+  createdAt               DateTime                          @default(now())
+  updatedAt               DateTime                          @updatedAt
+
+  platformUser PlatformUser                 @relation(fields: [platformUserId], references: [id], onDelete: Restrict)
+  manager      PlatformSalesRepresentative? @relation("SalesRepManager", fields: [managerRepresentativeId], references: [id], onDelete: Restrict)
+  reports      PlatformSalesRepresentative[] @relation("SalesRepManager")
+  ownerships   PlatformSalesCustomerOwnership[]
+  /// Flexible Step 24 — leads owned by this representative.
+  ownedLeads   PlatformSalesLead[]
+  /// Flexible Step 25 — Trials owned by this representative.
+  ownedTrials  PlatformSalesTrial[]
+  /// Flexible Step 26 — commission snapshot review records for this representative.
+  commissionSnapshots PlatformSalesCommissionSnapshot[]
+
+  @@index([status])
+  @@index([managerRepresentativeId])
+  @@index([regionCode])
+  @@index([territoryCode])
+  @@map("platform_sales_representatives")
+}
+
+/// Commercial relationship ownership only — never Clinic/PHI/entitlement/subscription authority.
+/// At most one current ownership row per PlatformTenant (unique platformTenantId).
+model PlatformSalesCustomerOwnership {
+  id                  String    @id @default(uuid()) @db.Uuid
+  representativeId    String    @db.Uuid
+  platformTenantId    String    @unique @db.Uuid
+  rowVersion          Int       @default(1)
+  assignedAt          DateTime  @default(now())
+  assignedById        String    @db.Uuid
+  reason              String?   @db.VarChar(500)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  representative PlatformSalesRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  platformTenant PlatformTenant              @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  history        PlatformSalesCustomerOwnershipHistory[]
+
+  @@index([representativeId])
+  @@map("platform_sales_customer_ownership")
+}
+
+model PlatformSalesCustomerOwnershipHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ownershipId         String?  @db.Uuid
+  representativeId    String?  @db.Uuid
+  platformTenantId    String   @db.Uuid
+  /// assigned | reassigned | removed
+  action              String   @db.VarChar(32)
+  actorPlatformUserId String   @db.Uuid
+  reason              String?  @db.VarChar(500)
+  createdAt           DateTime @default(now())
+
+  ownership PlatformSalesCustomerOwnership? @relation(fields: [ownershipId], references: [id], onDelete: SetNull)
+
+  @@index([platformTenantId, createdAt])
+  @@index([representativeId, createdAt])
+  @@index([ownershipId])
+  @@map("platform_sales_customer_ownership_history")
+}
+
+model PlatformSalesIdempotencyRecord {
+  id                 String   @id @default(uuid()) @db.Uuid
+  actorId            String   @db.Uuid
+  operation          String   @db.VarChar(64)
+  idempotencyKey     String   @db.VarChar(128)
+  requestHash        String   @db.VarChar(64)
+  /// Widened in Step 26: resource types like platform_sales_commission_snapshot exceed 32.
+  resultResourceType String   @db.VarChar(64)
+  resultResourceId   String   @db.Uuid
+  status             String   @db.VarChar(16)
+  resultPayload      Json?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("platform_sales_idempotency")
+}
+
+/// Flexible Step 24 — Leads and Sales Pipeline (Lead is the only CRM aggregate).
+/// Contract: docs/LEADS_AND_SALES_PIPELINE.md
+/// No opportunities table, no pipeline_stages table, no trials.
+enum PlatformSalesLeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DEMO_SCHEDULED
+  PROPOSAL
+  WON
+  LOST
+
+  @@map("platform_sales_lead_stage")
+}
+
+enum PlatformSalesLeadSource {
+  INBOUND
+  OUTBOUND
+  REFERRAL
+  PARTNER
+  EVENT
+  OTHER
+
+  @@map("platform_sales_lead_source")
+}
+
+enum PlatformSalesDemoStatus {
+  NONE
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+
+  @@map("platform_sales_demo_status")
+}
+
+model PlatformSalesLead {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  stage                  PlatformSalesLeadStage  @default(NEW)
+  source                 PlatformSalesLeadSource @default(OTHER)
+  ownerRepresentativeId  String?                 @db.Uuid
+  organizationName       String                  @db.VarChar(255)
+  contactName            String                  @db.VarChar(255)
+  contactEmail           String?                 @db.VarChar(320)
+  contactPhone           String?                 @db.VarChar(64)
+  contactJobTitle        String?                 @db.VarChar(160)
+  facilityTypeKey        String?                 @db.VarChar(128)
+  specialtyKeys          Json                    @default("[]")
+  desiredModuleKeys      Json                    @default("[]")
+  estimatedUsers         Int?
+  estimatedProviders     Int?
+  estimatedLocations     Int?
+  nextActionType         String?                 @db.VarChar(64)
+  nextActionDueAt        DateTime?
+  nextActionNote         String?                 @db.VarChar(500)
+  demoScheduledAt        DateTime?
+  demoTimezone           String?                 @db.VarChar(64)
+  demoStatus             PlatformSalesDemoStatus @default(NONE)
+  demoNote               String?                 @db.VarChar(500)
+  wonLostReason          String?                 @db.VarChar(1000)
+  linkedPlatformTenantId String?                 @db.Uuid
+  rowVersion             Int                     @default(1)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  ownerRepresentative PlatformSalesRepresentative? @relation(fields: [ownerRepresentativeId], references: [id], onDelete: Restrict)
+  linkedPlatformTenant PlatformTenant?             @relation(fields: [linkedPlatformTenantId], references: [id], onDelete: Restrict)
+  stageHistory        PlatformSalesLeadStageHistory[]
+  ownershipHistory    PlatformSalesLeadOwnershipHistory[]
+  notes               PlatformSalesLeadNote[]
+  /// Flexible Step 25 — Trials originating from this lead (optional).
+  originatedTrials    PlatformSalesTrial[]
+
+  @@index([ownerRepresentativeId])
+  @@index([stage])
+  @@index([createdAt])
+  @@index([createdAt, id])
+  @@index([source])
+  @@index([linkedPlatformTenantId])
+  @@map("platform_sales_leads")
+}
+
+model PlatformSalesLeadStageHistory {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  leadId              String                 @db.Uuid
+  fromStage           PlatformSalesLeadStage?
+  toStage             PlatformSalesLeadStage
+  actorPlatformUserId String                 @db.Uuid
+  reason              String?                @db.VarChar(1000)
+  createdAt           DateTime               @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_stage_history")
+}
+
+model PlatformSalesLeadOwnershipHistory {
+  id                        String   @id @default(uuid()) @db.Uuid
+  leadId                    String   @db.Uuid
+  fromOwnerRepresentativeId String?  @db.Uuid
+  toOwnerRepresentativeId   String?  @db.Uuid
+  actorPlatformUserId       String   @db.Uuid
+  reason                    String?  @db.VarChar(1000)
+  createdAt                 DateTime @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_ownership_history")
+}
+
+model PlatformSalesLeadNote {
+  id          String   @id @default(uuid()) @db.Uuid
+  leadId      String   @db.Uuid
+  body        String   @db.VarChar(2000)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  lead PlatformSalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt])
+  @@map("platform_sales_lead_notes")
+}
+
+/// Flexible Step 25 — Trial Creation and Customer Conversion.
+/// Contract: docs/TRIAL_CREATION_AND_CUSTOMER_CONVERSION.md
+/// Dedicated governance aggregate. Entitlements remain Step 16 snapshot + Step 18 EER only.
+/// No Step 26 commission/productivity tables. No billing invoice/payment tables.
+enum PlatformSalesTrialStatus {
+  DRAFT
+  PENDING_PROVISIONING
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELLED
+
+  @@map("platform_sales_trial_status")
+}
+
+model PlatformSalesTrial {
+  id                      String                   @id @default(uuid()) @db.Uuid
+  /// Null until Step 17 provisioning resolves/creates the tenant.
+  platformTenantId        String?                  @db.Uuid
+  originatingLeadId       String?                  @db.Uuid
+  ownerRepresentativeId   String?                  @db.Uuid
+  /// Immutable commercial attribution frozen at create (no Clinic/PHI authority).
+  attributionSnapshotJson Json                     @default("{}")
+  /// Immutable PUBLISHED Plan Version selected for the Trial.
+  trialPlanVersionId      String                   @db.Uuid
+  status                  PlatformSalesTrialStatus @default(DRAFT)
+  organizationName        String                   @db.VarChar(255)
+  facilityTypeKey         String                   @db.VarChar(128)
+  selectedSpecialtyKeys   Json                     @default("[]")
+  selectedModuleKeys      Json                     @default("[]")
+  startsAt                DateTime?
+  expiresAt               DateTime?
+  /// Bounded policy value; never 0 = unlimited.
+  maxExtensions           Int                      @default(2)
+  extensionCount          Int                      @default(0)
+  /// Step 16 commercial configuration link when established.
+  commercialConfigId      String?                  @db.Uuid
+  /// Step 17 provisioning correlation when established.
+  provisioningRequestId   String?                  @db.Uuid
+  /// Trial-only Add-on/Override grants requiring conversion disposition.
+  trialOnlyGrantsJson     Json                     @default("[]")
+  expiredAt               DateTime?
+  cancelledAt             DateTime?
+  cancellationReason      String?                  @db.VarChar(1000)
+  createdByPlatformUserId String                   @db.Uuid
+  rowVersion              Int                      @default(1)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  platformTenant      PlatformTenant?              @relation(fields: [platformTenantId], references: [id], onDelete: Restrict)
+  originatingLead     PlatformSalesLead?           @relation(fields: [originatingLeadId], references: [id], onDelete: Restrict)
+  ownerRepresentative PlatformSalesRepresentative? @relation(fields: [ownerRepresentativeId], references: [id], onDelete: Restrict)
+  trialPlanVersion    PlatformPlanVersion          @relation(fields: [trialPlanVersionId], references: [id], onDelete: Restrict)
+  extensionHistory    PlatformSalesTrialExtensionHistory[]
+  conversions         PlatformSalesTrialConversion[]
+
+  @@index([ownerRepresentativeId])
+  @@index([status])
+  /// Expiry job claim query: status = ACTIVE AND expiresAt <= now ORDER BY expiresAt, id
+  @@index([status, expiresAt, id])
+  @@index([expiresAt, id])
+  @@index([createdAt, id])
+  @@index([platformTenantId])
+  @@index([originatingLeadId])
+  @@index([trialPlanVersionId])
+  @@map("platform_sales_trials")
+}
+
+model PlatformSalesTrialExtensionHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  trialId             String   @db.Uuid
+  previousExpiresAt   DateTime
+  newExpiresAt        DateTime
+  extensionDays       Int
+  reason              String   @db.VarChar(1000)
+  exceptional         Boolean  @default(false)
+  actorPlatformUserId String   @db.Uuid
+  correlationId       String?  @db.VarChar(100)
+  createdAt           DateTime @default(now())
+
+  trial PlatformSalesTrial @relation(fields: [trialId], references: [id], onDelete: Restrict)
+
+  @@index([trialId, createdAt])
+  @@map("platform_sales_trial_extension_history")
+}
+
+model PlatformSalesTrialConversion {
+  id                     String   @id @default(uuid()) @db.Uuid
+  trialId                String   @db.Uuid
+  targetPaidPlanVersionId String  @db.Uuid
+  /// Explicit disposition per trial-only grant. Ambiguity fails conversion safely.
+  dispositionsJson       Json     @default("[]")
+  actorPlatformUserId    String   @db.Uuid
+  convertedAt            DateTime @default(now())
+  correlationId          String?  @db.VarChar(100)
+  outboxEventId          String?  @db.Uuid
+  commercialConfigId     String?  @db.Uuid
+  createdAt              DateTime @default(now())
+
+  trial                PlatformSalesTrial  @relation(fields: [trialId], references: [id], onDelete: Restrict)
+  targetPaidPlanVersion PlatformPlanVersion @relation("TrialConversionTargetPlanVersion", fields: [targetPaidPlanVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([trialId])
+  @@index([targetPaidPlanVersionId])
+  @@index([convertedAt, id])
+  @@map("platform_sales_trial_conversions")
+}
+
+/// Flexible Step 26 — Sales Productivity and Commission Snapshot (review records only).
+/// Contract: docs/SALES_PRODUCTIVITY_AND_COMMISSION_SNAPSHOT.md
+/// Not payroll / not a money-movement ledger. calculationStatus stays UNCONFIGURED (no invented rates).
+/// Partial unique (non-SUPERSEDED) enforced in migration SQL — Prisma cannot express WHERE clauses.
+model PlatformSalesCommissionSnapshot {
+  id                         String    @id @default(uuid()) @db.Uuid
+  representativeId           String    @db.Uuid
+  /// Calendar month key YYYY-MM
+  periodKey                  String    @db.VarChar(16)
+  periodTimezone             String    @default("UTC") @db.VarChar(64)
+  periodStart                DateTime
+  /// Exclusive end bound (first instant of next period).
+  periodEnd                  DateTime
+  sourceCutoffAt             DateTime
+  formulaVersion             String    @db.VarChar(64)
+  /// Always UNCONFIGURED until a future authorized rate engine exists.
+  calculationStatus          String    @default("UNCONFIGURED") @db.VarChar(32)
+  ruleReference              String?   @db.VarChar(128)
+  computedAmount             Decimal?  @db.Decimal(18, 4)
+  metricsJson                Json
+  planVersionAttributionJson Json
+  addOnAttributionJson       Json
+  completenessJson           Json
+  reconciliationJson         Json?
+  /// NONE | IN_REVIEW | REVIEWED | REJECTED
+  reviewStatus               String    @default("NONE") @db.VarChar(32)
+  /// UNPAID | PAID — administrative metadata only; never moves money.
+  paidStatus                 String    @default("UNPAID") @db.VarChar(32)
+  paidReason                 String?   @db.VarChar(500)
+  paidReference              String?   @db.VarChar(200)
+  paidAt                     DateTime?
+  paidByPlatformUserId       String?   @db.Uuid
+  /// DRAFT | FINALIZED | SUPERSEDED
+  status                     String    @db.VarChar(32)
+  supersedesSnapshotId       String?   @db.Uuid
+  rowVersion                 Int       @default(1)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  finalizedAt                DateTime?
+
+  representative PlatformSalesRepresentative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  supersedes     PlatformSalesCommissionSnapshot?  @relation("CommissionSnapshotSupersede", fields: [supersedesSnapshotId], references: [id], onDelete: Restrict)
+  supersededBy   PlatformSalesCommissionSnapshot[] @relation("CommissionSnapshotSupersede")
+
+  @@index([representativeId, periodKey])
+  @@index([periodKey, periodTimezone])
+  @@index([status])
+  @@index([reviewStatus])
+  @@index([paidStatus])
+  @@index([createdAt, id])
+  @@map("platform_sales_commission_snapshots")
+}
+
+/// Flexible Step 27 — Platform notification preferences (mandatory categories cannot be disabled in API).
+/// Contract: docs/NOTIFICATIONS_AND_TEMPLATES.md
+model PlatformNotificationPreference {
+  id             String   @id @default(uuid()) @db.Uuid
+  platformUserId String   @db.Uuid
+  /// security | lifecycle | commercial | usage | operational | sales | sales_manager
+  category       String   @db.VarChar(64)
+  /// email (platform); in-app reserved for clinic path
+  channel        String   @db.VarChar(32)
+  enabled        Boolean  @default(true)
+  locale         String   @default("en-US") @db.VarChar(16)
+  rowVersion     Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  platformUser PlatformUser @relation(fields: [platformUserId], references: [id], onDelete: Cascade)
+
+  @@unique([platformUserId, category, channel])
+  @@index([platformUserId, category])
+  @@map("platform_notification_preferences")
 }

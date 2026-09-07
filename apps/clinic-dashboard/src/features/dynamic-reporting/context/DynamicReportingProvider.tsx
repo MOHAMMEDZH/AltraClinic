@@ -170,7 +170,8 @@ export function DynamicReportingProvider({ children }: { children: ReactNode }) 
     if (!useRegistry || registry.isError) {
       return toContextValue(staticSnapshot, {
         isRegistrySource: false,
-        isLoading: registry.isLoading,
+        // Error path must finish loading so home can drop aria-busy and expose static-fallback.
+        isLoading: false,
         error: registry.error,
         registryStatus,
         refresh,

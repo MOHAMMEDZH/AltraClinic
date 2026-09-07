@@ -57,13 +57,24 @@ export function getPermissionMatrix(): PermissionMatrix {
   return cachedMatrix;
 }
 
+const PROTECTED_PERMISSIONS: Array<{ resourceId: string; action: PermissionAction }> = [
+  { resourceId: 'api.clinical-forms', action: 'approve' },
+];
+
+export function isProtectedPermission(
+  resourceId: string,
+  action: PermissionAction,
+): boolean {
+  return PROTECTED_PERMISSIONS.some((ex) => ex.resourceId === resourceId && ex.action === action);
+}
+
 export function hasPermission(
   roles: string[],
   resourceId: string,
   action: PermissionAction = 'view',
 ): boolean {
   const effective = expandRoles(roles);
-  if (effective.includes('super_admin')) return true;
+  if (effective.includes('super_admin') && !isProtectedPermission(resourceId, action)) return true;
 
   const resource = cachedMatrix.resources.find((r) => r.id === resourceId);
   if (!resource) return false;
@@ -80,6 +91,7 @@ export function hasPermissionWithCustomGrants(
   action: PermissionAction = 'view',
 ): boolean {
   if (hasPermission(roles, resourceId, action)) return true;
+  if (isProtectedPermission(resourceId, action)) return false;
   return customGrants.some((grant) => (grant[resourceId] ?? []).includes(action));
 }
 

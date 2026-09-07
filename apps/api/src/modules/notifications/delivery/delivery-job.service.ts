@@ -49,15 +49,20 @@ export function computeRetryDelay(attempt: number, now: Date = new Date()): Retr
 /** Determines how a send failure should be handled next. */
 export function classifyFailure(error: unknown, attemptCount: number, maxAttempts: number): FailureClass {
   const hinted = (error as { failureClassHint?: FailureClass } | null)?.failureClassHint;
-  if (hinted === 'permanent' || hinted === 'fallback') {
+  if (hinted === 'permanent' || hinted === 'fallback' || hinted === 'ambiguous') {
     return hinted;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  // Strategy B: provider may have accepted; local ack/persist lost — durable ambiguous, no auto-resend.
+  if (/provider_accept_then_ack_loss|after_provider_before_ack|Injected after_provider/i.test(message)) {
+    return 'ambiguous';
   }
 
   if (error instanceof ProviderUnavailableError) {
     return 'fallback';
   }
 
-  const message = error instanceof Error ? error.message : String(error);
   if (/permanent|invalid|unauthorized|forbidden|not.?found|malformed|quota/i.test(message)) {
     return 'permanent';
   }
@@ -144,8 +149,18 @@ export class DeliveryJobService {
     };
   }
 
-  /** Optimistic lease: only one worker can transition pending/expired-lease → leased. */
+  /**
+   * Optimistic lease: only one worker can transition pending/expired-lease → leased.
+   * Never picks up durable terminal-ish statuses (`ambiguous`, `suppressed`, `completed`, `dead_letter`).
+   */
   async leaseJob(jobId: string, leaseDurationMs = 60_000): Promise<Record<string, unknown> | null> {
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'before_delivery_job_claim'
+    ) {
+      throw new Error('Injected before_delivery_job_claim failure');
+    }
+
     const client = this.client();
     if (!client.deliveryJob) return null;
 
@@ -164,7 +179,29 @@ export class DeliveryJobService {
     return client.deliveryJob.findUnique({ where: { id: jobId } });
   }
 
+  /** Mark a leased job as suppressed (send-time obsolete) and clear lease fields. */
+  async suppressJob(jobId: string, reason: string): Promise<void> {
+    const client = this.client();
+    if (!client.deliveryJob) return;
+    await client.deliveryJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'suppressed',
+        failureReason: reason.slice(0, 500),
+        leasedAt: null,
+        leaseExpiresAt: null,
+      },
+    });
+  }
+
   async recordAttempt(jobId: string, tenantId: string, outcome: { success: boolean; providerKey: string; error?: string; externalId?: string | null }): Promise<void> {
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.PLATFORM_NOTIFICATION_FAILURE_INJECTION === 'before_delivery_attempt_persist'
+    ) {
+      throw new Error('Injected before_delivery_attempt_persist failure');
+    }
+
     const client = this.client();
     if (client.deliveryAttempt) {
       await client.deliveryAttempt.create({
@@ -196,17 +233,54 @@ export class DeliveryJobService {
     });
   }
 
-  /** Fails a job, classifying and either scheduling a jittered retry or dead-lettering it. */
+  /**
+   * Manual admin-triggered retry: resets dead_letter / failed / ambiguous jobs back to `pending`.
+   * Requeue from `ambiguous` may duplicate provider delivery (no native provider idempotency) —
+   * operators must accept that risk; failureReason remains visible on the prior attempt history.
+   */
+  async requeueJob(jobId: string): Promise<void> {
+    const client = this.client();
+    if (!client.deliveryJob) return;
+    await client.deliveryJob.update({
+      where: { id: jobId },
+      data: { status: 'pending', scheduledAt: null, leaseExpiresAt: null, leasedAt: null },
+    });
+  }
+
+  /** Fails a job, classifying and either scheduling a jittered retry, marking ambiguous, or dead-lettering it. */
   async failJob(job: { id: string; attemptCount: number; maxAttempts: number }, error: unknown): Promise<{ failureClass: FailureClass; retry?: RetrySchedule }> {
     const failureClass = classifyFailure(error, job.attemptCount, job.maxAttempts);
     const client = this.client();
     const message = error instanceof Error ? error.message : String(error);
 
+    // Strategy B: durable ambiguous — clear lease, do NOT schedule retry, do NOT dead_letter.
+    if (failureClass === 'ambiguous') {
+      if (client.deliveryJob) {
+        await client.deliveryJob.update({
+          where: { id: job.id },
+          data: {
+            status: 'ambiguous',
+            failureReason: message.slice(0, 500),
+            leasedAt: null,
+            leaseExpiresAt: null,
+            scheduledAt: null,
+          },
+        });
+      }
+      return { failureClass: 'ambiguous' };
+    }
+
     if (failureClass === 'dead_letter' || failureClass === 'permanent') {
       if (client.deliveryJob) {
         await client.deliveryJob.update({
           where: { id: job.id },
-          data: { status: 'dead_letter', failureReason: message.slice(0, 500), deadLetteredAt: new Date() },
+          data: {
+            status: 'dead_letter',
+            failureReason: message.slice(0, 500),
+            deadLetteredAt: new Date(),
+            leasedAt: null,
+            leaseExpiresAt: null,
+          },
         });
       }
       return { failureClass: failureClass === 'permanent' ? 'permanent' : 'dead_letter' };
@@ -220,6 +294,8 @@ export class DeliveryJobService {
           status: 'pending',
           failureReason: message.slice(0, 500),
           scheduledAt: retry.nextAttemptAt,
+          leasedAt: null,
+          leaseExpiresAt: null,
         },
       });
     }

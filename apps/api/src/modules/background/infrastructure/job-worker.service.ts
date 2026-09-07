@@ -20,6 +20,8 @@ import { BillingOverdueService } from '../application/services/billing-overdue.s
 import { ScheduledAnalyticsReportService } from '../../analytics/application/services/scheduled-analytics-report.service';
 import { NotificationAutomationSchedulerService } from '../application/services/notification-automation-scheduler.service';
 import { WorkflowEscalationService } from '../../workflow/application/services/workflow-escalation.service';
+import { TrialExpiryService } from '../../platform-sales-trials/application/trial-expiry.service';
+import { PlatformNotificationWarningScheduler } from '../../platform-notifications/application/schedulers/platform-notification-warning.scheduler';
 
 function workersEnabled(): boolean {
   if (process.env.NODE_ENV === 'test') return false;
@@ -48,6 +50,8 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
     private readonly scheduledReports: ScheduledAnalyticsReportService,
     private readonly notificationAutomationScheduler: NotificationAutomationSchedulerService,
     private readonly workflowEscalation: WorkflowEscalationService,
+    private readonly salesTrialExpiry: TrialExpiryService,
+    private readonly platformNotificationWarnings: PlatformNotificationWarningScheduler,
   ) {}
 
   onModuleInit(): void {
@@ -123,6 +127,31 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
     this.registerWorker(BACKGROUND_QUEUES.WORKFLOW_ESCALATION, async (job) => {
       if (job.name === BACKGROUND_JOBS.WORKFLOW_ESCALATION_SCAN) {
         return this.runBackgroundJob(BACKGROUND_QUEUES.WORKFLOW_ESCALATION, job.name, () => this.workflowEscalation.processOverdueTasksAndApprovals());
+      }
+    });
+
+    this.registerWorker(BACKGROUND_QUEUES.SALES_TRIAL_EXPIRY, async (job) => {
+      if (job.name === BACKGROUND_JOBS.SALES_TRIAL_EXPIRY_SCAN) {
+        return this.runBackgroundJob(
+          BACKGROUND_QUEUES.SALES_TRIAL_EXPIRY,
+          job.name,
+          async () => {
+            const run = await this.salesTrialExpiry.processDueTrials();
+            // Repairs trials that expired but whose Step 19 suspend handoff did not land.
+            const repaired = await this.salesTrialExpiry.reconcileExpiredLifecycle();
+            return { ...run, lifecycleRepaired: repaired };
+          },
+        );
+      }
+    });
+
+    this.registerWorker(BACKGROUND_QUEUES.PLATFORM_NOTIFICATION_WARNINGS, async (job) => {
+      if (job.name === BACKGROUND_JOBS.PLATFORM_NOTIFICATION_WARNING_SCAN) {
+        return this.runBackgroundJob(
+          BACKGROUND_QUEUES.PLATFORM_NOTIFICATION_WARNINGS,
+          job.name,
+          () => this.platformNotificationWarnings.runDueScan(),
+        );
       }
     });
 

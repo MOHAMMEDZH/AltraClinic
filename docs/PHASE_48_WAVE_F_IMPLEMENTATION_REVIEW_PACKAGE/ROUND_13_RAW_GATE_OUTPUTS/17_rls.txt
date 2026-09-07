@@ -1,0 +1,33 @@
+GATE=WFrls
+START_UTC=2026-08-21T16:31:32.9418955Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-rls.postgres
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-rls.postgres.integration.spec.ts (5.715 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (5.715 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F real RLS (bypass OFF, booking_app)
+    ΓêÜ NOBYPASSRLS context is active (current_user, rolbypassrls=false, tenant) (12 ms)
+    ΓêÜ same-tenant SELECT sees plan versions and accruals (13 ms)
+    ΓêÜ same-tenant CRUD (delete accrual denied) (48 ms)
+    ΓêÜ cross-tenant SELECT hidden / INSERT reject (19 ms)
+    ΓêÜ rolbypassrls = false for booking_app (4 ms)
+    ΓêÜ R3-F6B settlement_allocations ENABLE+FORCE RLS and NOBYPASSRLS (6 ms)
+    ΓêÜ R3-F6B same-tenant settlement allocation insert+select; cross-tenant hidden; update/delete denied (33 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        5.928 s
+Ran all test suites matching /wave-f-rls.postgres/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:31:40.2472757Z
+EXIT=0
+STATUS=PASS

@@ -17,6 +17,7 @@ import { LICENSING_E2E_TENANTS } from './helpers/licensing-tenants';
 import {
   assertShellVisible,
   captureRegistryBootstrap,
+  gotoShellRoute,
   mainContent,
   readRegistryCacheRaw,
   readRegistryCacheTenant,
@@ -66,7 +67,9 @@ async function loginAndShell(page: Page, credentials: LoginCredentials) {
     localStorage.removeItem('booking.locale');
   });
   const bootstrap = captureRegistryBootstrap(page);
-  await login(page, credentials);
+  // Isolated mint avoids serial-suite refresh-token cache races across navigations
+  // (history-back → next test) that otherwise land authenticated flows on /login.
+  await login(page, credentials, { isolatedSession: true });
   let response = await bootstrap;
   if (!response?.ok()) {
     response = await page
@@ -414,14 +417,17 @@ test.describe('Dynamic white label — navigation surfaces', () => {
 
   test('dashboard to branding navigation', async ({ page }) => {
     await loginAndShell(page, DEMO_OWNER);
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    // Prefer gotoShellRoute so Loading clears before shell assertions (combined-batch timing).
+    await gotoShellRoute(page, '/dashboard');
+    await assertShellVisible(page);
     await gotoBrandingSettings(page);
     await assertBrandingFormAccessible(page);
   });
 
   test('cross-module navigation chain', async ({ page }) => {
     await loginAndShell(page, DEMO_OWNER);
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await gotoShellRoute(page, '/dashboard');
+    await assertShellVisible(page);
     await gotoBrandingSettings(page);
     const brandingPrimary = await readCssVariable(page, '--color-primary');
     await gotoReportingHome(page);
@@ -429,7 +435,8 @@ test.describe('Dynamic white label — navigation surfaces', () => {
     await openGlobalSearch(page);
     await expect(globalSearchDialog(page)).toBeVisible();
     await page.keyboard.press('Escape');
-    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await gotoShellRoute(page, '/dashboard');
+    await assertShellVisible(page);
     await gotoBrandingSettings(page);
     const afterNav = await readCssVariable(page, '--color-primary');
     expect(afterNav).toBe(brandingPrimary);

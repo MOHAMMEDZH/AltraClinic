@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Flexible Step 22 — Operations Console clean migration validator.
- * Fresh DB: migrate deploy → Catalog 68/136/68/13 → export tables empty → no billing → no Step 23.
+ * Fresh DB: migrate deploy → Catalog 68/136/68/13 → export tables empty → no billing → no Step 24+.
  *
  * Bounded completion: overall deadline + per-command timeouts + lock_timeout.
  * Uses a unique database name per run so DROP DATABASE WITH (FORCE) is never required
@@ -34,9 +34,34 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-const STEP23_FORBIDDEN = [
+// Flexible Step 23 tables are now authorized (representatives/ownership/history/idempotency).
+const STEP23_ALLOWED = [
   'platform_sales_representatives',
+  'platform_sales_customer_ownership',
+  'platform_sales_customer_ownership_history',
+  'platform_sales_idempotency',
+];
+
+const STEP24_LEAD_TABLES_ALLOWED = [
   'platform_sales_leads',
+  'platform_sales_lead_stage_history',
+  'platform_sales_lead_ownership_history',
+  'platform_sales_lead_notes',
+];
+
+const STEP25_TRIAL_TABLES_ALLOWED = [
+  'platform_sales_trials',
+  'platform_sales_trial_extension_history',
+  'platform_sales_trial_conversions',
+];
+
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
+const STEP26_PLUS_FORBIDDEN = [
+  'platform_sales_opportunities',
+  'platform_sales_pipeline_stages',
+  'platform_sales_commissions',
+  'platform_sales_productivity_snapshots',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -171,7 +196,18 @@ async function main() {
       if (!rows[0]?.present) throw new Error(`Missing Step 22 table: ${table}`);
     }
 
-    for (const table of [...BILLING_FORBIDDEN, ...STEP23_FORBIDDEN]) {
+    for (const table of [
+      ...STEP23_ALLOWED,
+      ...STEP25_TRIAL_TABLES_ALLOWED,
+      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+    ]) {
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
+      );
+      if (!rows[0]?.present) throw new Error(`Missing Step 23/25/26 table: ${table}`);
+    }
+
+    for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );
@@ -193,17 +229,21 @@ async function main() {
     let rules;
     let exports;
     let idempotency;
+    let salesReps;
+    let salesOwnership;
     let lastCountErr;
     for (let i = 0; i < 10; i++) {
       assertWithinDeadline('catalog counts');
       try {
-        [items, translations, aliases, rules, exports, idempotency] = await Promise.all([
+        [items, translations, aliases, rules, exports, idempotency, salesReps, salesOwnership] = await Promise.all([
           prisma.healthcareCatalogItem.count(),
           prisma.healthcareCatalogTranslation.count(),
           prisma.healthcareCatalogAlias.count(),
           prisma.healthcareCatalogCompatibilityRule.count(),
           prisma.platformAuditExportRecord.count(),
           prisma.platformAuditExportIdempotencyRecord.count(),
+          prisma.platformSalesRepresentative.count(),
+          prisma.platformSalesCustomerOwnership.count(),
         ]);
         lastCountErr = undefined;
         break;
@@ -230,8 +270,11 @@ async function main() {
     expect('Catalog Compatibility rules', rules, 13);
     expect('audit export records', exports, 0);
     expect('audit export idempotency', idempotency, 0);
+    expect('sales representatives (no auto-created reps)', salesReps, 0);
+    expect('sales customer ownership (no auto-created ownership)', salesOwnership, 0);
 
-    console.log('OK no billing/Step 23 schema tables');
+    console.log('OK no billing/Step 24+ schema tables');
+    console.log('OK Step 23 sales representative tables present and empty');
     console.log('OK zero automatic exports / invented audits from migration');
     console.log('OK Step 22 platform_operations_idempotency migration present');
     log(`Step 22 clean migration validator passed (db=${cleanDb}).`);

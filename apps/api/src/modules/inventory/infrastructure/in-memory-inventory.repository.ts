@@ -115,7 +115,11 @@ export class InMemoryInventoryItemRepository {
     this.archived.delete(`${tenantId}:${itemId}`);
   }
 
-  async recordConsumption(): Promise<void> {}
+  async recordConsumption(): Promise<void> {
+    throw new Error(
+      'InventoryUsageLedger writes must go through InventoryUsagePostingService (AR-20)',
+    );
+  }
 
   async listRecentConsumptions(): Promise<ConsumptionLogRecord[]> {
     return [];
@@ -293,7 +297,7 @@ export class InMemoryInventoryItemRepository {
     return consumed;
   }
 
-  async disposeBatch(input: {
+  async disposeBatch(_input: {
     tenantId: string;
     batchId: string;
     quantity: number;
@@ -301,28 +305,9 @@ export class InMemoryInventoryItemRepository {
     notes?: string | null;
     disposedBy: string;
   }): Promise<{ itemId: string; quantity: number }> {
-    const batch = this.batches.find((b) => b.batchId === input.batchId && b.tenantId === input.tenantId);
-    if (!batch) throw new Error('Batch not found');
-    if (input.quantity <= 0 || input.quantity > batch.quantityOnHand) {
-      throw new Error('Invalid disposal quantity');
-    }
-    batch.quantityOnHand -= input.quantity;
-    if (batch.quantityOnHand <= 0) batch.status = 'DISPOSED';
-
-    this.disposals.push({
-      id: randomUUID(),
-      tenantId: input.tenantId,
-      inventoryItemId: batch.inventoryItemId,
-      batchId: batch.batchId,
-      quantity: input.quantity,
-      reason: input.reason,
-      disposedAt: new Date(),
-      sku: batch.sku,
-      itemNameEn: batch.itemNameEn,
-      unit: batch.unit,
-    });
-
-    return { itemId: batch.inventoryItemId, quantity: input.quantity };
+    throw new Error(
+      'disposeBatch repository primitive is closed. Use DisposeInventoryBatchHandler / InventoryUsagePostingService.disposeBatch',
+    );
   }
 
   async getExpirySummary(tenantId: string): Promise<ExpirySummaryResult> {

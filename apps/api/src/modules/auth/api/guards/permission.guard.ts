@@ -14,7 +14,7 @@ export const PERMISSION_KEY = 'required_permission';
 export const RequirePermission = (resource: string, action: PermissionAction) =>
   SetMetadata(PERMISSION_KEY, { resource, action } as RequiredPermission);
 
-function expandRoles(roles: string[], matrix: { roles?: Array<{ key: string; inherits?: string[] }> }): string[] {
+export function expandRoles(roles: string[], matrix: { roles?: Array<{ key: string; inherits?: string[] }> }): string[] {
   const result = new Set(roles);
   let changed = true;
   while (changed) {
@@ -30,6 +30,42 @@ function expandRoles(roles: string[], matrix: { roles?: Array<{ key: string; inh
     }
   }
   return [...result];
+}
+
+/**
+ * Frozen PatientFormInstance sign/void is clinical staff only
+ * (`docs/PHASE_48_TARGET_DOMAIN_ARCHITECTURE.md` ownership matrix).
+ * Generic super_admin bypass and custom-role grants must not grant consent lifecycle.
+ */
+export const SUPER_ADMIN_BYPASS_EXCLUSIONS: Array<{ resource: string; action: PermissionAction }> = [
+  { resource: 'api.clinical-forms', action: 'approve' },
+];
+
+/** Same protected-action set: custom roles cannot grant clinical sign/void. */
+export const CUSTOM_ROLE_GRANT_EXCLUSIONS = SUPER_ADMIN_BYPASS_EXCLUSIONS;
+
+function isProtectedPermission(resource: string, action: PermissionAction): boolean {
+  return SUPER_ADMIN_BYPASS_EXCLUSIONS.some((ex) => ex.resource === resource && ex.action === action);
+}
+
+function superAdminBypassApplies(resource: string, action: PermissionAction): boolean {
+  return !isProtectedPermission(resource, action);
+}
+
+export function customRoleGrantsApply(resource: string, action: PermissionAction): boolean {
+  return !isProtectedPermission(resource, action);
+}
+
+/** Role-matrix check used by guards and by PHI/report gating (does not invent permissions). */
+export function rolesGrantPermission(roles: string[], resource: string, action: PermissionAction): boolean {
+  if (roles.includes('super_admin' as UserRole) && superAdminBypassApplies(resource, action)) return true;
+  const matrix = PermissionGuard.peekMatrix();
+  if (!matrix) return false;
+  const def = matrix.resources.find((r: { id: string }) => r.id === resource);
+  if (!def) return false;
+  const effectiveRoles = expandRoles(roles, matrix);
+  const allowedRoles: string[] = def.permissions[action] ?? [];
+  return effectiveRoles.some((role) => allowedRoles.includes(role));
 }
 
 @Injectable()
@@ -55,25 +91,22 @@ export class PermissionGuard implements CanActivate {
       );
     }
 
-    if (user.roles.includes('super_admin' as UserRole)) return true;
-
-    const matrix = PermissionGuard.getMatrix();
+    const matrix = PermissionGuard.peekMatrix();
     if (!matrix) {
       throw new ForbiddenException('Permission matrix unavailable. Access denied.');
     }
-
     const resource = matrix.resources.find((r: { id: string }) => r.id === required.resource);
     if (!resource) {
       throw new ForbiddenException(`Unknown resource '${required.resource}'. Permission denied.`);
     }
 
-    const effectiveRoles = expandRoles(user.roles, matrix);
-    const allowedRoles: string[] = resource.permissions[required.action] ?? [];
-    if (effectiveRoles.some((role) => allowedRoles.includes(role))) return true;
+    if (rolesGrantPermission(user.roles, required.resource, required.action)) return true;
 
-    const customGrants = await this.loadCustomRoleGrants(user.sub, user.tenantId ?? '');
-    const hasCustom = customGrants.some((grant) => (grant[required.resource] ?? []).includes(required.action));
-    if (hasCustom) return true;
+    if (customRoleGrantsApply(required.resource, required.action)) {
+      const customGrants = await this.loadCustomRoleGrants(user.sub, user.tenantId ?? '');
+      const hasCustom = customGrants.some((grant) => (grant[required.resource] ?? []).includes(required.action));
+      if (hasCustom) return true;
+    }
 
     throw new ForbiddenException(`Permission denied: ${required.action} on ${required.resource}.`);
   }
@@ -89,6 +122,10 @@ export class PermissionGuard implements CanActivate {
   }
 
   private static cachedMatrix: ReturnType<typeof JSON.parse> | null = null;
+
+  static peekMatrix() {
+    return PermissionGuard.getMatrix();
+  }
 
   private static getMatrix() {
     if (PermissionGuard.cachedMatrix !== null) return PermissionGuard.cachedMatrix;

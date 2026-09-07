@@ -111,6 +111,7 @@ test.describe('Inventory procurement and requests', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('Approved', { exact: true })).toBeVisible();
 
+    await dialog.getByLabel('Accountable staff member').selectOption({ index: 1 });
     await dialog.getByRole('button', { name: 'Issue stock' }).click();
     await expect(dialog.getByText('Fulfilled', { exact: true })).toBeVisible({ timeout: 10_000 });
     await expect(dialog.getByText('3 / 3')).toBeVisible();

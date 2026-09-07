@@ -4,6 +4,8 @@ import { NotificationModule } from '../notifications/notifications.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { WorkflowModule } from '../workflow/workflow.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { PlatformSalesTrialsModule } from '../platform-sales-trials/platform-sales-trials.module';
+import { PlatformNotificationsModule } from '../platform-notifications/platform-notifications.module';
 import { BullMqConnectionService } from './infrastructure/bullmq-connection.service';
 import { JobQueueService } from './infrastructure/job-queue.service';
 import { JobWorkerService } from './infrastructure/job-worker.service';
@@ -30,7 +32,15 @@ import { pushSenderProvider } from '../auth/infrastructure/services/push-sender.
  * Workers can be split to a dedicated process in Phase 2 via the same queue names.
  */
 @Module({
-  imports: [ScheduleModule.forRoot(), NotificationModule, AnalyticsModule, WorkflowModule, SubscriptionModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    NotificationModule,
+    AnalyticsModule,
+    WorkflowModule,
+    SubscriptionModule,
+    PlatformSalesTrialsModule,
+    PlatformNotificationsModule,
+  ],
   providers: [
     smsSenderProvider,
     pushSenderProvider,

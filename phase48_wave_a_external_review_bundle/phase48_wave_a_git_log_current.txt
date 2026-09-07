@@ -1,0 +1,12 @@
+089a309 test(phase48): close Wave A Production Acceptance blockers PA-01/02/03
+f91478e docs(phase48): add Wave A QA raw command evidence
+90c813a docs(phase48): add Wave A external Production Acceptance review package
+416c098 feat(phase48): implement Wave A clinical catalog foundation
+daf15c8 docs(phase48): normalize P0/P1 priorities across discovery docs
+88a36a8 docs(phase48): add Enterprise QA architecture discovery artifacts
+ae6307d docs(step29): finalize operational cutover ownership handover
+ea076b0 Ignore Step 29 one-pass log artifacts.
+ce7cda6 Add Step 29 release readiness docs, runner, and Super Admin CI.
+2a332be Map TH26 audit omission/tampering to AUDSEC01+AUDSEC04 direct evidence.
+c7ccc60 Map TH19 cache poisoning to direct EER CACHE01/CACHE02 evidence and reject AUTH11.
+9b85eab Prefer direct executable evidence for remaining Step 28 TH threat mappings.

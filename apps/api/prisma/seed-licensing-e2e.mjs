@@ -271,12 +271,14 @@ export async function seedLicensingE2eTenants(prisma) {
     subscriptionEndDate: new Date(now - (GRACE_DAYS + 3) * DAY_MS),
   });
 
+  // Contract: suspended *subscription/license* with usable platform account.
+  // PlatformTenant.status must stay ACTIVE — login.handler denies SUSPENDED/ARCHIVED/PROVISIONING
+  // platform tenants (AccountInactive 403). License status 'suspended' is derived from
+  // PlatformSubscription.status=SUSPENDED (licensing-engine.resolveLicenseStatus).
   await upsertLicenseTenant(prisma, LIC_E2E_TENANTS.suspended, {
     platformPlan: 'PRO',
-    platformStatus: 'SUSPENDED',
+    platformStatus: 'ACTIVE',
     subscriptionStatus: 'SUSPENDED',
-    suspendedAt: new Date(now - DAY_MS),
-    suspensionReason: 'E2E suspension fixture',
     features: { subscriptionUiPlan: 'professional' },
   });
 

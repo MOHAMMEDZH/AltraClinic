@@ -37,6 +37,11 @@ export class ConsumeBeautyMaterialDTO {
   @IsPositive()
   quantity!: number;
 
+  /** Accountable clinician who used/administered the item (INV-B01). Required. */
+  @IsNotEmpty()
+  @IsUUID()
+  usedByUserId!: string;
+
   @IsOptional()
   @IsString()
   procedureCode?: string | null;
@@ -52,6 +57,14 @@ export class ConsumeBeautyMaterialDTO {
   @IsOptional()
   @IsUUID()
   warehouseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  clinicalServiceId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  appointmentId?: string;
 }
 
 class ConsumeBeautyMaterialLineDTO {
@@ -62,6 +75,10 @@ class ConsumeBeautyMaterialLineDTO {
   @IsNumber()
   @IsPositive()
   quantity!: number;
+
+  @IsNotEmpty()
+  @IsUUID()
+  usedByUserId!: string;
 }
 
 export class ConsumeBeautyMaterialsBatchDTO {
@@ -76,6 +93,10 @@ export class ConsumeBeautyMaterialsBatchDTO {
   @IsOptional()
   @IsString()
   notes?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  usedByUserId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

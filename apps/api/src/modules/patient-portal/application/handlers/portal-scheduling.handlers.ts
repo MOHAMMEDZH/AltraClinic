@@ -264,6 +264,7 @@ export class BookMyAppointmentHandler {
       notes?: string;
       serviceType?: string;
       branchId?: string;
+      clinicalServiceId?: string;
     },
   ) {
     if (actor.actingContextHeader?.toLowerCase() === 'caregiver') {
@@ -297,10 +298,14 @@ export class BookMyAppointmentHandler {
       start: input.start,
       end: input.end,
       serviceType: input.serviceType ?? 'consultation',
+      clinicalServiceId: input.clinicalServiceId ?? null,
       patientId: portal.patientId,
+      notes: input.notes ?? null,
+      branchId: input.branchId ?? null,
+      resourceIds: [] as string[],
     };
     const fingerprint = this.idempotency.fingerprint(fingerprintPayload);
-    const gate = this.idempotency.beginOrReplay({
+    const gate = await this.idempotency.beginOrReplay({
       tenantId: tenant.tenantId,
       patientId: portal.patientId,
       operation: 'book',
@@ -323,6 +328,25 @@ export class BookMyAppointmentHandler {
           false,
           undefined,
           undefined,
+          input.clinicalServiceId ?? null,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          actor.userId,
+          {
+            rowId: gate.rowId,
+            ownerToken: gate.ownerToken,
+            fingerprint,
+            buildResult: (appointmentId: string) => ({
+              appointmentId,
+              start: input.start,
+              end: input.end,
+              providerId: input.providerId,
+              status: 'pending',
+            }),
+          },
         ),
       );
 
@@ -334,7 +358,10 @@ export class BookMyAppointmentHandler {
         status: 'pending',
       };
 
-      this.idempotency.complete(gate.storageKey, fingerprint, safe);
+      // complete() already committed inside create transaction; no-op ownership check for safety.
+      await this.idempotency
+        .complete(gate.rowId, fingerprint, safe, gate.ownerToken)
+        .catch(() => undefined);
 
       await this.emitSideEffects({
         tenantId: tenant.tenantId,
@@ -359,6 +386,7 @@ export class BookMyAppointmentHandler {
 
       return safe;
     } catch (error) {
+      await this.idempotency.fail(gate.rowId, gate.ownerToken).catch(() => undefined);
       this.logger.log(
         this.observability.createFoundationLogFields({
           event: 'appointments.book.conflict_or_error',
@@ -495,7 +523,7 @@ export class UpdateMyAppointmentHandler {
       end: input.end ?? null,
       cancellationReason: input.cancellationReason ?? null,
     });
-    const gate = this.idempotency.beginOrReplay({
+    const gate = await this.idempotency.beginOrReplay({
       tenantId: tenant.tenantId,
       patientId: portal.patientId,
       operation,
@@ -518,7 +546,7 @@ export class UpdateMyAppointmentHandler {
           serviceType: appt.serviceType,
           cancellationReason: appt.cancellationReason,
         });
-        this.idempotency.complete(gate.storageKey, fingerprint, already);
+        await this.idempotency.complete(gate.rowId, fingerprint, already, gate.ownerToken);
         return already;
       }
       if (
@@ -531,12 +559,16 @@ export class UpdateMyAppointmentHandler {
       }
 
       try {
-        const detail = await this.update.execute(appointmentId, {
-          action: 'cancel',
-          cancellationReason: input.cancellationReason,
-        });
+        const detail = await this.update.execute(
+          appointmentId,
+          {
+            action: 'cancel',
+            cancellationReason: input.cancellationReason,
+          },
+          actor.userId,
+        );
         const safe = toPortalAppointmentDto(detail);
-        this.idempotency.complete(gate.storageKey, fingerprint, safe);
+        await this.idempotency.complete(gate.rowId, fingerprint, safe, gate.ownerToken);
         await this.emitSideEffects({
           tenantId: tenant.tenantId,
           branchId: portal.branchId ?? tenant.branchId ?? null,
@@ -558,6 +590,7 @@ export class UpdateMyAppointmentHandler {
         );
         return safe;
       } catch (error) {
+        await this.idempotency.fail(gate.rowId, gate.ownerToken).catch(() => undefined);
         mapSchedulingErrorToPortal(error, actor.correlationId);
       }
     }
@@ -574,12 +607,16 @@ export class UpdateMyAppointmentHandler {
       }
 
       try {
-        const detail = await this.update.execute(appointmentId, {
-          start: input.start,
-          end: input.end,
-        });
+        const detail = await this.update.execute(
+          appointmentId,
+          {
+            start: input.start,
+            end: input.end,
+          },
+          actor.userId,
+        );
         const safe = toPortalAppointmentDto(detail);
-        this.idempotency.complete(gate.storageKey, fingerprint, safe);
+        await this.idempotency.complete(gate.rowId, fingerprint, safe, gate.ownerToken);
         await this.emitSideEffects({
           tenantId: tenant.tenantId,
           branchId: portal.branchId ?? tenant.branchId ?? null,
@@ -601,6 +638,7 @@ export class UpdateMyAppointmentHandler {
         );
         return safe;
       } catch (error) {
+        await this.idempotency.fail(gate.rowId, gate.ownerToken).catch(() => undefined);
         mapSchedulingErrorToPortal(error, actor.correlationId);
       }
     }
@@ -686,7 +724,7 @@ export class GetMyAvailabilityHandler {
 
   async execute(
     actor: PortalSchedulingActor,
-    query: { providerId: string; date: string; durationMin?: number },
+    query: { providerId: string; date: string; durationMin?: number; clinicalServiceId?: string },
   ) {
     const tenant = await this.tenantContext.resolve();
     await this.ctx.resolve(actor.userId, tenant.tenantId);
@@ -702,6 +740,7 @@ export class GetMyAvailabilityHandler {
         providerId: query.providerId,
         date: query.date,
         durationMin: query.durationMin,
+        clinicalServiceId: query.clinicalServiceId,
       });
 
       this.logger.log(
@@ -738,7 +777,7 @@ export class ListMyProvidersHandler {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async execute(actor: PortalSchedulingActor, branchId?: string) {
+  async execute(actor: PortalSchedulingActor, branchId?: string, clinicalServiceId?: string) {
     const tenant = await this.tenantContext.resolve();
     const portal = await this.ctx.resolve(actor.userId, tenant.tenantId);
     const branchFilter = parsePatientPortalBranchFilter(branchId);
@@ -747,7 +786,7 @@ export class ListMyProvidersHandler {
       branchFilter.branchId ?? portal.branchId ?? tenant.branchId ?? undefined;
 
     try {
-      const result = await this.providers.execute(effectiveBranch);
+      const result = await this.providers.execute(effectiveBranch, clinicalServiceId);
       const items = Array.isArray(result)
         ? result
         : Array.isArray((result as { items?: unknown })?.items)

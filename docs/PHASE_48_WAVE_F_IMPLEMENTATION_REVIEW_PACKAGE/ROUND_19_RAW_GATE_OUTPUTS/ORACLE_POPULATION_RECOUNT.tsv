@@ -1,0 +1,7 @@
+metric	value
+candidatesBeforeDedup	24604
+distinctSearchMultisets	23948
+realizableSearchCount	23815
+unrealizableSearchCount	133
+contractInvalidRaw	30
+contractInvalidDistinct	30

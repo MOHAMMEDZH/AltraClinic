@@ -96,6 +96,13 @@ export class Invoice {
       unitPrice: number;
       discountPercent?: number;
       taxPercent?: number;
+      /** Server-derived ServicePerformance attribution (Wave F Round 3). */
+      servicePerformanceId?: string | null;
+      /** Wave F Round 4 — server-authored durable provenance. */
+      appointmentId?: string | null;
+      clinicalServiceId?: string | null;
+      snapshotRevisionId?: string | null;
+      courseSessionId?: string | null;
     }>;
   }): Invoice {
     if (!input.patientId.trim()) throw new InvoiceValidationException('Patient ID is required');
@@ -111,6 +118,11 @@ export class Invoice {
       unitPrice: li.unitPrice,
       discountPercent: li.discountPercent ?? 0,
       taxPercent: li.taxPercent ?? 0,
+      servicePerformanceId: li.servicePerformanceId ?? null,
+      appointmentId: li.appointmentId ?? null,
+      clinicalServiceId: li.clinicalServiceId ?? null,
+      snapshotRevisionId: li.snapshotRevisionId ?? null,
+      courseSessionId: li.courseSessionId ?? null,
     }));
 
     const amountSubtotal = Invoice.calculateSubtotal(lineItems);

@@ -1,0 +1,22 @@
+GATE=DIFFCHECK
+START_UTC=2026-08-21T14:14:41.3901690Z
+CWD=C:/Users/mrame/Projects/AltraClinic
+COMMAND=cmd /c "git diff --check"
+---
+cmd : warning: in the working copy of 'apps/api/prisma/rls-policies.sql', LF will be replaced by CRLF the next time 
+Git touches it
+At C:\Users\mrame\AppData\Local\Temp\ps-script-a31708b1-1218-435a-83b9-8e5c49bb7cca.ps1:153 char:53
++ ... DIFFCHECK' '32_diffcheck.txt' $repoRoot { cmd /c "git diff --check" }
++                                               ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'apps/api/prisma/seeds/permission-seeds.d.ts', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'apps/api/prisma/seeds/permission-seeds.js', LF will be replaced by CRLF the next time 
+Git touches it
+
+---
+END_UTC=2026-08-21T14:14:41.5038884Z
+EXIT=0
+STATUS=PASS

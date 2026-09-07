@@ -10,7 +10,12 @@ export type UsageClock = () => Date;
 
 @Injectable()
 export class UsagePeriodResolver {
-  constructor(private readonly clock: UsageClock = () => new Date()) {}
+  private readonly clock: UsageClock;
+
+  /** Optional clock is for tests only; Nest must construct via useFactory (no DI of Function). */
+  constructor(clock?: UsageClock) {
+    this.clock = clock ?? (() => new Date());
+  }
 
   now(): Date {
     return this.clock();

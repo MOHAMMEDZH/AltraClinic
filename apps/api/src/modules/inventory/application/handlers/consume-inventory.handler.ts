@@ -7,6 +7,7 @@ import { InventoryConsumedEvent } from '../../domain/events/inventory-consumed.e
 import { EventPublisherInterface } from '../../../../infrastructure/event-publisher.interface';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
 import { TenantContextContract } from '../../../../contracts/tenant-context.contract';
+import { ACCOUNTABLE_REQUIRED, InventoryUsagePostingService } from '../services/inventory-usage-posting.service';
 
 @Injectable()
 export class ConsumeInventoryHandler {
@@ -15,18 +16,46 @@ export class ConsumeInventoryHandler {
     @Inject(INVENTORY_WAREHOUSE_REPOSITORY) private readonly warehouseRepo: InventoryWarehouseRepository,
     private readonly tenantContext: TenantContextService,
     @Inject(EVENT_PUBLISHER) private readonly eventPublisher: EventPublisherInterface,
+    private readonly usagePosting: InventoryUsagePostingService,
   ) {}
 
   async execute(
     command: ConsumeInventoryCommand & {
       consumedBy: string;
+      /** Clinical performer (INV-B01). Required for CLINICAL_CONSUMPTION. */
+      usedByUserId?: string | null;
+      /** Authenticated actor who records the event. Defaults to consumedBy. */
+      recordedByUserId?: string | null;
       notes?: string | null;
       warehouseId?: string | null;
       patientId?: string | null;
       procedureCode?: string | null;
       reason?: string | null;
+      reasonCode?: string | null;
+      branchId?: string | null;
+      encounterId?: string | null;
+      inventoryBatchId?: string | null;
+      appointmentId?: string | null;
+      clinicalServiceId?: string | null;
+      beautyAnnotationId?: string | null;
+      usageType?:
+        | 'CLINICAL_CONSUMPTION'
+        | 'OPERATIONAL_CONSUMPTION'
+        | 'WASTAGE'
+        | 'DAMAGE'
+        | 'EXPIRED'
+        | 'SAMPLE_OR_PROMOTIONAL'
+        | 'CORRECTION'
+        | 'REVERSAL';
+      injectable?: {
+        dose?: number | null;
+        anatomicalSite?: string | null;
+        beautyAnnotationId?: string | null;
+        notes?: string | null;
+      } | null;
+      hasInjectableCreatePermission?: boolean;
     },
-  ): Promise<{ itemId: string; quantity: number }> {
+  ): Promise<{ itemId: string; quantity: number; usageLedgerIds: string[] }> {
     const tenantCtx = (await this.tenantContext.resolve()) as TenantContextContract;
     const tenantId = tenantCtx?.tenantId;
     if (!tenantId) throw new BadRequestException('tenant context could not be resolved');
@@ -40,54 +69,65 @@ export class ConsumeInventoryHandler {
     const warehouseOk = await this.warehouseRepo.existsActive(tenantId, warehouseId);
     if (!warehouseOk) throw new BadRequestException('Warehouse not found or inactive');
 
-    await this.repo.consumeFifoBatches(tenantId, command.itemId, command.quantity);
-
-    let delta;
-    try {
-      delta = await this.warehouseRepo.applyStockDelta({
-        tenantId,
-        warehouseId,
-        itemId: command.itemId,
-        delta: -command.quantity,
-      });
-    } catch {
-      throw new BadRequestException('Insufficient stock at selected warehouse');
+    const usageType = command.usageType ?? 'CLINICAL_CONSUMPTION';
+    const approved = new Set([
+      'CLINICAL_CONSUMPTION',
+      'OPERATIONAL_CONSUMPTION',
+      'WASTAGE',
+      'DAMAGE',
+      'EXPIRED',
+      'SAMPLE_OR_PROMOTIONAL',
+      'CORRECTION',
+    ]);
+    if (!approved.has(usageType)) {
+      throw new BadRequestException(`usageType ${usageType} is not allowed`);
+    }
+    // Recorder may default to the authenticated actor; accountable usedBy must NEVER.
+    const recordedByUserId = (command.recordedByUserId ?? command.consumedBy).trim();
+    const usedByUserId = command.usedByUserId?.trim() || null;
+    if (ACCOUNTABLE_REQUIRED.has(usageType) && !usedByUserId) {
+      throw new BadRequestException(
+        `usedByUserId is required for ${usageType} (recorder must not be inferred as accountable user)`,
+      );
     }
 
-    const movementReason =
-      command.reason ??
-      (command.procedureCode ? `Clinical ${command.procedureCode}` : null);
-
-    await this.repo.recordConsumption({
+    const posted = await this.usagePosting.postUsage({
       tenantId,
-      inventoryItemId: item.itemId,
-      quantityUsed: command.quantity,
-      consumedBy: command.consumedBy,
-      notes: command.notes ?? null,
-      encounterId: command.sourceDocumentId ?? null,
-      patientId: command.patientId ?? null,
-      procedureCode: command.procedureCode ?? null,
-    });
-
-    await this.repo.recordStockMovement({
-      tenantId,
-      inventoryItemId: item.itemId,
-      movementType: 'CONSUME',
+      inventoryItemId: command.itemId,
       quantity: command.quantity,
-      quantityBefore: delta.itemQtyBefore,
-      quantityAfter: delta.itemQtyAfter,
-      reason: movementReason,
-      notes: command.notes ?? null,
-      encounterId: command.sourceDocumentId ?? null,
-      patientId: command.patientId ?? null,
-      procedureCode: command.procedureCode ?? null,
-      performedBy: command.consumedBy,
+      usageType,
+      recordedByUserId,
+      usedByUserId,
       warehouseId,
+      branchId: command.branchId ?? tenantCtx.branchId ?? null,
+      inventoryBatchId: command.inventoryBatchId ?? null,
+      patientId: command.patientId ?? null,
+      encounterId: command.encounterId ?? command.sourceDocumentId ?? null,
+      appointmentId: command.appointmentId ?? null,
+      clinicalServiceId: command.clinicalServiceId ?? null,
+      beautyAnnotationId: command.beautyAnnotationId ?? null,
+      procedureCode: command.procedureCode ?? null,
+      reasonCode: command.reasonCode ?? command.reason ?? null,
+      notes: command.notes ?? null,
+      unit: item.unit,
+      injectable: command.injectable ?? null,
+      hasInjectableCreatePermission: command.hasInjectableCreatePermission === true,
     });
 
     await this.eventPublisher.publish(
-      new InventoryConsumedEvent(tenantId, item.itemId, command.quantity, item.unit, command.sourceDocumentId ?? null),
+      new InventoryConsumedEvent(
+        tenantId,
+        item.itemId,
+        command.quantity,
+        item.unit,
+        command.sourceDocumentId ?? null,
+      ),
     );
-    return { itemId: item.itemId, quantity: command.quantity };
+
+    return {
+      itemId: item.itemId,
+      quantity: command.quantity,
+      usageLedgerIds: posted.lines.map((l) => l.usageLedgerId),
+    };
   }
 }

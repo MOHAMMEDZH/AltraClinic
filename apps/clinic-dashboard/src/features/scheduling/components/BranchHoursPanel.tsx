@@ -79,11 +79,11 @@ export function BranchHoursPanel({ branches }: BranchHoursPanelProps) {
       </label>
 
       <ul className={styles.grid}>
-        {activeDays.map((day) => (
+        {activeDays.map((day) => {
+          const dayName = t(`scheduling.scheduleSettings.days.${DAY_KEYS[day.dayOfWeek]}`);
+          return (
           <li key={day.dayOfWeek} className={styles.row}>
-            <span className={styles.dayLabel}>
-              {t(`scheduling.scheduleSettings.days.${DAY_KEYS[day.dayOfWeek]}`)}
-            </span>
+            <span className={styles.dayLabel}>{dayName}</span>
             <label className={styles.check}>
               <input
                 type="checkbox"
@@ -102,6 +102,7 @@ export function BranchHoursPanel({ branches }: BranchHoursPanelProps) {
               <>
                 <input
                   type="time"
+                  aria-label={`${dayName} ${t('scheduling.branchHours.openTime')}`}
                   value={`${String(day.openHour).padStart(2, '0')}:${String(day.openMin).padStart(2, '0')}`}
                   onChange={(e) => {
                     const [h, m] = e.target.value.split(':').map(Number);
@@ -115,6 +116,7 @@ export function BranchHoursPanel({ branches }: BranchHoursPanelProps) {
                 <span>–</span>
                 <input
                   type="time"
+                  aria-label={`${dayName} ${t('scheduling.branchHours.closeTime')}`}
                   value={`${String(day.closeHour).padStart(2, '0')}:${String(day.closeMin).padStart(2, '0')}`}
                   onChange={(e) => {
                     const [h, m] = e.target.value.split(':').map(Number);
@@ -128,7 +130,8 @@ export function BranchHoursPanel({ branches }: BranchHoursPanelProps) {
               </>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {saved && <AuthAlert variant="success">{t('scheduling.branchHours.saved')}</AuthAlert>}

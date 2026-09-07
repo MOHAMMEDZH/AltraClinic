@@ -190,11 +190,8 @@ export function ModuleRegistryProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
 
-      setIsError(false);
-
-      setError(null);
-
-
+      // Keep prior isError/error until a successful bootstrap so reporting stays on
+      // static-fallback during retries instead of flashing the restricted empty catalog.
 
       try {
         const token = await getValidAccessToken();
@@ -229,6 +226,10 @@ export function ModuleRegistryProvider({ children }: { children: ReactNode }) {
         setSnapshot(data.snapshot);
 
         setModules(data.modules);
+
+        setIsError(false);
+
+        setError(null);
 
       } catch (err) {
 

@@ -3,6 +3,12 @@ import {
   PLATFORM_CSRF_COOKIE_NAME,
   PLATFORM_REFRESH_COOKIE_NAME,
 } from '../platform-auth.tokens';
+import {
+  getAllowedSuperAdminOrigins,
+  isAllowedPlatformOrigin,
+} from '../../../common/security/cors-origins';
+
+export { getAllowedSuperAdminOrigins, isAllowedPlatformOrigin };
 
 export function parseCookieHeader(header: string | undefined): Record<string, string> {
   if (!header) return {};
@@ -16,33 +22,6 @@ export function parseCookieHeader(header: string | undefined): Record<string, st
     out[key] = decodeURIComponent(value);
   }
   return out;
-}
-
-export function getAllowedSuperAdminOrigins(): string[] {
-  const fromDedicated = (process.env['SUPER_ADMIN_CORS_ORIGINS'] ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (fromDedicated.length) return fromDedicated;
-
-  const fromCors = (process.env['CORS_ORIGINS'] ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const defaults = [
-    'http://127.0.0.1:5176',
-    'http://localhost:5176',
-    'http://127.0.0.1:4176',
-    'http://localhost:4176',
-  ];
-
-  return [...new Set([...fromCors, ...defaults])];
-}
-
-export function isAllowedPlatformOrigin(origin: string | undefined): boolean {
-  if (!origin) return false;
-  return getAllowedSuperAdminOrigins().includes(origin);
 }
 
 /**

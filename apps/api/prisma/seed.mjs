@@ -40,9 +40,18 @@ const DEV_REGION_CENTRAL_ID = 'a1000000-0000-4000-8000-000000000030';
 const DEV_REGION_NORTH_ID = 'a1000000-0000-4000-8000-000000000031';
 const DEV_NOTE_TEMPLATE_ID = 'a1000000-0000-4000-8000-000000000040';
 const DEV_LAB_RESULT_ID = 'a1000000-0000-4000-8000-000000000041';
+const DEV_CUSTOM_ROLE_ID = 'a1000000-0000-4000-8000-000000000042';
 
 const OWNER_EMAIL = 'owner@demo.clinic';
 const OWNER_PASSWORD = 'Owner123!';
+const DEMO_TENANT_FEATURES = {
+  smsInvites: true,
+  /** Demo clinic is the inventory E2E positive fixture (business-tier inventory enabled). */
+  subscriptionUiPlan: 'business',
+  advancedSettings: {
+    allowBackupRestore: true,
+  },
+};
 const INVENTORY_MANAGER_EMAIL = 'inventory@demo.clinic';
 const INVENTORY_MANAGER_PASSWORD = 'Inventory123!';
 const DOCTOR_EMAIL = 'doctor@demo.clinic';
@@ -80,14 +89,14 @@ async function main() {
       locale: 'en-US',
       trialStartedAt: new Date(),
       trialEndsAt,
-      features: { smsInvites: true },
+      features: DEMO_TENANT_FEATURES,
     },
     update: {
       name: 'Demo Clinic',
       status: 'ACTIVE',
       lifecycleStatus: 'TRIAL',
       locale: 'en-US',
-      features: { smsInvites: true },
+      features: DEMO_TENANT_FEATURES,
     },
   });
 
@@ -1313,6 +1322,24 @@ async function main() {
     branchId: DEV_BRANCH_ID,
     doctorId: DEV_DOCTOR_ID,
     accountantId: DEV_ACCOUNTANT_ID,
+  });
+
+  await prisma.customRole.upsert({
+    where: { id: DEV_CUSTOM_ROLE_ID },
+    create: {
+      id: DEV_CUSTOM_ROLE_ID,
+      tenantId: DEV_TENANT_ID,
+      name: 'Demo custom role',
+      description: 'Seeded custom role for user-management E2E',
+      permissions: {},
+      isArchived: false,
+    },
+    update: {
+      name: 'Demo custom role',
+      description: 'Seeded custom role for user-management E2E',
+      permissions: {},
+      isArchived: false,
+    },
   });
 
   await seedLicensingE2eTenants(prisma);

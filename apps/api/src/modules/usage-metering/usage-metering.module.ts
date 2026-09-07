@@ -20,7 +20,7 @@ import { UsageMeteringPlatformController } from './controllers/usage-metering-pl
   imports: [InfrastructureModule, forwardRef(() => AuthModule), EffectiveEntitlementRuntimeModule],
   controllers: [UsageMeteringPlatformController],
   providers: [
-    UsagePeriodResolver,
+    { provide: UsagePeriodResolver, useFactory: () => new UsagePeriodResolver() },
     UsageAggregateReaders,
     UsageIdempotencyService,
     UsageCounterService,

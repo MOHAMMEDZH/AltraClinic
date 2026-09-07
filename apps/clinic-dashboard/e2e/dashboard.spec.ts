@@ -186,7 +186,8 @@ test.describe('Clinic dashboard smoke', () => {
     await page.getByRole('navigation', { name: 'Quick actions' }).getByRole('link', {
       name: 'Appointments',
     }).click();
-    await expect(page).toHaveURL(/\/appointments$/);
+    // Appointments page may sync ?date= into the URL after mount.
+    await expect(page).toHaveURL(/\/appointments(?:\?|$)/);
   });
 
   test('owner dashboard shows business health from live API', async ({ page }) => {

@@ -4,10 +4,11 @@ import { useDynamicRoutes } from '../context/DynamicRouteProvider';
 
 /** Renders registry-filtered shell routes inside LicensedApplicationShell Outlet. */
 export function ShellRouteRenderer() {
-  const { shellSnapshot, isLoading } = useDynamicRoutes();
+  const { shellSnapshot } = useDynamicRoutes();
   const element = useRoutes(shellSnapshot.routeObjects);
 
-  if (isLoading && !element) {
+  // Never return null into <main> — empty main is indistinguishable from a hang in e2e.
+  if (!element) {
     return <AuthSpinner />;
   }
 

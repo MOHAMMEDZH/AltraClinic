@@ -1,0 +1,37 @@
+GATE=C
+START_UTC=2026-08-21T14:12:53.0101181Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-c-
+---
+node.exe : PASS src/modules/inventory/tests/wave-c-inventory-accountability.postgres.integration.spec.ts (8.053 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (8.053 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/modules/inventory/tests/wave-c-http-permission.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-clinical-forms-http.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-consent.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-tenant-references.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-permission-contract.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-injectable.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-clinical-form-version-concurrency.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-media-patient.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-billing-production-path.postgres.integration.spec.ts
+PASS src/modules/clinical-forms/tests/wave-c-media-owner.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-rls.postgres.integration.spec.ts
+PASS src/modules/inventory/tests/wave-c-migration.postgres.integration.spec.ts
+
+Test Suites: 13 passed, 13 total
+Tests:       206 passed, 206 total
+Snapshots:   0 total
+Time:        16.082 s
+Ran all test suites matching /wave-c-/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T14:13:10.5285287Z
+EXIT=0
+STATUS=PASS

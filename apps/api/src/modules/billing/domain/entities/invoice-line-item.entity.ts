@@ -11,6 +11,13 @@ export interface InvoiceLineItemProps {
   taxPercent: number;
   taxAmount: number;
   subtotal: number;
+  /** Wave F Round 3 — server-authoritative ServicePerformance link (optional). */
+  servicePerformanceId?: string | null;
+  /** Wave F Round 4 — durable later-bind provenance (server-authored). */
+  appointmentId?: string | null;
+  clinicalServiceId?: string | null;
+  snapshotRevisionId?: string | null;
+  courseSessionId?: string | null;
 }
 
 export class InvoiceLineItem {
@@ -23,6 +30,11 @@ export class InvoiceLineItem {
   public readonly taxPercent: number;
   public readonly taxAmount: number;
   public readonly subtotal: number;
+  public readonly servicePerformanceId: string | null;
+  public readonly appointmentId: string | null;
+  public readonly clinicalServiceId: string | null;
+  public readonly snapshotRevisionId: string | null;
+  public readonly courseSessionId: string | null;
 
   private constructor(props: InvoiceLineItemProps) {
     this.itemId = props.itemId;
@@ -34,6 +46,11 @@ export class InvoiceLineItem {
     this.taxPercent = props.taxPercent;
     this.taxAmount = props.taxAmount;
     this.subtotal = props.subtotal;
+    this.servicePerformanceId = props.servicePerformanceId ?? null;
+    this.appointmentId = props.appointmentId ?? null;
+    this.clinicalServiceId = props.clinicalServiceId ?? null;
+    this.snapshotRevisionId = props.snapshotRevisionId ?? null;
+    this.courseSessionId = props.courseSessionId ?? null;
   }
 
   /** Reconstitutes an InvoiceLineItem from a persistence record. */
@@ -47,6 +64,12 @@ export class InvoiceLineItem {
     unitPrice: number;
     discountPercent?: number;
     taxPercent?: number;
+    /** Server-derived only — never trust arbitrary client billing DTOs. */
+    servicePerformanceId?: string | null;
+    appointmentId?: string | null;
+    clinicalServiceId?: string | null;
+    snapshotRevisionId?: string | null;
+    courseSessionId?: string | null;
   }): InvoiceLineItem {
     if (!input.description?.trim()) throw new InvoiceValidationException('Invoice line description is required');
     if (!Number.isFinite(input.quantity) || input.quantity <= 0 || !Number.isInteger(input.quantity)) {
@@ -72,6 +95,11 @@ export class InvoiceLineItem {
       taxPercent,
       taxAmount,
       subtotal,
+      servicePerformanceId: input.servicePerformanceId ?? null,
+      appointmentId: input.appointmentId ?? null,
+      clinicalServiceId: input.clinicalServiceId ?? null,
+      snapshotRevisionId: input.snapshotRevisionId ?? null,
+      courseSessionId: input.courseSessionId ?? null,
     });
   }
 
@@ -86,6 +114,11 @@ export class InvoiceLineItem {
       taxPercent: this.taxPercent,
       taxAmount: this.taxAmount,
       subtotal: this.subtotal,
+      servicePerformanceId: this.servicePerformanceId,
+      appointmentId: this.appointmentId,
+      clinicalServiceId: this.clinicalServiceId,
+      snapshotRevisionId: this.snapshotRevisionId,
+      courseSessionId: this.courseSessionId,
     };
   }
 }

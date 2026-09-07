@@ -86,10 +86,10 @@ describe('Phase 46c — Patient Portal appointments facade', () => {
     expect(dto).not.toHaveProperty('notes');
   });
 
-  it('idempotency replays identical requests and rejects payload mismatch', () => {
+  it('idempotency replays identical requests and rejects payload mismatch', async () => {
     const store = new PortalSchedulingIdempotencyService();
     const fingerprint = store.fingerprint({ a: 1 });
-    const first = store.beginOrReplay({
+    const first = await store.beginOrReplay({
       tenantId: 't1',
       patientId: 'p1',
       operation: 'book',
@@ -98,9 +98,9 @@ describe('Phase 46c — Patient Portal appointments facade', () => {
     });
     expect(first.kind).toBe('proceed');
     if (first.kind !== 'proceed') return;
-    store.complete(first.storageKey, fingerprint, { appointmentId: 'a1' });
+    await store.complete(first.rowId, fingerprint, { appointmentId: 'a1' }, first.ownerToken);
 
-    const replay = store.beginOrReplay({
+    const replay = await store.beginOrReplay({
       tenantId: 't1',
       patientId: 'p1',
       operation: 'book',
@@ -109,7 +109,7 @@ describe('Phase 46c — Patient Portal appointments facade', () => {
     });
     expect(replay).toEqual({ kind: 'replay', result: { appointmentId: 'a1' } });
 
-    expect(() =>
+    await expect(
       store.beginOrReplay({
         tenantId: 't1',
         patientId: 'p1',
@@ -117,7 +117,7 @@ describe('Phase 46c — Patient Portal appointments facade', () => {
         idempotencyKey: 'k1',
         fingerprint: store.fingerprint({ a: 2 }),
       }),
-    ).toThrow(ConflictException);
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   describe('handlers', () => {

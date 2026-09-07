@@ -1,0 +1,16 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round15-refund-complete-set.unit.spec.ts (6.171 s)
+  Wave F Round 15 refund complete-set one-zero tails (unit)
+    √ R15-A-U1 mandatory 100/1 A,B,C then D yields 0.10/0.00; final rem 0/0; accepted (5 ms)
+    √ R15-A-U2 zero/zero observed rejected (14 ms)
+    √ R15-A-U3 mirror revenue-first exhaustion then commission-only tail (1 ms)
+    √ R15-A-U4 forged aggregate-preserving but non-sequential set rejected (1 ms)
+    √ R15-A-U5 permutation invariance of accepted asymmetric+tail set (5 ms)
+    √ R15-A-U6 assertReversalSignedEconomicShape accepts one-zero and both-neg; rejects invalid (2 ms)
+    √ R15-A-U7 property: small caps + partitions — simulator sets accepted; forged swapped residual rejected (11 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        6.44 s
+Ran all test suites matching /wave-f-round15-refund-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

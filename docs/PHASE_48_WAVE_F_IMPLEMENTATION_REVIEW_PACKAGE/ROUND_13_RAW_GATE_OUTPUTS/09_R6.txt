@@ -1,0 +1,40 @@
+GATE=R6
+START_UTC=2026-08-21T16:28:46.7465941Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round6.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round6.postgres.integration.spec.ts (12.367 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.367 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 6 remediation (PostgreSQL)
+    ΓêÜ R6-PKGCOL-T1/T2/T3/T8 collected path capped by package allocation (347 ms)
+    ΓêÜ R6-PKGCOL-T5 missing allocation fail closed (123 ms)
+    ΓêÜ R6-PKGCOL-T6 invoice-based + collected cannot double-earn same allocation (137 ms)
+    ΓêÜ R6-PKGCOL-T4/T7 multi-session allocations + refund after collected (122 ms)
+    ΓêÜ R6-PKGCUR-T1/T4 same currency success; T2/T3/T5 mismatch reject zero side effects (125 ms)
+    ΓêÜ R6-PKGPROV-T1 course patient Γëá performance patient ΓåÆ reject (39 ms)
+    ΓêÜ R6-PKGPROV-T2 session appointment exists + performance appointment null ΓåÆ reject (30 ms)
+    ΓêÜ R6-PKGPROV-T3/T5/T6/T8 wrong appointment / line / service; zero side effects (60 ms)
+    ΓêÜ R6-PKGPROV-T4/T7 invoice patient mismatch reject; matching chain success (75 ms)
+    ΓêÜ R6-CORRBIND-T1/T6/T7 canonical validator shared; mismatch rolls back (170 ms)
+    ΓêÜ R6-CORRBIND-T8 package correction still reuses allocation (152 ms)
+    ΓêÜ R6-PKGHIST-T1/T2/T3 SUPERSEDED bound V1 still allocates V1 basis/currency (33 ms)
+    ΓêÜ R6-PKGHIST-T4 DRAFT rejected; T5 unrelated ACTIVE cannot replace bound version (54 ms)
+    ΓêÜ R6-PKGHIST-T6 new course may bind ACTIVE V2 (31 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        12.608 s
+Ran all test suites matching /wave-f-round6.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:29:00.7781230Z
+EXIT=0
+STATUS=PASS

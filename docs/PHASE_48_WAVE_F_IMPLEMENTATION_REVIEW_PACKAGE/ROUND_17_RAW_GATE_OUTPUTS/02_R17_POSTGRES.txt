@@ -1,0 +1,19 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round17.postgres.integration.spec.ts (25.948 s)
+  Wave F Round 17 remediation (PostgreSQL)
+    √ R17-A-T1 100 exact + 25 valid one-zero specials; sequential creation succeeds (2893 ms)
+    √ R17-A-T2 replay existing refund in 125-effect history; exactly-once (2806 ms)
+    √ R17-A-T3 correction carries 125-effect history; nets preserved (3980 ms)
+    √ R17-A-T4 correction replay idempotent after 125-effect carry (4013 ms)
+    √ R17-A-T5 injected failure rolls back long-history reverseAccrual (1986 ms)
+    √ R17-A-T10 concurrent replay on long history; exactly-once (3202 ms)
+    √ R17-B-T1 plant invalid exact-only saturated commission set; replay fail-closed (148 ms)
+    √ R17-B-T2 correction on invalid exact-only set rolls back fully (214 ms)
+    √ R17-B-T3 valid Round 16 exact saturation creation/replay/correction nets 0/0 (269 ms)
+    √ R17-B-T4 P2002 concurrent replay never accepts invalid exact-only saturated set (200 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        26.188 s, estimated 31 s
+Ran all test suites matching /wave-f-round17.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

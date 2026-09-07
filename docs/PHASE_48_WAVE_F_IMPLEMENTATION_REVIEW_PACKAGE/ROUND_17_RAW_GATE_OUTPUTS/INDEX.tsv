@@ -1,0 +1,43 @@
+gate	exit	status	suites	tests	file	seconds
+R17_UNIT	0	PASS	1 passed, 1 total	14 passed, 14 total	01_R17_UNIT.txt	7.4042738
+R17_POSTGRES	0	PASS	1 passed, 1 total	10 passed, 10 total	02_R17_POSTGRES.txt	27.6589344
+R16_UNIT	0	PASS	1 passed, 1 total	11 passed, 11 total	03_R16_UNIT.txt	6.9156058
+R16_POSTGRES	0	PASS	1 passed, 1 total	22 passed, 22 total	04_R16_POSTGRES.txt	19.064019
+R15_UNIT	0	PASS	1 passed, 1 total	7 passed, 7 total	05_R15_UNIT.txt	11.0686809
+R15_POSTGRES	0	PASS	1 passed, 1 total	20 passed, 20 total	06_R15_POSTGRES.txt	15.9854981
+R14_POSTGRES	0	PASS	1 passed, 1 total	10 passed, 10 total	07_R14_POSTGRES.txt	14.8795161
+R14_UNIT	0	PASS	1 passed, 1 total	9 passed, 9 total	08_R14_UNIT.txt	11.3665616
+R13	0	PASS	1 passed, 1 total	8 passed, 8 total	09_R13.txt	11.4267886
+R13_PG	0	PASS	1 passed, 1 total	10 passed, 10 total	09b_R13_PG.txt	15.2287723
+R12	0	PASS	1 passed, 1 total	19 passed, 19 total	10_R12.txt	16.9473819
+R11	0	PASS	1 passed, 1 total	16 passed, 16 total	11_R11.txt	15.9973663
+R10	0	PASS	1 passed, 1 total	15 passed, 15 total	12_R10.txt	16.4643775
+R9	0	PASS	1 passed, 1 total	28 passed, 28 total	13_R9.txt	19.7971524
+R8	0	PASS	1 passed, 1 total	19 passed, 19 total	14_R8.txt	16.015429
+R7	0	PASS	1 passed, 1 total	9 passed, 9 total	15_R7.txt	14.4988699
+R6	0	PASS	1 passed, 1 total	14 passed, 14 total	16_R6.txt	13.3194302
+R5	0	PASS	1 passed, 1 total	21 passed, 21 total	17_R5.txt	14.1051615
+R4	0	PASS	1 passed, 1 total	27 passed, 27 total	18_R4.txt	15.6372703
+R3	0	PASS	1 passed, 1 total	47 passed, 47 total	19_R3.txt	16.21811
+R2	0	PASS	1 passed, 1 total	22 passed, 22 total	20_R2.txt	14.147871
+R1	0	PASS	1 passed, 1 total	26 passed, 26 total	21_R1.txt	14.280525
+WAVE_F_POSTGRES	0	PASS	20 passed, 20 total	364 passed, 364 total	22_WAVE_F_POSTGRES.txt	94.1133331
+WAVE_F_UNIT	0	PASS	6 passed, 6 total	59 passed, 59 total	23_WAVE_F_UNIT.txt	12.5533739
+WAVE_F_RLS	0	PASS	1 passed, 1 total	14 passed, 14 total	24_WAVE_F_RLS.txt	7.8677457
+WAVE_F_HTTP	0	PASS	1 passed, 1 total	2 passed, 2 total	25_WAVE_F_HTTP.txt	9.0794906
+PERM_ROUTES	0	PASS			26_PERM_ROUTES.txt	2.3431643
+MIG_CLEAN	0	PASS			27_MIG_CLEAN.txt	3.9394152
+MIG_UPGRADE	0	PASS			28_MIG_UPGRADE.txt	11.1918626
+PRIOR_A	0	PASS	1 passed, 1 total	11 passed, 11 total	29_PRIOR_A.txt	7.2588752
+PRIOR_B	0	PASS	12 passed, 12 total	268 passed, 268 total	30_PRIOR_B.txt	44.1002731
+PRIOR_C	0	PASS	13 passed, 13 total	206 passed, 206 total	31_PRIOR_C.txt	16.9732833
+PRIOR_D	0	PASS	6 passed, 6 total	69 passed, 69 total	32_PRIOR_D.txt	12.9434713
+PRIOR_D_UNIT	0	PASS	2 passed, 2 total	14 passed, 14 total	33_PRIOR_D_UNIT.txt	7.3461505
+PRIOR_D_RLS	0	PASS	1 passed, 1 total	16 passed, 16 total	34_PRIOR_D_RLS.txt	7.802157
+PRIOR_E_R3	0	PASS	1 passed, 1 total	19 passed, 19 total	35_PRIOR_E_R3.txt	9.0005251
+PRIOR_E_UNIT	0	PASS	2 passed, 2 total	22 passed, 22 total	36_PRIOR_E_UNIT.txt	7.3402912
+PRIOR_E_PG	0	PASS	7 passed, 7 total	133 passed, 133 total	37_PRIOR_E_PG.txt	14.6507819
+PKG_PERM	0	PASS			38_PKG_PERM.txt	1.5790804
+API_BUILD	2	PASS_BASELINE			39_API_BUILD.txt	22.463753
+DIFF_CHECK	0	PASS			40_DIFF_CHECK.txt	0
+MUTATION	0	PASS_NO_MUTATION			41_MUTATION_CHECK.txt	0

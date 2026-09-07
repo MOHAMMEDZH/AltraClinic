@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator';
 
 export class DisposeInventoryBatchDTO {
   @IsNumber()
@@ -9,6 +9,9 @@ export class DisposeInventoryBatchDTO {
   @IsString()
   @MinLength(1)
   reason!: string;
+
+  @IsUUID()
+  usedByUserId!: string;
 
   @IsOptional()
   @IsString()

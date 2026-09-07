@@ -1,0 +1,22 @@
+  console.log
+    R13_DIAG {"test":"R13-C-U1","legalAccepted":14,"impossibleRejected":1}
+
+      at Object.<anonymous> (src/modules/workforce-commercials/tests/wave-f-round13-complete-set.unit.spec.ts:215:13)
+
+PASS src/modules/workforce-commercials/tests/wave-f-round13-complete-set.unit.spec.ts (9.649 s)
+  Wave F Round 13 refund complete-set (unit)
+    √ R13-B-U1 rejects impossible -100/-60 saturated redistribution (15 ms)
+    √ R13-B-U2 accepts A-first -140/-20 (2 ms)
+    √ R13-B-U3 accepts B-first -80/-80 (1 ms)
+    √ R13-B-U4 rejects unsaturated arbitrary partial
+    √ R13-B-U5 rejects duplicate refund identity (1 ms)
+    √ R13-B-U6 rejects revenue/commission incompatible residual identities
+    √ R13-C-U1 property: every sequential partition accepted; aggregate-preserving impossible rejected (19 ms)
+    √ R13-B-U7 three full below capacity accepted; impossible redistribution rejected (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        9.909 s
+Ran all test suites matching /wave-f-round13-complete-set.unit/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

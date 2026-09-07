@@ -72,7 +72,7 @@ export function ReportCategoryPage() {
 
   if (!canView) {
     return (
-      <div className={styles.reportingPage}>
+      <div className={styles.reportingPage} id="reports-region">
         <AuthAlert variant="error">{t('reports.accessDenied')}</AuthAlert>
       </div>
     );
@@ -80,7 +80,7 @@ export function ReportCategoryPage() {
 
   if (!categoryId) {
     return (
-      <div className={styles.reportingPage}>
+      <div className={styles.reportingPage} id="reports-region">
         <AuthAlert variant="error">{t('reports.category.notFound')}</AuthAlert>
         <Link to="/reports">{t('reports.category.back')}</Link>
       </div>
@@ -88,7 +88,7 @@ export function ReportCategoryPage() {
   }
 
   return (
-    <div className={styles.reportingPage}>
+    <div className={styles.reportingPage} id="reports-region">
       <Link to="/reports" className={styles.cardAction}>
         <ArrowLeft size={16} aria-hidden /> {t('reports.category.back')}
       </Link>

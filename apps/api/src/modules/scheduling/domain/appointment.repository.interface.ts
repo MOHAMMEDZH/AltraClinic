@@ -19,6 +19,17 @@ export interface AppointmentRepository {
     excludeId?: string,
   ): Promise<Appointment | null>;
   list(filter: AppointmentListFilter): Promise<{ items: AppointmentListItem[]; total: number }>;
+  /**
+   * Authoritative series future-peer discovery (no arbitrary truncation).
+   * Ordered by scheduledStart ASC, id ASC. Pages until exhausted when pageSize set.
+   */
+  listSeriesFutureMembers(params: {
+    tenantId: string;
+    recurrenceSeriesId: string;
+    fromScheduledStart: string | Date;
+    /** Test-only page size; production omits → unbounded page (all rows). */
+    pageSize?: number;
+  }): Promise<AppointmentListItem[]>;
   updateNotes(id: string, tenantId: string, notes: string | null): Promise<void>;
   softDelete(id: string, tenantId: string): Promise<boolean>;
 }

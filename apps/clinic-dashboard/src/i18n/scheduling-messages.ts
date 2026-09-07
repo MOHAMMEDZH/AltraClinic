@@ -73,6 +73,8 @@ export const schedulingMessagesEn = {
     save: 'Save schedule',
     saved: 'Schedule saved.',
     off: 'Day off',
+    startTime: 'Start time',
+    endTime: 'End time',
     days: {
       sun: 'Sun',
       mon: 'Mon',
@@ -89,6 +91,8 @@ export const schedulingMessagesEn = {
     save: 'Save branch hours',
     saved: 'Branch hours saved.',
     closed: 'Closed',
+    openTime: 'Open time',
+    closeTime: 'Close time',
   },
   portal: {
     title: 'My appointments',
@@ -420,6 +424,8 @@ export const schedulingMessagesAr = {
     save: 'حفظ الجدول',
     saved: 'تم حفظ الجدول.',
     off: 'يوم إجازة',
+    startTime: 'وقت البدء',
+    endTime: 'وقت الانتهاء',
     days: {
       sun: 'أحد',
       mon: 'إثن',
@@ -436,6 +442,8 @@ export const schedulingMessagesAr = {
     save: 'حفظ ساعات الفرع',
     saved: 'تم حفظ ساعات الفرع.',
     closed: 'مغلق',
+    openTime: 'وقت الفتح',
+    closeTime: 'وقت الإغلاق',
   },
   portal: {
     title: 'مواعيدي',

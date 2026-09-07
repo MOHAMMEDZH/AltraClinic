@@ -41,7 +41,7 @@ test.describe('Dashboard role profiles', () => {
     await expect(widgets.getByRole('heading', { name: 'Revenue summary', level: 2 })).toBeVisible();
     await expect(widgets.getByRole('heading', { name: 'Subscription status', level: 2 })).toBeVisible();
     await expect(widgets.getByRole('heading', { name: 'Notifications', level: 2 })).toBeVisible();
-    await expect(widgets.getByText('Low stock alert')).toBeVisible();
+    await expect(widgets.getByRole('heading', { name: 'Inventory alerts', level: 2 })).toBeVisible();
   });
 
   test('receptionist sees operational widgets without revenue chart', async ({ page }) => {

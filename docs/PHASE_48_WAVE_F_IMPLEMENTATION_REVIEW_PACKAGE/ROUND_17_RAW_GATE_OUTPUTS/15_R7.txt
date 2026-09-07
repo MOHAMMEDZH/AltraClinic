@@ -1,0 +1,18 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round7.postgres.integration.spec.ts (12.71 s)
+  Wave F Round 7 remediation (PostgreSQL)
+    √ R7-A-T1/T2/T3/T4/T8 proportional package collected + idempotent replay (374 ms)
+    √ R7-A-T5/T6/T7 multi-line proportion + multi-participant shares + refund basis (160 ms)
+    √ R7-B-T1/T2/T5 invoice vs collected race → one open basis; no deadlock (170 ms)
+    √ R7-B-T3/T4 concurrent duplicate collected + distinct partials serialize (219 ms)
+    √ R7-B-T6 after complete reverse, alternative basis may post once (176 ms)
+    √ R7-C-T1/T2/T3/T4 pinning: mismatch reject; same line ok; null pins once (208 ms)
+    √ R7-C-T5/T6/T7/T8 correction lineage reuse; fake lineage reject; collected path same (230 ms)
+    √ R7-D-T1/T8/T9 non-package COLLECTED correction + replay + refund current (186 ms)
+    √ R7-D-T2/T3/T4/T5/T6/T7/T10 package COLLECTED correction invariants (298 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        12.947 s
+Ran all test suites matching /wave-f-round7.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

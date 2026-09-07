@@ -31,7 +31,13 @@ describe('CancelInvoiceHandler', () => {
         { provide: EVENT_PUBLISHER, useValue: { publish: async () => {} } },
         {
           provide: PrismaService,
-          useValue: { inventoryConsumptionLog: { updateMany: async () => ({ count: 0 }) } },
+          useValue: {
+            $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+              fn({
+                $executeRaw: async () => undefined,
+                inventoryUsageLedger: { updateMany: async () => ({ count: 0 }) },
+              }),
+          },
         },
       ],
     }).compile();

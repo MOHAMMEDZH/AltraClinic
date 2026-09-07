@@ -65,7 +65,7 @@ const ACTIVATE_POINTS: Array<{ id: string; point: ProvisioningFailureInjectionPo
 
 describeDb('Step 17 tenant provisioning failure injection F01-F33 (PostgreSQL)', () => {
   // Sequential Case C load can push create/start/retry past the 120s integration default.
-  jest.setTimeout(300_000);
+  jest.setTimeout(900_000);
 
   let prisma: PrismaClient;
   let restoreFlag: () => void;

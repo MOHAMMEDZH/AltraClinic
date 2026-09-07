@@ -1,0 +1,24 @@
+GATE=PERM_PKG
+START_UTC=2026-08-21T14:11:54.5574185Z
+CWD=C:\Users\mrame\Projects\AltraClinic\packages\permissions
+COMMAND=npm test
+---
+
+> @booking/permissions@0.0.1 test
+> vitest run
+
+
+ RUN  v1.6.1 C:/Users/mrame/Projects/AltraClinic/packages/permissions
+
+ Γ£ô src/permissions.test.ts  (6 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  16:11:55
+   Duration  650ms (transform 117ms, setup 1ms, collect 113ms, tests 3ms, environment 0ms, prepare 195ms)
+
+
+---
+END_UTC=2026-08-21T14:11:56.1957112Z
+EXIT=0
+STATUS=PASS

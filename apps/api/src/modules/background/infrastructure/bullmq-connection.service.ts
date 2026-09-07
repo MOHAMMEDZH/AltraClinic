@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
+import { loadRedisConfig } from '../../../infrastructure/redis/redis-config';
 
 /**
  * Dedicated Redis connection for BullMQ.
@@ -11,10 +12,15 @@ export class BullMqConnectionService implements OnModuleDestroy {
   readonly connection: Redis;
 
   constructor() {
-    const url = process.env.REDIS_URL ?? 'redis://localhost:6379';
-    this.connection = new Redis(url, {
+    const config = loadRedisConfig();
+    this.connection = new Redis(config.url, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      lazyConnect: true,
+      connectTimeout: config.connectTimeoutMs,
+      retryStrategy: config.optional
+        ? () => null
+        : (times) => Math.min(times * 200, 3_000),
     });
     this.connection.on('error', (err) => {
       this.logger.warn(`BullMQ Redis connection error: ${err.message}`);

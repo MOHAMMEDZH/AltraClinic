@@ -14,7 +14,7 @@ const CHANNEL_TO_SETTINGS_KEY: Record<NotificationChannelId, string> = {
 export interface LoadPreferenceInput {
   tenantId: string;
   recipientId: string;
-  recipientType?: 'user' | 'patient';
+  recipientType?: 'user' | 'patient' | 'platform_user';
 }
 
 export interface EvaluatePreferenceInput {
@@ -62,6 +62,10 @@ export class PreferenceEvaluationService {
 
   async loadPreference(input: LoadPreferenceInput): Promise<PreferenceSnapshot> {
     const recipientType = input.recipientType ?? 'user';
+    // Step 27 platform principals use platform_notification_preferences (evaluated upstream).
+    if (recipientType === 'platform_user') {
+      return EMPTY_SNAPSHOT;
+    }
     try {
       const client = this.prisma as unknown as {
         notificationPreference?: {

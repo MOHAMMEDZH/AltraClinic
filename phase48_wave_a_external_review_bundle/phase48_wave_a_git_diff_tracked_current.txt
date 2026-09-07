@@ -1,0 +1,3137 @@
+diff --git a/apps/api/prisma/schema.prisma b/apps/api/prisma/schema.prisma
+index aa95a4a..6a4caaf 100644
+--- a/apps/api/prisma/schema.prisma
++++ b/apps/api/prisma/schema.prisma
+@@ -2749,7 +2749,10 @@ enum ClinicalPricingUnit {
+ 
+ enum ClinicalPriceVersionStatus {
+   DRAFT
++  /// Published and currently in the ACTIVE commercial schedule (non-overlapping ranges).
+   ACTIVE
++  /// Published for a future effectiveFrom; not ACTIVE until its boundary (AR-04).
++  SCHEDULED
+   SUPERSEDED
+   INACTIVE
+ }
+diff --git a/apps/api/scripts/validate-phase48-wave-a-upgrade.mjs b/apps/api/scripts/validate-phase48-wave-a-upgrade.mjs
+index c3f011b..557844c 100644
+--- a/apps/api/scripts/validate-phase48-wave-a-upgrade.mjs
++++ b/apps/api/scripts/validate-phase48-wave-a-upgrade.mjs
+@@ -13,7 +13,11 @@ import { PrismaClient } from '@prisma/client';
+ const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ const apiRoot = path.resolve(__dirname, '..');
+ const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
+-const gateDirName = '20260814010000_phase48_wave_a_clinical_catalog';
++const gateDirNames = [
++  '20260814010000_phase48_wave_a_clinical_catalog',
++  '20260814140000_phase48_wave_a_price_commercial_checks',
++  '20260814150000_phase48_wave_a_price_scheduled_status',
++];
+ const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_a_upgrade');
+ const upgradeDb = `test_p48wa_upgrade_${Date.now()}`;
+ 
+@@ -90,19 +94,23 @@ function digestRows(rows) {
+ 
+ function parkMigration() {
+   fs.mkdirSync(parkDir, { recursive: true });
+-  const src = path.join(migrationsDir, gateDirName);
+-  const dest = path.join(parkDir, gateDirName);
+-  if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
+-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+-  fs.renameSync(src, dest);
++  for (const gateDirName of gateDirNames) {
++    const src = path.join(migrationsDir, gateDirName);
++    const dest = path.join(parkDir, gateDirName);
++    if (!fs.existsSync(src)) throw new Error(`Missing migration ${gateDirName}`);
++    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
++    fs.renameSync(src, dest);
++  }
+ }
+ 
+ function restoreMigration() {
+-  const src = path.join(parkDir, gateDirName);
+-  const dest = path.join(migrationsDir, gateDirName);
+-  if (!fs.existsSync(src)) throw new Error('Parked Wave A migration missing');
+-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+-  fs.renameSync(src, dest);
++  for (const gateDirName of gateDirNames) {
++    const src = path.join(parkDir, gateDirName);
++    const dest = path.join(migrationsDir, gateDirName);
++    if (!fs.existsSync(src)) throw new Error(`Parked Wave A migration missing: ${gateDirName}`);
++    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
++    fs.renameSync(src, dest);
++  }
+   try {
+     fs.rmSync(parkDir, { recursive: true, force: true });
+   } catch {
+diff --git a/apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts b/apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts
+index 93c0648..7ba525b 100644
+--- a/apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts
++++ b/apps/api/src/modules/clinical-catalog/api/clinical-catalog-configs.controller.ts
+@@ -5,7 +5,6 @@ import {
+   Header,
+   Param,
+   Patch,
+-  Post,
+   Put,
+   Query,
+ } from '@nestjs/common';
+@@ -14,7 +13,12 @@ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+ import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
+ import { ClinicalCatalogService } from '../application/clinical-catalog.service';
+ import { TenantServiceConfigService } from '../application/tenant-service-config.service';
+-import type { UpsertTenantServiceConfigDto } from '../application/dto/clinical-catalog.dto';
++import {
++  EffectiveTenantServiceConfigQueryDto,
++  ListTenantServiceConfigsQueryDto,
++  SetTenantServiceConfigEnabledDto,
++  UpsertTenantServiceConfigDto,
++} from '../application/dto/clinical-catalog.dto';
+ 
+ @Controller('clinical-catalog/configs')
+ export class ClinicalCatalogConfigsController {
+@@ -28,7 +32,7 @@ export class ClinicalCatalogConfigsController {
+   @Header('Cache-Control', 'private, no-store')
+   async listConfigs(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query() query: { clinicalServiceId?: string; branchId?: string },
++    @Query() query: ListTenantServiceConfigsQueryDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+     return this.configs.listConfigs(actor, query);
+@@ -39,11 +43,14 @@ export class ClinicalCatalogConfigsController {
+   @Header('Cache-Control', 'private, no-store')
+   async effectiveConfig(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query('clinicalServiceId') clinicalServiceId: string,
+-    @Query('branchId') branchId?: string,
++    @Query() query: EffectiveTenantServiceConfigQueryDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+-    return this.configs.getEffectiveConfig(actor, clinicalServiceId, branchId ?? null);
++    return this.configs.getEffectiveConfig(
++      actor,
++      query.clinicalServiceId,
++      query.branchId ?? null,
++    );
+   }
+ 
+   @Put()
+@@ -63,7 +70,7 @@ export class ClinicalCatalogConfigsController {
+   async setEnabled(
+     @CurrentUser() user: JwtClaimsVO,
+     @Param('id') id: string,
+-    @Body() body: { enabled: boolean },
++    @Body() body: SetTenantServiceConfigEnabledDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+     return this.configs.setEnabled(actor, id, body.enabled);
+diff --git a/apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts b/apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts
+index c314caa..9d94261 100644
+--- a/apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts
++++ b/apps/api/src/modules/clinical-catalog/api/clinical-catalog-prices.controller.ts
+@@ -12,8 +12,10 @@ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+ import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
+ import { ClinicalCatalogService } from '../application/clinical-catalog.service';
+ import { ClinicalPriceVersionService } from '../application/clinical-price-version.service';
+-import type {
++import {
+   CreateClinicalPriceDraftDto,
++  ListClinicalPricesQueryDto,
++  LookupClinicalPriceQueryDto,
+   PublishClinicalPriceDto,
+ } from '../application/dto/clinical-catalog.dto';
+ 
+@@ -29,13 +31,14 @@ export class ClinicalCatalogPricesController {
+   @Header('Cache-Control', 'private, no-store')
+   async listPrices(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query() query: { clinicalServiceId?: string; branchId?: string; status?: string },
++    @Query() query: ListClinicalPricesQueryDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+     return this.prices.listVersions(actor, {
+       clinicalServiceId: query.clinicalServiceId,
++      scope: query.scope,
+       branchId: query.branchId,
+-      status: query.status as never,
++      status: query.status,
+     });
+   }
+ 
+@@ -44,11 +47,20 @@ export class ClinicalCatalogPricesController {
+   @Header('Cache-Control', 'private, no-store')
+   async lookup(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query('clinicalServiceId') clinicalServiceId: string,
+-    @Query('branchId') branchId?: string,
++    @Query() query: LookupClinicalPriceQueryDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+-    return this.prices.lookupActivePrice(actor, clinicalServiceId, branchId ?? null);
++    return this.prices.lookupActivePrice(
++      actor,
++      query.clinicalServiceId,
++      query.branchId ?? null,
++      {
++        pricingUnit: query.pricingUnit,
++        currency: query.currency,
++        serviceVariantId: query.serviceVariantId ?? null,
++        at: query.at ? new Date(query.at) : undefined,
++      },
++    );
+   }
+ 
+   @Post('drafts')
+diff --git a/apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts b/apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts
+index 7c56368..8ce75aa 100644
+--- a/apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts
++++ b/apps/api/src/modules/clinical-catalog/api/clinical-catalog.controller.ts
+@@ -12,8 +12,9 @@ import { RequirePermission } from '../../auth/api/guards/permission.guard';
+ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+ import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
+ import { ClinicalCatalogService } from '../application/clinical-catalog.service';
+-import type {
++import {
+   CreateClinicalServiceDraftDto,
++  ListClinicalServicesQueryDto,
+   UpdateClinicalServiceDraftDto,
+ } from '../application/dto/clinical-catalog.dto';
+ 
+@@ -26,7 +27,7 @@ export class ClinicalCatalogController {
+   @Header('Cache-Control', 'private, no-store')
+   async listServices(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query() query: { lifecycle?: string; provenance?: string; search?: string },
++    @Query() query: ListClinicalServicesQueryDto,
+   ) {
+     const actor = await this.catalog.resolveTenantActor(user.sub, user.roles);
+     return this.catalog.listServices(actor, query);
+diff --git a/apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts b/apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts
+index c34aa52..55b1a4d 100644
+--- a/apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts
++++ b/apps/api/src/modules/clinical-catalog/api/platform-clinical-catalog.controller.ts
+@@ -15,8 +15,9 @@ import { RequirePlatformPermission } from '../../auth/api/decorators/require-pla
+ import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+ import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
+ import { ClinicalCatalogService } from '../application/clinical-catalog.service';
+-import type {
++import {
+   CreateClinicalServiceDraftDto,
++  ListClinicalServicesQueryDto,
+   UpdateClinicalServiceDraftDto,
+ } from '../application/dto/clinical-catalog.dto';
+ 
+@@ -31,7 +32,7 @@ export class PlatformClinicalCatalogController {
+   @Header('Cache-Control', 'private, no-store')
+   listServices(
+     @CurrentUser() user: JwtClaimsVO,
+-    @Query() query: { lifecycle?: string; provenance?: string; search?: string },
++    @Query() query: ListClinicalServicesQueryDto,
+   ) {
+     const actor = this.catalog.platformActor(user.sub, user.roles);
+     return this.catalog.listServices(actor, query);
+diff --git a/apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts b/apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts
+index cd514d5..571a6df 100644
+--- a/apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts
++++ b/apps/api/src/modules/clinical-catalog/application/clinical-catalog.service.ts
+@@ -52,7 +52,11 @@ export class ClinicalCatalogService {
+ 
+   async listServices(
+     actor: ClinicalCatalogActorContext,
+-    query: { lifecycle?: string; provenance?: string; search?: string } = {},
++    query: {
++      lifecycle?: ClinicalServiceLifecycle;
++      provenance?: ClinicalServiceProvenance;
++      search?: string;
++    } = {},
+   ) {
+     const where = this.buildListWhere(actor, query);
+     return this.prisma.withPlatformBypass(async (client) =>
+@@ -306,15 +310,19 @@ export class ClinicalCatalogService {
+ 
+   private buildListWhere(
+     actor: ClinicalCatalogActorContext,
+-    query: { lifecycle?: string; provenance?: string; search?: string },
++    query: {
++      lifecycle?: ClinicalServiceLifecycle;
++      provenance?: ClinicalServiceProvenance;
++      search?: string;
++    },
+   ): Prisma.CanonicalClinicalServiceDefinitionWhereInput {
+     const where: Prisma.CanonicalClinicalServiceDefinitionWhereInput = {};
+ 
+     if (query.lifecycle) {
+-      where.lifecycle = query.lifecycle as ClinicalServiceLifecycle;
++      where.lifecycle = query.lifecycle;
+     }
+     if (query.provenance) {
+-      where.provenance = query.provenance as ClinicalServiceProvenance;
++      where.provenance = query.provenance;
+     }
+     if (query.search?.trim()) {
+       where.OR = [
+diff --git a/apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts b/apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts
+index e342119..15b05bb 100644
+--- a/apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts
++++ b/apps/api/src/modules/clinical-catalog/application/clinical-price-version.service.ts
+@@ -32,6 +32,15 @@ type PriceRow = {
+   status: ClinicalPriceVersionStatus;
+ };
+ 
++export type ClinicalPriceLookupDims = {
++  pricingUnit: ClinicalPricingUnit;
++  currency: string;
++  serviceVariantId?: string | null;
++  at?: Date;
++};
++
++const PRICING_UNITS = new Set<string>(Object.values(ClinicalPricingUnit));
++
+ @Injectable()
+ export class ClinicalPriceVersionService {
+   constructor(
+@@ -44,19 +53,39 @@ export class ClinicalPriceVersionService {
+     actor: ClinicalCatalogActorContext,
+     query: {
+       clinicalServiceId?: string;
++      /** Explicit scope — never infer from omitted branchId. */
++      scope: 'tenant' | 'branch' | 'all';
+       branchId?: string;
+       status?: ClinicalPriceVersionStatus;
+-    } = {},
++    },
+   ) {
+     const tenantId = this.requireTenantId(actor);
++    const where: Prisma.ClinicalServicePriceVersionWhereInput = {
++      tenantId,
++      clinicalServiceId: query.clinicalServiceId,
++      status: query.status,
++    };
++
++    if (query.scope === 'tenant') {
++      where.branchId = null;
++    } else if (query.scope === 'branch') {
++      if (!query.branchId) {
++        throw new ClinicalCatalogValidationError('branchId is required when scope=branch.');
++      }
++      await this.assertBranchBelongsToTenant(tenantId, query.branchId);
++      where.branchId = query.branchId;
++    } else if (query.scope === 'all') {
++      // Administrative all-scopes: no branch filter.
++      if (query.branchId) {
++        throw new ClinicalCatalogValidationError('branchId must not be set when scope=all.');
++      }
++    } else {
++      throw new ClinicalCatalogValidationError('scope must be tenant|branch|all.');
++    }
++
+     return this.prisma.withPlatformBypass((client) =>
+       client.clinicalServicePriceVersion.findMany({
+-        where: {
+-          tenantId,
+-          clinicalServiceId: query.clinicalServiceId,
+-          branchId: query.branchId === undefined ? undefined : query.branchId || null,
+-          status: query.status,
+-        },
++        where,
+         orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+       }),
+     );
+@@ -65,16 +94,21 @@ export class ClinicalPriceVersionService {
+   async lookupActivePrice(
+     actor: ClinicalCatalogActorContext,
+     clinicalServiceId: string,
+-    branchId?: string | null,
+-    at: Date = new Date(),
++    branchId: string | null | undefined,
++    dims: ClinicalPriceLookupDims,
+   ) {
+     const tenantId = this.requireTenantId(actor);
++    const commercial = this.normalizeCommercialDims(dims);
++    const at = dims.at ?? new Date();
+ 
++    // PA-06: validate branch ownership BEFORE any fallback.
+     if (branchId) {
++      await this.assertBranchBelongsToTenant(tenantId, branchId);
+       const branchPrice = await this.findActiveAtScope(
+         tenantId,
+         clinicalServiceId,
+         branchId,
++        commercial,
+         at,
+       );
+       if (branchPrice) {
+@@ -82,7 +116,13 @@ export class ClinicalPriceVersionService {
+       }
+     }
+ 
+-    const tenantPrice = await this.findActiveAtScope(tenantId, clinicalServiceId, null, at);
++    const tenantPrice = await this.findActiveAtScope(
++      tenantId,
++      clinicalServiceId,
++      null,
++      commercial,
++      at,
++    );
+     if (tenantPrice) {
+       return { scope: 'tenant' as const, price: tenantPrice };
+     }
+@@ -97,6 +137,14 @@ export class ClinicalPriceVersionService {
+     }
+     await this.assertServiceReadable(tenantId, body.clinicalServiceId);
+ 
++    const commercial = this.normalizeCommercialDims({
++      pricingUnit: body.pricingUnit ?? 'PER_VISIT',
++      currency: body.currency,
++      serviceVariantId: body.serviceVariantId ?? null,
++    });
++    const unitPrice = this.assertNonNegativeMoney(body.unitPrice, 'unitPrice');
++    const taxPercent = this.assertTaxPercent(body.taxPercent ?? 0);
++
+     const effectiveFrom = new Date(body.effectiveFrom);
+     const effectiveTo = body.effectiveTo ? new Date(body.effectiveTo) : null;
+     this.assertEffectiveRange(effectiveFrom, effectiveTo);
+@@ -107,11 +155,11 @@ export class ClinicalPriceVersionService {
+           tenantId,
+           branchId: body.branchId ?? null,
+           clinicalServiceId: body.clinicalServiceId,
+-          serviceVariantId: body.serviceVariantId ?? null,
+-          pricingUnit: body.pricingUnit ?? 'PER_VISIT',
+-          currency: body.currency.trim().toUpperCase(),
+-          unitPrice: new Decimal(body.unitPrice),
+-          taxPercent: new Decimal(body.taxPercent ?? 0),
++          serviceVariantId: commercial.serviceVariantId,
++          pricingUnit: commercial.pricingUnit,
++          currency: commercial.currency,
++          unitPrice: new Decimal(unitPrice),
++          taxPercent: new Decimal(taxPercent),
+           effectiveFrom,
+           effectiveTo,
+           status: 'DRAFT',
+@@ -129,6 +177,7 @@ export class ClinicalPriceVersionService {
+         details: {
+           clinicalServiceId: body.clinicalServiceId,
+           currency: created.currency,
++          pricingUnit: created.pricingUnit,
+         },
+       });
+ 
+@@ -164,52 +213,69 @@ export class ClinicalPriceVersionService {
+         throw new ClinicalCatalogConflictError('Price version is no longer DRAFT.');
+       }
+ 
+-      // Same commercial key: close prior ACTIVE rows, then fail closed if any
+-      // overlapping ACTIVE would still remain (race / non-replaceable conflict).
+-      const toSupersede = await client.clinicalServicePriceVersion.findMany({
+-        where: {
+-          tenantId: fresh.tenantId,
+-          branchId: fresh.branchId,
+-          clinicalServiceId: fresh.clinicalServiceId,
+-          pricingUnit: fresh.pricingUnit,
+-          currency: fresh.currency,
+-          serviceVariantId: fresh.serviceVariantId,
+-          status: 'ACTIVE',
+-        },
+-      });
+-
+       const now = new Date();
+-      for (const active of toSupersede) {
+-        if (
+-          !this.rangesOverlap(
+-            fresh.effectiveFrom,
+-            fresh.effectiveTo,
+-            active.effectiveFrom,
+-            active.effectiveTo,
+-          )
+-        ) {
+-          continue;
++      const isFuture = fresh.effectiveFrom.getTime() > now.getTime();
++
++      // AR-04 dual invariant:
++      // 1) never mutate published commercial fields (including effectiveTo)
++      // 2) no two ACTIVE rows may have overlapping effective ranges
++      // Future drafts become SCHEDULED (published, non-ACTIVE) until their boundary.
++      // Immediate drafts become ACTIVE; prior overlapping ACTIVE are SUPERSEDED
++      // (lifecycle metadata only — commercial columns untouched).
++      if (isFuture) {
++        const scheduleConflict = await this.findScheduleConflicts(client, fresh);
++        if (scheduleConflict.length > 0) {
++          throw new ClinicalCatalogConflictError(
++            'An ACTIVE or SCHEDULED price version conflicts with the requested effectiveFrom.',
++            ClinicalCatalogErrorCode.PRICE_OVERLAP,
++          );
+         }
+-        // Closing at fresh.effectiveFrom must leave a valid prior range.
++        const scheduled = await client.clinicalServicePriceVersion.update({
++          where: { id: priceVersionId },
++          data: {
++            status: 'SCHEDULED',
++            publishedAt: now,
++            publishedBy: actor.actorId,
++          },
++        });
++        await this.auditLog.recordInTransaction(client, {
++          tenantId,
++          action: 'clinical_catalog.price.schedule',
++          resourceId: scheduled.id,
++          actorId: actor.actorId,
++          actorRoles: actor.actorRoles,
++          descriptionEn: 'Scheduled future clinical price version',
++          descriptionAr: 'تمت جدولة إصدار سعر سريري مستقبلي',
++          details: {
++            clinicalServiceId: scheduled.clinicalServiceId,
++            reason: reason ?? '',
++            effectiveFrom: scheduled.effectiveFrom.toISOString(),
++          },
++        });
++        return scheduled;
++      }
++
++      const overlappingActive = await this.findOverlappingActive(client, fresh);
++      for (const active of overlappingActive) {
+         if (!(fresh.effectiveFrom > active.effectiveFrom)) {
+           throw new ClinicalCatalogConflictError(
+             'An ACTIVE price version overlaps the requested effective range.',
+             ClinicalCatalogErrorCode.PRICE_OVERLAP,
+           );
+         }
++        // Lifecycle only — do not touch commercial fields (unitPrice, effectiveTo, …).
+         await client.clinicalServicePriceVersion.update({
+           where: { id: active.id },
+           data: {
+             status: 'SUPERSEDED',
+             supersededAt: now,
+             supersededByVersionId: fresh.id,
+-            effectiveTo: fresh.effectiveFrom,
+           },
+         });
+       }
+ 
+-      const overlapping = await this.findOverlappingActive(client, fresh);
+-      if (overlapping.length > 0) {
++      const stillOverlapping = await this.findOverlappingActive(client, fresh);
++      if (stillOverlapping.length > 0) {
+         throw new ClinicalCatalogConflictError(
+           'An ACTIVE price version overlaps the requested effective range.',
+           ClinicalCatalogErrorCode.PRICE_OVERLAP,
+@@ -258,9 +324,9 @@ export class ClinicalPriceVersionService {
+   async inactivate(actor: ClinicalCatalogActorContext, priceVersionId: string) {
+     const tenantId = this.requireTenantId(actor);
+     const version = await this.loadOwnedVersion(tenantId, priceVersionId);
+-    if (version.status !== 'ACTIVE' && version.status !== 'DRAFT') {
++    if (version.status !== 'ACTIVE' && version.status !== 'DRAFT' && version.status !== 'SCHEDULED') {
+       throw new ClinicalCatalogValidationError(
+-        'Only DRAFT or ACTIVE price versions may be inactivated.',
++        'Only DRAFT, SCHEDULED, or ACTIVE price versions may be inactivated.',
+       );
+     }
+ 
+@@ -335,15 +401,25 @@ export class ClinicalPriceVersionService {
+     tenantId: string,
+     clinicalServiceId: string,
+     branchId: string | null,
++    commercial: {
++      pricingUnit: ClinicalPricingUnit;
++      currency: string;
++      serviceVariantId: string | null;
++    },
+     at: Date,
+   ) {
++    // Effective schedule includes ACTIVE plus SCHEDULED (future published) once
++    // effectiveFrom <= at. Persisted ACTIVE ranges remain non-overlapping.
+     const rows = await this.prisma.withPlatformBypass((client) =>
+       client.clinicalServicePriceVersion.findMany({
+         where: {
+           tenantId,
+           clinicalServiceId,
+           branchId,
+-          status: 'ACTIVE',
++          pricingUnit: commercial.pricingUnit,
++          currency: commercial.currency,
++          serviceVariantId: commercial.serviceVariantId,
++          status: { in: ['ACTIVE', 'SCHEDULED'] },
+           effectiveFrom: { lte: at },
+           OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
+         },
+@@ -381,6 +457,26 @@ export class ClinicalPriceVersionService {
+     );
+   }
+ 
++  private async findScheduleConflicts(
++    client: Prisma.TransactionClient,
++    candidate: PriceRow,
++  ) {
++    const peers = await client.clinicalServicePriceVersion.findMany({
++      where: {
++        tenantId: candidate.tenantId,
++        branchId: candidate.branchId,
++        clinicalServiceId: candidate.clinicalServiceId,
++        pricingUnit: candidate.pricingUnit,
++        currency: candidate.currency,
++        serviceVariantId: candidate.serviceVariantId,
++        status: { in: ['ACTIVE', 'SCHEDULED'] },
++        id: { not: candidate.id },
++        effectiveFrom: candidate.effectiveFrom,
++      },
++    });
++    return peers;
++  }
++
+   private async loadOwnedVersion(tenantId: string, priceVersionId: string) {
+     const row = await this.prisma.withPlatformBypass((client) =>
+       client.clinicalServicePriceVersion.findFirst({
+@@ -400,6 +496,45 @@ export class ClinicalPriceVersionService {
+     return actor.tenantId;
+   }
+ 
++  private normalizeCommercialDims(dims: {
++    pricingUnit: ClinicalPricingUnit | string;
++    currency: string;
++    serviceVariantId?: string | null;
++  }): {
++    pricingUnit: ClinicalPricingUnit;
++    currency: string;
++    serviceVariantId: string | null;
++  } {
++    if (!dims.pricingUnit || !PRICING_UNITS.has(String(dims.pricingUnit))) {
++      throw new ClinicalCatalogValidationError('pricingUnit is required and must be a valid enum.');
++    }
++    const currency = String(dims.currency ?? '')
++      .trim()
++      .toUpperCase();
++    if (!/^[A-Z]{3}$/.test(currency)) {
++      throw new ClinicalCatalogValidationError('currency must be a 3-letter ISO code.');
++    }
++    return {
++      pricingUnit: dims.pricingUnit as ClinicalPricingUnit,
++      currency,
++      serviceVariantId: dims.serviceVariantId ?? null,
++    };
++  }
++
++  private assertNonNegativeMoney(value: number, field: string): number {
++    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
++      throw new ClinicalCatalogValidationError(`${field} must be a number >= 0.`);
++    }
++    return value;
++  }
++
++  private assertTaxPercent(value: number): number {
++    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 100) {
++      throw new ClinicalCatalogValidationError('taxPercent must be between 0 and 100.');
++    }
++    return value;
++  }
++
+   private assertEffectiveRange(from: Date, to: Date | null) {
+     if (Number.isNaN(from.getTime())) {
+       throw new ClinicalCatalogValidationError('effectiveFrom is invalid.');
+@@ -410,6 +545,9 @@ export class ClinicalPriceVersionService {
+   }
+ 
+   private async assertBranchBelongsToTenant(tenantId: string, branchId: string) {
++    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(branchId)) {
++      throw new ClinicalCatalogValidationError('branchId must be a UUID.');
++    }
+     const branch = await this.prisma.withPlatformBypass((client) =>
+       client.branch.findFirst({
+         where: { id: branchId, tenantId, deletedAt: null },
+diff --git a/apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts b/apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts
+index b294b7c..de2b9b5 100644
+--- a/apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts
++++ b/apps/api/src/modules/clinical-catalog/application/dto/clinical-catalog.dto.ts
+@@ -1,54 +1,268 @@
+-import type {
++import {
+   ClinicalPricingUnit,
+   ClinicalServiceDomain,
++  ClinicalServiceLifecycle,
+   ClinicalServiceProvenance,
+ } from '@prisma/client';
++import { Type } from 'class-transformer';
++import {
++  ArrayMinSize,
++  IsArray,
++  IsBoolean,
++  IsEnum,
++  IsIn,
++  IsInt,
++  IsISO8601,
++  IsNotEmpty,
++  IsNumber,
++  IsOptional,
++  IsString,
++  IsUUID,
++  Max,
++  MaxLength,
++  Min,
++  MinLength,
++  ValidateIf,
++  ValidateNested,
++} from 'class-validator';
+ 
+-export interface TranslationInputDto {
+-  locale: string;
+-  displayName: string;
++export class TranslationInputDto {
++  @IsString()
++  @IsNotEmpty()
++  locale!: string;
++
++  @IsString()
++  @IsNotEmpty()
++  @MaxLength(200)
++  displayName!: string;
++
++  @IsOptional()
++  @IsString()
++  @MaxLength(500)
+   shortDescription?: string | null;
++
++  @IsOptional()
++  @IsString()
++  @MaxLength(4000)
+   longDescription?: string | null;
+ }
+ 
+-export interface CreateClinicalServiceDraftDto {
+-  provenance: ClinicalServiceProvenance;
+-  stableKey: string;
++export class CreateClinicalServiceDraftDto {
++  @IsEnum(ClinicalServiceProvenance)
++  provenance!: ClinicalServiceProvenance;
++
++  @IsString()
++  @IsNotEmpty()
++  @MaxLength(160)
++  stableKey!: string;
++
++  @IsOptional()
++  @IsEnum(ClinicalServiceDomain)
+   domain?: ClinicalServiceDomain;
++
++  @IsOptional()
++  @IsString()
++  @MaxLength(80)
+   categoryKey?: string | null;
++
++  @IsOptional()
++  @IsInt()
++  @Min(1)
++  @Max(24 * 60)
+   defaultDurationMin?: number | null;
+-  translations: TranslationInputDto[];
++
++  @IsArray()
++  @ArrayMinSize(1)
++  @ValidateNested({ each: true })
++  @Type(() => TranslationInputDto)
++  translations!: TranslationInputDto[];
+ }
+ 
+-export interface UpdateClinicalServiceDraftDto {
++export class UpdateClinicalServiceDraftDto {
++  @IsOptional()
++  @IsString()
++  @MaxLength(160)
+   stableKey?: string;
++
++  @IsOptional()
++  @IsEnum(ClinicalServiceDomain)
+   domain?: ClinicalServiceDomain;
++
++  @IsOptional()
++  @IsString()
++  @MaxLength(80)
+   categoryKey?: string | null;
++
++  @IsOptional()
++  @IsInt()
++  @Min(1)
++  @Max(24 * 60)
+   defaultDurationMin?: number | null;
++
++  @IsOptional()
++  @IsArray()
++  @ValidateNested({ each: true })
++  @Type(() => TranslationInputDto)
+   translations?: TranslationInputDto[];
+ }
+ 
+-export interface UpsertTenantServiceConfigDto {
+-  clinicalServiceId: string;
++export class ListClinicalServicesQueryDto {
++  @IsOptional()
++  @IsEnum(ClinicalServiceLifecycle)
++  lifecycle?: ClinicalServiceLifecycle;
++
++  @IsOptional()
++  @IsEnum(ClinicalServiceProvenance)
++  provenance?: ClinicalServiceProvenance;
++
++  @IsOptional()
++  @IsString()
++  @MaxLength(160)
++  search?: string;
++}
++
++export class UpsertTenantServiceConfigDto {
++  @IsUUID()
++  clinicalServiceId!: string;
++
++  @IsOptional()
++  @IsUUID()
+   branchId?: string | null;
++
++  @IsOptional()
++  @IsBoolean()
+   enabled?: boolean;
++
++  @IsOptional()
++  @IsInt()
++  @Min(1)
++  @Max(24 * 60)
+   defaultDurationOverride?: number | null;
++
++  @IsOptional()
++  @IsArray()
++  @IsString({ each: true })
+   requiresResourceTypes?: string[];
++
++  @IsOptional()
++  @IsBoolean()
+   bookingVisibleOnPortal?: boolean;
+ }
+ 
+-export interface CreateClinicalPriceDraftDto {
+-  clinicalServiceId: string;
++export class SetTenantServiceConfigEnabledDto {
++  @IsBoolean()
++  enabled!: boolean;
++}
++
++export class CreateClinicalPriceDraftDto {
++  @IsUUID()
++  clinicalServiceId!: string;
++
++  @IsOptional()
++  @IsUUID()
+   branchId?: string | null;
++
++  @IsOptional()
++  @IsUUID()
+   serviceVariantId?: string | null;
++
++  @IsOptional()
++  @IsEnum(ClinicalPricingUnit)
+   pricingUnit?: ClinicalPricingUnit;
+-  currency: string;
+-  unitPrice: number;
++
++  @IsString()
++  @MinLength(3)
++  @MaxLength(3)
++  currency!: string;
++
++  @IsNumber({ maxDecimalPlaces: 4 })
++  @Min(0)
++  unitPrice!: number;
++
++  @IsOptional()
++  @IsNumber({ maxDecimalPlaces: 2 })
++  @Min(0)
++  @Max(100)
+   taxPercent?: number;
+-  effectiveFrom: string;
++
++  @IsISO8601()
++  effectiveFrom!: string;
++
++  @IsOptional()
++  @IsISO8601()
+   effectiveTo?: string | null;
+ }
+ 
+-export interface PublishClinicalPriceDto {
++export class PublishClinicalPriceDto {
++  @IsOptional()
++  @IsString()
++  @MaxLength(500)
+   reason?: string | null;
+ }
++
++/** Explicit price/config list scope — never infer from omitted branchId. */
++export type ClinicalCatalogListScope = 'tenant' | 'branch' | 'all';
++
++export class ListClinicalPricesQueryDto {
++  @IsOptional()
++  @IsUUID()
++  clinicalServiceId?: string;
++
++  @IsIn(['tenant', 'branch', 'all'])
++  scope!: ClinicalCatalogListScope;
++
++  @ValidateIf((o: ListClinicalPricesQueryDto) => o.scope === 'branch')
++  @IsUUID()
++  branchId?: string;
++
++  @IsOptional()
++  @IsIn(['DRAFT', 'ACTIVE', 'SCHEDULED', 'SUPERSEDED', 'INACTIVE'])
++  status?: 'DRAFT' | 'ACTIVE' | 'SCHEDULED' | 'SUPERSEDED' | 'INACTIVE';
++}
++
++export class LookupClinicalPriceQueryDto {
++  @IsUUID()
++  clinicalServiceId!: string;
++
++  @IsOptional()
++  @IsUUID()
++  branchId?: string;
++
++  @IsEnum(ClinicalPricingUnit)
++  pricingUnit!: ClinicalPricingUnit;
++
++  @IsString()
++  @MinLength(3)
++  @MaxLength(3)
++  currency!: string;
++
++  @IsOptional()
++  @IsUUID()
++  serviceVariantId?: string;
++
++  @IsOptional()
++  @IsISO8601()
++  at?: string;
++}
++
++export class ListTenantServiceConfigsQueryDto {
++  @IsOptional()
++  @IsUUID()
++  clinicalServiceId?: string;
++
++  @IsIn(['tenant', 'branch', 'all'])
++  scope!: ClinicalCatalogListScope;
++
++  @ValidateIf((o: ListTenantServiceConfigsQueryDto) => o.scope === 'branch')
++  @IsUUID()
++  branchId?: string;
++}
++
++export class EffectiveTenantServiceConfigQueryDto {
++  @IsUUID()
++  clinicalServiceId!: string;
++
++  @IsOptional()
++  @IsUUID()
++  branchId?: string;
++}
+diff --git a/apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts b/apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts
+index 1e20b0e..f50ec67 100644
+--- a/apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts
++++ b/apps/api/src/modules/clinical-catalog/application/tenant-service-config.service.ts
+@@ -25,16 +25,37 @@ export class TenantServiceConfigService {
+ 
+   async listConfigs(
+     actor: ClinicalCatalogActorContext,
+-    query: { clinicalServiceId?: string; branchId?: string } = {},
++    query: {
++      clinicalServiceId?: string;
++      scope: 'tenant' | 'branch' | 'all';
++      branchId?: string;
++    },
+   ) {
+     const tenantId = this.requireTenantId(actor);
++    const where: Prisma.TenantServiceConfigurationWhereInput = {
++      tenantId,
++      clinicalServiceId: query.clinicalServiceId,
++    };
++
++    if (query.scope === 'tenant') {
++      where.branchId = null;
++    } else if (query.scope === 'branch') {
++      if (!query.branchId) {
++        throw new ClinicalCatalogValidationError('branchId is required when scope=branch.');
++      }
++      await this.assertBranchBelongsToTenant(tenantId, query.branchId);
++      where.branchId = query.branchId;
++    } else if (query.scope === 'all') {
++      if (query.branchId) {
++        throw new ClinicalCatalogValidationError('branchId must not be set when scope=all.');
++      }
++    } else {
++      throw new ClinicalCatalogValidationError('scope must be tenant|branch|all.');
++    }
++
+     return this.prisma.withPlatformBypass((client) =>
+       client.tenantServiceConfiguration.findMany({
+-        where: {
+-          tenantId,
+-          clinicalServiceId: query.clinicalServiceId,
+-          branchId: query.branchId === undefined ? undefined : query.branchId,
+-        },
++        where,
+         orderBy: [{ clinicalServiceId: 'asc' }, { branchId: 'asc' }],
+       }),
+     );
+@@ -48,6 +69,11 @@ export class TenantServiceConfigService {
+     const tenantId = this.requireTenantId(actor);
+     await this.assertServiceReadable(tenantId, clinicalServiceId);
+ 
++    // PA-06: validate branch ownership BEFORE any tenant-default fallback.
++    if (branchId) {
++      await this.assertBranchBelongsToTenant(tenantId, branchId);
++    }
++
+     const branchOverride = branchId
+       ? await this.findConfig(tenantId, clinicalServiceId, branchId)
+       : null;
+@@ -177,6 +203,9 @@ export class TenantServiceConfigService {
+   }
+ 
+   private async assertBranchBelongsToTenant(tenantId: string, branchId: string) {
++    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(branchId)) {
++      throw new ClinicalCatalogValidationError('branchId must be a UUID.');
++    }
+     const branch = await this.prisma.withPlatformBypass((client) =>
+       client.branch.findFirst({
+         where: { id: branchId, tenantId, deletedAt: null },
+diff --git a/apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts b/apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
+index 5985931..43d1cda 100644
+--- a/apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
++++ b/apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
+@@ -14,6 +14,7 @@ import {
+   INestApplication,
+   Injectable,
+   UnauthorizedException,
++  ValidationPipe,
+ } from '@nestjs/common';
+ import { APP_GUARD } from '@nestjs/core';
+ import { Test } from '@nestjs/testing';
+@@ -159,6 +160,30 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+         })
+       ).id;
+ 
++      await client.tenantServiceConfiguration.create({
++        data: {
++          tenantId: tenantA,
++          clinicalServiceId: canonicalId,
++          branchId: null,
++          enabled: true,
++        },
++      });
++
++      await client.clinicalServicePriceVersion.create({
++        data: {
++          tenantId: tenantA,
++          branchId: null,
++          clinicalServiceId: canonicalId,
++          pricingUnit: 'PER_VISIT',
++          currency: 'SYP',
++          unitPrice: 40,
++          taxPercent: 0,
++          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
++          status: 'ACTIVE',
++          publishedAt: new Date(),
++        },
++      });
++
+       priceBId = (
+         await client.clinicalServicePriceVersion.create({
+           data: {
+@@ -238,6 +263,13 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+ 
+     // Bridge: TestClinicAuthGuard sets user; wrap PermissionGuard path and tenant context.
+     app = moduleRef.createNestApplication();
++    app.useGlobalPipes(
++      new ValidationPipe({
++        whitelist: true,
++        transform: true,
++        forbidNonWhitelisted: false,
++      }),
++    );
+     app.use((
+       req: { headers: Record<string, string>; user?: JwtClaimsVO },
+       _res: unknown,
+@@ -360,7 +392,7 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+   });
+ 
+   it('Tenant A config list does not include Tenant B configs', async () => {
+-    const res = await http('GET', '/clinical-catalog/configs', {
++    const res = await http('GET', '/clinical-catalog/configs?scope=all', {
+       principal: principal({ sub: actorA, tenantId: tenantA }),
+     });
+     expect(res.status).toBe(200);
+@@ -369,6 +401,68 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+     expect(rows.some((r) => r.id === configBId)).toBe(false);
+   });
+ 
++  it('PA-05 — tenant-default price history excludes branch rows', async () => {
++    const wrapper = createClinicalPrismaWrapper(prisma);
++    await wrapper.withPlatformBypass(async (client) => {
++      await client.clinicalServicePriceVersion.create({
++        data: {
++          tenantId: tenantA,
++          branchId: branchA,
++          clinicalServiceId: canonicalId,
++          pricingUnit: 'PER_PROCEDURE',
++          currency: 'SYP',
++          unitPrice: 77,
++          taxPercent: 0,
++          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
++          status: 'ACTIVE',
++          publishedAt: new Date(),
++        },
++      });
++    });
++    const res = await http(
++      'GET',
++      `/clinical-catalog/prices?scope=tenant&clinicalServiceId=${canonicalId}`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect(res.status).toBe(200);
++    const rows = res.json as Array<{ branchId: string | null; unitPrice: string }>;
++    expect(rows.every((r) => r.branchId === null)).toBe(true);
++    expect(rows.some((r) => Number(r.unitPrice) === 77)).toBe(false);
++  });
++
++  it('PA-05 — branch history contains only selected branch', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/prices?scope=branch&branchId=${branchA}&clinicalServiceId=${canonicalId}`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect(res.status).toBe(200);
++    const rows = res.json as Array<{ branchId: string | null }>;
++    expect(rows.length).toBeGreaterThan(0);
++    expect(rows.every((r) => r.branchId === branchA)).toBe(true);
++  });
++
++  it('PA-05 — omitted scope rejected', async () => {
++    const res = await http('GET', '/clinical-catalog/prices', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++    });
++    expect([400, 422]).toContain(res.status);
++  });
++
++  it('PA-08 — invalid lifecycle query rejected', async () => {
++    const res = await http('GET', '/clinical-catalog/services?lifecycle=NOT_A_LIFECYCLE', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++    });
++    expect([400, 422]).toContain(res.status);
++  });
++
++  it('PA-08 — invalid provenance query rejected', async () => {
++    const res = await http('GET', '/clinical-catalog/services?provenance=FAKE', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++    });
++    expect([400, 422]).toContain(res.status);
++  });
++
+   it('Tenant A cannot enable Tenant B config by id', async () => {
+     const res = await http('PATCH', `/clinical-catalog/configs/${configBId}/enabled`, {
+       principal: principal({ sub: actorA, tenantId: tenantA }),
+@@ -394,7 +488,7 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+   });
+ 
+   it('Tenant A cannot read Tenant B price history', async () => {
+-    const res = await http('GET', `/clinical-catalog/prices?clinicalServiceId=${customBId}`, {
++    const res = await http('GET', `/clinical-catalog/prices?scope=all&clinicalServiceId=${customBId}`, {
+       principal: principal({ sub: actorA, tenantId: tenantA }),
+     });
+     expect(res.status).toBe(200);
+@@ -466,4 +560,94 @@ describeDb('Wave A clinical catalog cross-tenant API (PostgreSQL)', () => {
+     });
+     expect(res.status).toBe(200);
+   });
++
++  it('PA-06 — foreign branch effective config lookup denied', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/configs/effective?clinicalServiceId=${canonicalId}&branchId=${branchB}`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect([403, 404, 422]).toContain(res.status);
++  });
++
++  it('PA-06 — foreign branch effective price lookup denied', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}&branchId=${branchB}&pricingUnit=PER_VISIT&currency=SYP`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect([403, 404, 422]).toContain(res.status);
++  });
++
++  it('PA-06 — own branch without override falls back to tenant default config', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/configs/effective?clinicalServiceId=${canonicalId}&branchId=${branchA}`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect(res.status).toBe(200);
++    const body = res.json as { scope: string; config: { branchId: string | null } };
++    expect(body.scope).toBe('tenant');
++    expect(body.config.branchId).toBeNull();
++  });
++
++  it('PA-06 — own branch without price override falls back to tenant default price', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}&branchId=${branchA}&pricingUnit=PER_VISIT&currency=SYP`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect(res.status).toBe(200);
++    const body = res.json as { scope: string; price: { branchId: string | null } };
++    expect(body.scope).toBe('tenant');
++    expect(body.price.branchId).toBeNull();
++  });
++
++  it('PA-08 — negative unitPrice draft rejected', async () => {
++    const res = await http('POST', '/clinical-catalog/prices/drafts', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++      body: {
++        clinicalServiceId: canonicalId,
++        currency: 'SYP',
++        unitPrice: -5,
++        effectiveFrom: new Date('2026-11-01T00:00:00.000Z').toISOString(),
++        pricingUnit: 'PER_VISIT',
++      },
++    });
++    expect([400, 422]).toContain(res.status);
++  });
++
++  it('PA-08 — invalid currency / pricingUnit rejected', async () => {
++    const badCurrency = await http('POST', '/clinical-catalog/prices/drafts', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++      body: {
++        clinicalServiceId: canonicalId,
++        currency: 'SY',
++        unitPrice: 1,
++        effectiveFrom: new Date('2026-11-02T00:00:00.000Z').toISOString(),
++      },
++    });
++    expect([400, 422]).toContain(badCurrency.status);
++
++    const badUnit = await http('POST', '/clinical-catalog/prices/drafts', {
++      principal: principal({ sub: actorA, tenantId: tenantA }),
++      body: {
++        clinicalServiceId: canonicalId,
++        currency: 'SYP',
++        unitPrice: 1,
++        pricingUnit: 'PER_HOUR',
++        effectiveFrom: new Date('2026-11-03T00:00:00.000Z').toISOString(),
++      },
++    });
++    expect([400, 422]).toContain(badUnit.status);
++  });
++
++  it('PA-07 — lookup without commercial dimensions rejected', async () => {
++    const res = await http(
++      'GET',
++      `/clinical-catalog/prices/lookup?clinicalServiceId=${canonicalId}`,
++      { principal: principal({ sub: actorA, tenantId: tenantA }) },
++    );
++    expect([400, 422]).toContain(res.status);
++  });
+ });
+diff --git a/apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts b/apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
+index b71f325..68b49fc 100644
+--- a/apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
++++ b/apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
+@@ -192,7 +192,7 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
+     expect(await countActive(serviceId, null)).toBe(1);
+   });
+ 
+-  it('Case A — concurrent superseding publishes after ACTIVE baseline keep single non-overlapping ACTIVE', async () => {
++  it('Case A — concurrent future schedule after ACTIVE baseline: one SCHEDULED, prior ACTIVE immutable, no ACTIVE overlap', async () => {
+     const prices = priceService();
+     const a = actor();
+     const base = await prices.createDraft(a, {
+@@ -204,7 +204,7 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
+     });
+     await prices.publish(a, base.id);
+ 
+-    const startFrom = new Date('2026-09-01T00:00:00.000Z').toISOString();
++    const startFrom = new Date(Date.now() + 40 * 24 * 3600 * 1000).toISOString();
+     let release!: () => void;
+     const barrier = new Promise<void>((resolve) => {
+       release = resolve;
+@@ -229,7 +229,28 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
+ 
+     const actives = await listActive(serviceId, null);
+     expect(actives).toHaveLength(1);
+-    expect(actives[0].effectiveFrom.toISOString()).toBe(startFrom);
++    expect(actives[0].id).toBe(base.id);
++    expect(actives[0].effectiveTo).toBeNull();
++
++    const scheduled = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findMany({
++        where: { tenantId, clinicalServiceId: serviceId, status: 'SCHEDULED' },
++      }),
++    );
++    expect(scheduled).toHaveLength(1);
++    expect(scheduled[0].effectiveFrom.toISOString()).toBe(startFrom);
++
++    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
++    const before = await prices.lookupActivePrice(a, serviceId, null, {
++      ...dims,
++      at: new Date(),
++    });
++    const after = await prices.lookupActivePrice(a, serviceId, null, {
++      ...dims,
++      at: new Date(startFrom),
++    });
++    expect(before.price.id).toBe(base.id);
++    expect(after.price.id).toBe(scheduled[0].id);
+   });
+ 
+   it('Case C — branch-specific commercial key concurrent double-publish', async () => {
+@@ -329,4 +350,170 @@ describeDb('Wave A PriceVersion concurrent publish (PostgreSQL)', () => {
+     await expect(prices.publish(a, d2.id)).rejects.toBeInstanceOf(ClinicalCatalogConflictError);
+     expect(await countActive(serviceId, null)).toBe(1);
+   });
++
++  it('PA-04 — future schedule preserves current price, prior immutable, ACTIVE overlap = 0', async () => {
++    const prices = priceService();
++    const a = actor();
++    const now = new Date();
++    const t15 = new Date(now.getTime() + 15 * 24 * 3600 * 1000);
++    const t30 = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
++
++    const current = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 100,
++      effectiveFrom: new Date('2026-01-01T00:00:00.000Z').toISOString(),
++      pricingUnit: 'PER_VISIT',
++    });
++    await prices.publish(a, current.id);
++    const beforePublish = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: current.id } }),
++    );
++
++    const future = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 150,
++      effectiveFrom: t30.toISOString(),
++      pricingUnit: 'PER_VISIT',
++    });
++    const scheduled = await prices.publish(a, future.id);
++    expect(scheduled.status).toBe('SCHEDULED');
++
++    const afterPublish = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: current.id } }),
++    );
++    expect(afterPublish.effectiveTo).toEqual(beforePublish.effectiveTo);
++    expect(String(afterPublish.unitPrice)).toBe(String(beforePublish.unitPrice));
++    expect(afterPublish.currency).toBe(beforePublish.currency);
++    expect(afterPublish.pricingUnit).toBe(beforePublish.pricingUnit);
++    expect(afterPublish.effectiveFrom.toISOString()).toBe(beforePublish.effectiveFrom.toISOString());
++    expect(afterPublish.status).toBe('ACTIVE');
++
++    expect(await countActive(serviceId, null)).toBe(1);
++
++    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
++    const atNow = await prices.lookupActivePrice(a, serviceId, null, { ...dims, at: now });
++    const at15 = await prices.lookupActivePrice(a, serviceId, null, { ...dims, at: t15 });
++    const at30 = await prices.lookupActivePrice(a, serviceId, null, { ...dims, at: t30 });
++
++    expect(atNow.price.id).toBe(current.id);
++    expect(at15.price.id).toBe(current.id);
++    expect(at30.price.id).toBe(future.id);
++    expect(Number(at30.price.unitPrice)).toBe(150);
++
++    const historical = await prices.lookupActivePrice(a, serviceId, null, {
++      ...dims,
++      at: new Date('2026-06-01T00:00:00.000Z'),
++    });
++    expect(historical.price.id).toBe(current.id);
++  });
++
++  it('PA-04-D — schedule chain V1 ACTIVE + V2/V3 SCHEDULED; no ACTIVE overlap; no commercial mutation', async () => {
++    const prices = priceService();
++    const a = actor();
++    const dims = { pricingUnit: 'PER_VISIT' as const, currency: 'SYP', serviceVariantId: null };
++    const now = Date.now();
++    const v1 = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 1,
++      effectiveFrom: new Date('2026-01-01T00:00:00.000Z').toISOString(),
++      pricingUnit: 'PER_VISIT',
++    });
++    await prices.publish(a, v1.id);
++    const v2 = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 2,
++      effectiveFrom: new Date(now + 30 * 24 * 3600 * 1000).toISOString(),
++      pricingUnit: 'PER_VISIT',
++    });
++    await prices.publish(a, v2.id);
++    const v3 = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 3,
++      effectiveFrom: new Date(now + 60 * 24 * 3600 * 1000).toISOString(),
++      pricingUnit: 'PER_VISIT',
++    });
++    await prices.publish(a, v3.id);
++
++    const reV1 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v1.id } }),
++    );
++    const reV2 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v2.id } }),
++    );
++    const reV3 = await createClinicalPrismaWrapper(prisma).withPlatformBypass((client) =>
++      client.clinicalServicePriceVersion.findUniqueOrThrow({ where: { id: v3.id } }),
++    );
++    expect(reV1.status).toBe('ACTIVE');
++    expect(reV1.effectiveTo).toBeNull();
++    expect(reV2.status).toBe('SCHEDULED');
++    expect(reV2.effectiveTo).toBeNull();
++    expect(reV3.status).toBe('SCHEDULED');
++    expect(await countActive(serviceId, null)).toBe(1);
++
++    expect(
++      (
++        await prices.lookupActivePrice(a, serviceId, null, {
++          ...dims,
++          at: new Date(now + 15 * 24 * 3600 * 1000),
++        })
++      ).price.id,
++    ).toBe(v1.id);
++    expect(
++      (
++        await prices.lookupActivePrice(a, serviceId, null, {
++          ...dims,
++          at: new Date(now + 45 * 24 * 3600 * 1000),
++        })
++      ).price.id,
++    ).toBe(v2.id);
++    expect(
++      (
++        await prices.lookupActivePrice(a, serviceId, null, {
++          ...dims,
++          at: new Date(now + 75 * 24 * 3600 * 1000),
++        })
++      ).price.id,
++    ).toBe(v3.id);
++  });
++
++  it('PA-07 — commercial identity distinguishes unit/currency variants', async () => {
++    const prices = priceService();
++    const a = actor();
++    const from = new Date('2026-01-01T00:00:00.000Z').toISOString();
++
++    const visit = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'SYP',
++      unitPrice: 10,
++      effectiveFrom: from,
++      pricingUnit: 'PER_VISIT',
++    });
++    const procedure = await prices.createDraft(a, {
++      clinicalServiceId: serviceId,
++      currency: 'USD',
++      unitPrice: 20,
++      effectiveFrom: from,
++      pricingUnit: 'PER_PROCEDURE',
++    });
++    await prices.publish(a, visit.id);
++    await prices.publish(a, procedure.id);
++
++    const visitHit = await prices.lookupActivePrice(a, serviceId, null, {
++      pricingUnit: 'PER_VISIT',
++      currency: 'SYP',
++      serviceVariantId: null,
++    });
++    const procHit = await prices.lookupActivePrice(a, serviceId, null, {
++      pricingUnit: 'PER_PROCEDURE',
++      currency: 'USD',
++      serviceVariantId: null,
++    });
++    expect(visitHit.price.id).toBe(visit.id);
++    expect(procHit.price.id).toBe(procedure.id);
++  });
+ });
+diff --git a/apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts b/apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts
+index 0f759e3..83a9a17 100644
+--- a/apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts
++++ b/apps/api/src/modules/clinical-catalog/tests/clinical-price.unit.spec.ts
+@@ -1,13 +1,18 @@
+ /**
+- * Wave A clinical price — precedence, fail-closed, append-only semantics (mocked prisma).
++ * Wave A clinical price — overlap, lock key, lookup commercial identity,
++ * future-effective no-gap (PA-04), foreign-branch fail-closed (PA-06).
+  */
+ import { ClinicalPriceVersionService } from '../application/clinical-price-version.service';
+-import { ClinicalPriceLookupFailClosedError, ClinicalCatalogValidationError } from '../domain/clinical-catalog.errors';
++import {
++  ClinicalPriceLookupFailClosedError,
++  ClinicalCatalogValidationError,
++} from '../domain/clinical-catalog.errors';
+ import { FakeClinicalCatalogAuditLog } from './support/fake-clinical-catalog-audit-log';
+ 
+ const TENANT = '11111111-1111-4111-8111-111111111111';
+ const SERVICE = '33333333-3333-4333-8333-333333333333';
+ const BRANCH = '44444444-4444-4444-8444-444444444444';
++const FOREIGN_BRANCH = '55555555-5555-4555-8555-555555555555';
+ const ACTOR = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ 
+ const actor = {
+@@ -17,6 +22,12 @@ const actor = {
+   isPlatform: false,
+ };
+ 
++const DEFAULT_DIMS = {
++  pricingUnit: 'PER_VISIT' as const,
++  currency: 'SYP',
++  serviceVariantId: null as string | null,
++};
++
+ function buildPriceService(clientImpl: Record<string, unknown>) {
+   const audit = new FakeClinicalCatalogAuditLog();
+   const prisma = {
+@@ -52,7 +63,63 @@ describe('ClinicalPriceVersionService overlap + lock key', () => {
+   });
+ });
+ 
+-describe('ClinicalPriceVersionService lookup precedence', () => {
++describe('ClinicalPriceVersionService lookup commercial identity (PA-07)', () => {
++  it('filters by pricingUnit/currency/serviceVariantId', async () => {
++    const match = {
++      id: 'price-match',
++      tenantId: TENANT,
++      branchId: null,
++      clinicalServiceId: SERVICE,
++      pricingUnit: 'PER_PROCEDURE',
++      currency: 'USD',
++      serviceVariantId: null,
++      status: 'ACTIVE',
++      effectiveFrom: new Date('2026-01-01'),
++      effectiveTo: null,
++    };
++
++    const findMany = jest.fn().mockResolvedValue([match]);
++    const client = {
++      clinicalServicePriceVersion: { findMany },
++    };
++
++    const service = buildPriceService(client);
++    const result = await service.lookupActivePrice(actor, SERVICE, null, {
++      pricingUnit: 'PER_PROCEDURE',
++      currency: 'usd',
++      serviceVariantId: null,
++    });
++    expect(result.price.id).toBe('price-match');
++    expect(findMany).toHaveBeenCalledWith(
++      expect.objectContaining({
++        where: expect.objectContaining({
++          pricingUnit: 'PER_PROCEDURE',
++          currency: 'USD',
++          serviceVariantId: null,
++        }),
++      }),
++    );
++  });
++
++  it('rejects missing/invalid commercial dimensions', async () => {
++    const service = buildPriceService({});
++    await expect(
++      service.lookupActivePrice(actor, SERVICE, null, {
++        pricingUnit: 'NOT_A_UNIT' as never,
++        currency: 'SYP',
++      }),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
++
++    await expect(
++      service.lookupActivePrice(actor, SERVICE, null, {
++        pricingUnit: 'PER_VISIT',
++        currency: 'XX',
++      }),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
++  });
++});
++
++describe('ClinicalPriceVersionService lookup precedence + PA-06', () => {
+   it('returns branch ACTIVE before tenant default', async () => {
+     const branchPrice = {
+       id: 'price-branch',
+@@ -65,21 +132,21 @@ describe('ClinicalPriceVersionService lookup precedence', () => {
+     };
+ 
+     const client = {
++      branch: {
++        findFirst: jest.fn().mockResolvedValue({ id: BRANCH }),
++      },
+       clinicalServicePriceVersion: {
+-        findMany: jest
+-          .fn()
+-          .mockResolvedValueOnce([branchPrice])
+-          .mockResolvedValueOnce([]),
++        findMany: jest.fn().mockResolvedValueOnce([branchPrice]),
+       },
+     };
+ 
+     const service = buildPriceService(client);
+-    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH);
++    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH, DEFAULT_DIMS);
+     expect(result.scope).toBe('branch');
+     expect(result.price.id).toBe('price-branch');
+   });
+ 
+-  it('falls back to tenant default when branch missing', async () => {
++  it('falls back to tenant default when own branch missing override', async () => {
+     const tenantPrice = {
+       id: 'price-tenant',
+       tenantId: TENANT,
+@@ -91,6 +158,9 @@ describe('ClinicalPriceVersionService lookup precedence', () => {
+     };
+ 
+     const client = {
++      branch: {
++        findFirst: jest.fn().mockResolvedValue({ id: BRANCH }),
++      },
+       clinicalServicePriceVersion: {
+         findMany: jest
+           .fn()
+@@ -100,21 +170,105 @@ describe('ClinicalPriceVersionService lookup precedence', () => {
+     };
+ 
+     const service = buildPriceService(client);
+-    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH);
++    const result = await service.lookupActivePrice(actor, SERVICE, BRANCH, DEFAULT_DIMS);
+     expect(result.scope).toBe('tenant');
+     expect(result.price.id).toBe('price-tenant');
+   });
+ 
+   it('fail-closed when no ACTIVE price exists', async () => {
+     const client = {
++      branch: {
++        findFirst: jest.fn().mockResolvedValue({ id: BRANCH }),
++      },
+       clinicalServicePriceVersion: {
+         findMany: jest.fn().mockResolvedValue([]),
+       },
+     };
+     const service = buildPriceService(client);
+-    await expect(service.lookupActivePrice(actor, SERVICE, BRANCH)).rejects.toBeInstanceOf(
+-      ClinicalPriceLookupFailClosedError,
+-    );
++    await expect(
++      service.lookupActivePrice(actor, SERVICE, BRANCH, DEFAULT_DIMS),
++    ).rejects.toBeInstanceOf(ClinicalPriceLookupFailClosedError);
++  });
++
++  it('denies foreign branch before tenant fallback (PA-06)', async () => {
++    const client = {
++      branch: {
++        findFirst: jest.fn().mockResolvedValue(null),
++      },
++      clinicalServicePriceVersion: {
++        findMany: jest.fn(),
++      },
++    };
++    const service = buildPriceService(client);
++    await expect(
++      service.lookupActivePrice(actor, SERVICE, FOREIGN_BRANCH, DEFAULT_DIMS),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
++    expect(client.clinicalServicePriceVersion.findMany).not.toHaveBeenCalled();
++  });
++});
++
++describe('ClinicalPriceVersionService createDraft validation (PA-08)', () => {
++  it('rejects negative unitPrice', async () => {
++    const service = buildPriceService({
++      branch: { findFirst: jest.fn() },
++      canonicalClinicalServiceDefinition: {
++        findUnique: jest.fn().mockResolvedValue({
++          id: SERVICE,
++          provenance: 'SYSTEM_CANONICAL',
++          tenantId: null,
++        }),
++      },
++    });
++    await expect(
++      service.createDraft(actor, {
++        clinicalServiceId: SERVICE,
++        currency: 'SYP',
++        unitPrice: -1,
++        effectiveFrom: new Date().toISOString(),
++      }),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
++  });
++
++  it('rejects invalid taxPercent', async () => {
++    const service = buildPriceService({
++      canonicalClinicalServiceDefinition: {
++        findUnique: jest.fn().mockResolvedValue({
++          id: SERVICE,
++          provenance: 'SYSTEM_CANONICAL',
++          tenantId: null,
++        }),
++      },
++    });
++    await expect(
++      service.createDraft(actor, {
++        clinicalServiceId: SERVICE,
++        currency: 'SYP',
++        unitPrice: 10,
++        taxPercent: 150,
++        effectiveFrom: new Date().toISOString(),
++      }),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
++  });
++
++  it('rejects effectiveTo <= effectiveFrom', async () => {
++    const service = buildPriceService({
++      canonicalClinicalServiceDefinition: {
++        findUnique: jest.fn().mockResolvedValue({
++          id: SERVICE,
++          provenance: 'SYSTEM_CANONICAL',
++          tenantId: null,
++        }),
++      },
++    });
++    await expect(
++      service.createDraft(actor, {
++        clinicalServiceId: SERVICE,
++        currency: 'SYP',
++        unitPrice: 10,
++        effectiveFrom: '2026-08-01T00:00:00.000Z',
++        effectiveTo: '2026-07-01T00:00:00.000Z',
++      }),
++    ).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+   });
+ });
+ 
+@@ -141,3 +295,53 @@ describe('ClinicalPriceVersionService append-only publish', () => {
+     await expect(service.publish(actor, 'pv-1')).rejects.toBeInstanceOf(ClinicalCatalogValidationError);
+   });
+ });
++
++describe('ClinicalPriceVersionService future-effective publish (PA-04 append-only + non-overlap)', () => {
++  it('schedules future draft without mutating prior ACTIVE commercial fields', async () => {
++    const futureFrom = new Date(Date.now() + 30 * 24 * 3600 * 1000);
++    const prior = {
++      id: 'pv-prior',
++      tenantId: TENANT,
++      branchId: null,
++      clinicalServiceId: SERVICE,
++      pricingUnit: 'PER_VISIT',
++      currency: 'SYP',
++      serviceVariantId: null,
++      unitPrice: { toString: () => '100' },
++      taxPercent: { toString: () => '0' },
++      status: 'ACTIVE',
++      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
++      effectiveTo: null,
++    };
++    const draft = {
++      ...prior,
++      id: 'pv-future',
++      status: 'DRAFT',
++      effectiveFrom: futureFrom,
++      unitPrice: { toString: () => '200' },
++    };
++
++    const updates: Array<{ id: string; data: Record<string, unknown> }> = [];
++    const client = {
++      $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
++      clinicalServicePriceVersion: {
++        findFirst: jest.fn().mockResolvedValue(draft),
++        findUniqueOrThrow: jest.fn().mockResolvedValue(draft),
++        findMany: jest.fn().mockResolvedValue([]),
++        update: jest.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
++          updates.push({ id: where.id, data });
++          return { ...draft, ...data, id: where.id, status: data.status ?? draft.status };
++        }),
++      },
++    };
++
++    const service = buildPriceService(client);
++    await service.publish(actor, 'pv-future');
++
++    expect(updates.every((u) => u.id !== 'pv-prior')).toBe(true);
++    const publishUpdate = updates.find((u) => u.id === 'pv-future');
++    expect(publishUpdate?.data.status).toBe('SCHEDULED');
++    expect(publishUpdate?.data.effectiveTo).toBeUndefined();
++    expect(publishUpdate?.data.unitPrice).toBeUndefined();
++  });
++});
+diff --git a/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx b/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx
+index 94bf01d..2cefe9d 100644
+--- a/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx
++++ b/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalPricingPage.tsx
+@@ -11,14 +11,25 @@ import {
+   resolveBillingWorkspaceMode,
+ } from '@/features/billing/config/billing-config';
+ import { BillingQuickNav } from '@/features/billing/components/BillingQuickNav';
++import { useSettingsBranches } from '@/features/settings/hooks/useSettings';
+ import {
+   useClinicalPriceVersions,
+   useClinicalServices,
+   useCreateClinicalPriceDraft,
+   usePublishClinicalPriceVersion,
+ } from './hooks/useClinicalCatalog';
++import { TENANT_DEFAULT_SCOPE } from './ClinicalServicesPage';
+ import styles from '../billing/billing-layout.module.css';
+ 
++const PRICING_UNITS = [
++  'PER_VISIT',
++  'PER_PROCEDURE',
++  'PER_TOOTH',
++  'PER_SESSION',
++  'PER_UNIT',
++  'OTHER',
++] as const;
++
+ export function ClinicalPricingPage() {
+   const { t, locale } = useI18n();
+   const { user } = useAuth();
+@@ -29,8 +40,19 @@ export function ClinicalPricingPage() {
+   const canView = canViewBilling(perm);
+   const canManage = canManageBilling(perm);
+ 
++  const [scopeBranchId, setScopeBranchId] = useState(TENANT_DEFAULT_SCOPE);
++  const selectedBranchId = scopeBranchId || null;
++
+   const servicesQuery = useClinicalServices(canView);
+-  const pricesQuery = useClinicalPriceVersions(canView);
++  const branchesQuery = useSettingsBranches(canView);
++  const priceScope = selectedBranchId ? ('branch' as const) : ('tenant' as const);
++  const pricesQuery = useClinicalPriceVersions(canView, {
++    scope: priceScope,
++    branchId: selectedBranchId,
++  });
++  const tenantDefaultPricesQuery = useClinicalPriceVersions(canView && Boolean(selectedBranchId), {
++    scope: 'tenant',
++  });
+   const createMutation = useCreateClinicalPriceDraft();
+   const publishMutation = usePublishClinicalPriceVersion();
+ 
+@@ -38,6 +60,7 @@ export function ClinicalPricingPage() {
+   const [unitPrice, setUnitPrice] = useState('');
+   const [taxPercent, setTaxPercent] = useState('0');
+   const [currency, setCurrency] = useState('SYP');
++  const [pricingUnit, setPricingUnit] = useState<(typeof PRICING_UNITS)[number]>('PER_VISIT');
+ 
+   const serviceNameById = useMemo(() => {
+     const map = new Map<string, string>();
+@@ -53,6 +76,10 @@ export function ClinicalPricingPage() {
+     [servicesQuery.data],
+   );
+ 
++  const scopeLabel = selectedBranchId
++    ? (branchesQuery.data ?? []).find((b) => b.id === selectedBranchId)?.name ?? selectedBranchId
++    : t('billing.clinicalPricing.tenantDefault');
++
+   if (!canView) {
+     return (
+       <div className={styles.page}>
+@@ -68,7 +95,9 @@ export function ClinicalPricingPage() {
+     if (!Number.isFinite(price)) return;
+     await createMutation.mutateAsync({
+       clinicalServiceId,
++      branchId: selectedBranchId,
+       currency,
++      pricingUnit,
+       unitPrice: price,
+       taxPercent: Number.parseFloat(taxPercent) || 0,
+       effectiveFrom: new Date().toISOString(),
+@@ -77,6 +106,7 @@ export function ClinicalPricingPage() {
+   }
+ 
+   const prices = pricesQuery.data ?? [];
++  const tenantDefaults = tenantDefaultPricesQuery.data ?? [];
+ 
+   return (
+     <div className={styles.page}>
+@@ -91,6 +121,31 @@ export function ClinicalPricingPage() {
+ 
+       <AuthAlert variant="info">{t('billing.clinicalPricing.boundary')}</AuthAlert>
+ 
++      <section className={styles.panel}>
++        <div className={styles.formGrid}>
++          <label>
++            {t('billing.clinicalPricing.scope')}
++            <select
++              value={scopeBranchId}
++              onChange={(e) => setScopeBranchId(e.target.value)}
++              data-testid="clinical-pricing-branch-scope"
++            >
++              <option value={TENANT_DEFAULT_SCOPE}>{t('billing.clinicalPricing.tenantDefault')}</option>
++              {(branchesQuery.data ?? [])
++                .filter((b) => b.isActive)
++                .map((branch) => (
++                  <option key={branch.id} value={branch.id}>
++                    {branch.name}
++                  </option>
++                ))}
++            </select>
++            <small>
++              {t('billing.clinicalPricing.currentScope')}: {scopeLabel}
++            </small>
++          </label>
++        </div>
++      </section>
++
+       {canManage ? (
+         <section className={styles.panel}>
+           <h2 className={styles.panelTitle}>{t('billing.clinicalPricing.addDraft')}</h2>
+@@ -111,6 +166,19 @@ export function ClinicalPricingPage() {
+                   ))}
+                 </select>
+               </label>
++              <label>
++                {t('billing.clinicalPricing.pricingUnit')}
++                <select
++                  value={pricingUnit}
++                  onChange={(e) => setPricingUnit(e.target.value as (typeof PRICING_UNITS)[number])}
++                >
++                  {PRICING_UNITS.map((unit) => (
++                    <option key={unit} value={unit}>
++                      {unit}
++                    </option>
++                  ))}
++                </select>
++              </label>
+               <label>
+                 {t('billing.unbilled.unitPrice')}
+                 <input
+@@ -145,6 +213,36 @@ export function ClinicalPricingPage() {
+         </section>
+       ) : null}
+ 
++      {selectedBranchId ? (
++        <section className={styles.panel}>
++          <h2 className={styles.panelTitle}>{t('billing.clinicalPricing.tenantFallback')}</h2>
++          <p className={styles.subtitle}>{t('billing.clinicalPricing.tenantFallbackHint')}</p>
++          {tenantDefaults.length === 0 ? (
++            <p className={styles.empty}>{t('billing.clinicalPricing.noTenantFallback')}</p>
++          ) : (
++            <ul className={styles.recentList}>
++              {tenantDefaults
++                .filter((row) => row.status === 'ACTIVE')
++                .slice(0, 8)
++                .map((row) => (
++                  <li key={`fallback-${row.id}`} className={styles.recentItem}>
++                    <span>
++                      <strong>{serviceNameById.get(row.clinicalServiceId) ?? row.clinicalServiceId}</strong>
++                      <br />
++                      <small>
++                        {row.pricingUnit} · {row.currency} · {t('billing.clinicalPricing.inherited')}
++                      </small>
++                    </span>
++                    <strong>
++                      {formatBillingCurrency(Number(row.unitPrice), locale, row.currency)}
++                    </strong>
++                  </li>
++                ))}
++            </ul>
++          )}
++        </section>
++      ) : null}
++
+       <section className={styles.panel}>
+         <h2 className={styles.panelTitle}>{t('billing.clinicalPricing.versions')}</h2>
+         {pricesQuery.isLoading ? (
+@@ -161,7 +259,10 @@ export function ClinicalPricingPage() {
+                     <strong>{serviceNameById.get(row.clinicalServiceId) ?? row.clinicalServiceId}</strong>
+                     <br />
+                     <small>
+-                      {row.status} · {row.effectiveFrom}
++                      {row.status} · {row.pricingUnit} · {row.effectiveFrom}
++                      {row.branchId
++                        ? ` · ${t('billing.clinicalPricing.branchOverride')}`
++                        : ` · ${t('billing.clinicalPricing.tenantDefault')}`}
+                     </small>
+                   </span>
+                   <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+diff --git a/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx b/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx
+index f334b2e..3f38bdc 100644
+--- a/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx
++++ b/apps/clinic-dashboard/src/features/clinical-catalog/ClinicalServicesPage.tsx
+@@ -4,7 +4,8 @@ import { useI18n } from '@booking/i18n/react';
+ import { useAuth } from '@/app/providers/AuthProvider';
+ import { AuthAlert } from '@/features/auth/components/AuthAlert';
+ import { AuthButton } from '@/features/auth/components/AuthButton';
+-import type { ClinicalCatalogService } from './api/clinical-catalog-api';
++import { useSettingsBranches } from '@/features/settings/hooks/useSettings';
++import type { ClinicalCatalogService, TenantServiceConfig } from './api/clinical-catalog-api';
+ import {
+   useClinicalServices,
+   useCreateTenantClinicalService,
+@@ -14,10 +15,34 @@ import {
+ } from './hooks/useClinicalCatalog';
+ import styles from '../billing/billing-layout.module.css';
+ 
++/** Empty string = tenant default scope. */
++export const TENANT_DEFAULT_SCOPE = '';
++
+ function tr(service: ClinicalCatalogService, locale: string): string {
+   return service.translations.find((t) => t.locale === locale)?.displayName ?? service.stableKey;
+ }
+ 
++function resolveConfigForScope(
++  configs: TenantServiceConfig[] | undefined,
++  clinicalServiceId: string,
++  branchId: string | null,
++): { config: TenantServiceConfig | null; inherited: boolean } {
++  const items = configs ?? [];
++  if (branchId) {
++    const override = items.find(
++      (c) => c.clinicalServiceId === clinicalServiceId && c.branchId === branchId,
++    );
++    if (override) return { config: override, inherited: false };
++  }
++  const tenantDefault = items.find(
++    (c) => c.clinicalServiceId === clinicalServiceId && c.branchId === null,
++  );
++  return {
++    config: tenantDefault ?? null,
++    inherited: Boolean(branchId && tenantDefault),
++  };
++}
++
+ export function ClinicalServicesPage() {
+   const { t, locale } = useI18n();
+   const { user } = useAuth();
+@@ -30,26 +55,20 @@ export function ClinicalServicesPage() {
+   const canManage = hasPermission(roles, 'api.clinical-catalog', 'manage');
+ 
+   const servicesQuery = useClinicalServices(canView);
+-  const configsQuery = useTenantServiceConfigs(canView);
++  const configsQuery = useTenantServiceConfigs(canView, { scope: 'all' });
++  const branchesQuery = useSettingsBranches(canView);
+   const createMutation = useCreateTenantClinicalService();
+   const publishMutation = usePublishClinicalService();
+   const configMutation = useUpsertTenantServiceConfig();
+ 
++  const [scopeBranchId, setScopeBranchId] = useState(TENANT_DEFAULT_SCOPE);
+   const [search, setSearch] = useState('');
+   const [showCreate, setShowCreate] = useState(false);
+   const [keySuffix, setKeySuffix] = useState('');
+   const [nameEn, setNameEn] = useState('');
+   const [nameAr, setNameAr] = useState('');
+ 
+-  const configByServiceId = useMemo(() => {
+-    const map = new Map<string, { enabled: boolean }>();
+-    for (const cfg of configsQuery.data ?? []) {
+-      if (cfg.branchId === null) {
+-        map.set(cfg.clinicalServiceId, { enabled: cfg.enabled });
+-      }
+-    }
+-    return map;
+-  }, [configsQuery.data]);
++  const selectedBranchId = scopeBranchId || null;
+ 
+   const filtered = useMemo(() => {
+     const items = servicesQuery.data ?? [];
+@@ -90,10 +109,17 @@ export function ClinicalServicesPage() {
+ 
+   async function toggleEnabled(service: ClinicalCatalogService, enabled: boolean) {
+     if (!canUpdate) return;
+-    await configMutation.mutateAsync({ clinicalServiceId: service.id, enabled });
++    await configMutation.mutateAsync({
++      clinicalServiceId: service.id,
++      branchId: selectedBranchId,
++      enabled,
++    });
+   }
+ 
+   const displayLocale = locale.startsWith('ar') ? 'ar' : 'en';
++  const scopeLabel = selectedBranchId
++    ? (branchesQuery.data ?? []).find((b) => b.id === selectedBranchId)?.name ?? selectedBranchId
++    : t('clinicalCatalog.scope.tenantDefault');
+ 
+   return (
+     <div className={styles.page}>
+@@ -108,6 +134,26 @@ export function ClinicalServicesPage() {
+ 
+       <section className={styles.panel}>
+         <div className={styles.formGrid}>
++          <label>
++            {t('clinicalCatalog.scope.label')}
++            <select
++              value={scopeBranchId}
++              onChange={(e) => setScopeBranchId(e.target.value)}
++              data-testid="clinical-services-branch-scope"
++            >
++              <option value={TENANT_DEFAULT_SCOPE}>{t('clinicalCatalog.scope.tenantDefault')}</option>
++              {(branchesQuery.data ?? [])
++                .filter((b) => b.isActive)
++                .map((branch) => (
++                  <option key={branch.id} value={branch.id}>
++                    {branch.name}
++                  </option>
++                ))}
++            </select>
++            <small>
++              {t('clinicalCatalog.scope.current')}: {scopeLabel}
++            </small>
++          </label>
+           <label>
+             {t('clinicalCatalog.search')}
+             <input value={search} onChange={(e) => setSearch(e.target.value)} />
+@@ -157,8 +203,22 @@ export function ClinicalServicesPage() {
+         ) : (
+           <ul className={styles.recentList}>
+             {filtered.map((service) => {
+-              const cfg = configByServiceId.get(service.id);
++              const { config, inherited } = resolveConfigForScope(
++                configsQuery.data,
++                service.id,
++                selectedBranchId,
++              );
+               const isCanonical = service.provenance === 'SYSTEM_CANONICAL';
++              const enabledLabel = config
++                ? config.enabled
++                  ? t('clinicalCatalog.enable')
++                  : t('clinicalCatalog.disable')
++                : t('clinicalCatalog.notConfigured');
++              const inheritanceLabel = inherited
++                ? t('clinicalCatalog.scope.inherited')
++                : selectedBranchId && config
++                  ? t('clinicalCatalog.scope.override')
++                  : t('clinicalCatalog.scope.tenantDefault');
+               return (
+                 <li key={service.id} className={styles.recentItem}>
+                   <span>
+@@ -167,9 +227,7 @@ export function ClinicalServicesPage() {
+                     <br />
+                     <small>
+                       {t(`clinicalCatalog.provenance.${service.provenance}` as 'clinicalCatalog.provenance.SYSTEM_CANONICAL')} · {service.lifecycle}
+-                      {isCanonical
+-                        ? ` · ${cfg ? (cfg.enabled ? t('clinicalCatalog.enable') : t('clinicalCatalog.disable')) : t('clinicalCatalog.notConfigured')}`
+-                        : null}
++                      {isCanonical ? ` · ${enabledLabel} · ${inheritanceLabel}` : null}
+                     </small>
+                   </span>
+                   <span style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+@@ -177,9 +235,9 @@ export function ClinicalServicesPage() {
+                       <AuthButton
+                         variant="secondary"
+                         loading={configMutation.isPending}
+-                        onClick={() => void toggleEnabled(service, !(cfg?.enabled ?? false))}
++                        onClick={() => void toggleEnabled(service, !(config?.enabled ?? false))}
+                       >
+-                        {cfg?.enabled ? t('clinicalCatalog.disable') : t('clinicalCatalog.enable')}
++                        {config?.enabled ? t('clinicalCatalog.disable') : t('clinicalCatalog.enable')}
+                       </AuthButton>
+                     ) : null}
+                     {!isCanonical && canManage && service.lifecycle === 'DRAFT' ? (
+diff --git a/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts b/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts
+index f703bbf..b0d2f4a 100644
+--- a/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts
++++ b/apps/clinic-dashboard/src/features/clinical-catalog/api/clinical-catalog-api.ts
+@@ -51,6 +51,8 @@ export interface ClinicalPriceVersion {
+   updatedAt: string;
+ }
+ 
++export type ClinicalCatalogListScope = 'tenant' | 'branch' | 'all';
++
+ export interface CreateTenantClinicalServiceInput {
+   stableKey: string;
+   domain?: string;
+@@ -59,26 +61,114 @@ export interface CreateTenantClinicalServiceInput {
+ 
+ export interface UpsertTenantServiceConfigInput {
+   clinicalServiceId: string;
++  branchId?: string | null;
+   enabled?: boolean;
++  defaultDurationOverride?: number | null;
++  bookingVisibleOnPortal?: boolean;
+ }
+ 
+ export interface CreateClinicalPriceDraftInput {
+   clinicalServiceId: string;
++  branchId?: string | null;
++  serviceVariantId?: string | null;
++  pricingUnit?: string;
+   currency: string;
+   unitPrice: number;
+   taxPercent?: number;
+   effectiveFrom: string;
++  effectiveTo?: string | null;
++}
++
++export interface ClinicalPriceListQuery {
++  clinicalServiceId?: string;
++  /** Required explicit scope — never omit to mean "all". */
++  scope: ClinicalCatalogListScope;
++  branchId?: string | null;
++  status?: string;
+ }
+ 
+-function qs(params: Record<string, string | undefined>) {
++export interface ClinicalConfigListQuery {
++  clinicalServiceId?: string;
++  scope: ClinicalCatalogListScope;
++  branchId?: string | null;
++}
++
++function qs(params: Record<string, string | undefined | null>) {
+   const search = new URLSearchParams();
+   Object.entries(params).forEach(([key, value]) => {
+-    if (value) search.set(key, value);
++    if (value !== undefined && value !== null && value !== '') {
++      search.set(key, value);
++    }
+   });
+   const s = search.toString();
+   return s ? `?${s}` : '';
+ }
+ 
++/** Normalize tenant-default upsert: omit branchId key for tenant default. */
++export function buildConfigUpsertPayload(input: UpsertTenantServiceConfigInput) {
++  const body: Record<string, unknown> = {
++    clinicalServiceId: input.clinicalServiceId,
++  };
++  if (input.branchId) {
++    body.branchId = input.branchId;
++  }
++  if (input.enabled !== undefined) body.enabled = input.enabled;
++  if (input.defaultDurationOverride !== undefined) {
++    body.defaultDurationOverride = input.defaultDurationOverride;
++  }
++  if (input.bookingVisibleOnPortal !== undefined) {
++    body.bookingVisibleOnPortal = input.bookingVisibleOnPortal;
++  }
++  return body;
++}
++
++export function buildPriceDraftPayload(input: CreateClinicalPriceDraftInput) {
++  const body: Record<string, unknown> = {
++    clinicalServiceId: input.clinicalServiceId,
++    currency: input.currency,
++    unitPrice: input.unitPrice,
++    taxPercent: input.taxPercent ?? 0,
++    effectiveFrom: input.effectiveFrom,
++    pricingUnit: input.pricingUnit ?? 'PER_VISIT',
++  };
++  if (input.branchId) {
++    body.branchId = input.branchId;
++  }
++  if (input.serviceVariantId) {
++    body.serviceVariantId = input.serviceVariantId;
++  }
++  if (input.effectiveTo) {
++    body.effectiveTo = input.effectiveTo;
++  }
++  return body;
++}
++
++/** Explicit list query — tenant scope never relies on omitted branchId. */
++export function buildPriceListQueryParams(query: ClinicalPriceListQuery): Record<string, string> {
++  const params: Record<string, string> = { scope: query.scope };
++  if (query.clinicalServiceId) params.clinicalServiceId = query.clinicalServiceId;
++  if (query.status) params.status = query.status;
++  if (query.scope === 'branch') {
++    if (!query.branchId) {
++      throw new Error('branchId required when scope=branch');
++    }
++    params.branchId = query.branchId;
++  }
++  return params;
++}
++
++export function buildConfigListQueryParams(query: ClinicalConfigListQuery): Record<string, string> {
++  const params: Record<string, string> = { scope: query.scope };
++  if (query.clinicalServiceId) params.clinicalServiceId = query.clinicalServiceId;
++  if (query.scope === 'branch') {
++    if (!query.branchId) {
++      throw new Error('branchId required when scope=branch');
++    }
++    params.branchId = query.branchId;
++  }
++  return params;
++}
++
+ export async function fetchClinicalServices(
+   token: string,
+   tenantId: string,
+@@ -118,12 +208,27 @@ export async function publishClinicalService(token: string, tenantId: string, se
+ export async function fetchTenantServiceConfigs(
+   token: string,
+   tenantId: string,
+-  query: { clinicalServiceId?: string } = {},
++  query: ClinicalConfigListQuery,
+ ) {
+-  return apiRequest<TenantServiceConfig[]>(`/clinical-catalog/configs${qs(query)}`, {
+-    token,
+-    tenantId,
+-  });
++  return apiRequest<TenantServiceConfig[]>(
++    `/clinical-catalog/configs${qs(buildConfigListQueryParams(query))}`,
++    { token, tenantId },
++  );
++}
++
++export async function fetchEffectiveTenantServiceConfig(
++  token: string,
++  tenantId: string,
++  clinicalServiceId: string,
++  branchId?: string | null,
++) {
++  return apiRequest<{ scope: 'branch' | 'tenant'; config: TenantServiceConfig }>(
++    `/clinical-catalog/configs/effective${qs({
++      clinicalServiceId,
++      branchId: branchId ?? undefined,
++    })}`,
++    { token, tenantId },
++  );
+ }
+ 
+ export async function upsertTenantServiceConfig(
+@@ -135,19 +240,19 @@ export async function upsertTenantServiceConfig(
+     method: 'PUT',
+     token,
+     tenantId,
+-    body,
++    body: buildConfigUpsertPayload(body),
+   });
+ }
+ 
+ export async function fetchClinicalPriceVersions(
+   token: string,
+   tenantId: string,
+-  query: { clinicalServiceId?: string; status?: string } = {},
++  query: ClinicalPriceListQuery,
+ ) {
+-  return apiRequest<ClinicalPriceVersion[]>(`/clinical-catalog/prices${qs(query)}`, {
+-    token,
+-    tenantId,
+-  });
++  return apiRequest<ClinicalPriceVersion[]>(
++    `/clinical-catalog/prices${qs(buildPriceListQueryParams(query))}`,
++    { token, tenantId },
++  );
+ }
+ 
+ export async function createClinicalPriceDraft(
+@@ -159,7 +264,7 @@ export async function createClinicalPriceDraft(
+     method: 'POST',
+     token,
+     tenantId,
+-    body,
++    body: buildPriceDraftPayload(body),
+   });
+ }
+ 
+diff --git a/apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx b/apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx
+index 472bdb3..dd7075f 100644
+--- a/apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx
++++ b/apps/clinic-dashboard/src/features/clinical-catalog/clinical-catalog.spec.tsx
+@@ -1,13 +1,19 @@
+ /** @vitest-environment jsdom */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+-import { cleanup, render, screen } from '@testing-library/react';
++import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { ClinicalServicesPage } from './ClinicalServicesPage';
++import { ClinicalPricingPage } from './ClinicalPricingPage';
+ 
+ const useAuth = vi.fn();
+ const useClinicalServices = vi.fn();
+ const useTenantServiceConfigs = vi.fn();
++const useClinicalPriceVersions = vi.fn();
++const useSettingsBranches = vi.fn();
++const upsertMutateAsync = vi.fn();
++const createPriceMutateAsync = vi.fn();
+ let canViewClinicalCatalog = true;
++let canViewBilling = true;
+ 
+ vi.mock('@booking/permissions', () => ({
+   hasPermission: (_roles: string[], resource: string, action: string) => {
+@@ -17,6 +23,7 @@ vi.mock('@booking/permissions', () => ({
+       if (action === 'update') return canViewClinicalCatalog;
+       if (action === 'manage') return canViewClinicalCatalog;
+     }
++    if (resource === 'api.billing') return canViewBilling;
+     return false;
+   },
+ }));
+@@ -25,12 +32,36 @@ vi.mock('@/app/providers/AuthProvider', () => ({
+   useAuth: () => useAuth(),
+ }));
+ 
++vi.mock('@/features/settings/hooks/useSettings', () => ({
++  useSettingsBranches: (...args: unknown[]) => useSettingsBranches(...args),
++}));
++
++vi.mock('@/features/billing/config/billing-config', () => ({
++  canViewBilling: () => canViewBilling,
++  canManageBilling: () => canViewBilling,
++  formatBillingCurrency: (n: number) => String(n),
++  resolveBillingWorkspaceMode: () => 'full',
++}));
++
++vi.mock('@/features/billing/components/BillingQuickNav', () => ({
++  BillingQuickNav: () => null,
++}));
++
+ vi.mock('./hooks/useClinicalCatalog', () => ({
+   useClinicalServices: (...args: unknown[]) => useClinicalServices(...args),
+   useTenantServiceConfigs: (...args: unknown[]) => useTenantServiceConfigs(...args),
+   useCreateTenantClinicalService: () => ({ mutateAsync: vi.fn(), isPending: false }),
+   usePublishClinicalService: () => ({ mutateAsync: vi.fn(), isPending: false }),
+-  useUpsertTenantServiceConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
++  useUpsertTenantServiceConfig: () => ({
++    mutateAsync: upsertMutateAsync,
++    isPending: false,
++  }),
++  useClinicalPriceVersions: (...args: unknown[]) => useClinicalPriceVersions(...args),
++  useCreateClinicalPriceDraft: () => ({
++    mutateAsync: createPriceMutateAsync,
++    isPending: false,
++  }),
++  usePublishClinicalPriceVersion: () => ({ mutateAsync: vi.fn(), isPending: false }),
+ }));
+ 
+ vi.mock('@booking/i18n/react', () => ({
+@@ -40,21 +71,20 @@ vi.mock('@booking/i18n/react', () => ({
+   }),
+ }));
+ 
+-function renderPage() {
++function renderWithQc(ui: React.ReactNode) {
+   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+-  return render(
+-    <QueryClientProvider client={qc}>
+-      <ClinicalServicesPage />
+-    </QueryClientProvider>,
+-  );
++  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+ }
+ 
+-describe('ClinicalServicesPage', () => {
++describe('ClinicalServicesPage branch scope (PA-05)', () => {
+   beforeEach(() => {
+     canViewClinicalCatalog = true;
+     useAuth.mockReturnValue({
+       user: { tenantId: 'tenant-1', roles: ['clinic_admin'] },
+     });
++    useSettingsBranches.mockReturnValue({
++      data: [{ id: 'branch-1', name: 'Downtown', isActive: true }],
++    });
+     useClinicalServices.mockReturnValue({
+       isLoading: false,
+       isError: false,
+@@ -77,7 +107,18 @@ describe('ClinicalServicesPage', () => {
+         },
+       ],
+     });
+-    useTenantServiceConfigs.mockReturnValue({ data: [] });
++    useTenantServiceConfigs.mockReturnValue({
++      data: [
++        {
++          id: 'cfg-1',
++          clinicalServiceId: 'svc-1',
++          branchId: null,
++          enabled: true,
++        },
++      ],
++    });
++    useClinicalPriceVersions.mockReturnValue({ isLoading: false, data: [] });
++    upsertMutateAsync.mockResolvedValue({});
+   });
+ 
+   afterEach(() => {
+@@ -85,18 +126,96 @@ describe('ClinicalServicesPage', () => {
+     vi.clearAllMocks();
+   });
+ 
+-  it('renders service list when user has view permission', async () => {
+-    renderPage();
+-    expect(await screen.findByText(/Consultation/)).toBeTruthy();
+-    expect(screen.getByText(/canonical.general.consultation/)).toBeTruthy();
++  it('renders branch selector and sends branchId for branch override toggle', async () => {
++    renderWithQc(<ClinicalServicesPage />);
++    expect(await screen.findByTestId('clinical-services-branch-scope')).toBeTruthy();
++    fireEvent.change(screen.getByTestId('clinical-services-branch-scope'), {
++      target: { value: 'branch-1' },
++    });
++    fireEvent.click(screen.getByText('clinicalCatalog.disable'));
++    expect(upsertMutateAsync).toHaveBeenCalledWith({
++      clinicalServiceId: 'svc-1',
++      branchId: 'branch-1',
++      enabled: false,
++    });
++  });
++
++  it('tenant-default toggle omits branchId (null)', async () => {
++    renderWithQc(<ClinicalServicesPage />);
++    fireEvent.click(await screen.findByText('clinicalCatalog.disable'));
++    expect(upsertMutateAsync).toHaveBeenCalledWith({
++      clinicalServiceId: 'svc-1',
++      branchId: null,
++      enabled: false,
++    });
++  });
++
++  it('shows inherited indicator for branch scope without override', async () => {
++    renderWithQc(<ClinicalServicesPage />);
++    fireEvent.change(await screen.findByTestId('clinical-services-branch-scope'), {
++      target: { value: 'branch-1' },
++    });
++    expect(screen.getByText(/clinicalCatalog.scope.inherited/)).toBeTruthy();
+   });
++});
+ 
+-  it('shows access denied without clinical-catalog view permission', async () => {
+-    canViewClinicalCatalog = false;
++describe('ClinicalPricingPage branch scope (PA-05)', () => {
++  beforeEach(() => {
++    canViewBilling = true;
+     useAuth.mockReturnValue({
+-      user: { tenantId: 'tenant-1', roles: ['guest'] },
++      user: { tenantId: 'tenant-1', roles: ['clinic_admin'] },
++    });
++    useSettingsBranches.mockReturnValue({
++      data: [{ id: 'branch-2', name: 'East', isActive: true }],
++    });
++    useClinicalServices.mockReturnValue({
++      isLoading: false,
++      isError: false,
++      data: [
++        {
++          id: 'svc-9',
++          stableKey: 'canonical.general.procedure',
++          provenance: 'SYSTEM_CANONICAL',
++          domain: 'GENERAL',
++          categoryKey: null,
++          defaultDurationMin: 30,
++          lifecycle: 'PUBLISHED',
++          tenantId: null,
++          translations: [{ locale: 'en', displayName: 'Procedure' }],
++          createdAt: '',
++          updatedAt: '',
++        },
++      ],
++    });
++    useClinicalPriceVersions.mockReturnValue({ isLoading: false, data: [] });
++    createPriceMutateAsync.mockResolvedValue({});
++  });
++
++  afterEach(() => {
++    cleanup();
++    vi.clearAllMocks();
++  });
++
++  it('renders branch selector and submits branch-scoped draft', async () => {
++    renderWithQc(<ClinicalPricingPage />);
++    expect(await screen.findByTestId('clinical-pricing-branch-scope')).toBeTruthy();
++    fireEvent.change(screen.getByTestId('clinical-pricing-branch-scope'), {
++      target: { value: 'branch-2' },
+     });
+-    renderPage();
+-    expect(await screen.findByText('clinicalCatalog.accessDenied')).toBeTruthy();
++    const selects = screen.getAllByRole('combobox');
++    // 0 = branch scope, 1 = service, 2 = pricing unit
++    fireEvent.change(selects[1], { target: { value: 'svc-9' } });
++    const numberInputs = screen.getAllByRole('spinbutton');
++    fireEvent.change(numberInputs[0], { target: { value: '25' } });
++    fireEvent.click(screen.getByText('billing.clinicalPricing.saveDraft'));
++    expect(createPriceMutateAsync).toHaveBeenCalledWith(
++      expect.objectContaining({
++        clinicalServiceId: 'svc-9',
++        branchId: 'branch-2',
++        currency: 'SYP',
++        pricingUnit: 'PER_VISIT',
++        unitPrice: 25,
++      }),
++    );
+   });
+ });
+diff --git a/apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts b/apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts
+index 95a9200..68913ab 100644
+--- a/apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts
++++ b/apps/clinic-dashboard/src/features/clinical-catalog/hooks/useClinicalCatalog.ts
+@@ -9,8 +9,10 @@ import {
+   publishClinicalPriceVersion,
+   publishClinicalService,
+   upsertTenantServiceConfig,
++  type ClinicalCatalogListScope,
+   type CreateClinicalPriceDraftInput,
+   type CreateTenantClinicalServiceInput,
++  type UpsertTenantServiceConfigInput,
+ } from '../api/clinical-catalog-api';
+ 
+ function authKeys(user: { tenantId?: string } | null) {
+@@ -31,15 +33,23 @@ export function useClinicalServices(enabled = true) {
+   });
+ }
+ 
+-export function useTenantServiceConfigs(enabled = true) {
++export function useTenantServiceConfigs(
++  enabled = true,
++  query: { scope: ClinicalCatalogListScope; branchId?: string | null } = { scope: 'all' },
++) {
+   const { getValidAccessToken, user } = useAuth();
++  const branchKey =
++    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
+   return useQuery({
+-    queryKey: ['clinical-catalog', 'configs', ...authKeys(user)],
+-    enabled: enabled && Boolean(user?.tenantId),
++    queryKey: ['clinical-catalog', 'configs', query.scope, branchKey, ...authKeys(user)],
++    enabled: enabled && Boolean(user?.tenantId) && (query.scope !== 'branch' || Boolean(query.branchId)),
+     queryFn: async () => {
+       const token = await getValidAccessToken();
+       if (!token || !user?.tenantId) throw new Error('Not authenticated');
+-      return fetchTenantServiceConfigs(token, user.tenantId);
++      return fetchTenantServiceConfigs(token, user.tenantId, {
++        scope: query.scope,
++        branchId: query.branchId,
++      });
+     },
+     staleTime: 30_000,
+   });
+@@ -77,7 +87,7 @@ export function useUpsertTenantServiceConfig() {
+   const { getValidAccessToken, user } = useAuth();
+   const qc = useQueryClient();
+   return useMutation({
+-    mutationFn: async (body: { clinicalServiceId: string; enabled: boolean }) => {
++    mutationFn: async (body: UpsertTenantServiceConfigInput) => {
+       const token = await getValidAccessToken();
+       if (!token || !user?.tenantId) throw new Error('Not authenticated');
+       return upsertTenantServiceConfig(token, user.tenantId, body);
+@@ -87,16 +97,37 @@ export function useUpsertTenantServiceConfig() {
+   });
+ }
+ 
+-export function useClinicalPriceVersions(enabled = true, clinicalServiceId?: string) {
++export function useClinicalPriceVersions(
++  enabled = true,
++  query: {
++    clinicalServiceId?: string;
++    scope: ClinicalCatalogListScope;
++    branchId?: string | null;
++  } = { scope: 'tenant' },
++) {
+   const { getValidAccessToken, user } = useAuth();
++  const branchKey =
++    query.scope === 'branch' ? query.branchId ?? 'missing-branch' : query.scope;
+   return useQuery({
+-    queryKey: ['clinical-catalog', 'prices', clinicalServiceId ?? 'all', ...authKeys(user)],
+-    enabled: enabled && Boolean(user?.tenantId),
++    queryKey: [
++      'clinical-catalog',
++      'prices',
++      query.scope,
++      branchKey,
++      query.clinicalServiceId ?? 'all-services',
++      ...authKeys(user),
++    ],
++    enabled:
++      enabled &&
++      Boolean(user?.tenantId) &&
++      (query.scope !== 'branch' || Boolean(query.branchId)),
+     queryFn: async () => {
+       const token = await getValidAccessToken();
+       if (!token || !user?.tenantId) throw new Error('Not authenticated');
+       return fetchClinicalPriceVersions(token, user.tenantId, {
+-        clinicalServiceId,
++        clinicalServiceId: query.clinicalServiceId,
++        scope: query.scope,
++        branchId: query.branchId,
+       });
+     },
+     staleTime: 30_000,
+diff --git a/apps/clinic-dashboard/src/i18n/billing-messages.ts b/apps/clinic-dashboard/src/i18n/billing-messages.ts
+index 9d15aa6..a17fe9c 100644
+--- a/apps/clinic-dashboard/src/i18n/billing-messages.ts
++++ b/apps/clinic-dashboard/src/i18n/billing-messages.ts
+@@ -246,10 +246,20 @@ export const billingMessagesEn = {
+     service: 'Clinical service',
+     chooseService: 'Choose a published service…',
+     currency: 'Currency',
++    pricingUnit: 'Pricing unit',
+     saveDraft: 'Save draft',
+     publish: 'Publish',
+     versions: 'Price versions',
+     empty: 'No clinical price versions yet.',
++    scope: 'Pricing scope',
++    tenantDefault: 'Tenant default',
++    currentScope: 'Current scope',
++    branchOverride: 'Branch override',
++    tenantFallback: 'Tenant default fallback',
++    tenantFallbackHint:
++      'When no branch override exists for a commercial key, effective lookup uses the tenant default price.',
++    noTenantFallback: 'No tenant-default ACTIVE prices to inherit.',
++    inherited: 'Inherited if no branch override',
+   },
+   pos: {
+     title: 'POS checkout',
+@@ -589,10 +599,20 @@ export const billingMessagesAr = {
+     service: 'الخدمة السريرية',
+     chooseService: 'اختر خدمة منشورة…',
+     currency: 'العملة',
++    pricingUnit: 'وحدة التسعير',
+     saveDraft: 'حفظ المسودة',
+     publish: 'نشر',
+     versions: 'إصدارات الأسعار',
+     empty: 'لا توجد إصدارات أسعار سريرية بعد.',
++    scope: 'نطاق التسعير',
++    tenantDefault: 'الافتراضي للمستأجر',
++    currentScope: 'النطاق الحالي',
++    branchOverride: 'تجاوز للفرع',
++    tenantFallback: 'الرجوع للافتراضي للمستأجر',
++    tenantFallbackHint:
++      'عند عدم وجود تجاوز للفرع لمفتاح تجاري، يستخدم البحث الفعال سعر الافتراضي للمستأجر.',
++    noTenantFallback: 'لا توجد أسعار ACTIVE افتراضية للمستأجر للوراثة.',
++    inherited: 'موروث إن لم يوجد تجاوز للفرع',
+   },
+   pos: {
+     title: 'نقطة البيع',
+diff --git a/apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts b/apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts
+index 2c7c337..118bfc9 100644
+--- a/apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts
++++ b/apps/clinic-dashboard/src/i18n/clinical-catalog-messages.ts
+@@ -29,6 +29,13 @@ export const clinicalCatalogMessagesEn = {
+   enable: 'Enable',
+   disable: 'Disable',
+   notConfigured: 'Not configured',
++  scope: {
++    label: 'Configuration scope',
++    tenantDefault: 'Tenant default',
++    current: 'Current scope',
++    inherited: 'Inherited from tenant default',
++    override: 'Branch override',
++  },
+ };
+ 
+ export const clinicalCatalogMessagesAr = {
+@@ -62,4 +69,11 @@ export const clinicalCatalogMessagesAr = {
+   enable: 'تفعيل',
+   disable: 'تعطيل',
+   notConfigured: 'غير مهيأ',
++  scope: {
++    label: 'نطاق الإعداد',
++    tenantDefault: 'الافتراضي للمستأجر',
++    current: 'النطاق الحالي',
++    inherited: 'موروث من الافتراضي للمستأجر',
++    override: 'تجاوز للفرع',
++  },
+ };
+diff --git a/docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md b/docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md
+index 72548a7..cae6778 100644
+--- a/docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md
++++ b/docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md
+@@ -1,47 +1,23 @@
+-# Phase 48 Wave A — Cross-Tenant API Test Evidence (WAVE-A-PA-03)
++# Phase 48 Wave A — Cross-Tenant API Test Evidence
+ 
+ | Field | Value |
+ |-------|--------|
+-| **Test file** | `apps/api/src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts` |
+-| **Layer** | Nest HTTP (TestingModule) + PermissionGuard + PlatformPermissionGuard override + real services + PostgreSQL |
++| **Suite** | `clinical-catalog.cross-tenant.api.postgres.integration.spec.ts` |
++| **Result** | PASS (includes PA-03 + PA-06 + PA-07/08 API cases) |
+ 
+-## Command
++## PA-06 additions
+ 
+ ```text
+-ALLOW_TEST_DATABASE_RESET=true
+-RUN_PLATFORM_DB_SECURITY=true
+-npx jest --config jest.integration.config.cjs --runInBand src/modules/clinical-catalog/tests/clinical-catalog.cross-tenant.api.postgres.integration.spec.ts
++foreign branch config effective lookup denied = PASS
++foreign branch price effective lookup denied = PASS
++own branch without override → tenant default config = PASS
++own branch without override → tenant default price = PASS
+ ```
+ 
+-```text
+-exit code = 0
+-result = PASS
+-tests = 16 passed
+-duration ≈ 9.8 s
+-```
+-
+-## Negative cases
+-
+-| Case | Result | HTTP |
+-|------|--------|------|
+-| tenant mutate SYSTEM_CANONICAL | PASS | 403/422 |
+-| tenant call platform admin | PASS | 401/403 |
+-| cross-tenant custom read | PASS | 403/404 |
+-| cross-tenant custom update | PASS | 403/404/422 |
+-| cross-tenant custom publish | PASS | 403/404/422 |
+-| cross-tenant custom deprecate | PASS | 403/404/422 |
+-| cross-tenant config list leakage | PASS | 200 without B rows |
+-| cross-tenant config enable | PASS | 403/404 |
+-| foreign custom service config link | PASS | 403/404/422 |
+-| foreign branch config | PASS | 403/404/422 |
+-| cross-tenant price history | PASS | 200 without B draft |
+-| cross-tenant price draft | PASS | 403/404/422 |
+-| cross-tenant price publish | PASS | 403/404/422 |
+-| foreign branch price | PASS | 403/404/422 |
+-| platform bypass tenant isolation | PASS | deny + no leaked price row |
+-| positive control Tenant B read own | PASS | 200 |
++## PA-07 / PA-08 API additions
+ 
+ ```text
+-cross-tenant API tests = PASS
+-WAVE-A-PA-03 = CLOSED
++lookup without commercial dimensions rejected = PASS
++negative unitPrice rejected = PASS
++invalid currency / pricingUnit rejected = PASS
+ ```
+diff --git a/docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md b/docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md
+index b09fe02..c899549 100644
+--- a/docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md
++++ b/docs/PHASE_48_WAVE_A_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md
+@@ -1,38 +1,34 @@
+-# Phase 48 Wave A — External Production Acceptance Precheck (updated)
++# Phase 48 Wave A — External Production Acceptance Precheck (Final Two-Blocker)
+ 
+ | Field | Value |
+ |-------|--------|
+-| **Evidence HEAD baseline** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` |
+-| **Blocker-closure worktree** | uncommitted tests/evidence (no additional commit/push) |
++| **Branch** | `cursor/phase48-wave-a-foundation` |
++| **Committed HEAD** | `089a3096d0ad8f0183136cd1aa0b4d859dfc7f9b` |
++| **Worktree** | Uncommitted PA-04 + EVIDENCE-PA-01 closure |
+ 
+ ```text
+-WAVE-A-PA-01 = CLOSED
+-permission validation global = FAIL
+-permission failure baseline-proven = YES
+-Wave A permission regression = NO
+-Wave A permission routes validation = PASS
+-classification = PRE-EXISTING BASELINE DEBT — NOT WAVE A BLOCKER
+-(causality = Category C surface expansion of pre-existing manage-action convention; root validator/actions mismatch existed at 416c098^ with 61 manage ops and no api.clinical-catalog)
+-
+-WAVE-A-PA-02 = CLOSED
+-true concurrent PriceVersion publish test = PASS
+-
+-WAVE-A-PA-03 = CLOSED
+-cross-tenant API tests = PASS
+-
+-platform bypass tenant-isolation test = PASS
+-commercial lock key identity matches overlap identity = YES
+-
+-governance early-commit deviation recorded = YES
+-additional commit created = NO
+-push performed = NO
++PA-01 = CLOSED
++PA-02 = CLOSED
++PA-03 = CLOSED
++PA-04 = CLOSED
++PA-05 = CLOSED
++PA-06 = CLOSED
++PA-07 = CLOSED
++PA-08 = CLOSED
++EVIDENCE-PA-01 = CLOSED
++
++PA-04 published commercial row mutation count = 0
++PA-04 persisted ACTIVE overlap count = 0
++PA-04 future transition gap = NO
++PA-04 historical lookup = PASS
++PA-04 concurrency = PASS
++
++bundle duplicate nested path count = 0
++bundle stale canonical copy count = 0
++bundle missing manifest file count = 0
++bundle SHA mismatch count = 0
++critical SHA mismatch count = 0
++final ZIP hash verification = PASS
+ 
+ Production Acceptance blocker count = 0
+ ```
+-
+-## Supporting evidence docs
+-
+-- `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`
+-- `docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md`
+-- `docs/PHASE_48_WAVE_A_CROSS_TENANT_API_TEST_EVIDENCE.md`
+-- `apps/api/scripts/validate-phase48-wave-a-permission-routes.mjs`
+diff --git a/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md b/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md
+index f31cebf..00f1e1d 100644
+--- a/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md
++++ b/docs/PHASE_48_WAVE_A_EXTERNAL_REVIEW_TEST_EVIDENCE.md
+@@ -1,28 +1,36 @@
+-# Phase 48 Wave A — External Review Test Evidence (blocker closure update)
+-
+-| Field | Value |
+-|-------|--------|
+-| **Captured** | 2026-08-14 blocker-closure run |
+-| **Branch HEAD** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` |
+-| **Worktree** | uncommitted PA-01/02/03 closure artifacts |
+-
+-## Commands
+-
+-| Command | Exit | Result | Notes |
+-|---------|------|--------|-------|
+-| `npx prisma validate` | 0 | PASS | schema valid |
+-| `npx jest --runInBand ...integrity.unit.spec.ts ...price.unit.spec.ts` | 0 | PASS | 15 tests |
+-| `node scripts/validate-phase48-wave-a-clean.mjs` | 0 | PASS | CLEAN_VALIDATOR_PASSED |
+-| `node scripts/validate-phase48-wave-a-upgrade.mjs` | 0 | PASS | UPGRADE_VALIDATOR_PASSED |
+-| `npm run validate:permission-matrix` | 1 | FAIL | pre-existing manage-action mismatch |
+-| `node scripts/validate-phase48-wave-a-permission-routes.mjs` | 0 | PASS | Wave A routes synced |
+-| `jest --config jest.integration.config.cjs ...clinical-price.concurrency...` | 0 | PASS | 7 tests |
+-| `jest --config jest.integration.config.cjs ...cross-tenant.api...` | 0 | PASS | 16 tests |
+-| Super Admin `clinical-catalog.spec.tsx` | 0 | PASS | 3 tests |
+-| Clinic `clinical-catalog.spec.tsx` | 0 | PASS | 2 tests |
++# Phase 48 Wave A — External Review Test Evidence (Final Two-Blocker)
+ 
+ ```text
+-true concurrent PriceVersion publish test = PASS
+-cross-tenant API tests = PASS
+-Step 29 / Step 28 Case C / Phase 49 = NOT RUN
++command = npx prisma validate
++result = PASS
++
++command = node scripts/validate-phase48-wave-a-clean.mjs
++result = PASS
++
++command = node scripts/validate-phase48-wave-a-upgrade.mjs
++result = PASS
++
++command = node scripts/validate-phase48-wave-a-permission-routes.mjs
++result = PASS
++
++command = jest clinical-catalog unit suites (price + config + integrity)
++result = PASS (25 tests)
++
++command = jest clinical-price.concurrency.postgres.integration.spec
++result = PASS (10 tests)
++
++command = jest clinical-catalog.cross-tenant.api.postgres.integration.spec
++result = PASS (28 tests)
++
++command = clinic-dashboard vitest clinical-catalog
++result = PASS (11 tests)
++
++command = super-admin vitest clinical-catalog.spec.tsx
++result = PASS (3 tests)
++
++command = npm run validate:permission-matrix -w booking-system-api
++result = FAIL (pre-existing manage baseline debt; PA-01 CLOSED via targeted routes validator)
++
++command = node scripts/package-phase48-wave-a-external-review.mjs
++result = PASS (see FINAL_BUNDLE_HASH_VERIFICATION.md)
+ ```
+diff --git a/docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md b/docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md
+index 8e9f8a3..baa7527 100644
+--- a/docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md
++++ b/docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md
+@@ -4,50 +4,52 @@
+ |-------|--------|
+ | **Documented** | 2026-08-14 |
+ | **Branch** | `cursor/phase48-wave-a-foundation` |
+-| **Current HEAD at blocker-closure evidence** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` |
++| **HEAD at PA-04..08 correction start** | `089a3096d0ad8f0183136cd1aa0b4d859dfc7f9b` |
+ 
+ ## Deviation
+ 
+ ```text
+-deviation = implementation committed before external Production Acceptance
++deviation = implementation committed/pushed before external Production Acceptance
+ ```
+ 
+-Prior Wave A implementation workflow required:
++### Original intended workflow
+ 
+ ```text
+-commit created = NO
+-push performed = NO
+-```
+-
+-Actual Wave A implementation commit:
+-
+-```text
+-commit = 416c0981728a8cc2c88494352e1ec4413727efdf
+-message = feat(phase48): implement Wave A clinical catalog foundation
++commit before external PA = prohibited
++push before external PA = prohibited
+ ```
+ 
+-Subsequent docs/evidence commits on the same branch (also before formal external Production Acceptance):
++### Actual history (verified; not rewritten)
+ 
+ ```text
++416c098 feat(phase48): implement Wave A clinical catalog foundation
+ 90c813a docs(phase48): add Wave A external Production Acceptance review package
+ f91478e docs(phase48): add Wave A QA raw command evidence
++089a309 test(phase48): close Wave A Production Acceptance blockers PA-01/02/03
+ ```
+ 
+-Verified remote tracking (local):
++Verified remote tracking:
+ 
+ ```text
+ branch tracks origin/cursor/phase48-wave-a-foundation
+-push status = already pushed historically (not performed in blocker-closure task)
++historical pushes occurred (including 089a309)
+ ```
+ 
+-## Corrective controls
++## Current narrow correction task (PA-04..PA-08)
+ 
+ ```text
++additional commit created = NO
++push performed = NO
+ history rewritten = NO
+ amend used = NO
+ force-push = NO
+-impact on technical correctness = NONE (implementation content unchanged by this record)
+-corrective control = no additional commit/push until external Production Acceptance
+ ```
+ 
+-This blocker-closure task leaves all new tests/evidence **uncommitted** for external review.
++All PA-04..PA-08 implementation + evidence remain **uncommitted** for external review.
++
++## Corrective controls
++
++```text
++impact on technical correctness = NONE (deviation is process chronology only)
++corrective control = leave current PA-04..08 corrections uncommitted until external review instructs otherwise
++```
+diff --git a/docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md b/docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md
+index dfff0c4..40bb86d 100644
+--- a/docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md
++++ b/docs/PHASE_48_WAVE_A_IMPLEMENTATION_REPORT.md
+@@ -5,11 +5,12 @@
+ | **Wave** | A — Foundation |
+ | **Scope** | P0-01, P0-07, P1-01 / AR-01, AR-02, AR-03, AR-04, AR-18 |
+ | **Branch** | `cursor/phase48-wave-a-foundation` |
+-| **HEAD** | Implementation commit `416c098`; branch tip `f91478e` (+ uncommitted PA-01/02/03 closure worktree) |
+-| **Status** | **COMPLETE FOR WAVE A** — Production Acceptance blockers PA-01/02/03 closed in evidence; formal external acceptance PENDING |
++| **HEAD (committed)** | `089a309` (includes PA-01/02/03 closure). Implementation commit `416c098`. |
++| **Worktree** | Uncommitted PA-04..PA-08 narrow Production Acceptance corrections |
++| **Status** | **COMPLETE FOR WAVE A IMPLEMENTATION** — PA-04..PA-08 closed in worktree evidence; formal external acceptance PENDING |
+ | **Phase 49** | NOT AUTHORIZED |
+ | **Step 30** | NOT CREATED |
+-| **Governance note** | Early implementation commit `416c098` occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. Blocker-closure changes left uncommitted. |
++| **Governance note** | Early implementation commit/push occurred before external Production Acceptance — see `docs/PHASE_48_WAVE_A_GOVERNANCE_DEVIATION.md`. |
+ 
+ ---
+ 
+@@ -248,7 +249,7 @@ clinic dashboard UI tests = PASS
+ 
+ ---
+ 
+-## 13. Scope integrity
++## 13. Scope integrity / governance chronology
+ 
+ ```text
+ Wave B–I implementation = 0
+@@ -257,8 +258,20 @@ Step 30 created = NO
+ Step 29 runner rerun = NO
+ Step 28 Case C rerun = NO
+ production database touched = NO
+-commit created = NO
+-push performed = NO
++
++Original implementation workflow intended:
++  commit before external PA = prohibited
++  push before external PA = prohibited
++
++Actual history (not rewritten):
++  implementation commit = 416c098
++  later docs/evidence commits = 90c813a, f91478e, 089a309
++  push status = historically pushed to origin/cursor/phase48-wave-a-foundation
++
++Current PA-04..PA-08 correction task:
++  additional commit created = NO
++  push performed = NO
++  history rewritten = NO
+ ```
+ 
+ ---
+diff --git a/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md b/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md
+index fae8bf9..4cd7f1c 100644
+--- a/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md
++++ b/docs/PHASE_48_WAVE_A_PRICE_CONCURRENCY_TEST_EVIDENCE.md
+@@ -1,68 +1,30 @@
+-# Phase 48 Wave A — Price Concurrency Test Evidence (WAVE-A-PA-02)
++# Phase 48 Wave A — Price Concurrency Test Evidence
+ 
+ | Field | Value |
+ |-------|--------|
+-| **HEAD (evidence run)** | `f91478e9d658a709eaf09f1699c3d72384ce3b4a` (+ uncommitted test files) |
+-| **Test file** | `apps/api/src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts` |
+-| **Harness** | `apps/api/src/modules/clinical-catalog/tests/clinical-catalog-db.harness.ts` |
++| **Suite** | `clinical-price.concurrency.postgres.integration.spec.ts` |
++| **Status** | PASS (PA-02 + PA-04 concurrency) |
+ 
+ ## Command
+ 
+ ```text
+-ALLOW_TEST_DATABASE_RESET=true
+-RUN_PLATFORM_DB_SECURITY=true
+-npx jest --config jest.integration.config.cjs --runInBand src/modules/clinical-catalog/tests/clinical-price.concurrency.postgres.integration.spec.ts
++ALLOW_TEST_DATABASE_RESET=true RUN_PLATFORM_DB_SECURITY=true \
++npx jest --runInBand --testPathIgnorePatterns=[] \
++  --testPathPattern=clinical-price.concurrency.postgres.integration.spec
+ ```
+ 
+-```text
+-exit code = 0
+-result = PASS
+-tests = 7 passed
+-duration ≈ 10.8 s
+-```
+-
+-## Database
+-
+-```text
+-postgresql://booking:booking_test@localhost:5433/booking_test
+-real PostgreSQL = YES
+-real Prisma $transaction = YES
+-pg_advisory_xact_lock mocked = NO
+-overlap query mocked = NO
+-```
+-
+-## Publish path
++## Result
+ 
+ ```text
+-ClinicalPriceVersionService.publish
+-→ withPlatformBypass ($transaction)
+-→ pg_advisory_xact_lock(hashtext(commercialKey))
+-→ overlap re-check
+-→ supersede overlapping ACTIVE (when effectiveFrom > prior)
+-→ activate DRAFT
++Test Suites: 1 passed
++Tests:       10 passed
+ ```
+ 
+-## Cases
+-
+-| Case | Mechanism | Outcome |
+-|------|-----------|---------|
+-| A/B same draft double-publish | Promise.allSettled two publish(same id) | 1 fulfilled, 1 rejected; ACTIVE=1 |
+-| A/B concurrent createDraft+publish | barrier then Promise.allSettled | 1 winner; ACTIVE≤1 |
+-| A superseding after ACTIVE | concurrent create+publish later from | 1 ACTIVE non-overlapping |
+-| C branch-specific | double-publish same branch draft | ACTIVE branch=1, tenant default=0 |
+-| D different keys | concurrent publish two services | both succeed; ACTIVE each=1 |
+-| lock key identity | commercialLockKey | null branch→`default`; currency uppercased |
+-| same effectiveFrom overlap | publish against ACTIVE | ConflictError; ACTIVE remains 1 |
++## Coverage
+ 
+-## Simultaneous start mechanism
+-
+-```text
+-Promise.allSettled([...]) and barrier Promise release for createDraft+publish workers
+-```
+-
+-## Final assertion
+-
+-```text
+-true concurrent PriceVersion publish test = PASS
+-WAVE-A-PA-02 = CLOSED
+-```
++- concurrent double-publish same key → ≤1 ACTIVE
++- concurrent future schedule after ACTIVE → 1 SCHEDULED, prior ACTIVE immutable, ACTIVE overlap = 0
++- branch-specific commercial key concurrency
++- different commercial keys both succeed
++- PA-04 schedule + chain invariants
++- PA-07 commercial identity distinction

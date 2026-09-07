@@ -1,0 +1,35 @@
+GATE=R7
+START_UTC=2026-08-21T16:28:32.1710022Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=npx jest --config=jest.integration.config.cjs --runInBand --forceExit --testPathPattern=wave-f-round7.postgres.integration.spec
+---
+node.exe : PASS src/modules/workforce-commercials/tests/wave-f-round7.postgres.integration.spec.ts (12.769 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...c.ts (12.769 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Wave F Round 7 remediation (PostgreSQL)
+    ΓêÜ R7-A-T1/T2/T3/T4/T8 proportional package collected + idempotent replay (347 ms)
+    ΓêÜ R7-A-T5/T6/T7 multi-line proportion + multi-participant shares + refund basis (170 ms)
+    ΓêÜ R7-B-T1/T2/T5 invoice vs collected race ΓåÆ one open basis; no deadlock (161 ms)
+    ΓêÜ R7-B-T3/T4 concurrent duplicate collected + distinct partials serialize (231 ms)
+    ΓêÜ R7-B-T6 after complete reverse, alternative basis may post once (163 ms)
+    ΓêÜ R7-C-T1/T2/T3/T4 pinning: mismatch reject; same line ok; null pins once (212 ms)
+    ΓêÜ R7-C-T5/T6/T7/T8 correction lineage reuse; fake lineage reject; collected path same (246 ms)
+    ΓêÜ R7-D-T1/T8/T9 non-package COLLECTED correction + replay + refund current (173 ms)
+    ΓêÜ R7-D-T2/T3/T4/T5/T6/T7/T10 package COLLECTED correction invariants (289 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        13.011 s
+Ran all test suites matching /wave-f-round7.postgres.integration.spec/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?
+
+---
+END_UTC=2026-08-21T16:28:46.7444376Z
+EXIT=0
+STATUS=PASS

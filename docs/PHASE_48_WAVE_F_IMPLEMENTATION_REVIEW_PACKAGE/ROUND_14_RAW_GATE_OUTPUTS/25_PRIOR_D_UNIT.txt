@@ -1,0 +1,22 @@
+GATE=PRIOR_D_UNIT
+EXIT=0
+STATUS=PASS
+SUITES=2 passed, 2 total
+TESTS=14 passed, 14 total
+---
+node.exe : PASS src/modules/clinical-catalog/tests/pricing-unit-applicability.unit.spec.ts (5.436 s)
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/module...ec.ts (5.436 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/modules/dental/tests/wave-d-lab-transitions.unit.spec.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        5.793 s, estimated 6 s
+Ran all test suites matching /wave-d-lab-transitions|pricing-unit-applicability/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after 
+all tests finished?

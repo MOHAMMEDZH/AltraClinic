@@ -1136,8 +1136,9 @@ export class PlatformSubscriptionsService {
     id: string,
     body: { expectedRowVersion: number; reason: string },
     idempotencyKey?: string,
+    opts?: { provisioningAuthority?: boolean },
   ) {
-    return this.supersedeInternal(claims, id, body, 'subscription.supersede', idempotencyKey);
+    return this.supersedeInternal(claims, id, body, 'subscription.supersede', idempotencyKey, opts);
   }
 
   /**
@@ -1170,11 +1171,14 @@ export class PlatformSubscriptionsService {
     },
     operation: 'subscription.supersede' | 'subscription.renew',
     idempotencyKey?: string,
+    opts?: { provisioningAuthority?: boolean },
   ) {
-    const permissions = await this.permissionsFor(claims);
-    this.require(permissions, 'subscription.migrate');
-    await this.requireFreshStepUp(claims);
-    this.enforceRateLimit(claims.sub, 'highImpact');
+    if (!opts?.provisioningAuthority) {
+      const permissions = await this.permissionsFor(claims);
+      this.require(permissions, 'subscription.migrate');
+      await this.requireFreshStepUp(claims);
+      this.enforceRateLimit(claims.sub, 'highImpact');
+    }
     if (!body.reason?.trim()) {
       throw new BadRequestException({
         message: `${operation === 'subscription.renew' ? 'Renewal' : 'Supersede'} reason is required.`,

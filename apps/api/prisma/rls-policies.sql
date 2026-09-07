@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Row-Level Security Policies (auto-generated — do not edit by hand)
--- Generated: 2026-07-11T20:38:22.918Z
+-- Generated: 2026-08-14T19:53:22.282Z
 -- Run after every `prisma migrate deploy`: npm run db:rls:apply
 -- Requires session vars: app.current_tenant_id, app.platform_rls_bypass
 -- =============================================================================
@@ -316,6 +316,66 @@ DROP POLICY IF EXISTS tenant_update ON appointments;
 CREATE POLICY tenant_update ON appointments FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON appointments;
 CREATE POLICY tenant_delete ON appointments FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- AppointmentServiceSnapshotRevision → appointment_service_snapshot_revisions
+ALTER TABLE appointment_service_snapshot_revisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointment_service_snapshot_revisions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON appointment_service_snapshot_revisions;
+CREATE POLICY tenant_select ON appointment_service_snapshot_revisions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON appointment_service_snapshot_revisions;
+CREATE POLICY tenant_insert ON appointment_service_snapshot_revisions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON appointment_service_snapshot_revisions;
+CREATE POLICY tenant_update ON appointment_service_snapshot_revisions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON appointment_service_snapshot_revisions;
+CREATE POLICY tenant_delete ON appointment_service_snapshot_revisions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ProviderServiceEligibility → provider_service_eligibilities
+ALTER TABLE provider_service_eligibilities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_service_eligibilities FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON provider_service_eligibilities;
+CREATE POLICY tenant_select ON provider_service_eligibilities FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON provider_service_eligibilities;
+CREATE POLICY tenant_insert ON provider_service_eligibilities FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON provider_service_eligibilities;
+CREATE POLICY tenant_update ON provider_service_eligibilities FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON provider_service_eligibilities;
+CREATE POLICY tenant_delete ON provider_service_eligibilities FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- AppointmentResourceAllocation → appointment_resource_allocations
+ALTER TABLE appointment_resource_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointment_resource_allocations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON appointment_resource_allocations;
+CREATE POLICY tenant_select ON appointment_resource_allocations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON appointment_resource_allocations;
+CREATE POLICY tenant_insert ON appointment_resource_allocations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON appointment_resource_allocations;
+CREATE POLICY tenant_update ON appointment_resource_allocations FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON appointment_resource_allocations;
+CREATE POLICY tenant_delete ON appointment_resource_allocations FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PortalSchedulingIdempotencyLedger → portal_scheduling_idempotency_ledger
+ALTER TABLE portal_scheduling_idempotency_ledger ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_scheduling_idempotency_ledger FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON portal_scheduling_idempotency_ledger;
+CREATE POLICY tenant_select ON portal_scheduling_idempotency_ledger FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON portal_scheduling_idempotency_ledger;
+CREATE POLICY tenant_insert ON portal_scheduling_idempotency_ledger FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON portal_scheduling_idempotency_ledger;
+CREATE POLICY tenant_update ON portal_scheduling_idempotency_ledger FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON portal_scheduling_idempotency_ledger;
+CREATE POLICY tenant_delete ON portal_scheduling_idempotency_ledger FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ServiceResourceRequirement → service_resource_requirements
+ALTER TABLE service_resource_requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_resource_requirements FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON service_resource_requirements;
+CREATE POLICY tenant_select ON service_resource_requirements FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON service_resource_requirements;
+CREATE POLICY tenant_insert ON service_resource_requirements FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON service_resource_requirements;
+CREATE POLICY tenant_update ON service_resource_requirements FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON service_resource_requirements;
+CREATE POLICY tenant_delete ON service_resource_requirements FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
 -- AppointmentWaitlist → appointment_waitlist
 ALTER TABLE appointment_waitlist ENABLE ROW LEVEL SECURITY;
@@ -641,6 +701,7 @@ CREATE POLICY tenant_update ON inventory_items FOR UPDATE USING ("tenantId" = NU
 DROP POLICY IF EXISTS tenant_delete ON inventory_items;
 CREATE POLICY tenant_delete ON inventory_items FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
+-- InventoryUsageLedger → inventory_consumption_logs (evolved; table name preserved)
 -- InventoryConsumptionLog → inventory_consumption_logs
 ALTER TABLE inventory_consumption_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_consumption_logs FORCE ROW LEVEL SECURITY;
@@ -964,6 +1025,78 @@ DROP POLICY IF EXISTS tenant_update ON service_prices;
 CREATE POLICY tenant_update ON service_prices FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON service_prices;
 CREATE POLICY tenant_delete ON service_prices FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- CanonicalClinicalServiceDefinition → canonical_clinical_service_definitions
+ALTER TABLE canonical_clinical_service_definitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE canonical_clinical_service_definitions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON canonical_clinical_service_definitions;
+CREATE POLICY tenant_select ON canonical_clinical_service_definitions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON canonical_clinical_service_definitions;
+CREATE POLICY tenant_insert ON canonical_clinical_service_definitions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON canonical_clinical_service_definitions;
+CREATE POLICY tenant_update ON canonical_clinical_service_definitions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON canonical_clinical_service_definitions;
+CREATE POLICY tenant_delete ON canonical_clinical_service_definitions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- TenantServicePresentationOverride → tenant_service_presentation_overrides
+ALTER TABLE tenant_service_presentation_overrides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_service_presentation_overrides FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON tenant_service_presentation_overrides;
+CREATE POLICY tenant_select ON tenant_service_presentation_overrides FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON tenant_service_presentation_overrides;
+CREATE POLICY tenant_insert ON tenant_service_presentation_overrides FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON tenant_service_presentation_overrides;
+CREATE POLICY tenant_update ON tenant_service_presentation_overrides FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON tenant_service_presentation_overrides;
+CREATE POLICY tenant_delete ON tenant_service_presentation_overrides FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- TenantServiceConfiguration → tenant_service_configurations
+ALTER TABLE tenant_service_configurations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_service_configurations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON tenant_service_configurations;
+CREATE POLICY tenant_select ON tenant_service_configurations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON tenant_service_configurations;
+CREATE POLICY tenant_insert ON tenant_service_configurations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON tenant_service_configurations;
+CREATE POLICY tenant_update ON tenant_service_configurations FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON tenant_service_configurations;
+CREATE POLICY tenant_delete ON tenant_service_configurations FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ClinicalServicePriceVersion → clinical_service_price_versions
+ALTER TABLE clinical_service_price_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_service_price_versions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_service_price_versions;
+CREATE POLICY tenant_select ON clinical_service_price_versions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON clinical_service_price_versions;
+CREATE POLICY tenant_insert ON clinical_service_price_versions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON clinical_service_price_versions;
+CREATE POLICY tenant_update ON clinical_service_price_versions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON clinical_service_price_versions;
+CREATE POLICY tenant_delete ON clinical_service_price_versions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- LegacyClinicalServiceMapping → legacy_clinical_service_mappings
+ALTER TABLE legacy_clinical_service_mappings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE legacy_clinical_service_mappings FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON legacy_clinical_service_mappings;
+CREATE POLICY tenant_select ON legacy_clinical_service_mappings FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON legacy_clinical_service_mappings;
+CREATE POLICY tenant_insert ON legacy_clinical_service_mappings FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON legacy_clinical_service_mappings;
+CREATE POLICY tenant_update ON legacy_clinical_service_mappings FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON legacy_clinical_service_mappings;
+CREATE POLICY tenant_delete ON legacy_clinical_service_mappings FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- LegacyClinicalPriceMapping → legacy_clinical_price_mappings
+ALTER TABLE legacy_clinical_price_mappings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE legacy_clinical_price_mappings FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON legacy_clinical_price_mappings;
+CREATE POLICY tenant_select ON legacy_clinical_price_mappings FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON legacy_clinical_price_mappings;
+CREATE POLICY tenant_insert ON legacy_clinical_price_mappings FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON legacy_clinical_price_mappings;
+CREATE POLICY tenant_update ON legacy_clinical_price_mappings FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON legacy_clinical_price_mappings;
+CREATE POLICY tenant_delete ON legacy_clinical_price_mappings FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
 -- PaymentReceipt → payment_receipts
 ALTER TABLE payment_receipts ENABLE ROW LEVEL SECURITY;
@@ -1297,6 +1430,102 @@ CREATE POLICY tenant_update ON notification_saved_filters FOR UPDATE USING ("ten
 DROP POLICY IF EXISTS tenant_delete ON notification_saved_filters;
 CREATE POLICY tenant_delete ON notification_saved_filters FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
+-- NotificationIntent → notification_intents
+ALTER TABLE notification_intents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_intents FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_intents;
+CREATE POLICY tenant_select ON notification_intents FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_intents;
+CREATE POLICY tenant_insert ON notification_intents FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_intents;
+CREATE POLICY tenant_update ON notification_intents FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_intents;
+CREATE POLICY tenant_delete ON notification_intents FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- NotificationMessage → notification_messages
+ALTER TABLE notification_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_messages FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_messages;
+CREATE POLICY tenant_select ON notification_messages FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_messages;
+CREATE POLICY tenant_insert ON notification_messages FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_messages;
+CREATE POLICY tenant_update ON notification_messages FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_messages;
+CREATE POLICY tenant_delete ON notification_messages FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- DeliveryJob → notification_delivery_jobs
+ALTER TABLE notification_delivery_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_delivery_jobs FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_delivery_jobs;
+CREATE POLICY tenant_select ON notification_delivery_jobs FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_delivery_jobs;
+CREATE POLICY tenant_insert ON notification_delivery_jobs FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_delivery_jobs;
+CREATE POLICY tenant_update ON notification_delivery_jobs FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_delivery_jobs;
+CREATE POLICY tenant_delete ON notification_delivery_jobs FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- DeliveryAttempt → notification_delivery_attempts
+ALTER TABLE notification_delivery_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_delivery_attempts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_delivery_attempts;
+CREATE POLICY tenant_select ON notification_delivery_attempts FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_delivery_attempts;
+CREATE POLICY tenant_insert ON notification_delivery_attempts FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_delivery_attempts;
+CREATE POLICY tenant_update ON notification_delivery_attempts FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_delivery_attempts;
+CREATE POLICY tenant_delete ON notification_delivery_attempts FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- NotificationReceipt → notification_receipts
+ALTER TABLE notification_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_receipts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_receipts;
+CREATE POLICY tenant_select ON notification_receipts FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_receipts;
+CREATE POLICY tenant_insert ON notification_receipts FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_receipts;
+CREATE POLICY tenant_update ON notification_receipts FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_receipts;
+CREATE POLICY tenant_delete ON notification_receipts FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- NotificationDeadLetter → notification_dead_letters
+ALTER TABLE notification_dead_letters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_dead_letters FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_dead_letters;
+CREATE POLICY tenant_select ON notification_dead_letters FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_dead_letters;
+CREATE POLICY tenant_insert ON notification_dead_letters FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_dead_letters;
+CREATE POLICY tenant_update ON notification_dead_letters FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_dead_letters;
+CREATE POLICY tenant_delete ON notification_dead_letters FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- NotificationConsentDecision → notification_consent_decisions
+ALTER TABLE notification_consent_decisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_consent_decisions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_consent_decisions;
+CREATE POLICY tenant_select ON notification_consent_decisions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_consent_decisions;
+CREATE POLICY tenant_insert ON notification_consent_decisions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_consent_decisions;
+CREATE POLICY tenant_update ON notification_consent_decisions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_consent_decisions;
+CREATE POLICY tenant_delete ON notification_consent_decisions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- NotificationPreferenceSnapshot → notification_preference_snapshots
+ALTER TABLE notification_preference_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_preference_snapshots FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON notification_preference_snapshots;
+CREATE POLICY tenant_select ON notification_preference_snapshots FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON notification_preference_snapshots;
+CREATE POLICY tenant_insert ON notification_preference_snapshots FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON notification_preference_snapshots;
+CREATE POLICY tenant_update ON notification_preference_snapshots FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON notification_preference_snapshots;
+CREATE POLICY tenant_delete ON notification_preference_snapshots FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
 -- AuditEntry → audit_entries
 ALTER TABLE audit_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_entries FORCE ROW LEVEL SECURITY;
@@ -1308,6 +1537,54 @@ DROP POLICY IF EXISTS tenant_update ON audit_entries;
 CREATE POLICY tenant_update ON audit_entries FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON audit_entries;
 CREATE POLICY tenant_delete ON audit_entries FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- LicenseAuditEvent → license_audit_events
+ALTER TABLE license_audit_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE license_audit_events FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON license_audit_events;
+CREATE POLICY tenant_select ON license_audit_events FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON license_audit_events;
+CREATE POLICY tenant_insert ON license_audit_events FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON license_audit_events;
+CREATE POLICY tenant_update ON license_audit_events FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON license_audit_events;
+CREATE POLICY tenant_delete ON license_audit_events FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- TenantLicenseLifecycleState → tenant_license_lifecycle_states
+ALTER TABLE tenant_license_lifecycle_states ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_license_lifecycle_states FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON tenant_license_lifecycle_states;
+CREATE POLICY tenant_select ON tenant_license_lifecycle_states FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON tenant_license_lifecycle_states;
+CREATE POLICY tenant_insert ON tenant_license_lifecycle_states FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON tenant_license_lifecycle_states;
+CREATE POLICY tenant_update ON tenant_license_lifecycle_states FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON tenant_license_lifecycle_states;
+CREATE POLICY tenant_delete ON tenant_license_lifecycle_states FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- LicenseLifecycleTransition → license_lifecycle_transitions
+ALTER TABLE license_lifecycle_transitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE license_lifecycle_transitions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON license_lifecycle_transitions;
+CREATE POLICY tenant_select ON license_lifecycle_transitions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON license_lifecycle_transitions;
+CREATE POLICY tenant_insert ON license_lifecycle_transitions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON license_lifecycle_transitions;
+CREATE POLICY tenant_update ON license_lifecycle_transitions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON license_lifecycle_transitions;
+CREATE POLICY tenant_delete ON license_lifecycle_transitions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- CommunicationDispatchLedger → communication_dispatch_ledger
+ALTER TABLE communication_dispatch_ledger ENABLE ROW LEVEL SECURITY;
+ALTER TABLE communication_dispatch_ledger FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON communication_dispatch_ledger;
+CREATE POLICY tenant_select ON communication_dispatch_ledger FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON communication_dispatch_ledger;
+CREATE POLICY tenant_insert ON communication_dispatch_ledger FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON communication_dispatch_ledger;
+CREATE POLICY tenant_update ON communication_dispatch_ledger FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON communication_dispatch_ledger;
+CREATE POLICY tenant_delete ON communication_dispatch_ledger FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 
 -- Workflow → workflows
 ALTER TABLE workflows ENABLE ROW LEVEL SECURITY;
@@ -1532,3 +1809,565 @@ DROP POLICY IF EXISTS tenant_update ON outbox_events;
 CREATE POLICY tenant_update ON outbox_events FOR UPDATE USING ("tenantId" IS NULL OR "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" IS NULL OR "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
 DROP POLICY IF EXISTS tenant_delete ON outbox_events;
 CREATE POLICY tenant_delete ON outbox_events FOR DELETE USING ("tenantId" IS NULL OR "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ImportExportJob → import_export_jobs
+ALTER TABLE import_export_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE import_export_jobs FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON import_export_jobs;
+CREATE POLICY tenant_select ON import_export_jobs FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON import_export_jobs;
+CREATE POLICY tenant_insert ON import_export_jobs FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON import_export_jobs;
+CREATE POLICY tenant_update ON import_export_jobs FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON import_export_jobs;
+CREATE POLICY tenant_delete ON import_export_jobs FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ImportExportDeadLetter → import_export_dead_letters
+ALTER TABLE import_export_dead_letters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE import_export_dead_letters FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON import_export_dead_letters;
+CREATE POLICY tenant_select ON import_export_dead_letters FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON import_export_dead_letters;
+CREATE POLICY tenant_insert ON import_export_dead_letters FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON import_export_dead_letters;
+CREATE POLICY tenant_update ON import_export_dead_letters FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON import_export_dead_letters;
+CREATE POLICY tenant_delete ON import_export_dead_letters FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- ImportExportArtifact → import_export_artifacts
+ALTER TABLE import_export_artifacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE import_export_artifacts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON import_export_artifacts;
+CREATE POLICY tenant_select ON import_export_artifacts FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON import_export_artifacts;
+CREATE POLICY tenant_insert ON import_export_artifacts FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON import_export_artifacts;
+CREATE POLICY tenant_update ON import_export_artifacts FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON import_export_artifacts;
+CREATE POLICY tenant_delete ON import_export_artifacts FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationServiceAccount → integration_service_accounts
+ALTER TABLE integration_service_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_service_accounts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_service_accounts;
+CREATE POLICY tenant_select ON integration_service_accounts FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_service_accounts;
+CREATE POLICY tenant_insert ON integration_service_accounts FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_service_accounts;
+CREATE POLICY tenant_update ON integration_service_accounts FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_service_accounts;
+CREATE POLICY tenant_delete ON integration_service_accounts FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationApiCredential → integration_api_credentials
+ALTER TABLE integration_api_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_api_credentials FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_api_credentials;
+CREATE POLICY tenant_select ON integration_api_credentials FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_api_credentials;
+CREATE POLICY tenant_insert ON integration_api_credentials FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_api_credentials;
+CREATE POLICY tenant_update ON integration_api_credentials FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_api_credentials;
+CREATE POLICY tenant_delete ON integration_api_credentials FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationProviderRecord → integration_providers
+ALTER TABLE integration_providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_providers FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_providers;
+CREATE POLICY tenant_select ON integration_providers FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_providers;
+CREATE POLICY tenant_insert ON integration_providers FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_providers;
+CREATE POLICY tenant_update ON integration_providers FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_providers;
+CREATE POLICY tenant_delete ON integration_providers FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationWebhookSubscription → integration_webhook_subscriptions
+ALTER TABLE integration_webhook_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_webhook_subscriptions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_webhook_subscriptions;
+CREATE POLICY tenant_select ON integration_webhook_subscriptions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_webhook_subscriptions;
+CREATE POLICY tenant_insert ON integration_webhook_subscriptions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_webhook_subscriptions;
+CREATE POLICY tenant_update ON integration_webhook_subscriptions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_webhook_subscriptions;
+CREATE POLICY tenant_delete ON integration_webhook_subscriptions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationWebhookSecret → integration_webhook_secrets
+ALTER TABLE integration_webhook_secrets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_webhook_secrets FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_webhook_secrets;
+CREATE POLICY tenant_select ON integration_webhook_secrets FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_webhook_secrets;
+CREATE POLICY tenant_insert ON integration_webhook_secrets FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_webhook_secrets;
+CREATE POLICY tenant_update ON integration_webhook_secrets FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_webhook_secrets;
+CREATE POLICY tenant_delete ON integration_webhook_secrets FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationWebhookDelivery → integration_webhook_deliveries
+ALTER TABLE integration_webhook_deliveries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_webhook_deliveries FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_webhook_deliveries;
+CREATE POLICY tenant_select ON integration_webhook_deliveries FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_webhook_deliveries;
+CREATE POLICY tenant_insert ON integration_webhook_deliveries FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_webhook_deliveries;
+CREATE POLICY tenant_update ON integration_webhook_deliveries FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_webhook_deliveries;
+CREATE POLICY tenant_delete ON integration_webhook_deliveries FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationWebhookAttempt → integration_webhook_attempts
+ALTER TABLE integration_webhook_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_webhook_attempts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_webhook_attempts;
+CREATE POLICY tenant_select ON integration_webhook_attempts FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_webhook_attempts;
+CREATE POLICY tenant_insert ON integration_webhook_attempts FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_webhook_attempts;
+CREATE POLICY tenant_update ON integration_webhook_attempts FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_webhook_attempts;
+CREATE POLICY tenant_delete ON integration_webhook_attempts FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationQuotaPolicy → integration_quota_policies
+ALTER TABLE integration_quota_policies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_quota_policies FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_quota_policies;
+CREATE POLICY tenant_select ON integration_quota_policies FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_quota_policies;
+CREATE POLICY tenant_insert ON integration_quota_policies FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_quota_policies;
+CREATE POLICY tenant_update ON integration_quota_policies FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_quota_policies;
+CREATE POLICY tenant_delete ON integration_quota_policies FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationUsageCounter → integration_usage_counters
+ALTER TABLE integration_usage_counters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_usage_counters FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_usage_counters;
+CREATE POLICY tenant_select ON integration_usage_counters FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_usage_counters;
+CREATE POLICY tenant_insert ON integration_usage_counters FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_usage_counters;
+CREATE POLICY tenant_update ON integration_usage_counters FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_usage_counters;
+CREATE POLICY tenant_delete ON integration_usage_counters FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- IntegrationGatewayStat → integration_gateway_stats
+ALTER TABLE integration_gateway_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_gateway_stats FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON integration_gateway_stats;
+CREATE POLICY tenant_select ON integration_gateway_stats FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON integration_gateway_stats;
+CREATE POLICY tenant_insert ON integration_gateway_stats FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON integration_gateway_stats;
+CREATE POLICY tenant_update ON integration_gateway_stats FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON integration_gateway_stats;
+CREATE POLICY tenant_delete ON integration_gateway_stats FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformUsageObservation → platform_usage_observations
+ALTER TABLE platform_usage_observations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_usage_observations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_usage_observations;
+CREATE POLICY tenant_select ON platform_usage_observations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_usage_observations;
+CREATE POLICY tenant_insert ON platform_usage_observations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_usage_observations;
+CREATE POLICY tenant_update ON platform_usage_observations FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_usage_observations;
+CREATE POLICY tenant_delete ON platform_usage_observations FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformUsageCounter → platform_usage_counters
+ALTER TABLE platform_usage_counters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_usage_counters FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_usage_counters;
+CREATE POLICY tenant_select ON platform_usage_counters FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_usage_counters;
+CREATE POLICY tenant_insert ON platform_usage_counters FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_usage_counters;
+CREATE POLICY tenant_update ON platform_usage_counters FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_usage_counters;
+CREATE POLICY tenant_delete ON platform_usage_counters FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformUsageReconciliationCheckpoint → platform_usage_reconciliation_checkpoints
+ALTER TABLE platform_usage_reconciliation_checkpoints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_usage_reconciliation_checkpoints FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_usage_reconciliation_checkpoints;
+CREATE POLICY tenant_select ON platform_usage_reconciliation_checkpoints FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_usage_reconciliation_checkpoints;
+CREATE POLICY tenant_insert ON platform_usage_reconciliation_checkpoints FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_usage_reconciliation_checkpoints;
+CREATE POLICY tenant_update ON platform_usage_reconciliation_checkpoints FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_usage_reconciliation_checkpoints;
+CREATE POLICY tenant_delete ON platform_usage_reconciliation_checkpoints FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformUsageIdempotencyRecord → platform_usage_idempotency
+ALTER TABLE platform_usage_idempotency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_usage_idempotency FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_usage_idempotency;
+CREATE POLICY tenant_select ON platform_usage_idempotency FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_usage_idempotency;
+CREATE POLICY tenant_insert ON platform_usage_idempotency FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_usage_idempotency;
+CREATE POLICY tenant_update ON platform_usage_idempotency FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_usage_idempotency;
+CREATE POLICY tenant_delete ON platform_usage_idempotency FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformTenantProvisioningRequest → platform_tenant_provisioning_requests
+ALTER TABLE platform_tenant_provisioning_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_tenant_provisioning_requests FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_tenant_provisioning_requests;
+CREATE POLICY tenant_select ON platform_tenant_provisioning_requests FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_tenant_provisioning_requests;
+CREATE POLICY tenant_insert ON platform_tenant_provisioning_requests FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_tenant_provisioning_requests;
+CREATE POLICY tenant_update ON platform_tenant_provisioning_requests FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_tenant_provisioning_requests;
+CREATE POLICY tenant_delete ON platform_tenant_provisioning_requests FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformTenantLifecycleRequest → platform_tenant_lifecycle_requests
+ALTER TABLE platform_tenant_lifecycle_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_tenant_lifecycle_requests FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_tenant_lifecycle_requests;
+CREATE POLICY tenant_select ON platform_tenant_lifecycle_requests FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_tenant_lifecycle_requests;
+CREATE POLICY tenant_insert ON platform_tenant_lifecycle_requests FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_tenant_lifecycle_requests;
+CREATE POLICY tenant_update ON platform_tenant_lifecycle_requests FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_tenant_lifecycle_requests;
+CREATE POLICY tenant_delete ON platform_tenant_lifecycle_requests FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- PlatformFeatureFlagTarget → platform_feature_flag_targets
+ALTER TABLE platform_feature_flag_targets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_feature_flag_targets FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON platform_feature_flag_targets;
+CREATE POLICY tenant_select ON platform_feature_flag_targets FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON platform_feature_flag_targets;
+CREATE POLICY tenant_insert ON platform_feature_flag_targets FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON platform_feature_flag_targets;
+CREATE POLICY tenant_update ON platform_feature_flag_targets FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON platform_feature_flag_targets;
+CREATE POLICY tenant_delete ON platform_feature_flag_targets FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- =============================================================================
+-- Phase 48 Wave C — Clinical forms + injectable usage RLS
+-- =============================================================================
+
+-- InjectableUsageDetail → injectable_usage_details (via parent usage ledger tenant)
+ALTER TABLE injectable_usage_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE injectable_usage_details FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON injectable_usage_details;
+CREATE POLICY tenant_select ON injectable_usage_details FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM inventory_consumption_logs u
+    WHERE u.id = injectable_usage_details."usageLedgerId"
+      AND (u."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_insert ON injectable_usage_details;
+CREATE POLICY tenant_insert ON injectable_usage_details FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM inventory_consumption_logs u
+    WHERE u.id = injectable_usage_details."usageLedgerId"
+      AND (u."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_update ON injectable_usage_details;
+CREATE POLICY tenant_update ON injectable_usage_details FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON injectable_usage_details;
+CREATE POLICY tenant_delete ON injectable_usage_details FOR DELETE USING (false);
+
+ALTER TABLE clinical_form_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_form_templates FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_form_templates;
+CREATE POLICY tenant_select ON clinical_form_templates FOR SELECT USING (
+  "tenantId" IS NULL
+  OR "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_insert ON clinical_form_templates;
+CREATE POLICY tenant_insert ON clinical_form_templates FOR INSERT WITH CHECK (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_update ON clinical_form_templates;
+CREATE POLICY tenant_update ON clinical_form_templates FOR UPDATE USING (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+) WITH CHECK (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+DROP POLICY IF EXISTS tenant_delete ON clinical_form_templates;
+CREATE POLICY tenant_delete ON clinical_form_templates FOR DELETE USING (
+  (
+    "tenantId" IS NOT NULL
+    AND "tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+  )
+  OR current_setting('app.platform_rls_bypass', true) = 'true'
+);
+
+ALTER TABLE clinical_form_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_form_versions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_form_versions;
+CREATE POLICY tenant_select ON clinical_form_versions FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (t."tenantId" IS NULL
+           OR t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+           OR current_setting('app.platform_rls_bypass', true) = 'true')
+  )
+);
+DROP POLICY IF EXISTS tenant_insert ON clinical_form_versions;
+CREATE POLICY tenant_insert ON clinical_form_versions FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+DROP POLICY IF EXISTS tenant_update ON clinical_form_versions;
+CREATE POLICY tenant_update ON clinical_form_versions FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+) WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+DROP POLICY IF EXISTS tenant_delete ON clinical_form_versions;
+CREATE POLICY tenant_delete ON clinical_form_versions FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM clinical_form_templates t
+    WHERE t.id = clinical_form_versions."templateId"
+      AND (
+        (
+          t."tenantId" IS NOT NULL
+          AND t."tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        )
+        OR current_setting('app.platform_rls_bypass', true) = 'true'
+      )
+  )
+);
+
+ALTER TABLE patient_form_instances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE patient_form_instances FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON patient_form_instances;
+CREATE POLICY tenant_select ON patient_form_instances FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON patient_form_instances;
+CREATE POLICY tenant_insert ON patient_form_instances FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON patient_form_instances;
+CREATE POLICY tenant_update ON patient_form_instances FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON patient_form_instances;
+CREATE POLICY tenant_delete ON patient_form_instances FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE clinical_service_form_requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_service_form_requirements FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON clinical_service_form_requirements;
+CREATE POLICY tenant_select ON clinical_service_form_requirements FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON clinical_service_form_requirements;
+CREATE POLICY tenant_insert ON clinical_service_form_requirements FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON clinical_service_form_requirements;
+CREATE POLICY tenant_update ON clinical_service_form_requirements FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON clinical_service_form_requirements;
+CREATE POLICY tenant_delete ON clinical_service_form_requirements FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- =============================================================================
+-- Phase 48 Wave D — Dental integration RLS
+-- =============================================================================
+ALTER TABLE treatment_plan_item_appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE treatment_plan_item_appointments FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON treatment_plan_item_appointments;
+CREATE POLICY tenant_select ON treatment_plan_item_appointments FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON treatment_plan_item_appointments;
+CREATE POLICY tenant_insert ON treatment_plan_item_appointments FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON treatment_plan_item_appointments;
+CREATE POLICY tenant_update ON treatment_plan_item_appointments FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON treatment_plan_item_appointments;
+CREATE POLICY tenant_delete ON treatment_plan_item_appointments FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE dental_lab_cases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dental_lab_cases FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON dental_lab_cases;
+CREATE POLICY tenant_select ON dental_lab_cases FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON dental_lab_cases;
+CREATE POLICY tenant_insert ON dental_lab_cases FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON dental_lab_cases;
+CREATE POLICY tenant_update ON dental_lab_cases FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON dental_lab_cases;
+CREATE POLICY tenant_delete ON dental_lab_cases FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE dental_lab_case_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dental_lab_case_attachments FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON dental_lab_case_attachments;
+CREATE POLICY tenant_select ON dental_lab_case_attachments FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON dental_lab_case_attachments;
+CREATE POLICY tenant_insert ON dental_lab_case_attachments FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON dental_lab_case_attachments;
+CREATE POLICY tenant_update ON dental_lab_case_attachments FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON dental_lab_case_attachments;
+CREATE POLICY tenant_delete ON dental_lab_case_attachments FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE service_performances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_performances FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON service_performances;
+CREATE POLICY tenant_select ON service_performances FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON service_performances;
+CREATE POLICY tenant_insert ON service_performances FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON service_performances;
+CREATE POLICY tenant_update ON service_performances FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON service_performances;
+CREATE POLICY tenant_delete ON service_performances FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE service_performance_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_performance_participants FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON service_performance_participants;
+CREATE POLICY tenant_select ON service_performance_participants FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON service_performance_participants;
+CREATE POLICY tenant_insert ON service_performance_participants FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON service_performance_participants;
+CREATE POLICY tenant_update ON service_performance_participants FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON service_performance_participants;
+CREATE POLICY tenant_delete ON service_performance_participants FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE service_performance_corrections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_performance_corrections FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON service_performance_corrections;
+CREATE POLICY tenant_select ON service_performance_corrections FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON service_performance_corrections;
+CREATE POLICY tenant_insert ON service_performance_corrections FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON service_performance_corrections;
+CREATE POLICY tenant_update ON service_performance_corrections FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON service_performance_corrections;
+CREATE POLICY tenant_delete ON service_performance_corrections FOR DELETE USING (false);
+
+-- =============================================================================
+-- Phase 48 Wave E — Aesthetic / Dermatology RLS
+-- =============================================================================
+ALTER TABLE treatment_courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE treatment_courses FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON treatment_courses;
+CREATE POLICY tenant_select ON treatment_courses FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON treatment_courses;
+CREATE POLICY tenant_insert ON treatment_courses FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON treatment_courses;
+CREATE POLICY tenant_update ON treatment_courses FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON treatment_courses;
+CREATE POLICY tenant_delete ON treatment_courses FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE course_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_sessions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON course_sessions;
+CREATE POLICY tenant_select ON course_sessions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON course_sessions;
+CREATE POLICY tenant_insert ON course_sessions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON course_sessions;
+CREATE POLICY tenant_update ON course_sessions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON course_sessions;
+CREATE POLICY tenant_delete ON course_sessions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE device_treatment_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_treatment_records FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON device_treatment_records;
+CREATE POLICY tenant_select ON device_treatment_records FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON device_treatment_records;
+CREATE POLICY tenant_insert ON device_treatment_records FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON device_treatment_records;
+CREATE POLICY tenant_update ON device_treatment_records FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON device_treatment_records;
+CREATE POLICY tenant_delete ON device_treatment_records FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+-- =============================================================================
+-- Phase 48 Wave F ? Workforce Commercials RLS
+-- =============================================================================
+ALTER TABLE staff_commission_plan_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_commission_plan_versions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON staff_commission_plan_versions;
+CREATE POLICY tenant_select ON staff_commission_plan_versions FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON staff_commission_plan_versions;
+CREATE POLICY tenant_insert ON staff_commission_plan_versions FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON staff_commission_plan_versions;
+CREATE POLICY tenant_update ON staff_commission_plan_versions FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON staff_commission_plan_versions;
+CREATE POLICY tenant_delete ON staff_commission_plan_versions FOR DELETE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+
+ALTER TABLE commission_accruals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_accruals FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_accruals;
+CREATE POLICY tenant_select ON commission_accruals FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_accruals;
+CREATE POLICY tenant_insert ON commission_accruals FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_accruals;
+CREATE POLICY tenant_update ON commission_accruals FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON commission_accruals;
+CREATE POLICY tenant_delete ON commission_accruals FOR DELETE USING (false);
+
+ALTER TABLE commission_settlement_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_settlement_allocations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_settlement_allocations;
+CREATE POLICY tenant_select ON commission_settlement_allocations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_settlement_allocations;
+CREATE POLICY tenant_insert ON commission_settlement_allocations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_settlement_allocations;
+CREATE POLICY tenant_update ON commission_settlement_allocations FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON commission_settlement_allocations;
+CREATE POLICY tenant_delete ON commission_settlement_allocations FOR DELETE USING (false);
+
+ALTER TABLE commission_package_session_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_package_session_allocations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_package_session_allocations;
+CREATE POLICY tenant_select ON commission_package_session_allocations FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_package_session_allocations;
+CREATE POLICY tenant_insert ON commission_package_session_allocations FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_package_session_allocations;
+CREATE POLICY tenant_update ON commission_package_session_allocations FOR UPDATE USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true') WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_delete ON commission_package_session_allocations;
+CREATE POLICY tenant_delete ON commission_package_session_allocations FOR DELETE USING (false);
+
+-- Wave F Round 14 — correction request lineage (append-only; unique tenant+event)
+ALTER TABLE commission_correction_lineages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE commission_correction_lineages FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_select ON commission_correction_lineages;
+CREATE POLICY tenant_select ON commission_correction_lineages FOR SELECT USING ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_insert ON commission_correction_lineages;
+CREATE POLICY tenant_insert ON commission_correction_lineages FOR INSERT WITH CHECK ("tenantId" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid OR current_setting('app.platform_rls_bypass', true) = 'true');
+DROP POLICY IF EXISTS tenant_update ON commission_correction_lineages;
+CREATE POLICY tenant_update ON commission_correction_lineages FOR UPDATE USING (false);
+DROP POLICY IF EXISTS tenant_delete ON commission_correction_lineages;
+CREATE POLICY tenant_delete ON commission_correction_lineages FOR DELETE USING (false);

@@ -114,7 +114,13 @@ test.describe('Patients QA — integration flows', () => {
       { timeout: 20_000 },
     );
 
-    await page.getByRole('dialog').getByRole('button', { name: 'Check out', exact: true }).click();
+    // Dialog may list multiple active tickets, each with its own Check out action.
+    await page
+      .getByRole('dialog')
+      .getByRole('listitem')
+      .first()
+      .getByRole('button', { name: 'Check out', exact: true })
+      .click();
 
     await checkoutResponse;
     await expect(page.getByText('Patient checked out')).toBeVisible({ timeout: 10_000 });

@@ -14,8 +14,11 @@ export interface ProduceBaseParams {
   tenantId: string;
   branchId?: string | null;
   recipientId: string;
+  recipientType?: 'user' | 'patient' | 'platform_user';
   title: string;
   body: string;
+  titleAr?: string | null;
+  bodyAr?: string | null;
   priority?: NotificationPriority;
   notificationTypeId?: string;
   category?: string;
@@ -85,6 +88,7 @@ export class NotificationIntentProducerService {
       tenantId: params.tenantId,
       branchId: params.branchId ?? null,
       recipientId: params.recipientId,
+      recipientType: params.recipientType,
       requestedChannels: params.channels,
       notificationTypeId: params.notificationTypeId ?? null,
       category: params.category ?? null,
@@ -92,6 +96,8 @@ export class NotificationIntentProducerService {
       priority: params.priority ?? 'medium',
       title: params.title,
       body: params.body,
+      titleAr: params.titleAr,
+      bodyAr: params.bodyAr,
       idempotencyKey: params.idempotencyKey,
       correlationId: params.correlationId,
       causationId: params.causationId,
@@ -102,6 +108,7 @@ export class NotificationIntentProducerService {
         ...(params.metadata ?? {}),
         deliveryEngine: '41d',
         producerModuleId: params.producerModuleId,
+        ...(params.recipientType ? { recipientType: params.recipientType } : {}),
         ...(params.correlationId ? { correlationId: params.correlationId } : {}),
         ...(params.causationId ? { causationId: params.causationId } : {}),
         ...(params.journeyInstanceId ? { journeyInstanceId: params.journeyInstanceId } : {}),

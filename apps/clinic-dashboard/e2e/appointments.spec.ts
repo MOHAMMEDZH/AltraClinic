@@ -89,13 +89,20 @@ test.describe('Scheduling module', () => {
   test('list view shows bulk reschedule controls when selecting', async ({ page }) => {
     await gotoAppointments(page);
 
-    await page.getByRole('button', { name: 'List' }).click();
-    const checkbox = page.getByRole('checkbox').first();
+    // exact:true — Playwright substring name matching also hits "Add to waitlist".
+    await page
+      .getByRole('group', { name: 'Calendar view' })
+      .getByRole('button', { name: 'List', exact: true })
+      .click();
+    await expect(page).toHaveURL(/view=list/);
+
+    const checkbox = page.getByRole('checkbox', { name: /Select appointment for/i }).first();
     if ((await checkbox.count()) === 0) {
       test.skip(true, 'No appointments for bulk select');
     }
     await checkbox.check();
-    await expect(page.getByText(/selected/)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Bulk reschedule' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/\d+ selected/)).toBeVisible();
   });
 
   test('cancel appointment opens reason dialog from detail panel', async ({ page }) => {

@@ -1047,10 +1047,20 @@ export function useFulfillStockRequestLine() {
   const { getValidAccessToken, user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ lineId, quantity, notes }: { lineId: string; quantity: number; notes?: string }) => {
+    mutationFn: async ({
+      lineId,
+      quantity,
+      usedByUserId,
+      notes,
+    }: {
+      lineId: string;
+      quantity: number;
+      usedByUserId: string;
+      notes?: string;
+    }) => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fulfillStockRequestLine(token, user.tenantId, lineId, { quantity, notes });
+      return fulfillStockRequestLine(token, user.tenantId, lineId, { quantity, usedByUserId, notes });
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['inventory'] }),
   });

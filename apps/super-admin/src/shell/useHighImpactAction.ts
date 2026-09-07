@@ -37,7 +37,12 @@ export type HighImpactKind =
   | 'subscription-resume'
   | 'subscription-cancel'
   | 'subscription-supersede'
-  | 'subscription-renew';
+  | 'subscription-renew'
+  | 'suspend-sales-rep'
+  | 'reactivate-sales-rep'
+  | 'revoke-sales-rep-sessions'
+  | 'remove-sales-rep-role'
+  | 'remove-sales-ownership';
 
 export interface HighImpactOpenArgs {
   kind: HighImpactKind;
@@ -82,6 +87,9 @@ const REASON_CAPABLE_KINDS: ReadonlySet<HighImpactKind> = new Set([
   'subscription-cancel',
   'subscription-supersede',
   'subscription-renew',
+  'suspend-sales-rep',
+  'reactivate-sales-rep',
+  'revoke-sales-rep-sessions',
 ]);
 
 /** Kinds rendered with the danger (destructive) confirm button styling. */
@@ -104,6 +112,10 @@ const DANGER_KINDS: ReadonlySet<HighImpactKind> = new Set([
   'override-revoke',
   'subscription-cancel',
   'subscription-supersede',
+  'suspend-sales-rep',
+  'remove-sales-rep-role',
+  'revoke-sales-rep-sessions',
+  'remove-sales-ownership',
 ]);
 
 function toMessageKey(kind: HighImpactKind): string {

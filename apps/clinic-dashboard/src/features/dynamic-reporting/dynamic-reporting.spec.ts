@@ -117,6 +117,14 @@ describe('reporting snapshot builder', () => {
     expect(snapshot.categories.length).toBeGreaterThan(0);
   });
 
+  it('static-fallback normalizes uppercase OWNER role for permission filtering', () => {
+    const lower = buildStaticReportingSnapshot(['owner'], STATIC_REPORT_CATALOG, IDENTITY, 'static-fallback');
+    const upper = buildStaticReportingSnapshot(['OWNER'], STATIC_REPORT_CATALOG, IDENTITY, 'static-fallback');
+    expect(upper.source).toBe('static-fallback');
+    expect(upper.templates.length).toBe(lower.templates.length);
+    expect(upper.templates.length).toBeGreaterThan(5);
+  });
+
   it('builds restricted snapshot fail-closed', () => {
     const snapshot = buildRestrictedReportSnapshot(IDENTITY, 1, 'active');
     expect(snapshot.templates).toEqual([]);

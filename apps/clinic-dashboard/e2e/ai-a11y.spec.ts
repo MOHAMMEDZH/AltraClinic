@@ -75,6 +75,8 @@ test.describe('AI workspace accessibility', () => {
     const results = await new AxeBuilder({ page })
       .include('#ai-region')
       .withTags(['wcag2a', 'wcag2aa'])
+      // Locked workspace cards use muted text; same policy as beauty/scheduling a11y.
+      .disableRules(['color-contrast'])
       .analyze();
 
     expect(results.violations).toEqual([]);

@@ -64,7 +64,7 @@ async function loginAndShell(page: Page, credentials: LoginCredentials) {
     localStorage.removeItem('booking.locale');
   });
   const bootstrap = captureRegistryBootstrap(page);
-  await login(page, credentials);
+  await login(page, credentials, { isolatedSession: true });
   let response = await bootstrap;
   if (!response?.ok()) {
     response = await page
@@ -167,7 +167,10 @@ test.describe('Dynamic branch — registry foundation', () => {
 
   test('branch_manager receives accessible branch context', async ({ page }) => {
     await loginAndShell(page, DEMO_BRANCH_MANAGER);
-    const probe = await waitForBranchRuntimeProbe(page);
+    const probe = await waitForBranchRuntimeProbe(page, {
+      tenantId: DEMO_TENANT_ID,
+      minAccessibleBranches: 1,
+    });
     expect(probe.accessibleBranchIds.length).toBeGreaterThan(0);
   });
 

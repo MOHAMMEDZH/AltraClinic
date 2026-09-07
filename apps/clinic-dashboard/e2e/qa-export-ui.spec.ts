@@ -43,13 +43,14 @@ test.describe('QA — export & report UI', () => {
   test('analytics: live data, exports, generate report, download seeded report', async ({ page }) => {
     const overviewOk = page.waitForResponse(
       (r) => r.url().includes('/analytics/overview') && r.request().method() === 'GET' && r.ok(),
+      { timeout: 45_000 },
     );
-    await page.goto('/analytics');
+    await page.goto('/analytics/executive');
     await overviewOk;
-    await page.locator('#analytics-region').waitFor({ state: 'visible' });
+    await page.locator('#analytics-region').waitFor({ state: 'visible', timeout: 45_000 });
 
     await expect(page.getByText('Live API unavailable')).toHaveCount(0);
-    await expect(page.getByText('Monthly revenue summary')).toBeVisible();
+    await expect(page.getByText('Monthly revenue summary')).toBeVisible({ timeout: 45_000 });
 
     const excelDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Export Excel' }).first().click();

@@ -1,0 +1,30 @@
+PASS src/modules/workforce-commercials/tests/wave-f-round5.postgres.integration.spec.ts (9.466 s)
+  Wave F Round 5 remediation (PostgreSQL)
+    √ R5-PKG1-T1/T7/T8 basis from packagePriceVersionId; valid allocation persists (182 ms)
+    √ R5-PKG1-T2 inflated packageCommercialBasisAmount rejected (60 ms)
+    √ R5-PKG1-T3 wrong currency rejected (44 ms)
+    √ R5-PKG1-T4/T5 wrong / missing package price version rejected (73 ms)
+    √ R5-PKG1-T6 non-PER_COURSE/PER_PACKAGE pricing unit rejected (36 ms)
+    √ R5-PKG2-T1/T2/T6 concurrent allocations cannot exceed basis (108 ms)
+    √ R5-PKG2-T3 concurrent small allocations that fit both succeed (91 ms)
+    √ R5-PKG2-T4 concurrent duplicate same-session → only one (58 ms)
+    √ R5-PKG2-T5 different packages do not conflict (70 ms)
+    √ R5-PKG3-T1/T2/T8 pg_policies uses app.current_tenant_id; FORCE+ENABLE+NOBYPASSRLS (101 ms)
+    √ R5-PKG3-T3..T7 same-tenant insert/select; cross-tenant blocked (189 ms)
+    √ R5-BIND-T1 line.appointmentId set, performance.appointmentId null → reject (49 ms)
+    √ R5-BIND-T2 line.snapshotRevisionId set, performance snapshot null → reject (45 ms)
+    √ R5-BIND-T3 line.clinicalServiceId set, performance service unprovable/mismatch → reject (40 ms)
+    √ R5-BIND-T4 line.courseSessionId set, performance course session unprovable → reject (46 ms)
+    √ R5-BIND-T5 same patient+branch+service wrong appointment → reject (43 ms)
+    √ R5-BIND-T6/T7/T8 matching provenance succeeds; rebind blocked; reject zero side effects (81 ms)
+    √ R5-CSVC-T1/T2/T3 SYSTEM_CANONICAL + same-tenant custom ok; cross-tenant reject (57 ms)
+    √ R5-CSVC-T4/T5 parent-switch to cross-tenant custom rejected; original unchanged (40 ms)
+    √ R5-CSVC-T6 app-role path remains valid for same-tenant custom (94 ms)
+    √ R5-PKGC-T1..T10 package correction reuses allocation; cap unchanged; refund current source (476 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       21 passed, 21 total
+Snapshots:   0 total
+Time:        9.706 s
+Ran all test suites matching /wave-f-round5.postgres.integration/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

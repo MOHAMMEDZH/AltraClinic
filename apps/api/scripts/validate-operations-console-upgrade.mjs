@@ -3,7 +3,7 @@
  * Flexible Step 22 — isolated upgrade validator.
  * Step 22 adds no Prisma schema migration (flag/API/adapters only).
  * Proves: full migrate deploy is idempotent; Catalog 68/136/68/13 preserved;
- * no invented ops audits/jobs/cache invalidations; no billing/Step 23 schema.
+ * no invented ops audits/jobs/cache invalidations; no billing/Step 24+ schema.
  */
 import { spawnSync } from 'child_process';
 import crypto from 'crypto';
@@ -23,9 +23,34 @@ const BILLING_FORBIDDEN = [
   'platform_overage_charges',
 ];
 
-const STEP23_FORBIDDEN = [
+// Flexible Step 23 tables are now authorized (representatives/ownership/history/idempotency).
+const STEP23_ALLOWED = [
   'platform_sales_representatives',
+  'platform_sales_customer_ownership',
+  'platform_sales_customer_ownership_history',
+  'platform_sales_idempotency',
+];
+
+const STEP24_LEAD_TABLES_ALLOWED = [
   'platform_sales_leads',
+  'platform_sales_lead_stage_history',
+  'platform_sales_lead_ownership_history',
+  'platform_sales_lead_notes',
+];
+
+const STEP25_TRIAL_TABLES_ALLOWED = [
+  'platform_sales_trials',
+  'platform_sales_trial_extension_history',
+  'platform_sales_trial_conversions',
+];
+
+const STEP26_COMMISSION_SNAPSHOT_ALLOWED = ['platform_sales_commission_snapshots'];
+
+const STEP26_PLUS_FORBIDDEN = [
+  'platform_sales_opportunities',
+  'platform_sales_pipeline_stages',
+  'platform_sales_commissions',
+  'platform_sales_productivity_snapshots',
 ];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -105,6 +130,8 @@ async function snapshot(prisma) {
     digest: await auditDigest(prisma),
     provisioning: await prisma.platformTenantProvisioningRequest.count().catch(() => 0),
     exports: await prisma.platformAuditExportRecord.count().catch(() => 0),
+    salesReps: await prisma.platformSalesRepresentative.count().catch(() => 0),
+    salesOwnership: await prisma.platformSalesCustomerOwnership.count().catch(() => 0),
   };
 }
 
@@ -151,16 +178,29 @@ async function main() {
     expect('audit digest preserved', after.digest, before.digest);
     expect('provisioning count preserved', after.provisioning, before.provisioning);
     expect('export records (no auto invent)', after.exports, 0);
+    expect('sales representatives preserved (no auto invent)', after.salesReps, before.salesReps);
+    expect('sales customer ownership preserved (no auto invent)', after.salesOwnership, before.salesOwnership);
 
-    for (const table of [...BILLING_FORBIDDEN, ...STEP23_FORBIDDEN]) {
+    for (const table of [...BILLING_FORBIDDEN, ...STEP26_PLUS_FORBIDDEN]) {
       const rows = await prisma.$queryRawUnsafe(
         `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
       );
       if (rows[0]?.present) throw new Error(`Forbidden table present: ${table}`);
     }
 
-    console.log('OK no billing schema');
-    console.log('OK no Step 23 sales schema');
+    for (const table of [
+      ...STEP23_ALLOWED,
+      ...STEP25_TRIAL_TABLES_ALLOWED,
+      ...STEP26_COMMISSION_SNAPSHOT_ALLOWED,
+    ]) {
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
+      );
+      if (!rows[0]?.present) throw new Error(`Missing Step 23/25/26 table after upgrade: ${table}`);
+    }
+
+    console.log('OK no billing/invented pipeline-payroll schema');
+    console.log('OK Step 23 sales representative schema present');
     const opsIdem = await prisma.$queryRawUnsafe(
       `SELECT to_regclass('public.platform_operations_idempotency') IS NOT NULL AS present`,
     );

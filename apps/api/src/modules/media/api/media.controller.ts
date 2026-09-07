@@ -84,11 +84,13 @@ export class MediaController {
   async download(
     @Param('id') id: string,
     @Query('variant') variant: string | undefined,
+    @CurrentUser() user: JwtClaimsVO,
     @Res() res: Response,
   ) {
     const result = await this.downloadHandler.execute({
       id,
       variant: variant as MediaVariantType | undefined,
+      actorUserId: user.sub,
     });
 
     res.setHeader('Content-Type', result.mimeType);
@@ -99,8 +101,8 @@ export class MediaController {
 
   @Get(':id')
   @RequirePermission('api.media', 'view')
-  async get(@Param('id') id: string) {
-    return this.getHandler.execute({ id });
+  async get(@Param('id') id: string, @CurrentUser() user: JwtClaimsVO) {
+    return this.getHandler.execute({ id, actorUserId: user.sub });
   }
 
   @Patch(':id')

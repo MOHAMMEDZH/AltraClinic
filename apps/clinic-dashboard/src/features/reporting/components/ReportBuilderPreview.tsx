@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useI18n } from '@booking/i18n/react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useOptionalBranch } from '@/features/dynamic-branch/context/DynamicBranchProvider';
 import { useDashboardOverview } from '@/features/dashboard/hooks/useDashboardOverview';
-import { KpiDrillCard } from '@/features/dashboard/components/KpiDrillCard';
 import { LazyRevenueChart, LazyAppointmentChart, LazyPatientGrowthChart } from '@/features/dashboard/components/charts/LazyCharts';
 import { formatCurrency, formatNumber } from '@/features/dashboard/lib/dashboard-format';
 import type { ReportFilterState } from './ReportAdvancedFilters';
@@ -131,20 +131,23 @@ export function ReportBuilderPreview({ filters, visualization }: ReportBuilderPr
   return (
     <div className={styles.grid}>
       {kpis.map((kpi) => (
-        <button
+        <div
           key={kpi.label}
-          type="button"
-          className={[styles.cardButton, activeMetric === kpi.metric ? styles.filterChipActive : ''].join(' ')}
-          onClick={() => toggleMetric(kpi.metric)}
-          aria-pressed={activeMetric === kpi.metric}
+          className={[styles.kpiPreviewCard, activeMetric === kpi.metric ? styles.filterChipActive : ''].join(' ')}
         >
-          <KpiDrillCard
-            label={kpi.label}
-            value={kpi.value}
-            to={buildDrillPath(kpi.metric, filters)}
-            ariaLabel={kpi.label}
-          />
-        </button>
+          <button
+            type="button"
+            className={styles.kpiMetricToggle}
+            onClick={() => toggleMetric(kpi.metric)}
+            aria-pressed={activeMetric === kpi.metric}
+          >
+            <span className={styles.cardTitle}>{kpi.label}</span>
+            <span className={styles.kpiPreviewValue}>{kpi.value}</span>
+          </button>
+          <Link className={styles.drillLink} to={buildDrillPath(kpi.metric, filters)} aria-label={kpi.label}>
+            {t('reports.builder.openMetric')}
+          </Link>
+        </div>
       ))}
       <p className={styles.hint}>{t('reports.builder.crossFilterHint')}</p>
     </div>

@@ -187,6 +187,65 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
     };
   }
 
+  async listSeriesFutureMembers(params: {
+    tenantId: string;
+    recurrenceSeriesId: string;
+    fromScheduledStart: string | Date;
+    pageSize?: number;
+  }): Promise<AppointmentListItem[]> {
+    const from = new Date(params.fromScheduledStart);
+    const pageSize = params.pageSize && params.pageSize > 0 ? params.pageSize : undefined;
+    const collected: AppointmentListItem[] = [];
+    let cursorStart: Date | null = null;
+    let cursorId: string | null = null;
+
+    for (;;) {
+      const where: Prisma.AppointmentWhereInput = {
+        tenantId: params.tenantId,
+        recurrenceSeriesId: params.recurrenceSeriesId,
+        deletedAt: null,
+        status: { not: 'CANCELLED' },
+        ...(cursorId
+          ? {
+              OR: [
+                { scheduledStart: { gt: cursorStart! } },
+                { scheduledStart: cursorStart!, id: { gt: cursorId } },
+              ],
+            }
+          : { scheduledStart: { gte: from } }),
+      };
+      const rows = await this.prisma.appointment.findMany({
+        where,
+        orderBy: [{ scheduledStart: 'asc' }, { id: 'asc' }],
+        ...(pageSize ? { take: pageSize } : {}),
+        include: { patient: { select: { firstName: true, lastName: true } } },
+      });
+      if (rows.length === 0) break;
+
+      const resourceIds = [
+        ...new Set(rows.map((r) => r.resourceId).filter((id): id is string => Boolean(id))),
+      ];
+      const resources =
+        resourceIds.length > 0
+          ? await this.prisma.schedulingResource.findMany({
+              where: { id: { in: resourceIds }, tenantId: params.tenantId },
+              select: { id: true, name: true },
+            })
+          : [];
+      const resourceNames = new Map(resources.map((r) => [r.id, r.name]));
+      for (const r of rows) {
+        collected.push(this.toListItem(r, resourceNames.get(r.resourceId ?? '') ?? null));
+      }
+
+      if (!pageSize || rows.length < pageSize) break;
+      const last = rows[rows.length - 1]!;
+      cursorStart = last.scheduledStart;
+      cursorId = last.id;
+    }
+
+    return collected;
+  }
+
   async updateNotes(id: string, tenantId: string, notes: string | null): Promise<void> {
     await this.prisma.appointment.updateMany({
       where: { id, tenantId },

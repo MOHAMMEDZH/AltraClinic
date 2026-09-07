@@ -239,6 +239,8 @@ describe('Step 15 RTL + a11y — every route family', () => {
     need: string[];
     denyText: RegExp;
     formLabels?: RegExp[];
+    /** Accessible table column headers — must use role=columnheader (no text fallback). */
+    columnHeaders?: RegExp[];
   }> = [
     {
       name: 'add-ons list',
@@ -280,7 +282,7 @@ describe('Step 15 RTL + a11y — every route family', () => {
       element: <AddOnVersionEntitlementsPage />,
       need: ['addon.view'],
       denyText: /addon\.view/i,
-      formLabels: [/اختيار/i],
+      columnHeaders: [/اختيار/i],
     },
     {
       name: 'add-ons version limits',
@@ -289,7 +291,7 @@ describe('Step 15 RTL + a11y — every route family', () => {
       element: <AddOnVersionLimitsPage />,
       need: ['addon.view'],
       denyText: /addon\.view/i,
-      formLabels: [/نوع التأثير/i, /القيمة/i],
+      columnHeaders: [/نوع التأثير/i, /القيمة/i],
     },
     {
       name: 'add-ons version applicability',
@@ -385,13 +387,40 @@ describe('Step 15 RTL + a11y — every route family', () => {
       expect(document.documentElement.dir).toBe('rtl');
       expect(document.documentElement.lang).toBe('ar-SY');
       assertNoAssignmentActions();
+      if (c.columnHeaders) {
+        for (const name of c.columnHeaders) {
+          expect(await screen.findByRole('columnheader', { name })).toBeTruthy();
+        }
+      }
       if (c.formLabels) {
         for (const label of c.formLabels) {
-          expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+          expect(await screen.findByText(label)).toBeTruthy();
         }
       }
     });
   }
+
+  it('add-ons version entitlements: column header accessible name (ltr)', async () => {
+    permissions = ['addon.view'];
+    localStorage.setItem(SUPER_ADMIN_LOCALE_STORAGE_KEY, 'en-US');
+    document.documentElement.lang = 'en-US';
+    document.documentElement.dir = 'ltr';
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={['/add-ons/ao1/versions/ver1/entitlements']}>
+          <Routes>
+            <Route
+              path="/add-ons/:addOnId/versions/:versionId/entitlements"
+              element={<AddOnVersionEntitlementsPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByRole('columnheader', { name: /select/i })).toBeTruthy();
+    expect(document.documentElement.dir).toBe('ltr');
+    expect(document.documentElement.lang).toBe('en-US');
+  });
 
   it('publish uses ConfirmationDialog, not window.confirm (rtl)', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SchedulingResourceType } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
 import { TenantContextService } from '../../../../infrastructure/tenant-context.service';
 import { APPOINTMENT_REPOSITORY } from '../../../../infrastructure/provider.tokens';
@@ -16,6 +17,7 @@ import {
   dayOfWeekInTimezone,
   zonedDayBoundsUtc,
 } from '../../domain/scheduling-timezone.util';
+import { SCHEDULING_AUDIT_LOG, SchedulingAuditLog } from '../ports/scheduling-audit-log.port';
 
 const WORKDAY_START_HOUR = 7;
 const WORKDAY_END_HOUR = 20;
@@ -35,7 +37,9 @@ export class ListSchedulingResourcesHandler {
         ? SchedulingResourceType.ROOM
         : resourceType === 'equipment'
           ? SchedulingResourceType.EQUIPMENT
-          : undefined;
+          : resourceType === 'operatory'
+            ? SchedulingResourceType.OPERATORY
+            : undefined;
 
     const rows = await this.prisma.schedulingResource.findMany({
       where: {
@@ -200,5 +204,76 @@ export class GetResourceDayStatusHandler {
         };
       }),
     };
+  }
+}
+
+@Injectable()
+export class CreateSchedulingResourceHandler {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantContext: TenantContextService,
+    @Inject(SCHEDULING_AUDIT_LOG) private readonly audit: SchedulingAuditLog,
+  ) {}
+
+  async execute(input: {
+    name: string;
+    resourceType: 'ROOM' | 'EQUIPMENT' | 'OPERATORY';
+    branchId?: string | null;
+    displaySubtype?: string | null;
+    actorId: string;
+    actorRoles: string[];
+  }) {
+    const tenant = await this.tenantContext.resolve();
+    const name = input.name?.trim();
+    if (!name) throw new BadRequestException('name is required');
+    const type =
+      input.resourceType === 'ROOM'
+        ? SchedulingResourceType.ROOM
+        : input.resourceType === 'EQUIPMENT'
+          ? SchedulingResourceType.EQUIPMENT
+          : input.resourceType === 'OPERATORY'
+            ? SchedulingResourceType.OPERATORY
+            : null;
+    if (!type) throw new BadRequestException('resourceType must be ROOM, EQUIPMENT, or OPERATORY');
+
+    return this.prisma.withPlatformBypass(async (tx) => {
+        let branchId = input.branchId ?? tenant.branchId ?? null;
+        if (branchId) {
+          const branch = await tx.branch.findFirst({
+            where: { id: branchId, tenantId: tenant.tenantId, deletedAt: null },
+            select: { id: true },
+          });
+          if (!branch) throw new BadRequestException('branchId does not belong to the current tenant');
+          branchId = branch.id;
+        }
+        const row = await tx.schedulingResource.create({
+          data: {
+            id: randomUUID(),
+            tenantId: tenant.tenantId,
+            branchId,
+            name,
+            resourceType: type,
+            displaySubtype: input.displaySubtype?.trim() || null,
+            isActive: true,
+          },
+        });
+        await this.audit.recordInTransaction(tx, {
+          tenantId: tenant.tenantId,
+          action: 'scheduling.resource.create',
+          resourceId: row.id,
+          actorId: input.actorId,
+          actorRoles: input.actorRoles,
+          descriptionEn: `Created ${type} resource ${name}`,
+          descriptionAr: `تم إنشاء مورد ${type} ${name}`,
+          details: { resourceType: type, branchId },
+        });
+        return {
+          id: row.id,
+          name: row.name,
+          branchId: row.branchId,
+          resourceType: row.resourceType.toLowerCase(),
+          displaySubtype: row.displaySubtype,
+        };
+    });
   }
 }

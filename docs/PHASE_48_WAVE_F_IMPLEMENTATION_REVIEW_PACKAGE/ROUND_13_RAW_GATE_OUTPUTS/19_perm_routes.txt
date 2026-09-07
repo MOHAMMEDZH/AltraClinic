@@ -1,0 +1,11 @@
+GATE=PERM_ROUTES
+START_UTC=2026-08-21T16:31:49.4054857Z
+CWD=C:\Users\mrame\Projects\AltraClinic\apps\api
+COMMAND=node scripts/validate-phase48-wave-f-permission-routes.mjs
+---
+Wave F permission-route validation PASS
+
+---
+END_UTC=2026-08-21T16:31:51.6097079Z
+EXIT=0
+STATUS=PASS

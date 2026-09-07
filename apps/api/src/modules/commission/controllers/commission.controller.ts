@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, GoneException, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CommissionPermissionGuard } from '../api/commission-permission.guard';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
@@ -17,6 +17,9 @@ import { GetCommissionHandler } from '../application/handlers/get-commission.han
 import { ListCommissionsHandler } from '../application/handlers/list-commissions.handler';
 import { ListCommissionRulesQuery } from '../application/queries/list-commission-rules.query';
 
+const WAVE_F_CUTOVER =
+  'Legacy commission financial writes are retired. Use /workforce-commercials for StaffCommissionPlanVersion + CommissionAccrual.';
+
 @Controller('commissions')
 @UseGuards(CommissionPermissionGuard)
 @RequireLicensedModule('commission')
@@ -33,10 +36,15 @@ export class CommissionController {
     private readonly listCommissionsHandler: ListCommissionsHandler,
   ) {}
 
+  /**
+   * F1 cutover: block NEW financial calculation writes.
+   * Wave F SoR is /workforce-commercials.
+   */
   @Post('calculate-from-invoices')
   @RequirePermission('api.commission', 'create')
   async calculateFromInvoices(
-    @Body() body: {
+    @Body()
+    _body: {
       providerId: string;
       branchId?: string;
       periodStart: string;
@@ -44,13 +52,8 @@ export class CommissionController {
       currency?: string;
     },
   ) {
-    return await this.calculateFromInvoicesHandler.execute({
-      providerId: body.providerId,
-      branchId: body.branchId ?? null,
-      periodStart: body.periodStart,
-      periodEnd: body.periodEnd,
-      currency: body.currency,
-    });
+    void _body;
+    throw new GoneException(WAVE_F_CUTOVER);
   }
 
   @Get('rules/list')
@@ -64,44 +67,46 @@ export class CommissionController {
     );
   }
 
+  /**
+   * F1 cutover: block NEW financial calculation writes.
+   */
   @Post('calculate')
   @RequirePermission('api.commission', 'create')
-  async calculateCommission(@Body() body: CalculateCommissionDto) {
-    return await this.calculateCommissionHandler.execute({
-      providerId: body.providerId,
-      branchId: body.branchId ?? null,
-      periodStart: body.periodStart,
-      periodEnd: body.periodEnd,
-      currency: body.currency ?? 'SYP',
-      basisDocumentIds: body.basisDocumentIds ?? [],
-      lineItems: body.lineItems ?? [],
-    });
+  async calculateCommission(@Body() _body: CalculateCommissionDto) {
+    void _body;
+    throw new GoneException(WAVE_F_CUTOVER);
   }
 
+  /**
+   * F1 cutover: block NEW commission rule creates (financial policy writes).
+   */
   @Post('rules')
   @RequirePermission('api.commission', 'manage')
-  async createCommissionRule(@Body() body: CreateCommissionRuleDto) {
-    return await this.createCommissionRuleHandler.execute({
-      providerId: body.providerId ?? null,
-      serviceType: body.serviceType ?? null,
-      commissionRateType: body.commissionRateType,
-      commissionRateValue: body.commissionRateValue,
-      minimumThreshold: body.minimumThreshold ?? null,
-      maximumCap: body.maximumCap ?? null,
-      effectiveDate: body.effectiveDate,
-      expiryDate: body.expiryDate ?? null,
-    });
+  async createCommissionRule(@Body() _body: CreateCommissionRuleDto) {
+    void _body;
+    throw new GoneException(WAVE_F_CUTOVER);
   }
 
+  /**
+   * Historical CommissionCalculation settlement only — approve existing rows.
+   * Does not create new commission financial facts; prefer Wave F settle for accruals.
+   */
   @Post(':commissionId/approve')
   @RequirePermission('api.commission', 'approve')
   async approveCommission(@Param('commissionId') commissionId: string) {
     return await this.approveCommissionHandler.execute({ commissionId });
   }
 
+  /**
+   * Historical CommissionCalculation settlement only — pay existing rows.
+   * Kept for legacy settlement of pre-cutover CommissionCalculation rows.
+   */
   @Post(':commissionId/pay')
   @RequirePermission('api.commission', 'approve')
-  async payCommission(@Param('commissionId') commissionId: string, @Body() body: RecordCommissionPaymentDto) {
+  async payCommission(
+    @Param('commissionId') commissionId: string,
+    @Body() body: RecordCommissionPaymentDto,
+  ) {
     return await this.payCommissionHandler.execute({
       commissionId,
       paymentMethod: body.paymentMethod,
@@ -110,9 +115,15 @@ export class CommissionController {
     });
   }
 
+  /**
+   * Historical CommissionCalculation dispute only.
+   */
   @Post(':commissionId/dispute')
   @RequirePermission('api.commission', 'update')
-  async disputeCommission(@Param('commissionId') commissionId: string, @Body() body: DisputeCommissionDto) {
+  async disputeCommission(
+    @Param('commissionId') commissionId: string,
+    @Body() body: DisputeCommissionDto,
+  ) {
     return await this.disputeCommissionHandler.execute({ commissionId, reason: body.reason });
   }
 

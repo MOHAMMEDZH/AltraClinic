@@ -3,12 +3,16 @@ import { TenantScopedAccessGuard } from '../../../common/tenant-scoped-access.gu
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
 import { RequireLicensedFeature } from '../../subscription/api/decorators/require-licensed-feature.decorator';
+import { CurrentUser } from '../../auth/api/decorators/current-user.decorator';
+import { JwtClaimsVO } from '../../auth/domain/value-objects/jwt-claims.vo';
 import {
   GetBranchHoursHandler,
   GetProviderScheduleHandler,
   UpsertBranchHoursHandler,
   UpsertProviderScheduleHandler,
 } from '../application/handlers/schedule-settings.handlers';
+import { CreateSchedulingResourceHandler } from '../application/handlers/scheduling-resources.handlers';
+import { CreateSchedulingResourceDTO } from '../application/dto/create-scheduling-resource.dto';
 
 @Controller('scheduling')
 @UseGuards(TenantScopedAccessGuard)
@@ -20,6 +24,7 @@ export class ScheduleSettingsController {
     private readonly upsertBranchHours: UpsertBranchHoursHandler,
     private readonly getProviderSchedule: GetProviderScheduleHandler,
     private readonly upsertProviderSchedule: UpsertProviderScheduleHandler,
+    private readonly createResource: CreateSchedulingResourceHandler,
   ) { }
 
   @Get('branches/:branchId/hours')
@@ -64,5 +69,21 @@ export class ScheduleSettingsController {
     }> },
   ) {
     return this.upsertProviderSchedule.execute(providerId, body.days ?? []);
+  }
+
+  @Post('resources')
+  @RequirePermission('api.scheduling', 'manage')
+  async createSchedulingResource(
+    @Body() body: CreateSchedulingResourceDTO,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.createResource.execute({
+      name: body.name,
+      resourceType: body.resourceType,
+      branchId: body.branchId,
+      displaySubtype: body.displaySubtype,
+      actorId: user.sub,
+      actorRoles: [...user.roles],
+    });
   }
 }

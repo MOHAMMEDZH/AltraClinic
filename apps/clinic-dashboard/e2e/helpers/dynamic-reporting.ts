@@ -34,6 +34,11 @@ export async function gotoReportingHome(page: Page) {
     await page.goto('/reports', { waitUntil: 'domcontentloaded' });
   }
   await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  // Focused Vite boots occasionally fail the first dynamic import of ReportingHomePage.
+  if ((await page.getByRole('heading', { name: /Unexpected Application Error/i }).count()) > 0) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  }
   await waitForReportingLoaded(page);
 }
 
@@ -115,21 +120,27 @@ export async function gotoReportingPath(page: Page, path: string) {
 
 export async function waitForReportingLoaded(page: Page) {
   const region = reportsRegion(page);
-  if ((await region.count()) > 0) {
-    await expect(region).toBeVisible({ timeout: 30_000 });
+  const reportCatalogRegion = page.getByRole('region', { name: /report catalog/i }).first();
+  const accessDenied = page.getByText(/do not have permission|access denied|ليس لديك/i).first();
+  const topHeading = page
+    .getByRole('heading', { name: /Report builder|Export center|Reporting|Billing|التقارير/i, level: 1 })
+    .first();
+
+  // Wait for reporting UI (region, catalog, access-denied, or page title).
+  // Suspense fallback mounts #reports-region briefly; category pages historically
+  // remounted without that id — settle only when the region is still visible.
+  await expect(region.or(reportCatalogRegion).or(accessDenied).or(topHeading).first()).toBeVisible({
+    timeout: 45_000,
+  });
+
+  if (await accessDenied.isVisible().catch(() => false)) return;
+
+  // Authorized (and empty-catalog unauthorized) pages: wait out Suspense aria-busy
+  // only if #reports-region remains mounted/visible after the route settles.
+  if (await region.isVisible().catch(() => false)) {
     await region.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 45_000 }).catch(() => undefined);
-    return;
+    await expect(region).not.toHaveAttribute('aria-busy', 'true', { timeout: 45_000 }).catch(() => undefined);
   }
-  await expect(
-    page
-      .getByRole('region', { name: /report catalog/i })
-      .first()
-      .or(page.getByText(/do not have permission|access denied|ليس لديك/i))
-      .or(page.getByRole('heading', { name: 'Report builder', level: 1 }))
-      .or(page.getByRole('heading', { name: 'Export center', level: 1 }))
-      .or(page.getByRole('heading', { name: 'Reporting', level: 1 }))
-      .first(),
-  ).toBeVisible({ timeout: 30_000 });
 }
 
 export async function reportCatalogTitles(page: Page): Promise<string[]> {

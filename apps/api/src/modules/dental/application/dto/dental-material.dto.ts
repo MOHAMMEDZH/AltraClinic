@@ -37,6 +37,11 @@ export class ConsumeDentalMaterialDTO {
   @IsPositive()
   quantity!: number;
 
+  /** Accountable clinician who used/administered the item (INV-B01). Required. */
+  @IsNotEmpty()
+  @IsUUID()
+  usedByUserId!: string;
+
   @IsOptional()
   @IsString()
   procedureCode?: string | null;
@@ -44,6 +49,14 @@ export class ConsumeDentalMaterialDTO {
   @IsOptional()
   @IsUUID()
   encounterId?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  appointmentId?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  clinicalServiceId?: string | null;
 
   @IsOptional()
   @IsString()
@@ -62,6 +75,10 @@ class ConsumeDentalMaterialLineDTO {
   @IsNumber()
   @IsPositive()
   quantity!: number;
+
+  @IsNotEmpty()
+  @IsUUID()
+  usedByUserId!: string;
 }
 
 export class ConsumeDentalMaterialsBatchDTO {
@@ -76,6 +93,10 @@ export class ConsumeDentalMaterialsBatchDTO {
   @IsOptional()
   @IsString()
   notes?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  usedByUserId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
