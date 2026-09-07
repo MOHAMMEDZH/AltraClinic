@@ -12,6 +12,8 @@ import { APPOINTMENT_REPOSITORY } from '../../../../infrastructure/provider.toke
 import { AppointmentRepository } from '../../domain/appointment.repository.interface';
 import { ScheduleWindowService } from '../services/schedule-window.service';
 import { TenantTimezoneService } from '../services/tenant-timezone.service';
+import { AvailabilityExceptionQueryService } from '../services/availability-exception-query.service';
+import { buildResourceAvailabilitySlots } from '../services/availability-slot-builder';
 import {
   applyWindowToZonedDay,
   dayOfWeekInTimezone,
@@ -21,7 +23,6 @@ import { SCHEDULING_AUDIT_LOG, SchedulingAuditLog } from '../ports/scheduling-au
 
 const WORKDAY_START_HOUR = 7;
 const WORKDAY_END_HOUR = 20;
-const SLOT_INTERVAL_MIN = 15;
 
 @Injectable()
 export class ListSchedulingResourcesHandler {
@@ -71,6 +72,7 @@ export class GetResourceAvailabilityHandler {
     private readonly tenantContext: TenantContextService,
     private readonly scheduleWindow: ScheduleWindowService,
     private readonly tenantTimezone: TenantTimezoneService,
+    private readonly availabilityExceptions: AvailabilityExceptionQueryService,
   ) {}
 
   async execute(input: { resourceId: string; date: string; durationMin?: number }) {
@@ -93,64 +95,58 @@ export class GetResourceAvailabilityHandler {
     });
     if (!resource) throw new NotFoundException('Resource not found');
 
+    const branchId = resource.branchId ?? tenant.branchId ?? null;
     const dayOfWeek = dayOfWeekInTimezone(input.date, timezone);
     const window = await this.scheduleWindow.resolveBranchWindow(
       tenant.tenantId,
-      resource.branchId ?? tenant.branchId,
+      branchId,
       dayOfWeek,
     );
-    const range = applyWindowToZonedDay(input.date, timezone, window);
-    if (!range) {
-      return {
-        resourceId: input.resourceId,
-        date: input.date,
-        durationMin,
-        slots: [],
-        bookedCount: 0,
-      };
-    }
+    const weekly = applyWindowToZonedDay(input.date, timezone, window);
+    const weeklyRange = weekly
+      ? { start: weekly.rangeStart, end: weekly.rangeEnd }
+      : null;
 
-    const { rangeStart, rangeEnd } = range;
+    const exceptions = await this.availabilityExceptions.listOverlappingDay({
+      tenantId: tenant.tenantId,
+      dateYmd: input.date,
+      timezone,
+      branchId,
+    });
 
+    const dayBounds = zonedDayBoundsUtc(input.date, timezone);
     const { items: booked } = await this.repo.list({
       tenantId: tenant.tenantId,
-      branchId: tenant.branchId,
-      from: rangeStart.toISOString(),
-      to: rangeEnd.toISOString(),
+      branchId: branchId ?? tenant.branchId,
+      from: dayBounds.start.toISOString(),
+      to: dayBounds.end.toISOString(),
       limit: 200,
       offset: 0,
     });
 
-    const busy = booked.filter(
+    const busyAppts = booked.filter(
       (a) => a.resourceId === input.resourceId && a.status !== 'cancelled',
     );
+    const busy = busyAppts.map((a) => ({
+      start: new Date(a.start),
+      end: new Date(a.end),
+    }));
 
-    const slots: Array<{ start: string; end: string }> = [];
-    const cursor = new Date(rangeStart);
-    while (cursor.getTime() + durationMin * 60_000 <= rangeEnd.getTime()) {
-      const slotStart = new Date(cursor);
-      const slotEnd = new Date(cursor);
-      slotEnd.setMinutes(slotEnd.getMinutes() + durationMin);
-
-      const overlaps = busy.some((appt) => {
-        const aStart = new Date(appt.start).getTime();
-        const aEnd = new Date(appt.end).getTime();
-        return slotStart.getTime() < aEnd && slotEnd.getTime() > aStart;
-      });
-
-      if (!overlaps) {
-        slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
-      }
-
-      cursor.setMinutes(cursor.getMinutes() + SLOT_INTERVAL_MIN);
-    }
+    const slots = buildResourceAvailabilitySlots({
+      weekly: weeklyRange,
+      exceptions,
+      resourceId: input.resourceId,
+      branchId,
+      durationMin,
+      busy,
+    });
 
     return {
       resourceId: input.resourceId,
       date: input.date,
       durationMin,
       slots,
-      bookedCount: busy.length,
+      bookedCount: busyAppts.length,
     };
   }
 }

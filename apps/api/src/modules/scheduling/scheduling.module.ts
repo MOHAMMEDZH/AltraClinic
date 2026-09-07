@@ -37,6 +37,11 @@ import {
   CreateWaitlistHandler,
   ListWaitlistHandler,
 } from './application/handlers/waitlist.handlers';
+import {
+  CreateAvailabilityExceptionHandler,
+  ListAvailabilityExceptionsHandler,
+  SoftDeleteAvailabilityExceptionHandler,
+} from './application/handlers/availability-exception.handlers';
 import { CreateInvoiceFromAppointmentHandler } from './application/handlers/create-invoice-from-appointment.handler';
 import { APPOINTMENT_REPOSITORY } from '../../infrastructure/provider.tokens';
 import { PatientsModule } from '../patients/patients.module';
@@ -51,6 +56,7 @@ import {
 } from './application/handlers/schedule-settings.handlers';
 import { ScheduleWindowService } from './application/services/schedule-window.service';
 import { TenantTimezoneService } from './application/services/tenant-timezone.service';
+import { AvailabilityExceptionQueryService } from './application/services/availability-exception-query.service';
 import { GetSchedulingContextHandler } from './application/handlers/scheduling-context.handler';
 import { WaitlistSlotNotificationService } from './application/services/waitlist-slot-notification.service';
 import { AppointmentCancelledWaitlistListener } from './application/integrations/appointment-cancelled-waitlist.listener';
@@ -119,6 +125,10 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     UpsertBranchHoursHandler,
     GetProviderScheduleHandler,
     UpsertProviderScheduleHandler,
+    CreateAvailabilityExceptionHandler,
+    ListAvailabilityExceptionsHandler,
+    SoftDeleteAvailabilityExceptionHandler,
+    AvailabilityExceptionQueryService,
     ScheduleWindowService,
     TenantTimezoneService,
     GetSchedulingContextHandler,

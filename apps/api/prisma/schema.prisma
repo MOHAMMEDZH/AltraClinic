@@ -106,6 +106,16 @@ enum WaitlistStatus {
   @@map("waitlist_status")
 }
 
+/// Wave G / P1-11 — AvailabilityException kinds (deny vs EXTRA add).
+enum AvailabilityExceptionType {
+  PROVIDER_LEAVE
+  BRANCH_HOLIDAY
+  RESOURCE_MAINTENANCE
+  EXTRA_AVAILABILITY
+
+  @@map("availability_exception_type")
+}
+
 enum SchedulingResourceType {
   ROOM
   EQUIPMENT
@@ -526,6 +536,7 @@ model Tenant {
   appointmentTemplates AppointmentTemplate[]
   branchOperatingHours BranchOperatingHours[]
   providerWeeklySchedules ProviderWeeklySchedule[]
+  availabilityExceptions AvailabilityException[]
   encounters           Encounter[]
   clinicalNoteTemplates ClinicalNoteTemplate[]
   clinicalFormTemplates ClinicalFormTemplate[]
@@ -1665,6 +1676,35 @@ model ProviderWeeklySchedule {
   @@unique([tenantId, providerId, dayOfWeek])
   @@index([tenantId, providerId])
   @@map("provider_weekly_schedules")
+}
+
+/// Wave G / P1-11 — holiday/leave/maintenance/extra availability SoR.
+/// Precedence: deny exceptions beat weekly open; EXTRA_AVAILABILITY adds slots.
+model AvailabilityException {
+  id         String                    @id @default(uuid()) @db.Uuid
+  tenantId   String                    @db.Uuid
+  branchId   String?                   @db.Uuid
+  type       AvailabilityExceptionType
+  /// Required for PROVIDER_LEAVE (and optional scope for EXTRA).
+  providerId String?                   @db.Uuid
+  /// Required for RESOURCE_MAINTENANCE.
+  resourceId String?                   @db.Uuid
+  /// Inclusive UTC interval (stored instants; clinic TZ used at evaluation).
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?                   @db.VarChar(500)
+  createdBy  String                    @db.Uuid
+  createdAt  DateTime                  @default(now())
+  updatedAt  DateTime                  @updatedAt
+  deletedAt  DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, startsAt, endsAt])
+  @@index([tenantId, branchId, startsAt])
+  @@index([tenantId, providerId, startsAt])
+  @@index([tenantId, resourceId, startsAt])
+  @@map("availability_exceptions")
 }
 
 model AppointmentReminderLog {

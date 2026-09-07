@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { TenantScopedAccessGuard } from '../../../common/tenant-scoped-access.guard';
 import { RequirePermission } from '../../auth/api/guards/permission.guard';
 import { RequireLicensedModule } from '../../subscription/api/decorators/require-licensed-module.decorator';
@@ -13,6 +23,11 @@ import {
 } from '../application/handlers/schedule-settings.handlers';
 import { CreateSchedulingResourceHandler } from '../application/handlers/scheduling-resources.handlers';
 import { CreateSchedulingResourceDTO } from '../application/dto/create-scheduling-resource.dto';
+import {
+  CreateAvailabilityExceptionHandler,
+  ListAvailabilityExceptionsHandler,
+  SoftDeleteAvailabilityExceptionHandler,
+} from '../application/handlers/availability-exception.handlers';
 
 @Controller('scheduling')
 @UseGuards(TenantScopedAccessGuard)
@@ -25,6 +40,9 @@ export class ScheduleSettingsController {
     private readonly getProviderSchedule: GetProviderScheduleHandler,
     private readonly upsertProviderSchedule: UpsertProviderScheduleHandler,
     private readonly createResource: CreateSchedulingResourceHandler,
+    private readonly createAvailabilityException: CreateAvailabilityExceptionHandler,
+    private readonly listAvailabilityExceptions: ListAvailabilityExceptionsHandler,
+    private readonly softDeleteAvailabilityException: SoftDeleteAvailabilityExceptionHandler,
   ) { }
 
   @Get('branches/:branchId/hours')
@@ -85,5 +103,53 @@ export class ScheduleSettingsController {
       actorId: user.sub,
       actorRoles: [...user.roles],
     });
+  }
+
+  /** Wave G1 / P1-11 — AvailabilityException SoR (schedule.admin ≈ api.scheduling manage). */
+  @Get('availability-exceptions')
+  @RequirePermission('api.scheduling', 'view')
+  async listExceptions(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.listAvailabilityExceptions.execute({ from, to, branchId });
+  }
+
+  @Post('availability-exceptions')
+  @RequirePermission('api.scheduling', 'manage')
+  async createException(
+    @Body()
+    body: {
+      type: string;
+      startsAt: string;
+      endsAt: string;
+      branchId?: string | null;
+      providerId?: string | null;
+      resourceId?: string | null;
+      reason?: string | null;
+    },
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.createAvailabilityException.execute({
+      type: body.type,
+      startsAt: body.startsAt,
+      endsAt: body.endsAt,
+      branchId: body.branchId,
+      providerId: body.providerId,
+      resourceId: body.resourceId,
+      reason: body.reason,
+      actorId: user.sub,
+      actorRoles: [...user.roles],
+    });
+  }
+
+  @Delete('availability-exceptions/:id')
+  @RequirePermission('api.scheduling', 'manage')
+  async deleteException(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtClaimsVO,
+  ) {
+    return this.softDeleteAvailabilityException.execute(id, user.sub, [...user.roles]);
   }
 }
