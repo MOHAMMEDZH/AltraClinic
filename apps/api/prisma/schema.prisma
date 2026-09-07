@@ -106,6 +106,16 @@ enum WaitlistStatus {
   @@map("waitlist_status")
 }
 
+/// Wave G / P1-10 — waitlist offer lifecycle (offer → accept | expire | reject).
+enum WaitlistOfferStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REJECTED
+
+  @@map("waitlist_offer_status")
+}
+
 /// Wave G / P1-11 — AvailabilityException kinds (deny vs EXTRA add).
 enum AvailabilityExceptionType {
   PROVIDER_LEAVE
@@ -527,6 +537,7 @@ model Tenant {
   patients             Patient[]
   appointments         Appointment[]
   appointmentWaitlist  AppointmentWaitlist[]
+  waitlistOffers       WaitlistOffer[]
   appointmentSnapshotRevisions AppointmentServiceSnapshotRevision[]
   providerServiceEligibilities ProviderServiceEligibility[]
   serviceResourceRequirements ServiceResourceRequirement[]
@@ -1584,10 +1595,45 @@ model AppointmentWaitlist {
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  offers  WaitlistOffer[]
 
   @@index([tenantId, status])
   @@index([tenantId, patientId])
   @@map("appointment_waitlist")
+}
+
+/// Wave G / P1-10 — concrete slot offer with TTL; accept is sync under booking locks.
+/// Default: no silent auto-book (tenant feature waitlist.auto_book must be explicitly ON).
+model WaitlistOffer {
+  id                  String              @id @default(uuid()) @db.Uuid
+  tenantId            String              @db.Uuid
+  branchId            String?             @db.Uuid
+  waitlistEntryId     String              @db.Uuid
+  /// Cancelled appointment that freed the slot (nullable for staff-created offers).
+  sourceAppointmentId String?             @db.Uuid
+  providerId          String              @db.Uuid
+  resourceId          String?             @db.Uuid
+  offeredStartsAt     DateTime
+  offeredEndsAt       DateTime
+  expiresAt           DateTime
+  status              WaitlistOfferStatus @default(PENDING)
+  /// Set when accept wins under booking locks.
+  appointmentId       String?             @db.Uuid
+  createdBy           String?             @db.Uuid
+  acceptedAt          DateTime?
+  expiredAt           DateTime?
+  rejectedAt          DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  waitlistEntry AppointmentWaitlist @relation(fields: [waitlistEntryId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status, expiresAt])
+  @@index([tenantId, waitlistEntryId, status])
+  @@index([tenantId, offeredStartsAt, offeredEndsAt])
+  @@map("waitlist_offers")
 }
 
 /// Bookable rooms, equipment, and operatories (Wave D AR-12).

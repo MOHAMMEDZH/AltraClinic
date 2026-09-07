@@ -38,6 +38,13 @@ import {
   ListWaitlistHandler,
 } from './application/handlers/waitlist.handlers';
 import {
+  AcceptWaitlistOfferHandler,
+  CreateWaitlistOfferHandler,
+  ExpireWaitlistOffersHandler,
+  ListWaitlistOffersHandler,
+  RejectWaitlistOfferHandler,
+} from './application/handlers/waitlist-offer.handlers';
+import {
   CreateAvailabilityExceptionHandler,
   ListAvailabilityExceptionsHandler,
   SoftDeleteAvailabilityExceptionHandler,
@@ -59,6 +66,7 @@ import { TenantTimezoneService } from './application/services/tenant-timezone.se
 import { AvailabilityExceptionQueryService } from './application/services/availability-exception-query.service';
 import { GetSchedulingContextHandler } from './application/handlers/scheduling-context.handler';
 import { WaitlistSlotNotificationService } from './application/services/waitlist-slot-notification.service';
+import { WaitlistOfferAutofillService } from './application/services/waitlist-offer-autofill.service';
 import { AppointmentCancelledWaitlistListener } from './application/integrations/appointment-cancelled-waitlist.listener';
 import { BillingModule } from '../billing/billing.module';
 import { NotificationModule } from '../notifications/notifications.module';
@@ -120,6 +128,11 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     ListWaitlistHandler,
     CreateWaitlistHandler,
     CancelWaitlistHandler,
+    CreateWaitlistOfferHandler,
+    ListWaitlistOffersHandler,
+    AcceptWaitlistOfferHandler,
+    RejectWaitlistOfferHandler,
+    ExpireWaitlistOffersHandler,
     BookWaitlistEntryHandler,
     GetBranchHoursHandler,
     UpsertBranchHoursHandler,
@@ -133,6 +146,7 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     TenantTimezoneService,
     GetSchedulingContextHandler,
     WaitlistSlotNotificationService,
+    WaitlistOfferAutofillService,
     AppointmentCancelledWaitlistListener,
     CreateInvoiceFromAppointmentHandler,
     TenantScopedAccessGuard,

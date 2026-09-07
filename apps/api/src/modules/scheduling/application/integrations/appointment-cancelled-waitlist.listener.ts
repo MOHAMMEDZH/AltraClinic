@@ -3,14 +3,17 @@ import { DomainEvent } from '../../../../common/event.base';
 import { DomainEventBus } from '../../../../infrastructure/domain-event-bus.service';
 import { DomainEventHandler } from '../../../../infrastructure/domain-event-handler.interface';
 import { AppointmentCancelledEvent } from '../../domain/events/appointment-cancelled.event';
-import { WaitlistSlotNotificationService } from '../services/waitlist-slot-notification.service';
+import { WaitlistOfferAutofillService } from '../services/waitlist-offer-autofill.service';
 
+/**
+ * Wave G2 — cancel → offer/TTL (or policy auto-book). Replaces notify-only as primary fulfillment path.
+ */
 @Injectable()
 export class AppointmentCancelledWaitlistListener implements DomainEventHandler, OnModuleInit {
   constructor(
     @Optional() private readonly bus: DomainEventBus,
-    private readonly waitlistNotifications: WaitlistSlotNotificationService,
-  ) { }
+    private readonly autofill: WaitlistOfferAutofillService,
+  ) {}
 
   onModuleInit(): void {
     this.bus?.register(this);
@@ -18,6 +21,6 @@ export class AppointmentCancelledWaitlistListener implements DomainEventHandler,
 
   async handle(event: DomainEvent): Promise<void> {
     if (!(event instanceof AppointmentCancelledEvent)) return;
-    await this.waitlistNotifications.notifyForCancelledAppointment(event);
+    await this.autofill.handleCancelledAppointment(event);
   }
 }
