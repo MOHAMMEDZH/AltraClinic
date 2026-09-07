@@ -97,9 +97,12 @@ describe('Step 09 — Super Admin design system shell', () => {
 
   it('sets document.title from the route registry', async () => {
     renderApp('/overview');
+    // DocumentTitle can settle during auth bootstrap (AuthPageFrame) before the
+    // permission-gated primary nav mounts — wait for the authenticated shell.
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1, name: 'Overview' })).toBeTruthy());
     await waitFor(() => expect(document.title).toBe('Overview | Super Admin'));
 
-    fireEvent.click(screen.getByRole('link', { name: 'Platform users' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Platform users' }));
     await waitFor(() => expect(document.title).toBe('Platform users | Super Admin'));
   });
 
