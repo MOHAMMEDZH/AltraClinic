@@ -5,6 +5,7 @@ import { AppointmentTemplateController } from './controllers/appointment-templat
 import { SchedulingSupportController } from './controllers/scheduling-support.controller';
 import { WaitlistController } from './controllers/waitlist.controller';
 import { BookingIntegrityController } from './controllers/booking-integrity.controller';
+import { RecallController } from './controllers/recall.controller';
 import { PrismaAppointmentRepository } from './infrastructure/prisma-appointment.repository';
 import { CreateAppointmentHandler } from './application/handlers/create-appointment.handler';
 import { GetAppointmentHandler } from './application/handlers/get-appointment.handler';
@@ -44,6 +45,15 @@ import {
   ListWaitlistOffersHandler,
   RejectWaitlistOfferHandler,
 } from './application/handlers/waitlist-offer.handlers';
+import {
+  CreateRecallRuleHandler,
+  ListPatientRecallInstancesHandler,
+  ListRecallRulesHandler,
+  ScanRecallDueHandler,
+  SoftDeleteRecallRuleHandler,
+  TransitionPatientRecallHandler,
+  UpdateRecallRuleHandler,
+} from './application/handlers/recall.handlers';
 import {
   CreateAvailabilityExceptionHandler,
   ListAvailabilityExceptionsHandler,
@@ -97,6 +107,7 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     ScheduleSettingsController,
     WaitlistController,
     BookingIntegrityController,
+    RecallController,
   ],
   providers: [
     { provide: APPOINTMENT_REPOSITORY, useClass: PrismaAppointmentRepository },
@@ -148,6 +159,13 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     WaitlistSlotNotificationService,
     WaitlistOfferAutofillService,
     AppointmentCancelledWaitlistListener,
+    CreateRecallRuleHandler,
+    ListRecallRulesHandler,
+    UpdateRecallRuleHandler,
+    SoftDeleteRecallRuleHandler,
+    ListPatientRecallInstancesHandler,
+    TransitionPatientRecallHandler,
+    ScanRecallDueHandler,
     CreateInvoiceFromAppointmentHandler,
     TenantScopedAccessGuard,
   ],
