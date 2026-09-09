@@ -65,6 +65,8 @@ import {
 
   canExportAppointments,
 
+  canManageScheduling,
+
   canUpdateAppointment,
 
   CLINICAL_PROVIDER_ROLES,
@@ -152,6 +154,8 @@ import { CancelAppointmentDialog } from './components/CancelAppointmentDialog';
 import { WaitlistPanel } from './components/WaitlistPanel';
 import { ScheduleSettingsPanel } from './components/ScheduleSettingsPanel';
 import { BranchHoursPanel } from './components/BranchHoursPanel';
+import { AvailabilityExceptionsPanel } from './components/AvailabilityExceptionsPanel';
+import { RecallPanel } from './components/RecallPanel';
 
 import { ResourceAvailabilityPanel } from './components/ResourceAvailabilityPanel';
 
@@ -1130,6 +1134,8 @@ export function AppointmentsPage() {
 
         canBook={canCreateAppointment(perm)}
 
+        canManage={canManageScheduling(perm)}
+
       />
 
       <ScheduleSettingsPanel
@@ -1139,6 +1145,20 @@ export function AppointmentsPage() {
       />
 
       <BranchHoursPanel branches={branches} />
+
+      <AvailabilityExceptionsPanel
+
+        providers={providerOptions.map((p) => ({ id: p.id, name: p.label, branchId: null }))}
+
+        branches={branches}
+
+      />
+
+      <RecallPanel
+
+        providers={providerOptions.map((p) => ({ id: p.id, name: p.label, branchId: null }))}
+
+      />
 
 
 

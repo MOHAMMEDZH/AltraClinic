@@ -80,6 +80,11 @@ export function canDeleteAppointment(perm: (action: string) => boolean): boolean
   return perm('delete');
 }
 
+/** Wave G4 — schedule.admin analogue for exceptions / due-scan / expire-due. */
+export function canManageScheduling(perm: (action: string) => boolean): boolean {
+  return perm('manage');
+}
+
 export const CLINICAL_PROVIDER_ROLES = new Set([
   'doctor',
   'dentist',

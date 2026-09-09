@@ -11,6 +11,10 @@ import {
   useCancelWaitlistEntry,
   useCreateWaitlistEntry,
   useWaitlist,
+  useWaitlistOffers,
+  useAcceptWaitlistOffer,
+  useRejectWaitlistOffer,
+  useExpireDueWaitlistOffers,
 } from '../hooks/useScheduling';
 import type { SchedulingProvider } from '../types/scheduling.types';
 import styles from './WaitlistPanel.module.css';
@@ -20,14 +24,25 @@ interface WaitlistPanelProps {
   canCreate: boolean;
   canDelete: boolean;
   canBook?: boolean;
+  canManage?: boolean;
 }
 
-export function WaitlistPanel({ providers, canCreate, canDelete, canBook }: WaitlistPanelProps) {
+export function WaitlistPanel({
+  providers,
+  canCreate,
+  canDelete,
+  canBook,
+  canManage = false,
+}: WaitlistPanelProps) {
   const { t, locale } = useI18n();
   const waitlistQuery = useWaitlist('open');
   const createMutation = useCreateWaitlistEntry();
   const cancelMutation = useCancelWaitlistEntry();
   const bookMutation = useBookWaitlistEntry();
+  const offersQuery = useWaitlistOffers('PENDING');
+  const acceptOffer = useAcceptWaitlistOffer();
+  const rejectOffer = useRejectWaitlistOffer();
+  const expireOffers = useExpireDueWaitlistOffers();
   const [showForm, setShowForm] = useState(false);
   const [patientSearch, setPatientSearch] = useState('');
   const [patientId, setPatientId] = useState('');
@@ -86,6 +101,7 @@ export function WaitlistPanel({ providers, canCreate, canDelete, canBook }: Wait
   }
 
   const items = waitlistQuery.data?.items ?? [];
+  const offers = offersQuery.data?.items ?? [];
 
   return (
     <section className={styles.panel} aria-labelledby="scheduling-waitlist-heading">
@@ -93,12 +109,80 @@ export function WaitlistPanel({ providers, canCreate, canDelete, canBook }: Wait
         <h2 id="scheduling-waitlist-heading" className={styles.title}>
           {t('scheduling.waitlist.title')}
         </h2>
-        {canCreate && (
-          <AuthButton variant="secondary" onClick={() => setShowForm((v) => !v)}>
-            {t('scheduling.waitlist.add')}
-          </AuthButton>
-        )}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {canManage && (
+            <AuthButton
+              variant="ghost"
+              loading={expireOffers.isPending}
+              onClick={() => void expireOffers.mutateAsync()}
+            >
+              {t('scheduling.waitlist.offers.expireDue')}
+            </AuthButton>
+          )}
+          {canCreate && (
+            <AuthButton variant="secondary" onClick={() => setShowForm((v) => !v)}>
+              {t('scheduling.waitlist.add')}
+            </AuthButton>
+          )}
+        </div>
       </div>
+
+      <h3 className={styles.title} style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+        {t('scheduling.waitlist.offers.title')}
+      </h3>
+      {error && !showForm && <AuthAlert variant="error">{error}</AuthAlert>}
+      {offers.length === 0 ? (
+        <p className={styles.empty}>{t('scheduling.waitlist.offers.empty')}</p>
+      ) : (
+        <ul className={styles.list} style={{ marginBottom: '1rem' }}>
+          {offers.map((offer) => (
+            <li key={offer.id} className={styles.item}>
+              <div>
+                <strong>{t('scheduling.waitlist.offers.pending')}</strong>
+                <span className={styles.meta}>
+                  {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+                    new Date(offer.offeredStartsAt),
+                  )}
+                  {' → '}
+                  {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+                    new Date(offer.offeredEndsAt),
+                  )}
+                </span>
+                <span className={styles.meta}>
+                  {t('scheduling.waitlist.offers.expires')}:{' '}
+                  {new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+                    new Date(offer.expiresAt),
+                  )}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                {canBook && (
+                  <AuthButton
+                    variant="secondary"
+                    loading={acceptOffer.isPending}
+                    onClick={() => void acceptOffer.mutateAsync(offer.id).catch((err: unknown) => {
+                      setError(err instanceof Error ? err.message : t('scheduling.waitlist.error'));
+                    })}
+                  >
+                    {t('scheduling.waitlist.offers.accept')}
+                  </AuthButton>
+                )}
+                {canBook && (
+                  <AuthButton
+                    variant="ghost"
+                    loading={rejectOffer.isPending}
+                    onClick={() => void rejectOffer.mutateAsync(offer.id).catch((err: unknown) => {
+                      setError(err instanceof Error ? err.message : t('scheduling.waitlist.error'));
+                    })}
+                  >
+                    {t('scheduling.waitlist.offers.reject')}
+                  </AuthButton>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {showForm && canCreate && (
         <form className={styles.form} onSubmit={(e) => void handleSubmit(e)}>
