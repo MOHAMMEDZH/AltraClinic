@@ -30,7 +30,7 @@ test.describe('Scheduling module', () => {
   test('status filter syncs to URL', async ({ page }) => {
     await gotoAppointments(page);
 
-    await page.getByLabel('Status').selectOption('confirmed');
+    await page.getByLabel('Status', { exact: true }).selectOption('confirmed');
     await expect(page).toHaveURL(/status=confirmed/);
   });
 
