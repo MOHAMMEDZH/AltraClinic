@@ -286,6 +286,245 @@ export async function bookWaitlistEntry(
   });
 }
 
+/* ── Wave G1 AvailabilityException ───────────────────────────────────────── */
+
+export async function fetchAvailabilityExceptions(
+  token: string,
+  tenantId: string,
+  params: { from?: string; to?: string; branchId?: string } = {},
+): Promise<{ items: import('../types/scheduling.types').AvailabilityException[] }> {
+  return apiRequest(`/scheduling/availability-exceptions${qs(params)}`, { token, tenantId });
+}
+
+export async function createAvailabilityException(
+  token: string,
+  tenantId: string,
+  payload: {
+    type: string;
+    startsAt: string;
+    endsAt: string;
+    branchId?: string | null;
+    providerId?: string | null;
+    resourceId?: string | null;
+    reason?: string | null;
+  },
+): Promise<import('../types/scheduling.types').AvailabilityException> {
+  return apiRequest('/scheduling/availability-exceptions', {
+    method: 'POST',
+    body: payload,
+    token,
+    tenantId,
+  });
+}
+
+export async function deleteAvailabilityException(
+  token: string,
+  tenantId: string,
+  id: string,
+): Promise<{ ok: boolean; id: string }> {
+  return apiRequest(`/scheduling/availability-exceptions/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    token,
+    tenantId,
+  });
+}
+
+/* ── Wave G2 WaitlistOffer ────────────────────────────────────────────────── */
+
+export async function fetchWaitlistOffers(
+  token: string,
+  tenantId: string,
+  params: { status?: string; waitlistEntryId?: string } = {},
+): Promise<{ items: import('../types/scheduling.types').WaitlistOffer[] }> {
+  return apiRequest(`/scheduling/waitlist/offers${qs(params)}`, { token, tenantId });
+}
+
+export async function acceptWaitlistOffer(
+  token: string,
+  tenantId: string,
+  offerId: string,
+): Promise<{
+  offerId: string;
+  appointmentId: string;
+  waitlistEntryId: string;
+  status: string;
+}> {
+  return apiRequest(`/scheduling/waitlist/offers/${encodeURIComponent(offerId)}/accept`, {
+    method: 'POST',
+    token,
+    tenantId,
+  });
+}
+
+export async function rejectWaitlistOffer(
+  token: string,
+  tenantId: string,
+  offerId: string,
+): Promise<{ id: string; status: string }> {
+  return apiRequest(`/scheduling/waitlist/offers/${encodeURIComponent(offerId)}/reject`, {
+    method: 'POST',
+    token,
+    tenantId,
+  });
+}
+
+export async function expireDueWaitlistOffers(
+  token: string,
+  tenantId: string,
+): Promise<{ expired: number; at: string }> {
+  return apiRequest('/scheduling/waitlist/offers/expire-due', {
+    method: 'POST',
+    token,
+    tenantId,
+  });
+}
+
+/* ── Wave G3 Recall SoR ───────────────────────────────────────────────────── */
+
+export async function fetchRecallRules(
+  token: string,
+  tenantId: string,
+  activeOnly?: boolean,
+): Promise<{ items: import('../types/scheduling.types').RecallRule[] }> {
+  return apiRequest(
+    `/scheduling/recall/rules${qs({ activeOnly: activeOnly ? 'true' : undefined })}`,
+    { token, tenantId },
+  );
+}
+
+export async function createRecallRule(
+  token: string,
+  tenantId: string,
+  payload: {
+    intervalDays: number;
+    clinicalServiceId?: string | null;
+    eligibilityExpr?: unknown;
+    active?: boolean;
+  },
+): Promise<import('../types/scheduling.types').RecallRule> {
+  return apiRequest('/scheduling/recall/rules', {
+    method: 'POST',
+    body: payload,
+    token,
+    tenantId,
+  });
+}
+
+export async function updateRecallRule(
+  token: string,
+  tenantId: string,
+  id: string,
+  payload: {
+    intervalDays?: number;
+    clinicalServiceId?: string | null;
+    eligibilityExpr?: unknown;
+    active?: boolean;
+  },
+): Promise<import('../types/scheduling.types').RecallRule> {
+  return apiRequest(`/scheduling/recall/rules/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: payload,
+    token,
+    tenantId,
+  });
+}
+
+export async function deleteRecallRule(
+  token: string,
+  tenantId: string,
+  id: string,
+): Promise<{ ok: boolean; id: string }> {
+  return apiRequest(`/scheduling/recall/rules/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    token,
+    tenantId,
+  });
+}
+
+export async function fetchRecallInstances(
+  token: string,
+  tenantId: string,
+  params: { status?: string; patientId?: string; ruleId?: string } = {},
+): Promise<{ items: import('../types/scheduling.types').PatientRecallInstance[] }> {
+  return apiRequest(`/scheduling/recall/instances${qs(params)}`, { token, tenantId });
+}
+
+export async function snoozeRecallInstance(
+  token: string,
+  tenantId: string,
+  id: string,
+  snoozeUntil: string,
+): Promise<import('../types/scheduling.types').PatientRecallInstance> {
+  return apiRequest(`/scheduling/recall/instances/${encodeURIComponent(id)}/snooze`, {
+    method: 'POST',
+    body: { snoozeUntil },
+    token,
+    tenantId,
+  });
+}
+
+export async function bookRecallInstance(
+  token: string,
+  tenantId: string,
+  id: string,
+  payload: {
+    appointmentId?: string;
+    start?: string;
+    end?: string;
+    providerId?: string;
+  },
+): Promise<import('../types/scheduling.types').PatientRecallInstance> {
+  return apiRequest(`/scheduling/recall/instances/${encodeURIComponent(id)}/book`, {
+    method: 'POST',
+    body: payload,
+    token,
+    tenantId,
+  });
+}
+
+export async function completeRecallInstance(
+  token: string,
+  tenantId: string,
+  id: string,
+): Promise<import('../types/scheduling.types').PatientRecallInstance> {
+  return apiRequest(`/scheduling/recall/instances/${encodeURIComponent(id)}/complete`, {
+    method: 'POST',
+    token,
+    tenantId,
+  });
+}
+
+export async function optOutRecallInstance(
+  token: string,
+  tenantId: string,
+  id: string,
+): Promise<import('../types/scheduling.types').PatientRecallInstance> {
+  return apiRequest(`/scheduling/recall/instances/${encodeURIComponent(id)}/opt-out`, {
+    method: 'POST',
+    token,
+    tenantId,
+  });
+}
+
+export async function runRecallDueScan(
+  token: string,
+  tenantId: string,
+  notify = false,
+): Promise<{
+  created: number;
+  notified: number;
+  skipped: number;
+  asOf: string;
+  rulesScanned: number;
+}> {
+  return apiRequest('/scheduling/recall/due-scan', {
+    method: 'POST',
+    body: { notify },
+    token,
+    tenantId,
+  });
+}
+
 export async function fetchBranchHours(
   token: string,
   tenantId: string,

@@ -163,6 +163,81 @@ export interface WaitlistEntry {
   createdAt: string;
 }
 
+/** Wave G1 — AvailabilityException types. */
+export type AvailabilityExceptionType =
+  | 'PROVIDER_LEAVE'
+  | 'BRANCH_HOLIDAY'
+  | 'RESOURCE_MAINTENANCE'
+  | 'EXTRA_AVAILABILITY';
+
+export interface AvailabilityException {
+  id: string;
+  tenantId?: string;
+  branchId: string | null;
+  type: AvailabilityExceptionType;
+  providerId: string | null;
+  resourceId: string | null;
+  startsAt: string;
+  endsAt: string;
+  reason: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Wave G2 — WaitlistOffer lifecycle. */
+export type WaitlistOfferStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REJECTED';
+
+export interface WaitlistOffer {
+  id: string;
+  tenantId: string;
+  branchId: string | null;
+  waitlistEntryId: string;
+  sourceAppointmentId: string | null;
+  providerId: string;
+  resourceId: string | null;
+  offeredStartsAt: string;
+  offeredEndsAt: string;
+  expiresAt: string;
+  status: WaitlistOfferStatus;
+  appointmentId: string | null;
+  acceptedAt: string | null;
+  expiredAt: string | null;
+  rejectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Wave G3 — Recall SoR. */
+export type PatientRecallStatus = 'DUE' | 'SNOOZED' | 'BOOKED' | 'COMPLETED' | 'OPTED_OUT';
+
+export interface RecallRule {
+  id: string;
+  tenantId: string;
+  clinicalServiceId: string | null;
+  intervalDays: number;
+  eligibilityExpr: Record<string, unknown> | unknown;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface PatientRecallInstance {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  ruleId: string;
+  dueAt: string;
+  status: PatientRecallStatus;
+  lastQualifyingServiceAt: string | null;
+  snoozedUntil: string | null;
+  appointmentId: string | null;
+  completedAt: string | null;
+  optedOutAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ListAppointmentsParams {
   q?: string;
   status?: AppointmentStatus;

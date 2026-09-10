@@ -7,9 +7,14 @@ import { Inject } from '@nestjs/common';
 import { AppointmentRepository } from '../../domain/appointment.repository.interface';
 import { ScheduleWindowService } from '../services/schedule-window.service';
 import { TenantTimezoneService } from '../services/tenant-timezone.service';
+import { AvailabilityExceptionQueryService } from '../services/availability-exception-query.service';
+import {
+  buildProviderAvailabilitySlots,
+} from '../services/availability-slot-builder';
 import {
   applyWindowToZonedDay,
   dayOfWeekInTimezone,
+  zonedDayBoundsUtc,
 } from '../../domain/scheduling-timezone.util';
 import {
   ProviderEligibilityService,
@@ -18,8 +23,6 @@ import {
 import { SCHEDULING_SERVICE_TYPES } from '../../domain/service-types';
 
 const PROVIDER_ROLES: UserRole[] = SCHEDULING_PROVIDER_ROLES;
-
-const SLOT_INTERVAL_MIN = 15;
 
 @Injectable()
 export class ListProvidersHandler {
@@ -91,6 +94,7 @@ export class GetAvailabilityHandler {
     private readonly scheduleWindow: ScheduleWindowService,
     private readonly tenantTimezone: TenantTimezoneService,
     private readonly eligibility: ProviderEligibilityService,
+    private readonly availabilityExceptions: AvailabilityExceptionQueryService,
   ) {}
 
   async execute(input: {
@@ -127,62 +131,55 @@ export class GetAvailabilityHandler {
       branchId,
       dayOfWeek,
     );
-    const range = applyWindowToZonedDay(input.date, timezone, window);
-    if (!range) {
-      return {
-        providerId: input.providerId,
-        date: input.date,
-        durationMin,
-        ...(clinicalServiceId ? { clinicalServiceId } : {}),
-        slots: [],
-      };
-    }
+    const weekly = applyWindowToZonedDay(input.date, timezone, window);
+    const weeklyRange = weekly
+      ? { start: weekly.rangeStart, end: weekly.rangeEnd }
+      : null;
 
-    const { rangeStart, rangeEnd } = range;
+    const exceptions = await this.availabilityExceptions.listOverlappingDay({
+      tenantId: tenant.tenantId,
+      dateYmd: input.date,
+      timezone,
+      branchId,
+    });
 
+    const dayBounds = zonedDayBoundsUtc(input.date, timezone);
     const { items: booked } = await this.repo.list({
       tenantId: tenant.tenantId,
       branchId: branchId ?? undefined,
       providerId: input.providerId,
-      from: rangeStart.toISOString(),
-      to: rangeEnd.toISOString(),
+      from: dayBounds.start.toISOString(),
+      to: dayBounds.end.toISOString(),
       limit: 200,
       offset: 0,
     });
 
-    const busy = booked.filter((a) => a.status !== 'cancelled');
+    const busy = booked
+      .filter((a) => a.status !== 'cancelled')
+      .map((a) => ({ start: new Date(a.start), end: new Date(a.end) }));
 
-    const slots: Array<{ start: string; end: string }> = [];
-    const cursor = new Date(rangeStart);
-    while (cursor.getTime() + durationMin * 60_000 <= rangeEnd.getTime()) {
-      const slotStart = new Date(cursor);
-      const slotEnd = new Date(cursor);
-      slotEnd.setMinutes(slotEnd.getMinutes() + durationMin);
+    let slots = buildProviderAvailabilitySlots({
+      weekly: weeklyRange,
+      exceptions,
+      providerId: input.providerId,
+      branchId,
+      durationMin,
+      busy,
+    });
 
-      const overlaps = busy.some((appt) => {
-        const aStart = new Date(appt.start).getTime();
-        const aEnd = new Date(appt.end).getTime();
-        return slotStart.getTime() < aEnd && slotEnd.getTime() > aStart;
-      });
-
-      if (!overlaps) {
-        if (enforcementOn && clinicalServiceId) {
-          const ok = await this.eligibility.hasActiveEligibility({
-            tenantId: tenant.tenantId,
-            providerUserId: input.providerId,
-            clinicalServiceId,
-            branchId,
-            at: slotStart,
-          });
-          if (!ok) {
-            cursor.setMinutes(cursor.getMinutes() + SLOT_INTERVAL_MIN);
-            continue;
-          }
-        }
-        slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
+    if (enforcementOn && clinicalServiceId) {
+      const filtered: typeof slots = [];
+      for (const slot of slots) {
+        const ok = await this.eligibility.hasActiveEligibility({
+          tenantId: tenant.tenantId,
+          providerUserId: input.providerId,
+          clinicalServiceId,
+          branchId,
+          at: new Date(slot.start),
+        });
+        if (ok) filtered.push(slot);
       }
-
-      cursor.setMinutes(cursor.getMinutes() + SLOT_INTERVAL_MIN);
+      slots = filtered;
     }
 
     return {

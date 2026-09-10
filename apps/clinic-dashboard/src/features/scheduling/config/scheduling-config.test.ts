@@ -4,6 +4,7 @@ import {
   CALENDAR_VIEW_MODES,
   canCreateAppointment,
   canDeleteAppointment,
+  canManageScheduling,
   canUpdateAppointment,
   formatTimeRange,
   formatTimezoneLabel,
@@ -26,6 +27,12 @@ describe('scheduling-config', () => {
   it('gates delete for scheduling permission', () => {
     const perm = (action: string) => action === 'delete';
     expect(canDeleteAppointment(perm)).toBe(true);
+  });
+
+  it('gates manage for schedule-admin actions (Wave G4)', () => {
+    const manageOnly = (action: string) => action === 'manage';
+    expect(canManageScheduling(manageOnly)).toBe(true);
+    expect(canManageScheduling((a) => a === 'view')).toBe(false);
   });
 
   it('includes all backend statuses', () => {

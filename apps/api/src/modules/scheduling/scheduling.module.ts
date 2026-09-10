@@ -5,6 +5,7 @@ import { AppointmentTemplateController } from './controllers/appointment-templat
 import { SchedulingSupportController } from './controllers/scheduling-support.controller';
 import { WaitlistController } from './controllers/waitlist.controller';
 import { BookingIntegrityController } from './controllers/booking-integrity.controller';
+import { RecallController } from './controllers/recall.controller';
 import { PrismaAppointmentRepository } from './infrastructure/prisma-appointment.repository';
 import { CreateAppointmentHandler } from './application/handlers/create-appointment.handler';
 import { GetAppointmentHandler } from './application/handlers/get-appointment.handler';
@@ -37,6 +38,27 @@ import {
   CreateWaitlistHandler,
   ListWaitlistHandler,
 } from './application/handlers/waitlist.handlers';
+import {
+  AcceptWaitlistOfferHandler,
+  CreateWaitlistOfferHandler,
+  ExpireWaitlistOffersHandler,
+  ListWaitlistOffersHandler,
+  RejectWaitlistOfferHandler,
+} from './application/handlers/waitlist-offer.handlers';
+import {
+  CreateRecallRuleHandler,
+  ListPatientRecallInstancesHandler,
+  ListRecallRulesHandler,
+  ScanRecallDueHandler,
+  SoftDeleteRecallRuleHandler,
+  TransitionPatientRecallHandler,
+  UpdateRecallRuleHandler,
+} from './application/handlers/recall.handlers';
+import {
+  CreateAvailabilityExceptionHandler,
+  ListAvailabilityExceptionsHandler,
+  SoftDeleteAvailabilityExceptionHandler,
+} from './application/handlers/availability-exception.handlers';
 import { CreateInvoiceFromAppointmentHandler } from './application/handlers/create-invoice-from-appointment.handler';
 import { APPOINTMENT_REPOSITORY } from '../../infrastructure/provider.tokens';
 import { PatientsModule } from '../patients/patients.module';
@@ -51,8 +73,10 @@ import {
 } from './application/handlers/schedule-settings.handlers';
 import { ScheduleWindowService } from './application/services/schedule-window.service';
 import { TenantTimezoneService } from './application/services/tenant-timezone.service';
+import { AvailabilityExceptionQueryService } from './application/services/availability-exception-query.service';
 import { GetSchedulingContextHandler } from './application/handlers/scheduling-context.handler';
 import { WaitlistSlotNotificationService } from './application/services/waitlist-slot-notification.service';
+import { WaitlistOfferAutofillService } from './application/services/waitlist-offer-autofill.service';
 import { AppointmentCancelledWaitlistListener } from './application/integrations/appointment-cancelled-waitlist.listener';
 import { BillingModule } from '../billing/billing.module';
 import { NotificationModule } from '../notifications/notifications.module';
@@ -83,6 +107,7 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     ScheduleSettingsController,
     WaitlistController,
     BookingIntegrityController,
+    RecallController,
   ],
   providers: [
     { provide: APPOINTMENT_REPOSITORY, useClass: PrismaAppointmentRepository },
@@ -114,16 +139,33 @@ import { AuditTrailSchedulingAuditLog } from './infrastructure/audit-trail-sched
     ListWaitlistHandler,
     CreateWaitlistHandler,
     CancelWaitlistHandler,
+    CreateWaitlistOfferHandler,
+    ListWaitlistOffersHandler,
+    AcceptWaitlistOfferHandler,
+    RejectWaitlistOfferHandler,
+    ExpireWaitlistOffersHandler,
     BookWaitlistEntryHandler,
     GetBranchHoursHandler,
     UpsertBranchHoursHandler,
     GetProviderScheduleHandler,
     UpsertProviderScheduleHandler,
+    CreateAvailabilityExceptionHandler,
+    ListAvailabilityExceptionsHandler,
+    SoftDeleteAvailabilityExceptionHandler,
+    AvailabilityExceptionQueryService,
     ScheduleWindowService,
     TenantTimezoneService,
     GetSchedulingContextHandler,
     WaitlistSlotNotificationService,
+    WaitlistOfferAutofillService,
     AppointmentCancelledWaitlistListener,
+    CreateRecallRuleHandler,
+    ListRecallRulesHandler,
+    UpdateRecallRuleHandler,
+    SoftDeleteRecallRuleHandler,
+    ListPatientRecallInstancesHandler,
+    TransitionPatientRecallHandler,
+    ScanRecallDueHandler,
     CreateInvoiceFromAppointmentHandler,
     TenantScopedAccessGuard,
   ],

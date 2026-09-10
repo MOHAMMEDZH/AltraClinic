@@ -106,6 +106,37 @@ enum WaitlistStatus {
   @@map("waitlist_status")
 }
 
+/// Wave G / P1-10 — waitlist offer lifecycle (offer → accept | expire | reject).
+enum WaitlistOfferStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REJECTED
+
+  @@map("waitlist_offer_status")
+}
+
+/// Wave G / P1-11 — AvailabilityException kinds (deny vs EXTRA add).
+enum AvailabilityExceptionType {
+  PROVIDER_LEAVE
+  BRANCH_HOLIDAY
+  RESOURCE_MAINTENANCE
+  EXTRA_AVAILABILITY
+
+  @@map("availability_exception_type")
+}
+
+/// Wave G / P1-13 / AR-17 — PatientRecallInstance lifecycle.
+enum PatientRecallStatus {
+  DUE
+  SNOOZED
+  BOOKED
+  COMPLETED
+  OPTED_OUT
+
+  @@map("patient_recall_status")
+}
+
 enum SchedulingResourceType {
   ROOM
   EQUIPMENT
@@ -517,6 +548,7 @@ model Tenant {
   patients             Patient[]
   appointments         Appointment[]
   appointmentWaitlist  AppointmentWaitlist[]
+  waitlistOffers       WaitlistOffer[]
   appointmentSnapshotRevisions AppointmentServiceSnapshotRevision[]
   providerServiceEligibilities ProviderServiceEligibility[]
   serviceResourceRequirements ServiceResourceRequirement[]
@@ -526,6 +558,9 @@ model Tenant {
   appointmentTemplates AppointmentTemplate[]
   branchOperatingHours BranchOperatingHours[]
   providerWeeklySchedules ProviderWeeklySchedule[]
+  availabilityExceptions AvailabilityException[]
+  recallRules            RecallRule[]
+  patientRecallInstances PatientRecallInstance[]
   encounters           Encounter[]
   clinicalNoteTemplates ClinicalNoteTemplate[]
   clinicalFormTemplates ClinicalFormTemplate[]
@@ -1312,6 +1347,7 @@ model Patient {
   portalAccount       PortalAccount?
   queueTickets        QueueTicket[]
   waitlistEntries     AppointmentWaitlist[]
+  recallInstances     PatientRecallInstance[]
   clinicSubscriptions ClinicSubscription[]
   mediaAssets         MediaAsset[]
   formInstances       PatientFormInstance[]
@@ -1573,10 +1609,45 @@ model AppointmentWaitlist {
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  offers  WaitlistOffer[]
 
   @@index([tenantId, status])
   @@index([tenantId, patientId])
   @@map("appointment_waitlist")
+}
+
+/// Wave G / P1-10 — concrete slot offer with TTL; accept is sync under booking locks.
+/// Default: no silent auto-book (tenant feature waitlist.auto_book must be explicitly ON).
+model WaitlistOffer {
+  id                  String              @id @default(uuid()) @db.Uuid
+  tenantId            String              @db.Uuid
+  branchId            String?             @db.Uuid
+  waitlistEntryId     String              @db.Uuid
+  /// Cancelled appointment that freed the slot (nullable for staff-created offers).
+  sourceAppointmentId String?             @db.Uuid
+  providerId          String              @db.Uuid
+  resourceId          String?             @db.Uuid
+  offeredStartsAt     DateTime
+  offeredEndsAt       DateTime
+  expiresAt           DateTime
+  status              WaitlistOfferStatus @default(PENDING)
+  /// Set when accept wins under booking locks.
+  appointmentId       String?             @db.Uuid
+  createdBy           String?             @db.Uuid
+  acceptedAt          DateTime?
+  expiredAt           DateTime?
+  rejectedAt          DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  waitlistEntry AppointmentWaitlist @relation(fields: [waitlistEntryId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status, expiresAt])
+  @@index([tenantId, waitlistEntryId, status])
+  @@index([tenantId, offeredStartsAt, offeredEndsAt])
+  @@map("waitlist_offers")
 }
 
 /// Bookable rooms, equipment, and operatories (Wave D AR-12).
@@ -1667,6 +1738,35 @@ model ProviderWeeklySchedule {
   @@map("provider_weekly_schedules")
 }
 
+/// Wave G / P1-11 — holiday/leave/maintenance/extra availability SoR.
+/// Precedence: deny exceptions beat weekly open; EXTRA_AVAILABILITY adds slots.
+model AvailabilityException {
+  id         String                    @id @default(uuid()) @db.Uuid
+  tenantId   String                    @db.Uuid
+  branchId   String?                   @db.Uuid
+  type       AvailabilityExceptionType
+  /// Required for PROVIDER_LEAVE (and optional scope for EXTRA).
+  providerId String?                   @db.Uuid
+  /// Required for RESOURCE_MAINTENANCE.
+  resourceId String?                   @db.Uuid
+  /// Inclusive UTC interval (stored instants; clinic TZ used at evaluation).
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?                   @db.VarChar(500)
+  createdBy  String                    @db.Uuid
+  createdAt  DateTime                  @default(now())
+  updatedAt  DateTime                  @updatedAt
+  deletedAt  DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, startsAt, endsAt])
+  @@index([tenantId, branchId, startsAt])
+  @@index([tenantId, providerId, startsAt])
+  @@index([tenantId, resourceId, startsAt])
+  @@map("availability_exceptions")
+}
+
 model AppointmentReminderLog {
   id            String   @id @default(uuid()) @db.Uuid
   tenantId      String   @db.Uuid
@@ -1677,6 +1777,57 @@ model AppointmentReminderLog {
   @@unique([appointmentId, reminderType])
   @@index([tenantId, appointmentId])
   @@map("appointment_reminder_logs")
+}
+
+/// Wave G / P1-13 / AR-17 — operational Recall SoR (reminders / journey ≠ SoR).
+model RecallRule {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @db.Uuid
+  /// Optional link to catalog clinical service identity.
+  clinicalServiceId String?  @db.Uuid
+  intervalDays      Int
+  /// Bounded JSON only (e.g. { "minAgeYears": 18 }); no full rules engine.
+  eligibilityExpr   Json     @default("{}")
+  active            Boolean  @default(true)
+  createdBy         String?  @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  clinicalService CanonicalClinicalServiceDefinition? @relation(fields: [clinicalServiceId], references: [id], onDelete: Restrict)
+  instances       PatientRecallInstance[]
+
+  @@index([tenantId, active])
+  @@index([tenantId, clinicalServiceId])
+  @@map("recall_rules")
+}
+
+/// Wave G / P1-13 / AR-17 — per-patient recall instance (tenant + PHI).
+model PatientRecallInstance {
+  id                      String             @id @default(uuid()) @db.Uuid
+  tenantId                String             @db.Uuid
+  patientId               String             @db.Uuid
+  ruleId                  String             @db.Uuid
+  dueAt                   DateTime
+  status                  PatientRecallStatus @default(DUE)
+  lastQualifyingServiceAt DateTime?
+  snoozedUntil            DateTime?
+  appointmentId           String?            @db.Uuid
+  completedAt             DateTime?
+  optedOutAt              DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  deletedAt               DateTime?
+
+  tenant  Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  patient Patient    @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  rule    RecallRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status, dueAt])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, ruleId, status])
+  @@map("patient_recall_instances")
 }
 
 // =============================================================================
@@ -3397,6 +3548,7 @@ model CanonicalClinicalServiceDefinition {
   resourceRequirements ServiceResourceRequirement[]
   treatmentPlanItems TreatmentPlanItem[]
   servicePerformances ServicePerformance[]
+  recallRules         RecallRule[]
 
   @@unique([stableKey])
   @@index([provenance, lifecycle])

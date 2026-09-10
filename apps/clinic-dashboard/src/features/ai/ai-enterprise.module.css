@@ -42,8 +42,31 @@
 .workspaceGrid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .workspaceCard { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); text-decoration: none; color: inherit; transition: border-color 0.12s ease, transform 0.12s ease; }
 .workspaceCard:hover { border-color: color-mix(in srgb, var(--color-primary-500) 40%, var(--color-border)); transform: translateY(-1px); }
-.workspaceCardLocked { opacity: 0.55; pointer-events: none; }
-.workspaceCardLockedLink { pointer-events: auto; display: inline-block; margin-top: var(--space-2); }
+.workspaceCardLocked {
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-bg-subtle, #f4f4f5) 80%, var(--color-surface));
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-border) 70%, #737373);
+}
+/* Locked affordance without washing text via opacity (axe color-contrast ≥4.5:1 on white). */
+.workspaceCardLocked strong {
+  color: #525252;
+}
+.workspaceCardLocked .pageSubtitle,
+.workspaceCardLocked .sectionHint {
+  color: #595959;
+}
+.workspaceCardLocked .workspaceIcon {
+  color: #595959;
+  background: color-mix(in srgb, #525252 10%, var(--color-surface));
+}
+.workspaceCardLockedLink {
+  pointer-events: auto;
+  display: inline-block;
+  margin-top: var(--space-2);
+  color: #1d4ed8;
+  text-decoration: underline;
+}
 .workspaceIcon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-md); background: color-mix(in srgb, var(--color-primary-500) 10%, var(--color-surface)); color: var(--color-primary-600, var(--color-primary-500)); }
 
 .chatLayout { display: grid; gap: var(--space-3); min-height: 520px; }

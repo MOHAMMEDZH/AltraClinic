@@ -36,6 +36,23 @@ import {
   updateProviderSchedule,
   fetchSchedulingContext,
   updateQueueStatus,
+  fetchAvailabilityExceptions,
+  createAvailabilityException,
+  deleteAvailabilityException,
+  fetchWaitlistOffers,
+  acceptWaitlistOffer,
+  rejectWaitlistOffer,
+  expireDueWaitlistOffers,
+  fetchRecallRules,
+  createRecallRule,
+  updateRecallRule,
+  deleteRecallRule,
+  fetchRecallInstances,
+  snoozeRecallInstance,
+  bookRecallInstance,
+  completeRecallInstance,
+  optOutRecallInstance,
+  runRecallDueScan,
 } from '../api/scheduling-api';
 import type {
   CreateAppointmentPayload,
@@ -585,6 +602,288 @@ export function useUpdateQueueStatus() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['queue'] });
+    },
+  });
+}
+
+/* ── Wave G1–G3 hooks ─────────────────────────────────────────────────────── */
+
+export function useAvailabilityExceptions(params?: {
+  from?: string;
+  to?: string;
+  branchId?: string;
+}) {
+  const { getValidAccessToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['scheduling', 'availability-exceptions', ...authKeys(user), params],
+    queryFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return fetchAvailabilityExceptions(token, user.tenantId, params ?? {});
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateAvailabilityException() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (payload: {
+      type: string;
+      startsAt: string;
+      endsAt: string;
+      branchId?: string | null;
+      providerId?: string | null;
+      resourceId?: string | null;
+      reason?: string | null;
+    }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return createAvailabilityException(token, user.tenantId, payload);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'availability-exceptions'] });
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'availability'] });
+    },
+  });
+}
+
+export function useDeleteAvailabilityException() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return deleteAvailabilityException(token, user.tenantId, id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'availability-exceptions'] });
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'availability'] });
+    },
+  });
+}
+
+export function useWaitlistOffers(status?: string) {
+  const { getValidAccessToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['scheduling', 'waitlist-offers', ...authKeys(user), status],
+    queryFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return fetchWaitlistOffers(token, user.tenantId, { status });
+    },
+    staleTime: 15_000,
+  });
+}
+
+export function useAcceptWaitlistOffer() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (offerId: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return acceptWaitlistOffer(token, user.tenantId, offerId);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'waitlist-offers'] });
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'waitlist'] });
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'appointments'] });
+    },
+  });
+}
+
+export function useRejectWaitlistOffer() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (offerId: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return rejectWaitlistOffer(token, user.tenantId, offerId);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'waitlist-offers'] });
+    },
+  });
+}
+
+export function useExpireDueWaitlistOffers() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return expireDueWaitlistOffers(token, user.tenantId);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'waitlist-offers'] });
+    },
+  });
+}
+
+export function useRecallRules(activeOnly?: boolean) {
+  const { getValidAccessToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['scheduling', 'recall-rules', ...authKeys(user), activeOnly],
+    queryFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return fetchRecallRules(token, user.tenantId, activeOnly);
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateRecallRule() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (payload: {
+      intervalDays: number;
+      clinicalServiceId?: string | null;
+      active?: boolean;
+    }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return createRecallRule(token, user.tenantId, payload);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-rules'] });
+    },
+  });
+}
+
+export function useUpdateRecallRule() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      intervalDays?: number;
+      active?: boolean;
+    }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      const { id, ...payload } = input;
+      return updateRecallRule(token, user.tenantId, id, payload);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-rules'] });
+    },
+  });
+}
+
+export function useDeleteRecallRule() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return deleteRecallRule(token, user.tenantId, id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-rules'] });
+    },
+  });
+}
+
+export function useRecallInstances(status?: string) {
+  const { getValidAccessToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['scheduling', 'recall-instances', ...authKeys(user), status],
+    queryFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return fetchRecallInstances(token, user.tenantId, { status });
+    },
+    staleTime: 20_000,
+  });
+}
+
+export function useSnoozeRecallInstance() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: { id: string; snoozeUntil: string }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return snoozeRecallInstance(token, user.tenantId, input.id, input.snoozeUntil);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-instances'] });
+    },
+  });
+}
+
+export function useBookRecallInstance() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      start?: string;
+      end?: string;
+      providerId?: string;
+      appointmentId?: string;
+    }) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      const { id, ...payload } = input;
+      return bookRecallInstance(token, user.tenantId, id, payload);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-instances'] });
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'appointments'] });
+    },
+  });
+}
+
+export function useCompleteRecallInstance() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return completeRecallInstance(token, user.tenantId, id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-instances'] });
+    },
+  });
+}
+
+export function useOptOutRecallInstance() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return optOutRecallInstance(token, user.tenantId, id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-instances'] });
+    },
+  });
+}
+
+export function useRecallDueScan() {
+  const qc = useQueryClient();
+  const { getValidAccessToken, user } = useAuth();
+  return useMutation({
+    mutationFn: async (notify: boolean) => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      return runRecallDueScan(token, user.tenantId, notify);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['scheduling', 'recall-instances'] });
     },
   });
 }
