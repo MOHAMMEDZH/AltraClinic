@@ -19,6 +19,7 @@ import {
   ClinicalCatalogValidationError,
 } from '../domain/clinical-catalog.errors';
 import { isTenantCanonicalWriteEnabled } from '../domain/feature-flag.helpers';
+import { buildClinicalCatalogSearchOr } from '../domain/clinical-catalog-search';
 import {
   CLINICAL_LOCALES,
   assertStableKeyImmutable,
@@ -325,14 +326,7 @@ export class ClinicalCatalogService {
       where.provenance = query.provenance;
     }
     if (query.search?.trim()) {
-      where.OR = [
-        { stableKey: { contains: query.search.trim(), mode: 'insensitive' } },
-        {
-          translations: {
-            some: { displayName: { contains: query.search.trim(), mode: 'insensitive' } },
-          },
-        },
-      ];
+      where.OR = buildClinicalCatalogSearchOr(query.search);
     }
 
     if (actor.isPlatform) {
