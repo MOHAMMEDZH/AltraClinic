@@ -986,6 +986,8 @@ export function AppointmentsPage() {
 
     <div className={styles.page} id="scheduling-region">
 
+      <div id="scheduling-reception-chrome" data-testid="scheduling-reception-chrome">
+
       <header className={styles.header}>
 
         <div>
@@ -1036,7 +1038,10 @@ export function AppointmentsPage() {
 
           {canCreateAppointment(perm) && (
 
-            <AuthButton onClick={() => setModalMode('create')}>
+            <AuthButton
+              data-testid="scheduling-new-appointment"
+              onClick={() => setModalMode('create')}
+            >
 
               <Plus size={16} aria-hidden />
 
@@ -1049,6 +1054,8 @@ export function AppointmentsPage() {
         </div>
 
       </header>
+
+      </div>
 
 
 
@@ -1186,6 +1193,12 @@ export function AppointmentsPage() {
 
 
 
+      <div
+        className={styles.calendarControls}
+        id="scheduling-calendar-controls"
+        data-testid="scheduling-calendar-controls"
+      >
+
       <div className={styles.toolbar}>
 
         <div className={styles.searchWrap}>
@@ -1300,7 +1313,7 @@ export function AppointmentsPage() {
 
 
 
-        <div className={styles.viewToggle} role="group" aria-label="Calendar view">
+        <div className={styles.viewToggle} role="group" aria-label={t('scheduling.views.ariaLabel')} data-testid="scheduling-view-toggle">
 
           {CALENDAR_VIEW_MODES.map((v) => (
 
@@ -1315,6 +1328,8 @@ export function AppointmentsPage() {
               onClick={() => setView(v)}
 
               aria-pressed={view === v}
+
+              data-testid={`scheduling-view-${v}`}
 
             >
 
@@ -1332,7 +1347,7 @@ export function AppointmentsPage() {
 
 
 
-      <div className={styles.dateNav}>
+      <div className={styles.dateNav} data-testid="scheduling-date-nav">
 
         <button type="button" className={styles.navBtn} onClick={navigatePrev} aria-label={t('scheduling.nav.prevDay')}>
 
@@ -1361,6 +1376,8 @@ export function AppointmentsPage() {
           <ChevronRight size={18} aria-hidden />
 
         </button>
+
+      </div>
 
       </div>
 
