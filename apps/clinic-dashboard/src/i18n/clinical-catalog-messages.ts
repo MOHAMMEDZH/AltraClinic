@@ -6,6 +6,8 @@ export const clinicalCatalogMessagesEn = {
   boundary:
     'Configure which platform canonical services are enabled for this clinic. Do not clone SYSTEM_CANONICAL — use enable/disable only.',
   search: 'Search',
+  searchPlaceholder: 'Name, alias, or stable key…',
+  searchHint: 'Searches the server catalog (EN/AR names and active aliases).',
   create: 'Create tenant service',
   stableKey: 'Stable key suffix',
   stableKeyHint: 'Will be namespaced as tenant.{id}.custom.{suffix}',
@@ -41,14 +43,16 @@ export const clinicalCatalogMessagesEn = {
 export const clinicalCatalogMessagesAr = {
   title: 'الخدمات السريرية',
   subtitle: 'إجراءات معيارية مشتركة وخدمات مخصصة للعيادة.',
-  accessDenied: 'ليس لديك صلاحية عرض الكتalog السريري.',
+  accessDenied: 'ليس لديك صلاحية عرض الكتالوج السريري.',
   loadError: 'تعذر تحميل الخدمات السريرية.',
   boundary:
     'اضبط الخدمات المعيارية المفعّلة لهذه العيادة. لا تنسخ SYSTEM_CANONICAL — استخدم التفعيل/التعطيل فقط.',
   search: 'بحث',
+  searchPlaceholder: 'الاسم أو الاسم المستعار أو المفتاح…',
+  searchHint: 'يبحث في كتالوج الخادم (أسماء EN/AR والأسماء المستعارة النشطة).',
   create: 'إنشاء خدمة للعيادة',
   stableKey: 'لاحقة المفتاح الثابت',
-  stableKeyHint: 'سيتم ت namespaced كـ tenant.{id}.custom.{suffix}',
+  stableKeyHint: 'سيُسمّى كـ tenant.{id}.custom.{suffix}',
   nameEn: 'الاسم (EN)',
   nameAr: 'الاسم (AR)',
   save: 'حفظ المسودة',

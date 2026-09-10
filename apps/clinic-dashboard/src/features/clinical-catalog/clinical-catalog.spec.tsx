@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClinicalServicesPage } from './ClinicalServicesPage';
 import { ClinicalPricingPage } from './ClinicalPricingPage';
@@ -97,6 +97,7 @@ describe('ClinicalServicesPage branch scope (PA-05)', () => {
     });
     useClinicalServices.mockReturnValue({
       isLoading: false,
+      isFetching: false,
       isError: false,
       data: [
         {
@@ -167,6 +168,18 @@ describe('ClinicalServicesPage branch scope (PA-05)', () => {
     });
     expect(screen.getByText(/clinicalCatalog.scope.inherited/)).toBeTruthy();
   });
+  it('passes debounced search to useClinicalServices (API search=)', async () => {
+    vi.useFakeTimers();
+    renderWithQc(<ClinicalServicesPage />);
+    const input = screen.getByTestId('clinical-services-search');
+    fireEvent.change(input, { target: { value: 'استشارة' } });
+    expect(useClinicalServices).toHaveBeenCalledWith(true, undefined);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(useClinicalServices).toHaveBeenCalledWith(true, 'استشارة');
+    vi.useRealTimers();
+  });
 });
 
 describe('ClinicalPricingPage branch scope (PA-05)', () => {
@@ -180,6 +193,7 @@ describe('ClinicalPricingPage branch scope (PA-05)', () => {
     });
     useClinicalServices.mockReturnValue({
       isLoading: false,
+      isFetching: false,
       isError: false,
       data: [
         {

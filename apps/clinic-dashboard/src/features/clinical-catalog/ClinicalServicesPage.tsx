@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { hasPermission } from '@booking/permissions';
 import { useI18n } from '@booking/i18n/react';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -54,33 +54,28 @@ export function ClinicalServicesPage() {
   const canUpdate = hasPermission(roles, 'api.clinical-catalog', 'update');
   const canManage = hasPermission(roles, 'api.clinical-catalog', 'manage');
 
-  const servicesQuery = useClinicalServices(canView);
+  const [scopeBranchId, setScopeBranchId] = useState(TENANT_DEFAULT_SCOPE);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [keySuffix, setKeySuffix] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [nameAr, setNameAr] = useState('');
+
+  useEffect(() => {
+    const tmr = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(tmr);
+  }, [search]);
+
+  const servicesQuery = useClinicalServices(canView, debouncedSearch || undefined);
   const configsQuery = useTenantServiceConfigs(canView, { scope: 'all' });
   const branchesQuery = useSettingsBranches(canView);
   const createMutation = useCreateTenantClinicalService();
   const publishMutation = usePublishClinicalService();
   const configMutation = useUpsertTenantServiceConfig();
 
-  const [scopeBranchId, setScopeBranchId] = useState(TENANT_DEFAULT_SCOPE);
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [keySuffix, setKeySuffix] = useState('');
-  const [nameEn, setNameEn] = useState('');
-  const [nameAr, setNameAr] = useState('');
-
   const selectedBranchId = scopeBranchId || null;
-
-  const filtered = useMemo(() => {
-    const items = servicesQuery.data ?? [];
-    const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (s) =>
-        s.stableKey.toLowerCase().includes(q) ||
-        tr(s, 'en').toLowerCase().includes(q) ||
-        tr(s, 'ar').toLowerCase().includes(q),
-    );
-  }, [servicesQuery.data, search]);
+  const items = servicesQuery.data ?? [];
 
   if (!canView) {
     return (
@@ -156,7 +151,15 @@ export function ClinicalServicesPage() {
           </label>
           <label>
             {t('clinicalCatalog.search')}
-            <input value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('clinicalCatalog.searchPlaceholder')}
+              data-testid="clinical-services-search"
+              aria-label={t('clinicalCatalog.search')}
+              dir="auto"
+            />
+            <small>{t('clinicalCatalog.searchHint')}</small>
           </label>
           {canCreate ? (
             <AuthButton variant="secondary" onClick={() => setShowCreate((v) => !v)}>
@@ -194,15 +197,15 @@ export function ClinicalServicesPage() {
 
       <section className={styles.panel}>
         <h2 className={styles.panelTitle}>{t('clinicalCatalog.title')}</h2>
-        {servicesQuery.isLoading ? (
+        {servicesQuery.isLoading || servicesQuery.isFetching ? (
           <div className={styles.skeleton} aria-busy="true" />
         ) : servicesQuery.isError ? (
           <AuthAlert variant="error">{t('clinicalCatalog.loadError')}</AuthAlert>
-        ) : filtered.length === 0 ? (
+        ) : items.length === 0 ? (
           <p className={styles.empty}>{t('clinicalCatalog.empty')}</p>
         ) : (
-          <ul className={styles.recentList}>
-            {filtered.map((service) => {
+          <ul className={styles.recentList} data-testid="clinical-services-list">
+            {items.map((service) => {
               const { config, inherited } = resolveConfigForScope(
                 configsQuery.data,
                 service.id,
