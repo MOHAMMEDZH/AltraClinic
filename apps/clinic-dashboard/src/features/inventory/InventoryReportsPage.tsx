@@ -19,14 +19,14 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { AuthAlert } from '@/features/auth/components/AuthAlert';
 import { AuthButton } from '@/features/auth/components/AuthButton';
 import { canViewInventory, formatCurrency, movementTypeLabelKey, canExportInventory } from './config/inventory-config';
-import { useInventoryAnalytics, useExportInventoryAnalytics } from './hooks/useInventory';
+import { useInventoryAnalytics, useExportInventoryAnalytics, useInventoryUsageOwnerReport } from './hooks/useInventory';
 import { downloadInventoryBlob } from './utils/inventory-export';
 import styles from './InventoryReportsPage.module.css';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 
 export function InventoryReportsPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, direction } = useI18n();
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const perm = useCallback((action: string) => hasPermission(roles, 'api.inventory', action as never), [roles]);
@@ -35,6 +35,7 @@ export function InventoryReportsPage() {
   const canView = canViewInventory(perm);
   const canExport = canExportInventory(perm);
   const analyticsQuery = useInventoryAnalytics(days, canView);
+  const ownerReportQuery = useInventoryUsageOwnerReport(days, canExport);
   const exportMutation = useExportInventoryAnalytics();
   const data = analyticsQuery.data;
 
@@ -79,9 +80,9 @@ export function InventoryReportsPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} id="inventory-reports-region" data-testid="inventory-reports-region">
       <Link to="/inventory" className={styles.backLink}>
-        <ArrowLeft size={16} aria-hidden />
+        <ArrowLeft size={16} aria-hidden style={direction === 'rtl' ? { transform: 'scaleX(-1)' } : undefined} />
         {t('inventory.reports.back')}
       </Link>
 
@@ -342,6 +343,73 @@ export function InventoryReportsPage() {
             )}
           </div>
         </>
+      ) : null}
+
+      {canExport ? (
+        <section
+          className={styles.panel}
+          aria-labelledby="inv-accountability-title"
+          data-testid="inventory-accountability-panel"
+        >
+          <h2 id="inv-accountability-title" className={styles.panelTitle}>
+            {t('inventory.reports.accountabilityTitle')}
+          </h2>
+          <p className={styles.subtitle}>{t('inventory.reports.accountabilitySubtitle')}</p>
+          {ownerReportQuery.isError && <AuthAlert variant="error">{t('inventory.loadError')}</AuthAlert>}
+          {ownerReportQuery.isLoading && !ownerReportQuery.data ? (
+            <div className={styles.skeleton} aria-busy="true" />
+          ) : ownerReportQuery.data ? (
+            <>
+              <div className={styles.kpis}>
+                <article className={styles.kpi}>
+                  <span>{t('inventory.reports.netQuantity')}</span>
+                  <strong>{ownerReportQuery.data.aggregates.netQuantityTotal}</strong>
+                </article>
+                <article className={styles.kpi}>
+                  <span>{t('inventory.reports.count')}</span>
+                  <strong>{ownerReportQuery.data.total}</strong>
+                </article>
+              </div>
+              {ownerReportQuery.data.rows.length === 0 ? (
+                <p className={styles.meta}>{t('inventory.reports.accountabilityEmpty')}</p>
+              ) : (
+                <div className={styles.tableScroll}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>{t('inventory.reports.occurredAt')}</th>
+                        <th>{t('inventory.reports.usageType')}</th>
+                        <th>{t('inventory.reports.itemId')}</th>
+                        <th>{t('inventory.reports.usedBy')}</th>
+                        <th>{t('inventory.reports.netQuantity')}</th>
+                        <th>{t('inventory.reports.status')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ownerReportQuery.data.rows.map((row) => (
+                        <tr key={row.id}>
+                          <td>
+                            {new Intl.DateTimeFormat(locale, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }).format(new Date(row.occurredAt))}
+                          </td>
+                          <td>{row.usageType}</td>
+                          <td>{row.inventoryItemId.slice(0, 8)}…</td>
+                          <td>{row.usedByUserId ? `${row.usedByUserId.slice(0, 8)}…` : '—'}</td>
+                          <td>
+                            {row.signedQuantity} {row.unit}
+                          </td>
+                          <td>{row.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : null}
+        </section>
       ) : null}
     </div>
   );

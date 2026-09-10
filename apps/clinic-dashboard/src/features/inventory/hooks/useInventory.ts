@@ -15,6 +15,7 @@ import {
   fetchInventoryMovements,
   fetchInventorySummary,
   fetchInventoryAnalytics,
+  fetchInventoryUsageOwnerReport,
   fetchInventoryCategories,
   createInventoryCategory,
   receiveInventoryItem,
@@ -97,6 +98,27 @@ export function useInventoryAnalytics(days = 30, enabled = true) {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
       return fetchInventoryAnalytics(token, user.tenantId, days);
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Owner accountability ledger (api.inventory export). PHI never requested from this hook. */
+export function useInventoryUsageOwnerReport(days = 30, enabled = true) {
+  const { getValidAccessToken, user } = useAuth();
+  return useQuery({
+    queryKey: ['inventory', 'usage-owner-report', days, ...authKeys(user)],
+    enabled: enabled && Boolean(user?.tenantId),
+    queryFn: async () => {
+      const token = await getValidAccessToken();
+      if (!token || !user?.tenantId) throw new Error('Not authenticated');
+      const to = new Date();
+      const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+      return fetchInventoryUsageOwnerReport(token, user.tenantId, {
+        from: from.toISOString(),
+        to: to.toISOString(),
+        limit: 50,
+      });
     },
     staleTime: 60_000,
   });
