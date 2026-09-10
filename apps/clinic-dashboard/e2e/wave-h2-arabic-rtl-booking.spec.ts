@@ -44,7 +44,9 @@ test.describe('Wave H2 Arabic RTL booking', () => {
     });
     await login(page, DEMO_OWNER);
     await page.goto('/settings/clinical-services');
-    await expect(page.getByRole('heading', { name: /الخدمات السريرية|Clinical Services/i })).toBeVisible({
+    await expect(
+      page.getByRole('heading', { level: 1, name: /الخدمات السريرية|Clinical Services/i }),
+    ).toBeVisible({
       timeout: 20_000,
     });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
