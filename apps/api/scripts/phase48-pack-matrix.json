@@ -1,7 +1,7 @@
 {
   "version": 1,
   "evidenceShaBase": "2f06970",
-  "notes": "Wave I1 pack matrix — wire existing tests only. Full green = I2/I3. Jest --runInBand; failures must fail the script.",
+  "notes": "Wave I pack matrix. I2/I3 green packs; I4 Wave G validators wired (H ABSENT). I5: npm run test:phase48-onepass. Jest --runInBand; requiresDb 0-passed = FAIL.",
   "packs": [
     {
       "id": "p0-catalog",
@@ -318,7 +318,7 @@
       "id": "migration-clean",
       "frozenName": "Migration Clean/Upgrade Packs (clean half)",
       "npmScript": "test:phase48-migration-clean",
-      "notes": "validate-phase48-wave-{a..g}-clean.mjs. Wave G added (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
+      "notes": "validate-phase48-wave-{a..g}-clean.mjs. Wave G wired (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
       "steps": [
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-clean.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-clean.mjs"] },
@@ -333,7 +333,7 @@
       "id": "migration-upgrade",
       "frozenName": "Migration Clean/Upgrade Packs (upgrade half)",
       "npmScript": "test:phase48-migration-upgrade",
-      "notes": "validate-phase48-wave-{a..g}-upgrade.mjs. Wave G added (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
+      "notes": "validate-phase48-wave-{a..g}-upgrade.mjs. Wave G wired (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
       "steps": [
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-upgrade.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-upgrade.mjs"] },
@@ -348,7 +348,7 @@
       "id": "regression-baselines",
       "frozenName": "Regression / onepass closure",
       "npmScript": "test:phase48-regression-baselines",
-      "notes": "Release 47 Step 28/29 baselines only. Phase 48 onepass orchestrator deferred to I5. HEAVY.",
+      "notes": "Release 47 Step 28/29 baselines. Phase 48 pack onepass: npm run test:phase48-onepass (I5). HEAVY.",
       "steps": [
         { "layer": "onepass", "command": "npm", "args": ["run", "test:step28-security-final-onepass"] },
         { "layer": "onepass", "command": "npm", "args": ["run", "test:step29-release-final-onepass"] }

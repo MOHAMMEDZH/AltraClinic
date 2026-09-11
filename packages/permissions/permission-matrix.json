@@ -4850,6 +4850,84 @@
                                                  "action":  "view"
                                              }
                                          ]
+                      },
+                      {
+                          "id":  "api.observability",
+                          "kind":  "api",
+                          "name":  "Observability Center API",
+                          "description":  "Phase 45a Observability Center foundation. view=read, update=acknowledge, export=export, manage=rules/config, approve=cross_tenant. Restored for Step 29 (removed in Wave A matrix rewrite).",
+                          "permissions":  {
+                                              "view":  [
+                                                           "super_admin",
+                                                           "owner",
+                                                           "general_manager",
+                                                           "branch_manager"
+                                                       ],
+                                              "create":  [
+                                                             "super_admin",
+                                                             "owner",
+                                                             "general_manager"
+                                                         ],
+                                              "update":  [
+                                                             "super_admin",
+                                                             "owner",
+                                                             "general_manager"
+                                                         ],
+                                              "delete":  [
+                                                             "super_admin",
+                                                             "owner"
+                                                         ],
+                                              "approve":  [
+                                                              "super_admin",
+                                                              "owner"
+                                                          ],
+                                              "export":  [
+                                                             "super_admin",
+                                                             "owner",
+                                                             "general_manager"
+                                                         ],
+                                              "manage":  [
+                                                             "super_admin",
+                                                             "owner"
+                                                         ]
+                                          },
+                          "operations":  [
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/health",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/metrics/catalog",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/metrics/query",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/metrics/diagnostics",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/logs/query",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/observability/logs/diagnostics",
+                                                 "action":  "view"
+                                             },
+                                             {
+                                                 "method":  "GET",
+                                                 "path":  "/metrics",
+                                                 "action":  "view"
+                                             }
+                                         ]
                       }
                   ]
 }

@@ -1,29 +1,29 @@
 # Phase 48 Wave I — Kickoff Package
 
-CTO-authorized **kickoff** (documentation only). Implementation not started.
+CTO-authorized kickoff + I1–I5 wiring reference.
 
 | Field | Value |
 |-------|--------|
-| **Canonical base** | `release47-step22-transfer-20260810-0353` @ `d53ff77a0ba4e0c0edac6f3f259922fea2b1caf3` |
+| **Canonical base** | `release47-step22-transfer-20260810-0353` @ `d53ff77` (Wave H merge) |
 | **Branch** | `cursor/phase48-wave-i-enterprise-qa` |
-| **Prior wave** | Wave H ACCEPTED (PR #3 merge `d53ff77`; includes `d64b18b` lineage) |
-| **Waves A–H** | Present on base tip |
-| **Status** | I0 docs only — **no** I1–I5 product/QA wiring, **no** PR, **no** self-granted PA |
+| **Prior wave** | Wave H ACCEPTED (PR #3) |
+| **Status** | I0–I5 slices authorized sequentially; **PA = PENDING EXTERNAL** |
 
 | File | Purpose |
 |------|---------|
-| [WAVE_I_FROZEN_SCOPE_EXTRACT.md](./WAVE_I_FROZEN_SCOPE_EXTRACT.md) | AR-19; all frozen packs; Combined Traceability; Migration; Regression/onepass; OUT |
-| [WAVE_I_CURRENT_STATE_VS_EXIT.md](./WAVE_I_CURRENT_STATE_VS_EXIT.md) | Pack → specs/CI map; A–H ≠ Wave I exit |
-| [WAVE_I_ACCEPTANCE_CRITERIA.md](./WAVE_I_ACCEPTANCE_CRITERIA.md) | Future PA checklist from §13 (do not self-accept) |
-| [WAVE_I_IMPLEMENTATION_SLICES.md](./WAVE_I_IMPLEMENTATION_SLICES.md) | Ordered I0→I5; **I1 pack inventory + npm/CI wiring first** |
+| [WAVE_I_FROZEN_SCOPE_EXTRACT.md](./WAVE_I_FROZEN_SCOPE_EXTRACT.md) | AR-19; frozen packs; OUT |
+| [WAVE_I_CURRENT_STATE_VS_EXIT.md](./WAVE_I_CURRENT_STATE_VS_EXIT.md) | Pack → specs map |
+| [WAVE_I_ACCEPTANCE_CRITERIA.md](./WAVE_I_ACCEPTANCE_CRITERIA.md) | PA checklist (do not self-accept) |
+| [WAVE_I_IMPLEMENTATION_SLICES.md](./WAVE_I_IMPLEMENTATION_SLICES.md) | Ordered I0→I5 |
+| [WAVE_I_PACK_MATRIX.md](./WAVE_I_PACK_MATRIX.md) | Pack → npm scripts (I1–I5) |
 
-CTO one-pager mirror: `apps/api/.ci-evidence/cto-wave-i-kickoff-d53ff77/00_SUMMARY.md` (uncommitted unless CTO authorizes).
+Implementation review: `docs/PHASE_48_WAVE_I_IMPLEMENTATION_REVIEW_PACKAGE/`.
 
 ```text
-Wave I Production Acceptance = NOT STARTED
+Wave I Production Acceptance = PENDING EXTERNAL
 self-granted Wave I PA = NO
-I1–I5 implementation = NOT AUTHORIZED (until CTO)
-Phase 49 / Phase 50 polish dump / Phase 51 = NOT AUTHORIZED
+Phase 49 / Phase 50 / Phase 51 = NOT AUTHORIZED
 Wave F/G/H SoR reopen = NOT AUTHORIZED
 second test framework = NOT AUTHORIZED (AR-19)
+required GitHub Checks = NOT AUTHORIZED
 ```

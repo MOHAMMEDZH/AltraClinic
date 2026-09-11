@@ -179,9 +179,9 @@ const notificationRollbackServer = {
 export function resolveApiWebServerRedisUrl(
   inheritedEnv: NodeJS.ProcessEnv = process.env,
 ): string {
-  const pinned =
-    inheritedEnv.PLAYWRIGHT_REDIS_URL?.trim() ||
-    process.env.PLAYWRIGHT_REDIS_URL?.trim();
+  // Honor only the env object under test / webServer snapshot — never fall back to
+  // live process.env when an explicit inherited bag is passed (vitest isolation).
+  const pinned = inheritedEnv.PLAYWRIGHT_REDIS_URL?.trim();
   if (pinned) {
     return pinned;
   }
@@ -206,9 +206,7 @@ export function formatRedisUrlForLog(url: string): string {
  */
 export function buildApiWebServerEnv(inherited: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...inherited };
-  const hasPinnedRedis = Boolean(
-    inherited.PLAYWRIGHT_REDIS_URL?.trim() || process.env.PLAYWRIGHT_REDIS_URL?.trim(),
-  );
+  const hasPinnedRedis = Boolean(inherited.PLAYWRIGHT_REDIS_URL?.trim());
   const redisUrl = resolveApiWebServerRedisUrl(inherited);
   env.REDIS_URL = redisUrl;
   env.REDIS_CONNECT_TIMEOUT_MS = inherited.REDIS_CONNECT_TIMEOUT_MS ?? '250';
