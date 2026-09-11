@@ -76,7 +76,11 @@ function resolveSpawn(step) {
 }
 
 function parseJestPassedCount(output) {
-  const m = output.match(/Tests:\s+(\d+)\s+passed/);
+  // Jest may emit "N passed, N total" or "N skipped, M passed, T total"
+  // (and similar with failed). Match the passed count on the Tests: summary line.
+  const line = output.match(/Tests:\s+[^\r\n]+/);
+  if (!line) return null;
+  const m = line[0].match(/(\d+)\s+passed/);
   return m ? Number(m[1]) : null;
 }
 

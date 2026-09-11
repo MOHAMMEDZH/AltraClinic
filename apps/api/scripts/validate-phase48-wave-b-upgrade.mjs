@@ -23,11 +23,26 @@ const gateDirNames = [
   '20260815250000_phase48_wave_b_snapshot_write_mode',
   '20260815260000_phase48_wave_b_snapshot_write_mode_immutable',
 ];
-/** Wave C depends on full prior chain — park later migrations during prior-chain deploy. */
-const dependentLaterGateDirNames = ['20260816010000_phase48_wave_c_clinical_safety'];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_b_upgrade');
 const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_b_upgrade_later');
 const upgradeDb = `test_p48wb_upgrade_${Date.now()}`;
+
+/** Later Phase 48 waves (C–G+) depend on Wave B tables — park during prior-chain deploy. */
+function listLaterPhase48Migrations() {
+  const gateSet = new Set(gateDirNames);
+  const maxGate = [...gateDirNames].sort().at(-1);
+  return fs
+    .readdirSync(migrationsDir, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        entry.name.includes('phase48_wave_') &&
+        !gateSet.has(entry.name) &&
+        entry.name > maxGate,
+    )
+    .map((entry) => entry.name)
+    .sort();
+}
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.ALLOW_TEST_DATABASE_RESET = 'true';
@@ -92,7 +107,7 @@ function parkMigration() {
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
-  for (const gateDirName of dependentLaterGateDirNames) {
+  for (const gateDirName of listLaterPhase48Migrations()) {
     const src = path.join(migrationsDir, gateDirName);
     if (!fs.existsSync(src)) continue;
     const dest = path.join(parkLaterDir, gateDirName);
@@ -118,7 +133,11 @@ function restoreMigration() {
 
 function restoreLaterMigrations() {
   if (!fs.existsSync(parkLaterDir)) return;
-  for (const gateDirName of dependentLaterGateDirNames) {
+  const parked = fs
+    .readdirSync(parkLaterDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+  for (const gateDirName of parked) {
     const src = path.join(parkLaterDir, gateDirName);
     if (!fs.existsSync(src)) continue;
     const dest = path.join(migrationsDir, gateDirName);

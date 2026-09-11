@@ -318,28 +318,30 @@
       "id": "migration-clean",
       "frozenName": "Migration Clean/Upgrade Packs (clean half)",
       "npmScript": "test:phase48-migration-clean",
-      "notes": "Existing validate-phase48-wave-{a..f}-clean.mjs only; G/H validators absent.",
+      "notes": "validate-phase48-wave-{a..g}-clean.mjs. Wave G added (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
       "steps": [
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-clean.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-clean.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-c-clean.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-d-clean.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-e-clean.mjs"] },
-        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-clean.mjs"] }
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-g-clean.mjs"] }
       ]
     },
     {
       "id": "migration-upgrade",
       "frozenName": "Migration Clean/Upgrade Packs (upgrade half)",
       "npmScript": "test:phase48-migration-upgrade",
-      "notes": "Existing validate-phase48-wave-{a..f}-upgrade.mjs only; G/H validators absent.",
+      "notes": "validate-phase48-wave-{a..g}-upgrade.mjs. Wave G added (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
       "steps": [
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-upgrade.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-upgrade.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-c-upgrade.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-d-upgrade.mjs"] },
         { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-e-upgrade.mjs"] },
-        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-upgrade.mjs"] }
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-g-upgrade.mjs"] }
       ]
     },
     {
