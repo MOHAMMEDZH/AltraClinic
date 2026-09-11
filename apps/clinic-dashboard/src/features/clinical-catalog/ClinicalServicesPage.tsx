@@ -195,14 +195,16 @@ export function ClinicalServicesPage() {
         </section>
       ) : null}
 
-      <section className={styles.panel}>
+      <section className={styles.panel} data-testid="clinical-services-results">
         <h2 className={styles.panelTitle}>{t('clinicalCatalog.title')}</h2>
         {servicesQuery.isLoading || servicesQuery.isFetching ? (
-          <div className={styles.skeleton} aria-busy="true" />
+          <div className={styles.skeleton} aria-busy="true" data-testid="clinical-services-loading" />
         ) : servicesQuery.isError ? (
           <AuthAlert variant="error">{t('clinicalCatalog.loadError')}</AuthAlert>
         ) : items.length === 0 ? (
-          <p className={styles.empty}>{t('clinicalCatalog.empty')}</p>
+          <p className={styles.empty} data-testid="clinical-services-list">
+            {t('clinicalCatalog.empty')}
+          </p>
         ) : (
           <ul className={styles.recentList} data-testid="clinical-services-list">
             {items.map((service) => {

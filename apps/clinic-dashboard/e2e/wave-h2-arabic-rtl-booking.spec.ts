@@ -51,10 +51,24 @@ test.describe('Wave H2 Arabic RTL booking', () => {
     });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 
+    await expect(page.getByTestId('clinical-services-results')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('clinical-services-loading')).toHaveCount(0, { timeout: 20_000 });
+
+    const stamp = `${Date.now()}`;
+    const arName = `استشارة H2 ${stamp}`;
+    await page.getByRole('button', { name: /إنشاء خدمة للعيادة|Create tenant service/i }).click();
+    await page.getByLabel(/لاحقة المفتاح الثابت|Stable key suffix/i).fill(`h2_${stamp}`);
+    await page.getByLabel(/الاسم \(EN\)|Name \(EN\)/i).fill(`H2 Consultation ${stamp}`);
+    await page.getByLabel(/الاسم \(AR\)|Name \(AR\)/i).fill(arName);
+    await page.getByRole('button', { name: /حفظ المسودة|Save draft/i }).click();
+
     const search = page.getByTestId('clinical-services-search');
     await expect(search).toBeVisible();
-    await search.fill('استشارة');
-    await expect(page.getByTestId('clinical-services-list')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId('clinical-services-list')).toContainText(/استشارة|Consultation/i);
+    await search.fill(arName);
+    await expect(page.getByTestId('clinical-services-loading')).toHaveCount(0, { timeout: 20_000 });
+    const list = page.getByTestId('clinical-services-list');
+    await expect(list).toBeVisible({ timeout: 15_000 });
+    await expect(list).toContainText(arName);
+    await expect(list).not.toHaveText(/لا توجد خدمات سريرية|No clinical services found/i);
   });
 });
