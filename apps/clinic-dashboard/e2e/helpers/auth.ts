@@ -90,6 +90,34 @@ function sessionKey(credentials: LoginCredentials): string {
   return `${tenantId.toLowerCase()}::${credentials.email.toLowerCase()}`;
 }
 
+/** Transient transport failures only — never retry HTTP 4xx/auth contract errors. */
+function isTransientNetworkError(err: unknown): boolean {
+  const msg = String(err ?? '');
+  return /socket hang up|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|aborted|network|fetch failed/i.test(
+    msg,
+  );
+}
+
+async function withTransientRetries<T>(
+  label: string,
+  fn: () => Promise<T>,
+  attempts = 3,
+): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      last = err;
+      if (!isTransientNetworkError(err) || i === attempts - 1) {
+        throw err;
+      }
+      await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+    }
+  }
+  throw new Error(`${label}: exhausted transient retries: ${String(last)}`);
+}
+
 /** Fail-closed wait for the real login form (not an empty Vite HTML shell). */
 export async function waitForLoginForm(page: Page, timeout = 20_000) {
   await expect(
@@ -130,15 +158,17 @@ export async function mintCachedSession(
 
     if (!refreshToken) {
       if (authDiagEnabled()) authDiag.loginCalls += 1;
-      const loginResponse = await request.post(`${API_BASE}/auth/login`, {
-        data: {
-          email: credentials.email,
-          password: credentials.password,
-          tenantId,
-          deviceName: 'playwright-e2e-session',
-        },
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      });
+      const loginResponse = await withTransientRetries('auth/login', () =>
+        request.post(`${API_BASE}/auth/login`, {
+          data: {
+            email: credentials.email,
+            password: credentials.password,
+            tenantId,
+            deviceName: 'playwright-e2e-session',
+          },
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        }),
+      );
       if (!loginResponse.ok()) {
         if (authDiagEnabled()) authDiag.remintFailures += 1;
         const body = await readJson(loginResponse).catch(() => ({}));
@@ -219,7 +249,18 @@ export async function mintCachedSession(
   if (existing?.refreshToken && authDiagEnabled()) authDiag.cacheHits += 1;
   else if (authDiagEnabled()) authDiag.cacheMisses += 1;
 
-  const first = await mintOnce(false);
+  const runMint = async (forceNewLogin: boolean): Promise<CachedSession | null> => {
+    try {
+      return await mintOnce(forceNewLogin);
+    } catch (err) {
+      // mintOnce already retries login POST; bubble non-transient (4xx/MFA) immediately.
+      if (!isTransientNetworkError(err)) throw err;
+      if (authDiagEnabled()) authDiag.remintFailures += 1;
+      return null;
+    }
+  };
+
+  const first = await runMint(false);
   if (first) {
     if (!options.isolatedSession) sessionCache.set(key, first);
     return first;
@@ -227,7 +268,7 @@ export async function mintCachedSession(
 
   if (!options.isolatedSession) sessionCache.delete(key);
   if (authDiagEnabled()) authDiag.helperRotations += 1;
-  const second = await mintOnce(true);
+  const second = await runMint(true);
   if (second) {
     if (!options.isolatedSession) sessionCache.set(key, second);
     return second;

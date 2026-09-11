@@ -28,14 +28,30 @@ export async function waitForRegistryBootstrap(page: Page) {
   return captureRegistryBootstrap(page);
 }
 
+function assertNotOnLogin(page: Page, where: string) {
+  const path = new URL(page.url()).pathname;
+  if (path.startsWith('/login')) {
+    throw new Error(`${where}: redirected to login (session lost). url=${page.url()}`);
+  }
+}
+
+/** Wait for SPA loading chrome + short network settle (combined-batch boot race). */
+async function settleShellBoot(page: Page) {
+  await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => undefined);
+}
+
 export async function gotoShellRoute(page: Page, path: string) {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   await page.goto(normalized, { waitUntil: 'domcontentloaded' });
-  await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  await settleShellBoot(page);
+  assertNotOnLogin(page, `gotoShellRoute(${normalized})`);
 }
 
 export async function assertShellVisible(page: Page) {
-  await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
+  await settleShellBoot(page);
+  assertNotOnLogin(page, 'assertShellVisible');
+
   await page
     .waitForFunction(
       () => Boolean(sessionStorage.getItem('booking.refreshToken')),
@@ -43,14 +59,26 @@ export async function assertShellVisible(page: Page) {
       { timeout: 20_000 },
     )
     .catch(() => undefined);
-  const path = new URL(page.url()).pathname;
-  if (path.startsWith('/login')) {
-    throw new Error(`assertShellVisible: redirected to login (session lost). url=${page.url()}`);
-  }
+
+  // AuthProvider may still be redeeming refresh → me; settle again then fail-closed on /login.
+  await settleShellBoot(page);
+  assertNotOnLogin(page, 'assertShellVisible');
+
+  // Header mounts before the labeled user-menu control — wait for chrome first.
+  await page.locator('header').first().waitFor({ state: 'visible', timeout: 30_000 }).catch(() => undefined);
+
   const menu = userMenu(page).or(
     page.getByRole('button', { name: /^(User menu|قائمة المستخدم)$/ }),
   );
-  await expect(menu.first()).toBeVisible({ timeout: 30_000 });
+  try {
+    await expect(menu.first()).toBeVisible({ timeout: 30_000 });
+  } catch (err) {
+    assertNotOnLogin(page, 'assertShellVisible');
+    const bodySnippet = (await page.locator('body').innerText().catch(() => '')).slice(0, 400);
+    throw new Error(
+      `assertShellVisible: user menu not visible. url=${page.url()} bodySnippet=${JSON.stringify(bodySnippet)} cause=${String(err)}`,
+    );
+  }
   await expect(mainContent(page)).toBeVisible();
 }
 
