@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | Branch | `cursor/phase48-wave-i-enterprise-qa` |
-| Commits | I0 `2f06970`, I1 `cf6617a`, I2/I3 `070f1c3`, I4 `5922b20`, I5 _(tip)_ |
+| Commits | I0 `2f06970`, I1 `cf6617a`, I2/I3 `070f1c3`, I4 `5922b20`, I5 `ca0cd59` |
 | Base | `d53ff77` (Wave H merge) |
 
 ## I0 — Kickoff

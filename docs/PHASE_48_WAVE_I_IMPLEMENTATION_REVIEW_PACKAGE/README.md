@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Branch** | `cursor/phase48-wave-i-enterprise-qa` |
-| **Evidence SHA** | _I5 tip — see commit after push_ |
+| **Evidence SHA** | `ca0cd59` |
 | **Ancestry** | I5 → I4 `5922b20` → I2/I3 `070f1c3` → I1 `cf6617a` → I0 `2f06970` → Wave H merge `d53ff77` |
 | **Wave** | Enterprise QA closure (I) — pack runners, onepass, migration validators, review |
 | **Purpose** | Lean implementation review + external PA precheck — **not** Production Acceptance |
@@ -21,7 +21,7 @@ self-granted Wave I PA = NO
 | I1 | `cf6617a` | Pack matrix + `test:phase48-*` runners |
 | I2 / I3 | `070f1c3` | P0 green (I2); P1 API+e2e green evidence-only (I3, no empty commit) |
 | I4 | `5922b20` | Combined traceability + migration A–G validators |
-| I5 | _(this tip)_ | Onepass + Step 28/29 + review package |
+| I5 | `ca0cd59` | Onepass + Step 28/29 + review package |
 
 ## Index
 

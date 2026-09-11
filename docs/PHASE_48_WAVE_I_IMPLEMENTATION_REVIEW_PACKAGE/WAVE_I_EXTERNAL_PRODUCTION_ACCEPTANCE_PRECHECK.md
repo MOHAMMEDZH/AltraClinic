@@ -3,8 +3,8 @@
 | Field | Value |
 |-------|--------|
 | **Branch** | `cursor/phase48-wave-i-enterprise-qa` |
-| **Slice SHAs** | I0 `2f06970`, I1 `cf6617a`, I2/I3 `070f1c3`, I4 `5922b20`, I5 _(this tip)_ |
-| **Local evidence** | `apps/api/.ci-evidence/wave-i5-onepass-<I5-shortsha>/` (uncommitted) |
+| **Slice SHAs** | I0 `2f06970`, I1 `cf6617a`, I2/I3 `070f1c3`, I4 `5922b20`, I5 `ca0cd59` |
+| **Local evidence** | `apps/api/.ci-evidence/wave-i5-onepass-ca0cd59/` (uncommitted) |
 | **Review package** | `docs/PHASE_48_WAVE_I_IMPLEMENTATION_REVIEW_PACKAGE/` |
 
 Checklist from `docs/PHASE_48_WAVE_I_KICKOFF_PACKAGE/WAVE_I_ACCEPTANCE_CRITERIA.md`.
@@ -32,8 +32,8 @@ Statuses: **PASS** = proven on tip; **PENDING** = external/CTO; **N/A** = out of
 | P1 API + e2e green | **PASS** @ `070f1c3` (I3 evidence) |
 | Combined Traceability (R4-TRACE > 0) | **PASS** @ `5922b20` |
 | Migration A–G; G wired; H ABSENT | **PASS** @ `5922b20` |
-| Phase 48 onepass | **PASS** @ I5 tip |
-| Step 28 / Step 29 baselines | **PASS** @ I5 tip |
+| Phase 48 onepass | **PASS** @ `ca0cd59` |
+| Step 28 / Step 29 baselines | **PASS** @ `ca0cd59` |
 
 ## 2. Explicit non-goals (must NOT be required)
 
@@ -43,13 +43,13 @@ Phase 49/50/51 · Wave A–H SoR reopen · AppointmentForm catalog picker · sel
 
 ```text
 WAVE I PRODUCTION ACCEPTANCE = PENDING EXTERNAL
-Evidence SHA = <I5 tip — this commit>
+Evidence SHA = ca0cd59
 P0 packs = PASS @ 070f1c3
 P1 packs = PASS @ 070f1c3
 Combined Traceability = PASS @ 5922b20
 Migration Clean/Upgrade = PASS @ 5922b20 (G wired; H ABSENT)
-Phase 48 onepass = PASS @ I5 tip
-Step 28 / Step 29 = PASS @ I5 tip
+Phase 48 onepass = PASS @ ca0cd59
+Step 28 / Step 29 = PASS @ ca0cd59
 self-granted Wave I PA = NO
 ```
 
