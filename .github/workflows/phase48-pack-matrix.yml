@@ -1,0 +1,44 @@
+name: Phase 48 Pack Matrix (manual)
+
+# Wave I1 — optional manual pack runner. workflow_dispatch ONLY.
+# Do NOT add as a required PR / branch-protection check.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pack_id:
+        description: 'API pack id from phase48-pack-matrix.json (e.g. p1-waitlist, p0-catalog)'
+        required: true
+        default: 'p1-waitlist'
+        type: string
+
+concurrency:
+  group: phase48-pack-matrix-${{ github.ref }}-${{ inputs.pack_id }}
+  cancel-in-progress: true
+
+jobs:
+  phase48-pack-smoke:
+    name: phase48-pack-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: List pack matrix
+        working-directory: apps/api
+        run: npm run test:phase48-pack-list
+
+      - name: Run selected pack
+        working-directory: apps/api
+        env:
+          ALLOW_TEST_DATABASE_RESET: 'true'
+          RUN_PLATFORM_DB_SECURITY: 'true'
+        run: node scripts/run-phase48-pack.mjs ${{ inputs.pack_id }}
