@@ -51,6 +51,27 @@
   padding-top: var(--space-2);
 }
 
+@media (max-width: 1024px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .actions :is(button) {
+    min-height: 44px;
+  }
+
+  .slotBtn {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .slots {
   padding: var(--space-3);
   border: 1px solid var(--color-border);

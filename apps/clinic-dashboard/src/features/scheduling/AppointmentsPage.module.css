@@ -31,7 +31,7 @@
 
 .timezoneHint {
   margin: var(--space-1) 0 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--text-body-sm);
 }
 
@@ -159,7 +159,8 @@
 
 .viewBtnActive {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
-  color: var(--color-primary);
+  /* Darker than --color-primary (#26ad89) so text meets WCAG AA ≥4.5:1 on the tinted fill. */
+  color: #065f46;
   font-weight: 600;
 }
 
@@ -213,7 +214,8 @@
 .todayBtn {
   border: none;
   background: transparent;
-  color: var(--color-primary);
+  /* Same AA-safe ink as .viewBtnActive; raw primary fails contrast on #fafafa. */
+  color: #065f46;
   font-size: var(--text-xs);
   font-weight: 600;
   cursor: pointer;
@@ -228,8 +230,13 @@
 .keyboardHint {
   margin: calc(var(--space-2) * -1) 0 0;
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-align: center;
+}
+
+.calendarControls {
+  display: grid;
+  gap: var(--space-3);
 }
 
 .main {
@@ -277,6 +284,38 @@
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+}
+
+@media (max-width: 1024px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+
+  .headerActions :is(button) {
+    min-height: 44px;
+  }
+
+  .viewBtn {
+    min-height: 44px;
+    min-width: 44px;
+    padding-inline: var(--space-3);
+  }
+
+  .navBtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .select,
+  .searchInput {
+    min-height: 44px;
+    height: 44px;
+  }
+
+  .todayBtn {
+    min-height: 44px;
+    padding-inline: var(--space-3);
+  }
 }
 
 @media (max-width: 960px) {

@@ -21,15 +21,16 @@ function authKeys(user: { tenantId?: string } | null) {
   return [user?.tenantId ?? 'none'] as const;
 }
 
-export function useClinicalServices(enabled = true) {
+export function useClinicalServices(enabled = true, search?: string) {
   const { getValidAccessToken, user } = useAuth();
+  const q = search?.trim() || undefined;
   return useQuery({
-    queryKey: ['clinical-catalog', 'services', ...authKeys(user)],
+    queryKey: ['clinical-catalog', 'services', ...authKeys(user), q ?? ''],
     enabled: enabled && Boolean(user?.tenantId),
     queryFn: async () => {
       const token = await getValidAccessToken();
       if (!token || !user?.tenantId) throw new Error('Not authenticated');
-      return fetchClinicalServices(token, user.tenantId);
+      return fetchClinicalServices(token, user.tenantId, { search: q });
     },
     staleTime: 30_000,
   });

@@ -178,7 +178,13 @@ export function AppointmentForm({
   const readOnlyPatient = mode !== 'create' || Boolean(lockPatient);
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+    <form
+      className={styles.form}
+      onSubmit={handleSubmit}
+      noValidate
+      dir={locale.startsWith('ar') ? 'rtl' : 'ltr'}
+      data-testid="appointment-form"
+    >
       {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
       {readOnlyPatient ? (

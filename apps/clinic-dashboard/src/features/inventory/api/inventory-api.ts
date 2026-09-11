@@ -1239,6 +1239,78 @@ export async function convertStockRequestToPo(
   });
 }
 
+/** Wave C AR-20 owner accountability report (requires api.inventory export). PHI omitted by default. */
+export interface InventoryUsageOwnerReportRow {
+  id: string;
+  inventoryItemId: string;
+  quantityUsed: number;
+  signedQuantity: number;
+  unit: string;
+  usageType: string;
+  usedByUserId: string | null;
+  status: string;
+  attributionStatus: string | null;
+  occurredAt: string;
+}
+
+export interface InventoryUsageOwnerReport {
+  total: number;
+  limit: number;
+  offset: number;
+  aggregates: {
+    netQuantityTotal: number;
+    byUsageType: Array<{ usageType: string; count: number; quantitySum: number }>;
+    byUsedBy: Array<{ usedByUserId: string | null; count: number; quantitySum: number }>;
+  };
+  rows: InventoryUsageOwnerReportRow[];
+}
+
+export async function fetchInventoryUsageOwnerReport(
+  token: string,
+  tenantId: string,
+  params?: { from?: string; to?: string; limit?: number },
+): Promise<InventoryUsageOwnerReport> {
+  const qs = new URLSearchParams();
+  if (params?.from) qs.set('from', params.from);
+  if (params?.to) qs.set('to', params.to);
+  if (params?.limit != null) qs.set('limit', String(params.limit));
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  const data = await apiRequest<InventoryUsageOwnerReport>(`/inventory/usage/owner-report${suffix}`, {
+    token,
+    tenantId,
+  });
+  return {
+    total: Number(data.total ?? 0),
+    limit: Number(data.limit ?? 50),
+    offset: Number(data.offset ?? 0),
+    aggregates: {
+      netQuantityTotal: Number(data.aggregates?.netQuantityTotal ?? 0),
+      byUsageType: (data.aggregates?.byUsageType ?? []).map((row) => ({
+        usageType: String(row.usageType),
+        count: Number(row.count ?? 0),
+        quantitySum: Number(row.quantitySum ?? 0),
+      })),
+      byUsedBy: (data.aggregates?.byUsedBy ?? []).map((row) => ({
+        usedByUserId: row.usedByUserId != null ? String(row.usedByUserId) : null,
+        count: Number(row.count ?? 0),
+        quantitySum: Number(row.quantitySum ?? 0),
+      })),
+    },
+    rows: (data.rows ?? []).map((row) => ({
+      id: String(row.id),
+      inventoryItemId: String(row.inventoryItemId),
+      quantityUsed: Number(row.quantityUsed ?? 0),
+      signedQuantity: Number(row.signedQuantity ?? 0),
+      unit: String(row.unit ?? ''),
+      usageType: String(row.usageType),
+      usedByUserId: row.usedByUserId != null ? String(row.usedByUserId) : null,
+      status: String(row.status),
+      attributionStatus: row.attributionStatus != null ? String(row.attributionStatus) : null,
+      occurredAt: String(row.occurredAt),
+    })),
+  };
+}
+
 export function mapInventoryApiError(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 403) return 'permissionDenied';

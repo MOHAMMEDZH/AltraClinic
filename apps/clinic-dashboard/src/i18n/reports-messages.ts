@@ -470,7 +470,7 @@ export const reportsMessagesAr = {
     outstandingInvoices: { title: 'الفواتير المستحقة', desc: 'أعمار الذمم والأرصدة المستحقة.' },
     revenueSummary: { title: 'ملخص الإيرادات', desc: 'تحليل التحصيل واتجاه الإيراد.' },
     financialSummary: { title: 'تصدير ملخص مالي', desc: 'تصدير جاهز للمحاسبة.' },
-    commissionSummary: { title: 'ملخص العمولات', desc: 'حسابات وم payouts مقدمي الخدمة.' },
+    commissionSummary: { title: 'ملخص العمولات', desc: 'حسابات عمولات مقدمي الخدمة والمدفوعات.' },
     operationsSummary: { title: 'ملخص العمليات', desc: 'مؤشرات تشغيلية عبر الأقسام.' },
     customReport: { title: 'تقرير مخصص', desc: 'تصدير م tailored من بيانات العيادة.' },
     doctorProductivity: { title: 'إنتاجية الأطباء', desc: 'المواعيد والاست utilization وإنتاجية المقدمين.' },

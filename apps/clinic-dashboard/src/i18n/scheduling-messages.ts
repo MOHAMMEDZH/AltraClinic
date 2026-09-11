@@ -11,6 +11,7 @@ export const schedulingMessagesEn = {
   refresh: 'Refresh',
   lastUpdated: 'Updated',
   views: {
+    ariaLabel: 'Calendar view',
     day: 'Day',
     week: 'Week',
     month: 'Month',
@@ -424,6 +425,7 @@ export const schedulingMessagesAr = {
   refresh: 'تحديث',
   lastUpdated: 'آخر تحديث',
   views: {
+    ariaLabel: 'عرض التقويم',
     day: 'يوم',
     week: 'أسبوع',
     month: 'شهر',
