@@ -7,7 +7,7 @@
 | **Branch** | `cursor/phase50-docs-ux-polish-kickoff` |
 | **Base lineage** | `1501190` (Phase 49 merge) |
 | **D0 tip** | `811e7cc` |
-| **D1 tip** | _(set after substantive commit)_ |
+| **D1 tip** | `c005aee` |
 | **Authority** | CTO authorize D1 only; D2–D7 **NOT** started |
 
 ## Files
