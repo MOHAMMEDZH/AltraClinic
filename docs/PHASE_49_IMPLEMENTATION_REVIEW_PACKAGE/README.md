@@ -26,7 +26,7 @@ Wave A–I SoR reopen = NOT AUTHORIZED
 | K4 | `614b733` (pin; packaging `0dc69be`) | Observability/alerting readiness |
 | K5 | `8bfa7c6` (pin; packaging `eb96993`) | Deploy + rollback SSOT |
 | K6 | `6164d05` (pin; packaging `d222010`) | Tenant isolation production-check |
-| K7 | _(this tip)_ | Incident basics + this review package |
+| K7 | `72aeb9a` | Incident basics + this review package |
 
 ## Index
 

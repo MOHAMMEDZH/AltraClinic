@@ -4,7 +4,7 @@
 |-------|--------|
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base** | `9eac595` |
-| **Slice tips** | K0 `cfbf682` · K1 `d01fb53` · K2 `521bdaf` · K3 `220a931` · K4 `614b733` · K5 `8bfa7c6` · K6 `6164d05` · K7 _(packaging tip)_ |
+| **Slice tips** | K0 `cfbf682` · K1 `d01fb53` · K2 `521bdaf` · K3 `220a931` · K4 `614b733` · K5 `8bfa7c6` · K6 `6164d05` · K7 `72aeb9a` |
 | **Review package** | `docs/PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/` |
 | **Incident basics** | `docs/PHASE_49_K7_INCIDENT_BASICS/` |
 
@@ -44,7 +44,7 @@ Phase 50 polish · Phase 51 launch · Wave SoR reopen · self-granted PA · requ
 
 ```text
 PHASE 49 PRODUCTION ACCEPTANCE = PENDING EXTERNAL
-Evidence tip = <K7 packaging SHA>
+Evidence tip = 72aeb9a
 K0 = cfbf682
 K1 = d01fb53
 K2 = 521bdaf
@@ -52,7 +52,7 @@ K3 = 220a931
 K4 = 614b733
 K5 = 8bfa7c6
 K6 = 6164d05
-K7 = <K7 packaging SHA>
+K7 = 72aeb9a
 Secrets/config hygiene = PASS
 Backup/restore posture = PASS (schema drill); full booking_test restore = PARTIAL (fixture debt)
 Observability/alerting readiness = PASS in-repo; EXTERNAL paging not claimed
