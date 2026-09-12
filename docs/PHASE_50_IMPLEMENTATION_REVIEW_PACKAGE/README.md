@@ -5,12 +5,13 @@
 | **Branch** | `cursor/phase50-docs-ux-polish-kickoff` |
 | **Canonical base** | `1501190` (Phase 49 PR #5 merge) |
 | **D6 tip** | `3666383` |
-| **D7 tip** | `b445f20` (pin on branch HEAD) |
-| **Purpose** | Lean implementation review + external PA precheck — **not** Production Acceptance |
+| **D7 tip** | `b445f20` |
+| **Evidence tip (PA)** | `2d1f3ec` (CTO-granted) |
+| **Purpose** | Lean implementation review — Phase 50 PA **ACCEPTED** by CTO |
 
 ```text
-Phase 50 Production Acceptance = PENDING EXTERNAL
-self-granted Phase 50 PA = NO
+Phase 50 Production Acceptance = ACCEPTED (CTO @ 2d1f3ec)
+self-granted Phase 50 PA = NO (CTO-granted)
 Phase 51 = NOT AUTHORIZED
 D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 Wave A–I / Phase 49 SoR reopen = NOT AUTHORIZED
@@ -39,7 +40,7 @@ Wave A–I / Phase 49 SoR reopen = NOT AUTHORIZED
 | [TEST_PLAN.md](./TEST_PLAN.md) | How to run packaged checks |
 | [TEST_RESULTS.md](./TEST_RESULTS.md) | Local proofs |
 | [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) | Accepted / deferred gaps |
-| [PHASE_50_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./PHASE_50_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | Checklist — PA **PENDING EXTERNAL** |
+| [PHASE_50_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./PHASE_50_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | Checklist — PA **ACCEPTED** by CTO @ `2d1f3ec` |
 
 ## Package index (slice folders)
 

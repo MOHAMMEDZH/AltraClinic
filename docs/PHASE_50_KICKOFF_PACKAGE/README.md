@@ -1,13 +1,13 @@
-﻿# Phase 50 â€” Kickoff Package (Docs and UX Polish)
+﻿# Phase 50 — Kickoff Package (Docs and UX Polish)
 
-CTO-authorized **D0 kickoff docs**; implementation slices D1â€“D7 packaged on branch (see tip table).
+CTO-authorized **D0 kickoff docs**; implementation slices D1–D7 packaged on branch (see tip table).
 
 | Field | Value |
 |-------|--------|
 | **Canonical base** | `release47-step22-transfer-20260810-0353` @ `1501190` (Phase 49 PR #5 merge) |
 | **Prior program** | Phase 49 Production Hardening **PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase50-docs-ux-polish-kickoff` |
-| **Status** | **D0â€“D4, D6â€“D7 packaged**; **D5 picker = DEFERRED (CTO)**; Phase 50 PA = **PENDING EXTERNAL**; Phase 51 **NOT AUTHORIZED** |
+| **Status** | **D0–D4, D6–D7 packaged**; **D5 picker = DEFERRED (CTO)**; Phase 50 PA = **ACCEPTED** (CTO @ `2d1f3ec`); Phase 51 **NOT AUTHORIZED** |
 
 | Slice | Tip | Package |
 |-------|-----|---------|
@@ -18,24 +18,25 @@ CTO-authorized **D0 kickoff docs**; implementation slices D1â€“D7 packaged 
 | D4 | `cb2e387` | [`../PHASE_50_D4_A11Y/`](../PHASE_50_D4_A11Y/) |
 | D5 | **DEFERRED** | picker candidate only (D1) |
 | D6 | `3666383` | [`../PHASE_50_D6_OWNER_NAMES/`](../PHASE_50_D6_OWNER_NAMES/) |
-| D7 | `b445f20` | [`../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/`](../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/) Â· [`../PHASE_50_D7_REVIEW/`](../PHASE_50_D7_REVIEW/) |
+| D7 | `b445f20` | [`../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/`](../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/) · [`../PHASE_50_D7_REVIEW/`](../PHASE_50_D7_REVIEW/) |
 
 | File | Purpose |
 |------|---------|
 | [PHASE_50_FROZEN_SCOPE_EXTRACT.md](./PHASE_50_FROZEN_SCOPE_EXTRACT.md) | Docs/UX Polish scope; OUT |
 | [PHASE_50_CURRENT_STATE_VS_EXIT.md](./PHASE_50_CURRENT_STATE_VS_EXIT.md) | Precursors vs Phase 50 exit |
 | [PHASE_50_ACCEPTANCE_CRITERIA.md](./PHASE_50_ACCEPTANCE_CRITERIA.md) | PA checklist (do not self-accept) |
-| [PHASE_50_IMPLEMENTATION_SLICES.md](./PHASE_50_IMPLEMENTATION_SLICES.md) | Ordered D0â†’D7 |
+| [PHASE_50_IMPLEMENTATION_SLICES.md](./PHASE_50_IMPLEMENTATION_SLICES.md) | Ordered D0→D7 |
+| [`../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/`](../PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/) | D7 review + PA precheck (**ACCEPTED** @ `2d1f3ec`) |
 
 ```text
 Phase 49 Production Acceptance = ACCEPTED (merge 1501190; evidence tip 5bfda08)
-Phase 48 Waves Aâ€“I = OFFICIALLY CLOSED
-Phase 50 Production Acceptance = PENDING EXTERNAL
+Phase 48 Waves A–I = OFFICIALLY CLOSED
+Phase 50 Production Acceptance = ACCEPTED (CTO @ 2d1f3ec)
 self-granted Phase 50 PA = NO
 D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 Phase 51 commercial launch = NOT AUTHORIZED
-Wave Aâ€“I / Phase 49 SoR reopen = NOT AUTHORIZED (except new product failure + CTO)
+Wave A–I / Phase 49 SoR reopen = NOT AUTHORIZED (except new product failure + CTO)
 second test framework = NOT AUTHORIZED
 full brand redesign / polish dump = NOT AUTHORIZED
-PR / merge = wait for CTO
+merge = wait for CTO authorize
 ```

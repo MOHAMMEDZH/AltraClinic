@@ -17,6 +17,6 @@ Statuses reflect slice evidence as packaged on this branch. Uncommitted paths ar
 ```text
 Overall Phase 50 packaging proofs = PASS (docs + thin unit); e2e = CI / API-ready
 D5 picker implemented = NO (DEFERRED)
-Phase 50 PA = PENDING EXTERNAL
+Phase 50 PA = ACCEPTED (CTO @ 2d1f3ec)
 self-granted Phase 50 PA = NO
 ```

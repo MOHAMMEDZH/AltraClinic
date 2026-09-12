@@ -36,7 +36,7 @@
 ```text
 CTO slice authorize D0→D4, D6, D7 = YES (as accepted)
 D5 = DEFERRED (CTO) — not started
-Phase 50 PA = PENDING EXTERNAL (CTO decides; not self-grant)
+Phase 50 PA = ACCEPTED (CTO @ 2d1f3ec; not self-grant)
 Kickoff alone ≠ PA
 Phase 51 = NOT AUTHORIZED
 ```
