@@ -8,7 +8,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | **Evidence tip (Wave I)** | PR #4 head `d19671c` → merge `9eac595` |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Prior program** | Phase 48 Waves A–I **OFFICIALLY CLOSED**; Wave I PA = **ACCEPTED** |
-| **Status** | K0–K6 accepted; **K7** incident basics + `docs/PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/`; **Phase 49 PA = PENDING EXTERNAL**; Phase 50/51 **NOT STARTED** |
+| **Status** | K0–K7 packaged; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`); Phase 50 Docs/UX Polish in progress |
 
 | File | Purpose |
 |------|---------|
@@ -28,10 +28,10 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 ```text
 Wave I Production Acceptance = ACCEPTED (evidence SHA 9eac595 / tip d19671c)
 Phase 48 Waves A–I = OFFICIALLY CLOSED
-Phase 49 Production Acceptance = PENDING EXTERNAL
-self-granted Phase 49 PA = NO
-Phase 49 implementation slices K0–K7 = packaged (PA not granted by packaging)
-Phase 50 / Phase 51 = NOT AUTHORIZED
+Phase 49 Production Acceptance = ACCEPTED (CTO @ 5bfda08; merge 1501190)
+self-granted Phase 49 PA = NO (CTO-granted)
+Operator day-2 hub = docs/OPERATOR_INDEX.md
+Phase 50 / Phase 51 = separate programs (Phase 50 kickoff authorized; Phase 51 NOT)
 Wave A–I SoR reopen = NOT AUTHORIZED (except new product failure + CTO)
 second test framework = NOT AUTHORIZED (reuse Step 28/29 + observability)
 ```

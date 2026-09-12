@@ -1,8 +1,8 @@
 # D1 — AppointmentForm clinical-catalog picker (D5 candidate)
 
-**Lineage:** `1501190+` · **Status:** **CANDIDATE** — not started  
+**Lineage:** `1501190+` · **Status:** **CANDIDATE** — not started (CTO: **DEFERRED** for Phase 50 exit)  
 **Phase 50 claim:** none  
-**Recommendation for CTO:** **DEFER** (keep OUT until explicit D5 authorize)
+**CTO decision:** **DEFERRED** for Phase 50 (remain candidate only; not required for exit)
 
 ---
 
@@ -47,7 +47,7 @@ apps/api/.ci-evidence/wave-h2-rtl-booking-*/00_SUMMARY.md   # uncommitted eviden
 ## D5 decision recommendation
 
 ```text
-D5 AppointmentForm clinical-catalog picker = DEFERRED (candidate)
-Authorize D5 separately only if CTO wants product binding in Phase 50
-Otherwise record explicit deferral on Phase 50 accepting SHA (exit allows DEFERRED)
+D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO for Phase 50)
+Remain candidate only — not required for Phase 50 exit
+Authorize separately only if a later CTO prompt wants product binding IN
 ```

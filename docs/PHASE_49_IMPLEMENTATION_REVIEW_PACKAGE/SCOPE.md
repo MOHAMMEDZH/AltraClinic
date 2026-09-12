@@ -31,6 +31,6 @@
 
 ```text
 CTO slice authorize K0→K7 sequential = YES (as accepted)
-Phase 49 PA = PENDING EXTERNAL only
-Kickoff alone ≠ PA
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
+Kickoff alone ≠ PA (historical); PA later CTO-granted
 ```

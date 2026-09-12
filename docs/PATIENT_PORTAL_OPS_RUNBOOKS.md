@@ -1,6 +1,9 @@
 # Patient Portal — Operational Runbooks (Phase 46e)
 
-Companion to [`PATIENT_PORTAL_EXPERIENCE_AND_INTEGRATIONS.md`](./PATIENT_PORTAL_EXPERIENCE_AND_INTEGRATIONS.md).
+Companion to [`PATIENT_PORTAL_EXPERIENCE_AND_INTEGRATIONS.md`](./PATIENT_PORTAL_EXPERIENCE_AND_INTEGRATIONS.md).  
+**Operator hub:** [`OPERATOR_INDEX.md`](./OPERATOR_INDEX.md).  
+**Platform deploy/rollback:** [`PHASE_49_K5_DEPLOY_ROLLBACK/`](./PHASE_49_K5_DEPLOY_ROLLBACK/).  
+**Incidents:** [`PHASE_49_K7_INCIDENT_BASICS/`](./PHASE_49_K7_INCIDENT_BASICS/) · [`SECURITY_RUNBOOKS.md`](./SECURITY_RUNBOOKS.md).
 
 ## Enablement checklist (post QG-F only for production)
 

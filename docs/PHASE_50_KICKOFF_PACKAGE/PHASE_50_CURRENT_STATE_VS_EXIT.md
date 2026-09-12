@@ -42,7 +42,7 @@ None of the rows below claim **Phase 50 exit complete**.
 | Docs / operator clarity | Phase 49 K3–K7 runbooks; Step 29; SECURITY_RUNBOOKS; scattered ops docs | **PARTIAL** (hardening packaged; operator clarity polish not Phase 50–inventoried) |
 | Bounded UX polish | Clinic dashboard + Super Admin shells; Wave review packages; known truncated-ID displays | **PARTIAL** (product UI exists; Phase 50 candidate list not packaged) |
 | A11y follow-ups | Super Admin UI matrix a11y rows; clinic a11y CI / Playwright patterns; contrast/mobile evidence history | **PARTIAL** (gates exist; Phase 50 follow-up inventory MISSING as package) |
-| AppointmentForm clinical-catalog picker | Explicitly deferred in Wave H/I OUT / Wave I known limitations | **MISSING** as Phase 50 slice (candidate only) |
+| AppointmentForm clinical-catalog picker | Explicitly **DEFERRED** by CTO for Phase 50 (candidate only; not required for exit) | **DEFERRED** |
 | Owner UX (names vs UUIDs) | Various list/detail pages show IDs; some surfaces already resolve names | **PARTIAL** / **MISSING** for Phase 50 inventory |
 | Regression baselines | Step 28/29; Platform DB; Progressive + Inventory E2E; Phase 49 wrappers | **PASS-local** as baselines — still required to **remain green**, not sufficient alone |
 

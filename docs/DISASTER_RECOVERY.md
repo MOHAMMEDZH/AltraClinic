@@ -1,10 +1,29 @@
-# Disaster Recovery Strategy — Enterprise Healthcare Saaas Platform
+# Disaster Recovery Strategy — Enterprise Healthcare SaaS Platform
 
-Last updated: 2026-06-14
+Last updated: 2026-09-12 (Phase 50 D2 — day-2 path clarified)
 
 ## Purpose
 
 This document defines disaster recovery objectives, backup strategy, recovery procedures, failover mechanisms, and data retention policies for the platform. It provides a robust enterprise-grade approach and identifies potential weaknesses with better alternatives.
+
+## Day-2 operator path (cutover SoR) — start here
+
+**Authoritative cutover backup/restore for Production Hardening** is Phase 49 K3 + ops `pg_dump` scripts — **not** the aspirational weekly/monthly/PITR sections below as in-repo procedure.
+
+| Step | Action | Path |
+|------|--------|------|
+| 1 | Read SoR boundary (cutover vs Backup Center flag-OFF) | `docs/PHASE_49_K3_BACKUP_RESTORE/01_SOR_BOUNDARY.md` |
+| 2 | Pre-deploy backup | `apps/api/scripts/backup-postgres.sh` or `.ps1` |
+| 3 | Verify | `apps/api/scripts/verify-backup.sh` |
+| 4 | Restore (RM authorize) | `apps/api/scripts/restore-postgres.sh` + K3 drill procedure |
+| 5 | Cutover ownership | `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §8.1 / §9 |
+| 6 | Incident SEV / RM | `docs/PHASE_49_K7_INCIDENT_BASICS/` · `docs/SECURITY_RUNBOOKS.md` |
+
+```text
+Offsite replication / PITR / multi-region RTO-RPO = EXTERNAL (deployment-owned)
+In-repo claim of configured PITR = NO unless cutover evidence proves it
+Operator hub = docs/OPERATOR_INDEX.md
+```
 
 ## Objectives
 
@@ -45,10 +64,10 @@ Operational scripts (see `apps/api/scripts/`):
 
 ### Point-In-Time Recovery (PITR)
 
-- Enable point-in-time recovery for primary transactional databases and critical data stores.
+- **EXTERNAL / deployment-owned** for production (Step 29 cutover gate; Phase 49 K3 OUT).
+- Enable point-in-time recovery for primary transactional databases **when ops configures it outside the repo**.
 - Retain WAL/transaction log history for a configurable window that aligns with business recovery objectives.
-- Support recovery to a specific timestamp or transaction boundary.
-- Integrate PITR with backup and retention policies to avoid storage blowup.
+- Do **not** treat this subsection as an in-repo runnable procedure — confirm at cutover or obtain Release Manager waiver.
 
 ## Recovery Procedures
 

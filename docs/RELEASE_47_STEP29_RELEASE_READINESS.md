@@ -478,6 +478,8 @@ Production may proceed if a cutover gate fails = NO
 
 ## 19. Related documents
 
+- **Operator day-2 hub:** `docs/OPERATOR_INDEX.md`
+- `docs/PHASE_49_K3_BACKUP_RESTORE/` · `docs/PHASE_49_K5_DEPLOY_ROLLBACK/` · `docs/PHASE_49_K7_INCIDENT_BASICS/`
 - `docs/PHASE_47_EXECUTION_PLAN.md`
 - `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md`
 - `docs/SECURITY_RUNBOOKS.md`
@@ -487,3 +489,4 @@ Production may proceed if a cutover gate fails = NO
 - `docs/EFFECTIVE_ENTITLEMENT_RUNTIME.md`
 - `docs/USAGE_METERING_AND_LIMIT_ENFORCEMENT.md`
 - `docs/SYSTEM_MONITORING_OBSERVABILITY_TRACING_AND_HEALTH.md`
+- `docs/PHASE_49_K4_OBSERVABILITY_ALERTING/` (alerting readiness map)

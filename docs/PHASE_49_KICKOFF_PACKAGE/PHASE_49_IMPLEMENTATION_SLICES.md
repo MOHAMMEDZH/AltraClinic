@@ -125,7 +125,7 @@ Do **not** start K2–K7 in the same unauthorized big-bang. Prefer thin PRs afte
 
 | | |
 |--|--|
-| **Goal** | Minimal incident playbook; lean review package; **PA = PENDING EXTERNAL** |
+| **Goal** | Minimal incident playbook; lean review package; **PA was PENDING EXTERNAL at slice write — later ACCEPTED by CTO @ `5bfda08` / merge `1501190`** |
 | **Depends on** | K1–K6 (as authorized) |
 | **Deliverable** | Mirror Wave I review-package style + evidence; **no** self-granted PA |
 

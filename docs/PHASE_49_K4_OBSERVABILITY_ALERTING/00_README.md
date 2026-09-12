@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K4 — Observability / alerting readiness |
-| **Status** | Packaging on existing surfaces; **Phase 49 PA = PENDING** |
+| **Status** | Packaging on existing surfaces; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K3 tip** | `220a931` |
@@ -29,7 +29,7 @@ npm run test:phase49-observability-readiness
 Wraps existing specs only — **not** forced into Step 28/29 Release 47 onepass.
 
 ```text
-Phase 49 PA = PENDING
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 No APM/SIEM/on-call SaaS invented in-repo
 K5–K7 = NOT AUTHORIZED
 ```

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K2 — Secrets/config hygiene |
-| **Status** | Packaging + minimal fail-closed; **Phase 49 PA = PENDING** |
+| **Status** | Packaging + minimal fail-closed; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K1 tip** | `e9acc52` (enriched inventory) |

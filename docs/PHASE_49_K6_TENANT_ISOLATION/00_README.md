@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K6 — Thin production-check packaging (reuse only) |
-| **Status** | Docs + optional npm wrapper; **Phase 49 PA = PENDING** |
+| **Status** | Docs + optional npm wrapper; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K5 tip** | `8bfa7c6` |
@@ -29,7 +29,7 @@ npm run test:phase49-tenant-isolation-check
 Wraps **existing** `test:platform-db-security` + selected Jest integration patterns only — **not** a new isolation framework; **not** forced as a required GitHub check.
 
 ```text
-Phase 49 PA = PENDING
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 Wave A–I SoR reopen = NOT AUTHORIZED
 K7 = NOT AUTHORIZED
 ```
