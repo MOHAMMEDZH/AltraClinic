@@ -22,13 +22,15 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | [`../PHASE_49_K4_OBSERVABILITY_ALERTING/`](../PHASE_49_K4_OBSERVABILITY_ALERTING/) | **K4** observability/alerting readiness |
 | [`../PHASE_49_K5_DEPLOY_ROLLBACK/`](../PHASE_49_K5_DEPLOY_ROLLBACK/) | **K5** deploy + rollback runbook SSOT |
 | [`../PHASE_49_K6_TENANT_ISOLATION/`](../PHASE_49_K6_TENANT_ISOLATION/) | **K6** tenant isolation production-check packaging |
+| [`../PHASE_49_K7_INCIDENT_BASICS/`](../PHASE_49_K7_INCIDENT_BASICS/) | **K7** incident basics one-pager |
+| [`../PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/`](../PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/) | **K7** implementation review + external PA precheck |
 
 ```text
 Wave I Production Acceptance = ACCEPTED (evidence SHA 9eac595 / tip d19671c)
 Phase 48 Waves A–I = OFFICIALLY CLOSED
-Phase 49 Production Acceptance = PENDING
+Phase 49 Production Acceptance = PENDING EXTERNAL
 self-granted Phase 49 PA = NO
-Phase 49 implementation slices = NOT AUTHORIZED by this package alone
+Phase 49 implementation slices K0–K7 = packaged (PA not granted by packaging)
 Phase 50 / Phase 51 = NOT AUTHORIZED
 Wave A–I SoR reopen = NOT AUTHORIZED (except new product failure + CTO)
 second test framework = NOT AUTHORIZED (reuse Step 28/29 + observability)
