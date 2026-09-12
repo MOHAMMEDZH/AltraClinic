@@ -18,7 +18,6 @@ import {
   assertShellVisible,
   captureRegistryBootstrap,
   ensureShellRoute,
-  gotoShellRoute,
   mainContent,
   readRegistryCacheRaw,
   readRegistryCacheTenant,
