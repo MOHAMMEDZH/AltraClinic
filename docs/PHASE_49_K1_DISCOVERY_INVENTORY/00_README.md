@@ -7,7 +7,7 @@
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` (PR #4 / Wave I merge) |
 | **K0 tip** | `cfbf682` |
-| **K1 tip** | *(this commit)* |
+| **K1 tip** | `73fd9db` |
 | **Authority** | CTO authorize K1 only; K2–K7 **NOT** started |
 
 ## Scope
