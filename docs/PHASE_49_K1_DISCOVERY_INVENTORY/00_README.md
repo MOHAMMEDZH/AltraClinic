@@ -7,8 +7,9 @@
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` (PR #4 / Wave I merge) |
 | **K0 tip** | `cfbf682` |
-| **K1 tip** | `73fd9db` |
-| **Authority** | CTO authorize K1 only; K2–K7 **NOT** started |
+| **K1 tip** | `e9acc52` (enriched inventory) |
+| **K2** | See `docs/PHASE_49_K2_SECRETS_CONFIG/` (authorized) |
+| **Authority** | K0–K2 as authorized; K3–K7 **NOT** started |
 
 ## Scope
 
