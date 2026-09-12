@@ -8,7 +8,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | **Evidence tip (Wave I)** | PR #4 head `d19671c` → merge `9eac595` |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Prior program** | Phase 48 Waves A–I **OFFICIALLY CLOSED**; Wave I PA = **ACCEPTED** |
-| **Status** | K0–K2 accepted; **K3** backup/restore in `docs/PHASE_49_K3_BACKUP_RESTORE/`; **Phase 49 PA = PENDING**; K4–K7 **NOT STARTED** |
+| **Status** | K0–K3 accepted; **K4** observability/alerting in `docs/PHASE_49_K4_OBSERVABILITY_ALERTING/`; **Phase 49 PA = PENDING**; K5–K7 **NOT STARTED** |
 
 | File | Purpose |
 |------|---------|
@@ -19,6 +19,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | [`../PHASE_49_K1_DISCOVERY_INVENTORY/`](../PHASE_49_K1_DISCOVERY_INVENTORY/) | **K1** discovery inventory |
 | [`../PHASE_49_K2_SECRETS_CONFIG/`](../PHASE_49_K2_SECRETS_CONFIG/) | **K2** secrets/config hygiene packaging |
 | [`../PHASE_49_K3_BACKUP_RESTORE/`](../PHASE_49_K3_BACKUP_RESTORE/) | **K3** backup/restore posture + drill |
+| [`../PHASE_49_K4_OBSERVABILITY_ALERTING/`](../PHASE_49_K4_OBSERVABILITY_ALERTING/) | **K4** observability/alerting readiness |
 
 ```text
 Wave I Production Acceptance = ACCEPTED (evidence SHA 9eac595 / tip d19671c)
