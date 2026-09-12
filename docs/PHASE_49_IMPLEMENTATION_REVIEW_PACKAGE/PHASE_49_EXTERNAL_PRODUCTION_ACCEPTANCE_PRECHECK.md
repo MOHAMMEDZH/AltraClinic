@@ -40,11 +40,12 @@ Statuses: **PASS** = proven on tip packaging; **PARTIAL** = documented limit; **
 
 Phase 50 polish · Phase 51 launch · Wave SoR reopen · self-granted PA · required branch-protection changes · fake prod cutover — **honored**.
 
-## 3. Exit sign-off block (for CTO / external)
+## 3. Exit sign-off block (CTO)
 
 ```text
-PHASE 49 PRODUCTION ACCEPTANCE = PENDING EXTERNAL
-Evidence tip = 72aeb9a
+PHASE 49 PRODUCTION ACCEPTANCE = ACCEPTED
+Evidence tip = 5bfda08
+Authority = CTO-granted (not self-grant)
 K0 = cfbf682
 K1 = d01fb53
 K2 = 521bdaf
@@ -68,7 +69,8 @@ self-granted Phase 49 PA = NO
 ---
 
 ```text
-Phase 49 Production Acceptance = PENDING EXTERNAL REVIEW
+Phase 49 Production Acceptance = ACCEPTED (CTO @ 5bfda08)
 self-granted Phase 49 PA = NO
-Do NOT open PR until CTO authorizes
+PR open authorized; merge = wait for CTO
+Phase 50 / Phase 51 = NOT AUTHORIZED
 ```
