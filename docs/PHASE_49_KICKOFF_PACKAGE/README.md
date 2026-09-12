@@ -8,7 +8,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | **Evidence tip (Wave I)** | PR #4 head `d19671c` → merge `9eac595` |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Prior program** | Phase 48 Waves A–I **OFFICIALLY CLOSED**; Wave I PA = **ACCEPTED** |
-| **Status** | K0–K5 accepted; **K6** tenant isolation packaging in `docs/PHASE_49_K6_TENANT_ISOLATION/`; **Phase 49 PA = PENDING**; K7 **NOT STARTED** |
+| **Status** | K0–K6 accepted; **K7** incident basics + `docs/PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/`; **Phase 49 PA = PENDING EXTERNAL**; Phase 50/51 **NOT STARTED** |
 
 | File | Purpose |
 |------|---------|
