@@ -6,11 +6,12 @@
 | **Canonical base** | `9eac595` (Wave I merge / PR #4) |
 | **K6 tip** | `6164d05` |
 | **K7 tip** | `72aeb9a` |
-| **Purpose** | Lean implementation review + external PA precheck — **not** Production Acceptance |
+| **Evidence tip (PA)** | `5bfda08` (CTO-granted) |
+| **Purpose** | Lean implementation review — Phase 49 PA **ACCEPTED** by CTO |
 
 ```text
-Phase 49 Production Acceptance = PENDING EXTERNAL
-self-granted Phase 49 PA = NO
+Phase 49 Production Acceptance = ACCEPTED (CTO @ 5bfda08)
+self-granted Phase 49 PA = NO (CTO-granted)
 Phase 50 / Phase 51 = NOT AUTHORIZED
 Wave A–I SoR reopen = NOT AUTHORIZED
 ```
