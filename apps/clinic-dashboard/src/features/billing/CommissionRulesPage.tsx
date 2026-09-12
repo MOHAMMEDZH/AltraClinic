@@ -1,10 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { hasPermission } from '@booking/permissions';
 import { useI18n } from '@booking/i18n/react';
+import { NamedIdentityDisplay } from '@/components/NamedIdentityDisplay';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { AuthAlert } from '@/features/auth/components/AuthAlert';
 import { AuthButton } from '@/features/auth/components/AuthButton';
+import { canViewUsers, buildIdentityPermCheck } from '@/features/user-management/config/user-management-config';
+import { useUsers } from '@/features/user-management/hooks/useUserManagement';
+import { staffOptionLabel } from '@/features/inventory/utils/accountable-staff-options';
 import { resolveBillingWorkspaceMode } from './config/billing-config';
 import { BillingQuickNav } from './components/BillingQuickNav';
 import { useCalculateCommissionFromInvoices, useCommissionRules, useCreateCommissionRule } from './hooks/useCommission';
@@ -15,14 +19,33 @@ export function CommissionRulesPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const perm = useCallback((action: string) => hasPermission(roles, 'api.commission', action as never), [roles]);
+  const canListStaff = canViewUsers(buildIdentityPermCheck(roles));
   const workspaceMode = resolveBillingWorkspaceMode(roles);
   const canView = perm('view');
   const canManage = perm('manage');
   const canCreate = perm('create');
 
   const rulesQuery = useCommissionRules(canView);
+  const staffDirectoryQuery = useUsers({ status: 'active', limit: 200 }, canView && canListStaff);
   const calcMutation = useCalculateCommissionFromInvoices();
   const createRuleMutation = useCreateCommissionRule();
+
+  const providerNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    if (user?.userId) {
+      const selfLabel = staffOptionLabel({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      });
+      if (selfLabel) map.set(user.userId, selfLabel);
+    }
+    for (const u of staffDirectoryQuery.data?.items ?? []) {
+      const label = staffOptionLabel(u);
+      if (u.id && label) map.set(u.id, label);
+    }
+    return map;
+  }, [staffDirectoryQuery.data?.items, user?.email, user?.firstName, user?.lastName, user?.userId]);
 
   const [providerId, setProviderId] = useState('');
   const [periodStart, setPeriodStart] = useState(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
@@ -122,7 +145,17 @@ export function CommissionRulesPage() {
             {(rulesQuery.data ?? []).map((rule) => (
               <li key={rule.ruleId}>
                 {rule.serviceType ?? t('billing.commission.allServices')} — {rule.commissionRate.value}%
-                {rule.providerId ? ` · ${rule.providerId}` : ''}
+                {rule.providerId ? (
+                  <>
+                    {' · '}
+                    <NamedIdentityDisplay
+                      id={rule.providerId}
+                      name={providerNameById.get(rule.providerId)}
+                      fieldLabel={t('billing.commission.providerId')}
+                      idClassName={styles.idCell}
+                    />
+                  </>
+                ) : null}
               </li>
             ))}
           </ul>

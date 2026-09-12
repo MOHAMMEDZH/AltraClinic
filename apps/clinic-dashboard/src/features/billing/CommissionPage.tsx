@@ -1,10 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { hasPermission } from '@booking/permissions';
 import { useI18n } from '@booking/i18n/react';
+import { NamedIdentityDisplay } from '@/components/NamedIdentityDisplay';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { AuthAlert } from '@/features/auth/components/AuthAlert';
 import { AuthButton } from '@/features/auth/components/AuthButton';
+import { canViewUsers, buildIdentityPermCheck } from '@/features/user-management/config/user-management-config';
+import { useUsers } from '@/features/user-management/hooks/useUserManagement';
+import { staffOptionLabel } from '@/features/inventory/utils/accountable-staff-options';
 import { formatBillingCurrency, formatBillingDate, resolveBillingWorkspaceMode } from './config/billing-config';
 import { BillingQuickNav } from './components/BillingQuickNav';
 import { useApproveCommission, useCommissions, usePayCommission } from './hooks/useCommission';
@@ -19,6 +23,7 @@ export function CommissionPage() {
   const roles = user?.roles ?? [];
   const perm = useCallback((action: string) => hasPermission(roles, 'api.commission', action as never), [roles]);
   const canExportStaff = hasPermission(roles, 'api.staff-commission', 'export');
+  const canListStaff = canViewUsers(buildIdentityPermCheck(roles));
   const workspaceMode = resolveBillingWorkspaceMode(roles);
   const canView = perm('view');
   const canApprove = perm('approve');
@@ -26,9 +31,27 @@ export function CommissionPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const listQuery = useCommissions(canView, statusFilter ? { status: statusFilter } : undefined);
   const staffReportQuery = useStaffCommissionOwnerReport(90, canExportStaff);
+  const staffDirectoryQuery = useUsers({ status: 'active', limit: 200 }, canView && canListStaff);
   const approveMutation = useApproveCommission();
   const payMutation = usePayCommission();
   const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  const providerNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    if (user?.userId) {
+      const selfLabel = staffOptionLabel({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      });
+      if (selfLabel) map.set(user.userId, selfLabel);
+    }
+    for (const u of staffDirectoryQuery.data?.items ?? []) {
+      const label = staffOptionLabel(u);
+      if (u.id && label) map.set(u.id, label);
+    }
+    return map;
+  }, [staffDirectoryQuery.data?.items, user?.email, user?.firstName, user?.lastName, user?.userId]);
 
   if (!canView) {
     return (
@@ -97,14 +120,12 @@ export function CommissionPage() {
                   <tr key={row.commissionId}>
                     <td>
                       {row.providerId ? (
-                        <code
-                          className={styles.idCell}
-                          dir="ltr"
-                          title={row.providerId}
-                          aria-label={`${t('billing.commission.providerId')}: ${row.providerId}`}
-                        >
-                          {row.providerId.slice(0, 8)}…
-                        </code>
+                        <NamedIdentityDisplay
+                          id={row.providerId}
+                          name={providerNameById.get(row.providerId)}
+                          fieldLabel={t('billing.commission.providerId')}
+                          idClassName={styles.idCell}
+                        />
                       ) : (
                         '—'
                       )}
