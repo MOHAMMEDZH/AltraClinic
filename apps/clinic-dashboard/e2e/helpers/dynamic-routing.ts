@@ -2,6 +2,16 @@ import { expect, type Page } from '@playwright/test';
 
 const REGISTRY_CACHE_KEY = 'booking.moduleRegistry.bootstrap';
 
+/** Cap stacked waits so ensureShellRoute / assertShellVisible fail-fast under the 90s test wall. */
+const BUDGET = {
+  loadingHiddenMs: 8_000,
+  spaMountMs: 6_000,
+  refreshTokenMs: 5_000,
+  userMenuMs: 12_000,
+  assertWallMs: 40_000,
+  clientNavMs: 12_000,
+} as const;
+
 export function mainContent(page: Page) {
   return page.locator('#main-content');
 }
@@ -39,22 +49,36 @@ async function readBodySnippet(page: Page): Promise<string> {
   return (await page.locator('body').innerText().catch(() => '')).slice(0, 400);
 }
 
+async function failWithSnippet(page: Page, where: string, detail: string, cause?: unknown): Promise<never> {
+  const bodySnippet = await readBodySnippet(page);
+  throw new Error(
+    `${where}: ${detail}. url=${page.url()} bodySnippet=${JSON.stringify(bodySnippet)}${
+      cause ? ` cause=${String(cause)}` : ''
+    }`,
+  );
+}
+
 /** True when React has mounted chrome or any non-empty body (not Vite empty #root). */
 async function isSpaMounted(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const root = document.querySelector('#root');
-    if (root && root.childElementCount > 0) return true;
-    if (document.querySelector('header')) return true;
-    if (document.querySelector('#main-content')) return true;
-    return ((document.body?.innerText || '').trim().length > 0);
-  });
+  try {
+    return await page.evaluate(() => {
+      const root = document.querySelector('#root');
+      if (root && root.childElementCount > 0) return true;
+      if (document.querySelector('header')) return true;
+      if (document.querySelector('#main-content')) return true;
+      return ((document.body?.innerText || '').trim().length > 0);
+    });
+  } catch (err) {
+    // Page closed (test timeout) — surface clearly instead of opaque evaluate error.
+    throw new Error(`isSpaMounted: page unavailable (${String(err)}) url=${page.url()}`);
+  }
 }
 
 /**
  * Wait for SPA mount markers. Prefer #root children / header / #main-content / body text
  * over networkidle (long-lived sockets + Redis-absence noise stall idle forever).
  */
-async function waitForSpaMount(page: Page, timeoutMs = 20_000): Promise<boolean> {
+async function waitForSpaMount(page: Page, timeoutMs = BUDGET.spaMountMs): Promise<boolean> {
   try {
     await page.waitForFunction(
       () => {
@@ -73,15 +97,17 @@ async function waitForSpaMount(page: Page, timeoutMs = 20_000): Promise<boolean>
   }
 }
 
-/** Wait for Loading chrome to clear + SPA mount. Does not require networkidle. */
+/** Short Loading + SPA mount settle. No networkidle. */
 async function settleShellBoot(page: Page) {
-  await page.getByText(/Loading/i).waitFor({ state: 'hidden', timeout: 45_000 }).catch(() => undefined);
-  await page.waitForLoadState('load', { timeout: 10_000 }).catch(() => undefined);
-  await waitForSpaMount(page, 20_000);
+  await page
+    .getByText(/Loading/i)
+    .waitFor({ state: 'hidden', timeout: BUDGET.loadingHiddenMs })
+    .catch(() => undefined);
+  await waitForSpaMount(page, BUDGET.spaMountMs);
 }
 
 /**
- * Progressive Batch A race: known-good session navigates to a blank #root.
+ * Progressive Batch A race: blank #root after navigation.
  * Exactly ONE reload (or re-goto), then re-settle; fail-closed if still blank.
  */
 async function recoverBlankShellOnce(page: Page, pathHint?: string): Promise<void> {
@@ -91,7 +117,6 @@ async function recoverBlankShellOnce(page: Page, pathHint?: string): Promise<voi
   const path = pathHint ?? new URL(page.url()).pathname;
   const normalized = path.startsWith('/') ? path : `/${path}`;
 
-  // Prefer reload to keep sessionStorage; fall back to re-goto if URL drifted.
   const currentPath = new URL(page.url()).pathname;
   if (currentPath === normalized || currentPath.startsWith(`${normalized}/`) || !pathHint) {
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -103,11 +128,49 @@ async function recoverBlankShellOnce(page: Page, pathHint?: string): Promise<voi
   assertNotOnLogin(page, `recoverBlankShellOnce(${normalized})`);
 
   if (!(await isSpaMounted(page))) {
-    const after = await readBodySnippet(page);
     throw new Error(
-      `recoverBlankShellOnce: SPA still blank after one recovery. url=${page.url()} before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+      `recoverBlankShellOnce: SPA still blank after one recovery. url=${page.url()} before=${JSON.stringify(before)} after=${JSON.stringify(await readBodySnippet(page))}`,
     );
   }
+}
+
+function isDashboardPath(pathname: string): boolean {
+  return pathname === '/' || pathname === '' || pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+}
+
+/**
+ * Client-side hop to Dashboard when a shell session already exists.
+ * Avoids page.goto('/dashboard') blank-SPA races under Progressive Batch A load.
+ */
+export async function navigateToDashboardShell(page: Page) {
+  assertNotOnLogin(page, 'navigateToDashboardShell');
+
+  if (!isDashboardPath(new URL(page.url()).pathname)) {
+    const dashLink = page
+      .getByRole('navigation')
+      .getByRole('link', { name: /^(Dashboard|لوحة التحكم)$/i })
+      .or(page.locator('nav a[href="/"], nav a[href="/dashboard"]'))
+      .first();
+    try {
+      await expect(dashLink).toBeVisible({ timeout: BUDGET.clientNavMs });
+      await dashLink.click();
+      await page.waitForURL(
+        (url) => isDashboardPath(url.pathname),
+        { timeout: BUDGET.clientNavMs },
+      );
+    } catch (err) {
+      await failWithSnippet(page, 'navigateToDashboardShell', 'Dashboard nav link navigation failed', err);
+    }
+  }
+
+  await settleShellBoot(page);
+  assertNotOnLogin(page, 'navigateToDashboardShell');
+
+  if (!(await isSpaMounted(page))) {
+    await recoverBlankShellOnce(page, '/');
+  }
+
+  await assertShellVisible(page, { alreadySettled: true });
 }
 
 export async function gotoShellRoute(page: Page, path: string) {
@@ -121,11 +184,19 @@ export async function gotoShellRoute(page: Page, path: string) {
   }
 }
 
-export async function assertShellVisible(page: Page) {
-  await settleShellBoot(page);
+type AssertShellOptions = {
+  /** Skip first settle when caller already settled (avoids stacked budgets). */
+  alreadySettled?: boolean;
+};
+
+export async function assertShellVisible(page: Page, options: AssertShellOptions = {}) {
+  const deadline = Date.now() + BUDGET.assertWallMs;
+
+  if (!options.alreadySettled) {
+    await settleShellBoot(page);
+  }
   assertNotOnLogin(page, 'assertShellVisible');
 
-  // Blank SPA after a prior known-good shell: one recovery, then fail-closed.
   if (!(await isSpaMounted(page))) {
     await recoverBlankShellOnce(page);
   }
@@ -134,43 +205,36 @@ export async function assertShellVisible(page: Page) {
     .waitForFunction(
       () => Boolean(sessionStorage.getItem('booking.refreshToken')),
       undefined,
-      { timeout: 20_000 },
+      { timeout: BUDGET.refreshTokenMs },
     )
     .catch(() => undefined);
 
-  // AuthProvider may still be redeeming refresh → me; settle again then fail-closed on /login.
-  await settleShellBoot(page);
   assertNotOnLogin(page, 'assertShellVisible');
 
   if (!(await isSpaMounted(page))) {
-    const bodySnippet = await readBodySnippet(page);
-    throw new Error(
-      `assertShellVisible: SPA blank after settle (no recovery left). url=${page.url()} bodySnippet=${JSON.stringify(bodySnippet)}`,
-    );
+    await failWithSnippet(page, 'assertShellVisible', 'SPA blank after settle (no recovery left)');
   }
-
-  // Header mounts before the labeled user-menu control — wait for chrome first.
-  await page.locator('header').first().waitFor({ state: 'visible', timeout: 30_000 }).catch(() => undefined);
 
   const menu = userMenu(page).or(
     page.getByRole('button', { name: /^(User menu|قائمة المستخدم)$/ }),
   );
+  const menuTimeout = Math.max(2_000, Math.min(BUDGET.userMenuMs, deadline - Date.now()));
   try {
-    await expect(menu.first()).toBeVisible({ timeout: 30_000 });
+    await expect(menu.first()).toBeVisible({ timeout: menuTimeout });
   } catch (err) {
     assertNotOnLogin(page, 'assertShellVisible');
-    const bodySnippet = await readBodySnippet(page);
-    throw new Error(
-      `assertShellVisible: user menu not visible. url=${page.url()} bodySnippet=${JSON.stringify(bodySnippet)} cause=${String(err)}`,
-    );
+    await failWithSnippet(page, 'assertShellVisible', 'user menu not visible', err);
   }
-  await expect(mainContent(page)).toBeVisible();
+  await expect(mainContent(page)).toBeVisible({ timeout: 5_000 });
 }
 
-/** gotoShellRoute + assertShellVisible (blank-SPA recovery lives in both helpers). */
+/**
+ * Hard navigation + shell assert. Prefer navigateToDashboardShell after loginAndShell.
+ * Budgets are capped so this path fail-fasts under ~40s (not 90s).
+ */
 export async function ensureShellRoute(page: Page, path: string) {
   await gotoShellRoute(page, path);
-  await assertShellVisible(page);
+  await assertShellVisible(page, { alreadySettled: true });
 }
 
 export async function assertRouteHeading(page: Page, heading: RegExp | string) {
