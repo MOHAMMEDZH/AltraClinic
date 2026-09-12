@@ -117,7 +117,8 @@
     "test:phase48-regression-baselines": "node scripts/run-phase48-pack.mjs regression-baselines",
     "test:phase48-onepass": "node scripts/run-phase48-onepass.mjs",
     "test:phase48-onepass:with-e2e": "node scripts/run-phase48-onepass.mjs --with-e2e",
-    "test:phase49-observability-readiness": "jest --config jest.config.cjs --runInBand --testPathPattern \"observability-foundation.spec|tracing-and-health.spec|dashboards-and-alerting.spec\""
+    "test:phase49-observability-readiness": "jest --config jest.config.cjs --runInBand --testPathPattern \"observability-foundation.spec|tracing-and-health.spec|dashboards-and-alerting.spec\"",
+    "test:phase49-tenant-isolation-check": "node scripts/run-phase49-tenant-isolation-check.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

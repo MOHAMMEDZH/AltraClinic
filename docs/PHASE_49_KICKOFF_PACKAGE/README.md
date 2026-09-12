@@ -8,7 +8,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | **Evidence tip (Wave I)** | PR #4 head `d19671c` → merge `9eac595` |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Prior program** | Phase 48 Waves A–I **OFFICIALLY CLOSED**; Wave I PA = **ACCEPTED** |
-| **Status** | K0–K4 accepted; **K5** deploy/rollback SSOT in `docs/PHASE_49_K5_DEPLOY_ROLLBACK/`; **Phase 49 PA = PENDING**; K6–K7 **NOT STARTED** |
+| **Status** | K0–K5 accepted; **K6** tenant isolation packaging in `docs/PHASE_49_K6_TENANT_ISOLATION/`; **Phase 49 PA = PENDING**; K7 **NOT STARTED** |
 
 | File | Purpose |
 |------|---------|
@@ -21,6 +21,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | [`../PHASE_49_K3_BACKUP_RESTORE/`](../PHASE_49_K3_BACKUP_RESTORE/) | **K3** backup/restore posture + drill |
 | [`../PHASE_49_K4_OBSERVABILITY_ALERTING/`](../PHASE_49_K4_OBSERVABILITY_ALERTING/) | **K4** observability/alerting readiness |
 | [`../PHASE_49_K5_DEPLOY_ROLLBACK/`](../PHASE_49_K5_DEPLOY_ROLLBACK/) | **K5** deploy + rollback runbook SSOT |
+| [`../PHASE_49_K6_TENANT_ISOLATION/`](../PHASE_49_K6_TENANT_ISOLATION/) | **K6** tenant isolation production-check packaging |
 
 ```text
 Wave I Production Acceptance = ACCEPTED (evidence SHA 9eac595 / tip d19671c)
