@@ -8,7 +8,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | **Evidence tip (Wave I)** | PR #4 head `d19671c` → merge `9eac595` |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Prior program** | Phase 48 Waves A–I **OFFICIALLY CLOSED**; Wave I PA = **ACCEPTED** |
-| **Status** | K0 kickoff only; **Phase 49 PA = PENDING**; implementation slices **NOT STARTED** |
+| **Status** | K0 accepted; **K1 discovery** in `docs/PHASE_49_K1_DISCOVERY_INVENTORY/`; **Phase 49 PA = PENDING**; K2–K7 **NOT STARTED** |
 
 | File | Purpose |
 |------|---------|
@@ -16,6 +16,7 @@ CTO-authorized **K0 kickoff docs only**. No implementation in this package.
 | [PHASE_49_CURRENT_STATE_VS_EXIT.md](./PHASE_49_CURRENT_STATE_VS_EXIT.md) | Precursors vs Phase 49 exit |
 | [PHASE_49_ACCEPTANCE_CRITERIA.md](./PHASE_49_ACCEPTANCE_CRITERIA.md) | PA checklist (do not self-accept) |
 | [PHASE_49_IMPLEMENTATION_SLICES.md](./PHASE_49_IMPLEMENTATION_SLICES.md) | Ordered K0→…; first impl = discovery |
+| [`../PHASE_49_K1_DISCOVERY_INVENTORY/`](../PHASE_49_K1_DISCOVERY_INVENTORY/) | **K1** discovery inventory (authorized) |
 
 ```text
 Wave I Production Acceptance = ACCEPTED (evidence SHA 9eac595 / tip d19671c)
