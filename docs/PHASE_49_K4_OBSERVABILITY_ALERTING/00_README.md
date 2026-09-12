@@ -7,6 +7,7 @@
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K3 tip** | `220a931` |
+| **K4 tip** | `0dc69be` |
 | **Authority** | CTO authorize K4 only; K5–K7 **NOT** started |
 
 ## Files
