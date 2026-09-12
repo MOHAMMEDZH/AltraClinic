@@ -5,7 +5,7 @@
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Canonical base** | `9eac595` (Wave I merge / PR #4) |
 | **K6 tip** | `6164d05` |
-| **K7 tip** | _(set after substantive commit)_ |
+| **K7 tip** | `72aeb9a` |
 | **Purpose** | Lean implementation review + external PA precheck — **not** Production Acceptance |
 
 ```text

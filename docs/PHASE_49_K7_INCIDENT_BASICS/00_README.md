@@ -6,7 +6,7 @@
 | **Status** | Thin packaging; **Phase 49 PA = PENDING EXTERNAL** |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **K6 tip** | `6164d05` |
-| **K7 tip** | _(set after substantive commit)_ |
+| **K7 tip** | `72aeb9a` |
 | **Authority** | CTO authorize K7 only; Phase 50/51 **NOT** started |
 
 **SSOT for class-specific playbooks:** [`docs/SECURITY_RUNBOOKS.md`](../SECURITY_RUNBOOKS.md) — this one-pager does **not** rewrite or conflict with those procedures.
