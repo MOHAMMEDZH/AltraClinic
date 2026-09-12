@@ -395,8 +395,30 @@ export function InventoryReportsPage() {
                             }).format(new Date(row.occurredAt))}
                           </td>
                           <td>{row.usageType}</td>
-                          <td>{row.inventoryItemId.slice(0, 8)}…</td>
-                          <td>{row.usedByUserId ? `${row.usedByUserId.slice(0, 8)}…` : '—'}</td>
+                          <td>
+                            <code
+                              className={styles.idCell}
+                              dir="ltr"
+                              title={row.inventoryItemId}
+                              aria-label={`${t('inventory.reports.itemId')}: ${row.inventoryItemId}`}
+                            >
+                              {row.inventoryItemId.slice(0, 8)}…
+                            </code>
+                          </td>
+                          <td>
+                            {row.usedByUserId ? (
+                              <code
+                                className={styles.idCell}
+                                dir="ltr"
+                                title={row.usedByUserId}
+                                aria-label={`${t('inventory.reports.usedBy')}: ${row.usedByUserId}`}
+                              >
+                                {row.usedByUserId.slice(0, 8)}…
+                              </code>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
                           <td>
                             {row.signedQuantity} {row.unit}
                           </td>

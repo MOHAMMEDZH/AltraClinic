@@ -1177,8 +1177,8 @@ const enUS = {
         runtime: 'Runtime',
       },
       columns: {
-        id: 'Configuration',
-        tenant: 'Tenant',
+        id: 'Configuration ID',
+        tenant: 'Tenant ID',
         plan: 'Plan',
         lifecycle: 'Lifecycle',
         addons: 'Add-ons',
@@ -3507,8 +3507,8 @@ const arSY = {
         runtime: 'وقت التشغيل',
       },
       columns: {
-        id: 'التهيئة',
-        tenant: 'المستأجر',
+        id: 'معرّف التهيئة',
+        tenant: 'معرّف المستأجر',
         plan: 'الخطة',
         lifecycle: 'دورة الحياة',
         addons: 'الإضافات',

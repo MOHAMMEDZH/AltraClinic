@@ -259,10 +259,22 @@ export function SubscriptionsListPage() {
               {items.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <Link to={`/subscriptions/${row.id}`}>{row.id.slice(0, 8)}…</Link>
+                    <Link
+                      to={`/subscriptions/${row.id}`}
+                      title={row.id}
+                      aria-label={`${t('pages.subscriptions.columns.id', 'Configuration ID')}: ${row.id}`}
+                    >
+                      <code dir="ltr">{row.id.slice(0, 8)}…</code>
+                    </Link>
                   </td>
                   <td>
-                    <code dir="ltr">{row.platformTenantId.slice(0, 8)}…</code>
+                    <code
+                      dir="ltr"
+                      title={row.platformTenantId}
+                      aria-label={`${t('pages.subscriptions.columns.tenant', 'Tenant ID')}: ${row.platformTenantId}`}
+                    >
+                      {row.platformTenantId.slice(0, 8)}…
+                    </code>
                   </td>
                   <td>{row.planCanonicalKey ?? '—'}</td>
                   <td>

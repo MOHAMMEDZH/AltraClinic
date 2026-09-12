@@ -75,7 +75,10 @@ export function CommissionPage() {
 
       <section className={styles.panel} data-testid="provider-commissions-list">
         {(listQuery.data ?? []).length === 0 ? (
-          <p className={styles.hint}>{t('billing.commission.empty')}</p>
+          <div className={styles.empty} role="status">
+            <strong>{t('billing.commission.empty')}</strong>
+            <p className={styles.hint}>{t('billing.commission.emptyHint')}</p>
+          </div>
         ) : (
           <div className={styles.tableScroll}>
             <table className={styles.table}>
@@ -92,7 +95,20 @@ export function CommissionPage() {
               <tbody>
                 {(listQuery.data ?? []).map((row) => (
                   <tr key={row.commissionId}>
-                    <td>{row.providerId ? `${row.providerId.slice(0, 8)}…` : '—'}</td>
+                    <td>
+                      {row.providerId ? (
+                        <code
+                          className={styles.idCell}
+                          dir="ltr"
+                          title={row.providerId}
+                          aria-label={`${t('billing.commission.providerId')}: ${row.providerId}`}
+                        >
+                          {row.providerId.slice(0, 8)}…
+                        </code>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td>
                       {formatBillingDate(row.periodStart, locale)} – {formatBillingDate(row.periodEnd, locale)}
                     </td>

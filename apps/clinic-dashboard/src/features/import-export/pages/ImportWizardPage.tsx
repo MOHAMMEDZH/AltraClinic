@@ -38,7 +38,10 @@ export function ImportsPage() {
         ) : null}
       </div>
       {(jobs.data ?? []).length === 0 ? (
-        <EmptyState title="No import jobs" />
+        <EmptyState
+          title="No import jobs"
+          detail="Start a new import wizard to create work, or check Jobs if filters hide existing imports."
+        />
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>

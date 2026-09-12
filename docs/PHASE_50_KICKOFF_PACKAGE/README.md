@@ -7,7 +7,7 @@ CTO-authorized **D0 kickoff docs only**. No implementation in this package.
 | **Canonical base** | `release47-step22-transfer-20260810-0353` @ `1501190` (Phase 49 PR #5 merge) |
 | **Prior program** | Phase 49 Production Hardening **PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase50-docs-ux-polish-kickoff` |
-| **Status** | **D0–D1** accepted; **D2** operator docs polish; Phase 50 PA = **PENDING**; D3–D7 **NOT STARTED**; **D5 picker = DEFERRED (CTO)**; Phase 51 **NOT AUTHORIZED** |
+| **Status** | **D0–D2** accepted; **D3** bounded UX polish; Phase 50 PA = **PENDING**; D4/D6–D7 **NOT STARTED**; **D5 picker = DEFERRED (CTO)**; Phase 51 **NOT AUTHORIZED** |
 
 | File | Purpose |
 |------|---------|

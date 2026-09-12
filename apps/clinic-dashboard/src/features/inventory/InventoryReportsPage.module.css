@@ -99,6 +99,11 @@
 
 .meta { font-size: var(--text-xs); color: var(--color-text-secondary); }
 
+.idCell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-xs);
+}
+
 .tableScroll {
   overflow-x: auto;
   max-width: 100%;
