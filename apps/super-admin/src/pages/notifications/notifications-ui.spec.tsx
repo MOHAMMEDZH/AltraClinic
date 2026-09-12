@@ -269,7 +269,8 @@ describe('Step 27 Notifications UI UI01–UI60', () => {
       'platform.invitation.sent',
     );
     expect(await screen.findByRole('heading', { level: 1, name: 'Template detail' })).toBeTruthy();
-    expect(screen.getByText(/inviteeEmail/)).toBeTruthy();
+    // Wait for loaded detail body — PageLayout heading renders before async getPlatformNotificationTemplate resolves.
+    expect(await screen.findByText(/inviteeEmail/)).toBeTruthy();
   });
 
   it('UI07: event key', async () => {

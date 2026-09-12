@@ -17,6 +17,7 @@ import {
   PLATFORM_SECURITY_CONFIG,
   PlatformSecurityConfig,
 } from './config/platform-security.config';
+import { validateJwtSigningSecrets } from './config/jwt-secrets.config';
 import { RedisModule } from '../../infrastructure/redis/redis.module';
 import { InMemoryRateLimiter } from './infrastructure/services/in-memory-rate-limiter.service';
 import { RedisRateLimiter } from './infrastructure/services/redis-rate-limiter.service';
@@ -135,15 +136,10 @@ import { PlatformUserAdminMutationsService } from './application/services/platfo
  *   since missing secrets cause runtime failures that surface immediately in testing.
  */
 function buildJwtConfig(): JwtConfig {
-  const accessSecret = process.env['JWT_ACCESS_SECRET'];
-  const refreshSecret = process.env['JWT_REFRESH_SECRET'];
-
-  if (!accessSecret || accessSecret.length < 32) {
-    throw new Error('JWT_ACCESS_SECRET must be at least 32 characters. Set it in your .env file.');
-  }
-  if (!refreshSecret || refreshSecret.length < 32) {
-    throw new Error('JWT_REFRESH_SECRET must be at least 32 characters. Set it in your .env file.');
-  }
+  const { accessSecret, refreshSecret } = validateJwtSigningSecrets(
+    process.env['JWT_ACCESS_SECRET'],
+    process.env['JWT_REFRESH_SECRET'],
+  );
 
   const nodeEnv = process.env['NODE_ENV'] ?? 'development';
   const platformAccessEnv = process.env['JWT_PLATFORM_ACCESS_SECRET'];
