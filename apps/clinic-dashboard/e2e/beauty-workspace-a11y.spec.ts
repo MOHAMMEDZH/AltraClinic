@@ -22,6 +22,7 @@ test.describe('Beauty workspace a11y', () => {
       const results = await new AxeBuilder({ page })
         .include('#beauty-workspace-region')
         .withTags(['wcag2a', 'wcag2aa'])
+        // D4 DEFER: workspace chrome contrast — docs/PHASE_50_D4_A11Y/01_CONTRAST_FOLLOWUPS.md
         .disableRules(['color-contrast'])
         .analyze();
       expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
