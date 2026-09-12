@@ -6,8 +6,9 @@
 | **Status** | Packaging + minimal fail-closed; **Phase 49 PA = PENDING** |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
-| **K1 tip** | `e9acc52` |
-| **Authority** | CTO authorize K2 only; K3–K7 **NOT** started |
+| **K1 tip** | `e9acc52` (enriched inventory) |
+| **K2 tip** | `50a9140` |
+| **Authority** | K0–K2 as authorized; K3–K7 **NOT** started |
 
 ## Files
 

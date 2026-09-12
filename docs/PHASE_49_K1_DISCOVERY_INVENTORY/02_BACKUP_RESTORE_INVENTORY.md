@@ -9,13 +9,14 @@
 
 | Item | Paths / evidence | Status |
 |------|------------------|--------|
-| Ops backup scripts | `apps/api/scripts/backup-postgres.sh`, `backup-postgres.ps1`, `verify-backup.sh`; restore via `restore-postgres.sh` (referenced in `docs/DISASTER_RECOVERY.md`) | **PASS-local** |
+| Ops backup scripts | `apps/api/scripts/backup-postgres.sh`, `backup-postgres.ps1`, `verify-backup.sh`, `restore-postgres.sh` | **PASS-local** (no `restore-postgres.ps1` / Windows verify twin) |
 | DR strategy doc | `docs/DISASTER_RECOVERY.md` | **PARTIAL** (strategy + script pointers; RTO/RPO / offsite / PITR external) |
 | Historical drill report | `docs/BACKUP_RESTORE_DRILL_REPORT.md` (2026-07-11, Docker test PG) | **PARTIAL** (dated precursor; not Phase 49 quarterly drill on `9eac595`) |
-| Backup & Restore Center (Phase 43) | `docs/BACKUP_RESTORE_*.md` (foundation, engines, ops UI, PA); module `apps/api/src/modules/backup-restore/` | **PASS-local** as product center; flag-gated (`BACKUP_RESTORE_CENTER_ENABLED` default OFF) |
+| Backup & Restore Center (Phase 43) | `docs/BACKUP_RESTORE_*.md` (foundation, engines, ops UI, PA); module `apps/api/src/modules/backup-restore/` | **PASS-local** as product center; flag-gated (`BACKUP_RESTORE_CENTER_ENABLED` default OFF); **in-memory/logical** — not wired to ops `pg_dump` |
 | Backup Center PA | `docs/BACKUP_RESTORE_PRODUCTION_ACCEPTANCE.md` (43g) | **PASS-local** (product PA ≠ Phase 49 restore-drill exit) |
 | Health contributor | `GET /backup-restore/health` (docs + module) | **PASS-local** |
 | Step 29 cutover backup gates | `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §§8.1, backup tooling static checks | **PARTIAL** (gates defined; production cutover still pending execution) |
+| Step 29 onepass backup script **presence** check | `run-step29-final-onepass.mjs` (static file existence — not drill execution) | **PARTIAL** |
 | Phase 48 migration clean/upgrade | `test:phase48-migration-clean`, `test:phase48-migration-upgrade` | **PASS-local** (schema validators ≠ DB backup/restore) |
 | Offsite / PITR / multi-region DR | External per Step 29 | **MISSING** in-repo (expected external) |
 | Phase 49 restore-drill evidence on tip | — | **MISSING** |
