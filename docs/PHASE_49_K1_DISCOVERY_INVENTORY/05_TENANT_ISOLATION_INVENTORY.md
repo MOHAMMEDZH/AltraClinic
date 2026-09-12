@@ -13,9 +13,13 @@
 | RLS apply | `apps/api/scripts/apply-rls.mjs`; `npm run db:rls:apply` | **PASS-local** |
 | Upgrade migrate validators | `db:test:migrate`, `db:test:upgrade-validate` | **PASS-local** |
 | Wave I pack matrix (tenant-scoped packs) | `test:phase48-p0-*`, `test:phase48-p1-*`, `test:phase48-combined-traceability`, `test:phase48-onepass`; `docs/PHASE_48_WAVE_I_*`; workflow `phase48-pack-matrix.yml` | **PASS-local** (QA closed; reuse, don’t reopen SoR) |
-| Cross-tenant / RLS specs (examples) | Numerous `*.cross-tenant*.spec.ts`, `*rls*.spec.ts` under `apps/api/src/modules/**/tests` | **PASS-local** |
+| Cross-tenant / RLS specs (examples) | `common/tests/tenant-isolation.postgres.integration.spec.ts`, `tenant-isolation.repositories.spec.ts`; wave-c/d/e/f `*-rls*.spec.ts`; `clinical-catalog.cross-tenant.*`; TENSA / step28-rltest | **PASS-local** |
+| Platform auth boundary | `platform-auth.boundary.spec.ts`, `platform-rbac-security-integration.spec.ts`, sentinel isolation specs | **PASS-local** |
+| Permission matrices | `docs/permission-matrix.json`, `packages/permissions/permission-matrix.json`, `apps/api/config/permission-matrix.json` | **PASS-local** |
+| RLS tooling | `scripts/apply-rls.mjs`, `generate-rls-policies.mjs`; `db:rls:apply` | **PASS-local** |
 | Security runbook — cross-tenant | `docs/SECURITY_RUNBOOKS.md` §3 | **PASS-local** |
-| Super Admin CI | `.github/workflows/super-admin-ci.yml` | **PASS-local** (platform boundary precursor) |
+| Super Admin CI | `.github/workflows/super-admin-ci.yml` (job `super-admin`) | **PASS-local** (platform boundary precursor) |
+| Step 28 onepass includes Platform DB | `run-step28-final-onepass.mjs` invokes `test:platform-db-security` | **PASS-local** |
 | Phase 49 “production-check packaging” (named hardening gate) | — | **MISSING** |
 | Re-open Wave A–I SoR for isolation | Explicitly OUT | N/A |
 
@@ -26,6 +30,7 @@
 ```text
 Prefer: test:platform-db-security
 Prefer: selected phase48 packs that assert tenant isolation (inventory only — do not redesign packs)
+Prefer: common tenant-isolation postgres integration specs
 Prefer: SECURITY_RUNBOOKS §3 as incident procedure
 Do NOT: invent second isolation framework
 Do NOT: reopen Wave SoR
@@ -38,3 +43,4 @@ Do NOT: reopen Wave SoR
 1. Strong product/QA isolation evidence lacks a thin **Phase 49 production-check** wrapper/docs (which commands to run at hardening accept SHA).
 2. Platform DB Security workflow is path-filtered — may not run on every PR; packaging must state when to force-run.
 3. Distinguish clinic RLS vs platform admin boundary in the Phase 49 checklist.
+4. Evidence spread across Wave packs + Step 28 + Platform DB — ops need one named command list, not a second framework.

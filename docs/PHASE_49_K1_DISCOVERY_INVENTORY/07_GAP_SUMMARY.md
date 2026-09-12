@@ -8,10 +8,10 @@
 
 | Rank | Gap | Domain | Proposed slice | Notes |
 |------|-----|--------|----------------|-------|
-| **1** | No Phase 49 secrets/config surface checklist + evidence format on accepting SHA | Secrets/config | **K2** | Reuse Step 28 scan/audit/onepass; do not invent new scanner brand |
+| **1** | No Phase 49 secrets/config surface checklist + evidence format; Step 28 scan/audit **not in required PR CI**; ConfigModule validation still roadmap | Secrets/config | **K2** | Reuse Step 28 scan/audit/onepass; do not invent new scanner brand |
 | **2** | No Phase 49 restore-drill evidence on `9eac595+`; dual path (ops `pg_dump` vs Backup Center flag-OFF) unclear for cutover | Backup/restore | **K3** | Reuse scripts + DR docs; clarify SoR boundary |
 | **3** | No unified deploy/rollback SSOT for Production Hardening (topology external; CI ≠ deploy) | Deploy/rollback | **K5** | Compose Step 29 + migration workflow + portal/security runbooks |
-| **4** | Observability present; production alert→on-call readiness not packaged | Observability/alerting | **K4** | Reuse Phase 45 + health; no APM/SIEM product |
+| **4** | Observability present; alert→on-call external; `dashboards-and-alerting` not in onepass | Observability/alerting | **K4** | Reuse Phase 45 + health; no APM/SIEM product |
 | **5** | Tenant isolation strong in QA; missing thin Phase 49 production-check packaging | Tenant isolation | **K6** | Reuse Platform DB + selected phase48 runners |
 | 6 | Incident content exists in SECURITY_RUNBOOKS; missing Phase 49 SEV/first-15 one-pager | Incident | **K7** | Thin wrap + review/PA precheck |
 | 7 | Step 29 cutover gates still pending execution at prod time | Cross-cutting | K3/K5/K7 | Document; do not claim cutover done |
