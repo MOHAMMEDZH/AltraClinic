@@ -8,12 +8,17 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import {
+  parkLaterPhase48Migrations,
+  restoreLaterPhase48Migrations,
+} from './phase48-park-later-migrations.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
 const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
 const gateDirNames = ['20260816010000_phase48_wave_c_clinical_safety'];
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_c_upgrade');
+const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_c_upgrade_later');
 const upgradeDb = `test_p48wc_upgrade_${Date.now()}`;
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
@@ -83,6 +88,7 @@ function parkMigration() {
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
+  parkLaterPhase48Migrations(migrationsDir, parkLaterDir, gateDirNames);
 }
 
 function restoreMigration() {
@@ -238,6 +244,7 @@ async function main() {
         console.error('Failed to restore parked Wave C migration', e);
       }
     }
+    restoreLaterPhase48Migrations(migrationsDir, parkLaterDir);
   }
 }
 

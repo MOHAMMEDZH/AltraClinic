@@ -17,8 +17,8 @@ import { LICENSING_E2E_TENANTS } from './helpers/licensing-tenants';
 import {
   assertShellVisible,
   captureRegistryBootstrap,
-  gotoShellRoute,
   mainContent,
+  navigateToDashboardShell,
   readRegistryCacheRaw,
   readRegistryCacheTenant,
   waitForRegistryBootstrap,
@@ -417,17 +417,16 @@ test.describe('Dynamic white label — navigation surfaces', () => {
 
   test('dashboard to branding navigation', async ({ page }) => {
     await loginAndShell(page, DEMO_OWNER);
-    // Prefer gotoShellRoute so Loading clears before shell assertions (combined-batch timing).
-    await gotoShellRoute(page, '/dashboard');
-    await assertShellVisible(page);
+    // loginAndShell already lands on authenticated shell (/). Prefer client Dashboard hop —
+    // hard page.goto('/dashboard') races blank SPA under Progressive Batch A.
+    await navigateToDashboardShell(page);
     await gotoBrandingSettings(page);
     await assertBrandingFormAccessible(page);
   });
 
   test('cross-module navigation chain', async ({ page }) => {
     await loginAndShell(page, DEMO_OWNER);
-    await gotoShellRoute(page, '/dashboard');
-    await assertShellVisible(page);
+    await navigateToDashboardShell(page);
     await gotoBrandingSettings(page);
     const brandingPrimary = await readCssVariable(page, '--color-primary');
     await gotoReportingHome(page);
@@ -435,8 +434,7 @@ test.describe('Dynamic white label — navigation surfaces', () => {
     await openGlobalSearch(page);
     await expect(globalSearchDialog(page)).toBeVisible();
     await page.keyboard.press('Escape');
-    await gotoShellRoute(page, '/dashboard');
-    await assertShellVisible(page);
+    await navigateToDashboardShell(page);
     await gotoBrandingSettings(page);
     const afterNav = await readCssVariable(page, '--color-primary');
     expect(afterNav).toBe(brandingPrimary);

@@ -1,0 +1,384 @@
+{
+  "version": 1,
+  "evidenceShaBase": "2f06970",
+  "notes": "Wave I pack matrix. I2/I3 green packs; I4 Wave G validators wired (H ABSENT). I5: npm run test:phase48-onepass. Jest --runInBand; requiresDb 0-passed = FAIL.",
+  "packs": [
+    {
+      "id": "p0-catalog",
+      "frozenName": "P0 Catalog Integrity Pack",
+      "npmScript": "test:phase48-p0-catalog",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=clinical-catalog\\.integrity\\.unit|tenant-service-config\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=clinical-catalog\\.cross-tenant\\.api\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-snapshot-pricing",
+      "frozenName": "P0 Pricing / Snapshot Pack",
+      "npmScript": "test:phase48-p0-snapshot-pricing",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=clinical-price\\.unit|pricing-unit-applicability\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-b-snapshot\\.postgres|clinical-price\\.(pa04|concurrency)\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-concurrency",
+      "frozenName": "P0 Scheduling Concurrency Pack",
+      "npmScript": "test:phase48-p0-concurrency",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-b-concurrency\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-eligibility",
+      "frozenName": "P0 Provider Eligibility Pack",
+      "npmScript": "test:phase48-p0-eligibility",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-b-eligibility\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-b-lifecycle-beauty-elig\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-consent",
+      "frozenName": "P0 Consent Pack",
+      "npmScript": "test:phase48-p0-consent",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-c-consent\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-injectable",
+      "frozenName": "P0 Injectable Traceability Pack",
+      "npmScript": "test:phase48-p0-injectable",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-c-injectable\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-plan-link",
+      "frozenName": "P0 Treatment Plan Link Pack",
+      "npmScript": "test:phase48-p0-plan-link",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-d-dental\\.postgres|wave-d-http\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p0-inventory-accountability",
+      "frozenName": "P0-10 Inventory Accountability Pack",
+      "npmScript": "test:phase48-p0-inventory-accountability",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-c-inventory-accountability\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-operatory",
+      "frozenName": "P1 Operatory Pack",
+      "npmScript": "test:phase48-p1-operatory",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-d-operatory\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-course",
+      "frozenName": "P1 Course Scheduling Pack",
+      "npmScript": "test:phase48-p1-course",
+      "notes": "Shares Wave E aesthetic postgres suite; refine in I3 if needed.",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-e-aesthetic\\.postgres|wave-e-production-path\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-device",
+      "frozenName": "P1 Device/Laser Pack",
+      "npmScript": "test:phase48-p1-device",
+      "notes": "Shares Wave E aesthetic postgres suite.",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-e-aesthetic\\.postgres|wave-e-http\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-derm",
+      "frozenName": "P1 Dermatology Pack",
+      "npmScript": "test:phase48-p1-derm",
+      "notes": "Shares Wave E aesthetic postgres suite (no parallel DermatologyRecord EMR).",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-e-aesthetic\\.postgres|wave-e-round1\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-lab",
+      "frozenName": "P1 Dental Lab Pack",
+      "npmScript": "test:phase48-p1-lab",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-d-lab-transitions\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-d-dental\\.postgres|wave-d-http\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-pre-post-care",
+      "frozenName": "P1 Pre/Post Care Pack",
+      "npmScript": "test:phase48-p1-pre-post-care",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-e-production-path\\.postgres|wave-e-http\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-waitlist",
+      "frozenName": "P1 Waitlist Pack",
+      "npmScript": "test:phase48-p1-waitlist",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-g2-waitlist-offer\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-g2-waitlist-offer\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-availability",
+      "frozenName": "P1 Availability Pack",
+      "npmScript": "test:phase48-p1-availability",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-g1-availability-exception\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-g1-availability-exception\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-recall",
+      "frozenName": "P1 Recall Pack",
+      "npmScript": "test:phase48-p1-recall",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-g3-recall\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-g3-recall\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-commission",
+      "frozenName": "P1-14 Commission Pack",
+      "npmScript": "test:phase48-p1-commission",
+      "notes": "Full wave-f suite is large; I1 wires existing path patterns. I3 may narrow.",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-f-money\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-f-workforce\\.postgres|wave-f-http\\.postgres|wave-f-rls\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "p1-arabic-rtl",
+      "frozenName": "P1 Arabic/RTL Pack",
+      "npmScript": "test:phase48-p1-arabic-rtl",
+      "notes": "API search half here; Playwright booking half = clinic-dashboard test:phase48-p1-arabic-rtl-e2e",
+      "steps": [
+        {
+          "layer": "unit",
+          "command": "npx",
+          "args": ["jest", "--runInBand", "--testPathPattern=wave-h1-arabic-catalog-search\\.unit"]
+        },
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-h1-arabic-catalog-search\\.postgres"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "combined-traceability",
+      "frozenName": "Combined Traceability Pack",
+      "npmScript": "test:phase48-combined-traceability",
+      "notes": "Uses R4-TRACE cases inside wave-f-round4 until a dedicated suite exists (I4).",
+      "steps": [
+        {
+          "layer": "pg",
+          "command": "npx",
+          "args": ["jest", "--config", "jest.integration.config.cjs", "--runInBand", "--testPathPattern=wave-f-round4\\.postgres", "--testNamePattern=R4-TRACE"],
+          "requiresDb": true
+        }
+      ]
+    },
+    {
+      "id": "migration-clean",
+      "frozenName": "Migration Clean/Upgrade Packs (clean half)",
+      "npmScript": "test:phase48-migration-clean",
+      "notes": "validate-phase48-wave-{a..g}-clean.mjs. Wave G wired (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
+      "steps": [
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-c-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-d-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-e-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-clean.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-g-clean.mjs"] }
+      ]
+    },
+    {
+      "id": "migration-upgrade",
+      "frozenName": "Migration Clean/Upgrade Packs (upgrade half)",
+      "npmScript": "test:phase48-migration-upgrade",
+      "notes": "validate-phase48-wave-{a..g}-upgrade.mjs. Wave G wired (real G1–G3 Prisma migrations). Wave H ABSENT (no Prisma/SQL migrations).",
+      "steps": [
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-a-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-b-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-c-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-d-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-e-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-f-upgrade.mjs"] },
+        { "layer": "validator", "command": "node", "args": ["scripts/validate-phase48-wave-g-upgrade.mjs"] }
+      ]
+    },
+    {
+      "id": "regression-baselines",
+      "frozenName": "Regression / onepass closure",
+      "npmScript": "test:phase48-regression-baselines",
+      "notes": "Release 47 Step 28/29 baselines. Phase 48 pack onepass: npm run test:phase48-onepass (I5). HEAVY.",
+      "steps": [
+        { "layer": "onepass", "command": "npm", "args": ["run", "test:step28-security-final-onepass"] },
+        { "layer": "onepass", "command": "npm", "args": ["run", "test:step29-release-final-onepass"] }
+      ]
+    }
+  ],
+  "clinicDashboard": [
+    {
+      "id": "p1-arabic-rtl-e2e",
+      "frozenName": "P1 Arabic/RTL Pack (booking e2e half)",
+      "npmScript": "test:phase48-p1-arabic-rtl-e2e",
+      "layer": "e2e",
+      "command": "playwright test e2e/wave-h2-arabic-rtl-booking.spec.ts",
+      "notes": "Requires API + Playwright webServer; skip-if-API-down helper may skip locally — not a fake PASS."
+    },
+    {
+      "id": "p1-accessibility-tablet",
+      "frozenName": "P1 Accessibility/Tablet Pack",
+      "npmScript": "test:phase48-p1-accessibility-tablet",
+      "layer": "e2e",
+      "command": "playwright test e2e/wave-h3-a11y-tablet.spec.ts",
+      "notes": "Requires API + webServer."
+    },
+    {
+      "id": "owner-ux",
+      "frozenName": "Owner inventory/commission UX (Wave H bounded; not a separate frozen pack name)",
+      "npmScript": "test:phase48-owner-ux",
+      "layer": "e2e",
+      "command": "playwright test e2e/wave-h4-owner-ux.spec.ts",
+      "notes": "Requires API + webServer."
+    }
+  ]
+}

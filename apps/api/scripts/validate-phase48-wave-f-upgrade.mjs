@@ -9,11 +9,16 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import {
+  parkLaterPhase48Migrations,
+  restoreLaterPhase48Migrations,
+} from './phase48-park-later-migrations.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
 const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_f_upgrade');
+const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_f_upgrade_later');
 const upgradeDb = `test_p48wf_upgrade_${Date.now()}`;
 const WAVE_F_SUFFIX = '_phase48_wave_f_';
 
@@ -65,6 +70,7 @@ function park() {
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
+  parkLaterPhase48Migrations(migrationsDir, parkLaterDir, waveFMigrations);
   return waveFMigrations;
 }
 
@@ -338,6 +344,8 @@ async function main() {
       }
     }
     throw err;
+  } finally {
+    restoreLaterPhase48Migrations(migrationsDir, parkLaterDir);
   }
 }
 

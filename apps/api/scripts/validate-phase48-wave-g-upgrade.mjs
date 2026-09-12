@@ -1,25 +1,26 @@
 #!/usr/bin/env node
 /**
- * Phase 48 Wave E — upgrade from frozen Wave D schema.
- * Park Wave E → deploy through Wave D → restore Wave E → assert additive.
+ * Phase 48 Wave G — upgrade from frozen Wave F schema.
+ * Park Wave G → deploy through Wave F → restore Wave G → assert additive.
  */
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import {
-  parkLaterPhase48Migrations,
-  restoreLaterPhase48Migrations,
-} from './phase48-park-later-migrations.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
 const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
-const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_e_upgrade');
-const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_e_upgrade_later');
-const upgradeDb = `test_p48we_upgrade_${Date.now()}`;
-const WAVE_E_SUFFIX = '_phase48_wave_e_';
+const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_g_upgrade');
+const upgradeDb = `test_p48wg_upgrade_${Date.now()}`;
+const WAVE_G_SUFFIX = '_phase48_wave_g';
+const WAVE_G_TABLES = [
+  'availability_exceptions',
+  'waitlist_offers',
+  'recall_rules',
+  'patient_recall_instances',
+];
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.ALLOW_TEST_DATABASE_RESET = 'true';
@@ -49,35 +50,34 @@ async function withAdmin(fn) {
   }
 }
 
-function listWaveEMigrations() {
+function listWaveGMigrations() {
   return fs
     .readdirSync(migrationsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.includes(WAVE_E_SUFFIX))
+    .filter((entry) => entry.isDirectory() && entry.name.includes(WAVE_G_SUFFIX))
     .map((entry) => entry.name)
     .sort();
 }
 
 function park() {
-  const waveEMigrations = listWaveEMigrations();
-  if (!waveEMigrations.length) {
-    throw new Error('Missing Wave E migration directories');
+  const waveGMigrations = listWaveGMigrations();
+  if (waveGMigrations.length < 3) {
+    throw new Error(`Expected ≥3 Wave G migration folders, found ${waveGMigrations.length}`);
   }
   fs.mkdirSync(parkDir, { recursive: true });
-  for (const migration of waveEMigrations) {
+  for (const migration of waveGMigrations) {
     const src = path.join(migrationsDir, migration);
     const dest = path.join(parkDir, migration);
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
-  parkLaterPhase48Migrations(migrationsDir, parkLaterDir, waveEMigrations);
-  return waveEMigrations;
+  return waveGMigrations;
 }
 
 function restore(expectedMigrations) {
   for (const migration of expectedMigrations) {
     const src = path.join(parkDir, migration);
     const dest = path.join(migrationsDir, migration);
-    if (!fs.existsSync(src)) throw new Error(`Parked Wave E migration missing: ${migration}`);
+    if (!fs.existsSync(src)) throw new Error(`Parked Wave G migration missing: ${migration}`);
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
@@ -97,15 +97,17 @@ async function main() {
     const pre = new PrismaClient({ datasources: { db: { url: upgradeUrl } } });
     await pre.$connect();
     await pre.$executeRaw`SELECT set_config('app.platform_rls_bypass', 'true', false)`;
-    const waveEPre = await pre.$queryRawUnsafe(
-      `SELECT to_regclass('public.treatment_courses') IS NOT NULL AS present`,
+    const waveFPre = await pre.$queryRawUnsafe(
+      `SELECT to_regclass('public.staff_commission_plan_versions') IS NOT NULL AS present`,
     );
-    if (waveEPre[0]?.present) throw new Error('Wave E table present before restore — park failed');
-    const waveD = await pre.$queryRawUnsafe(
-      `SELECT to_regclass('public.dental_lab_cases') IS NOT NULL AS present`,
-    );
-    if (!waveD[0]?.present) throw new Error('Wave D table missing before Wave E upgrade');
-    const labCount = await pre.dentalLabCase.count();
+    if (!waveFPre[0]?.present) throw new Error('Wave F table missing before Wave G upgrade');
+    for (const table of WAVE_G_TABLES) {
+      const gPre = await pre.$queryRawUnsafe(
+        `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
+      );
+      if (gPre[0]?.present) throw new Error(`${table} present before restore — park failed`);
+    }
+    const commissionCount = await pre.commissionAccrual.count();
     await pre.$disconnect();
 
     restore(parkedMigrations);
@@ -115,37 +117,49 @@ async function main() {
     const post = new PrismaClient({ datasources: { db: { url: upgradeUrl } } });
     await post.$connect();
     await post.$executeRaw`SELECT set_config('app.platform_rls_bypass', 'true', false)`;
-    const waveEPost = await post.$queryRawUnsafe(
-      `SELECT to_regclass('public.treatment_courses') IS NOT NULL AS present`,
-    );
-    if (!waveEPost[0]?.present) throw new Error('Wave E table missing after upgrade');
-    const labCountAfter = await post.dentalLabCase.count();
-    if (labCountAfter !== labCount) throw new Error('dental_lab_cases count changed');
-    const sessions = await post.$queryRawUnsafe(
-      `SELECT to_regclass('public.course_sessions') IS NOT NULL AS present`,
-    );
-    if (!sessions[0]?.present) throw new Error('course_sessions missing after upgrade');
-    const devices = await post.$queryRawUnsafe(
-      `SELECT to_regclass('public.device_treatment_records') IS NOT NULL AS present`,
-    );
-    if (!devices[0]?.present) throw new Error('device_treatment_records missing after upgrade');
-    const noDerm = await post.$queryRawUnsafe(
-      `SELECT to_regclass('public.dermatology_records') IS NOT NULL AS present`,
-    );
-    if (noDerm[0]?.present) throw new Error('DermatologyRecord must not appear after upgrade');
-    console.log('PHASE48_WAVE_E_UPGRADE_VALIDATOR_PASSED');
+    for (const table of WAVE_G_TABLES) {
+      const gPost = await post.$queryRawUnsafe(
+        `SELECT to_regclass('public.${table}') IS NOT NULL AS present`,
+      );
+      if (!gPost[0]?.present) throw new Error(`${table} missing after Wave G upgrade`);
+      const rls = await post.$queryRawUnsafe(
+        `SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname = '${table}'`,
+      );
+      if (!rls[0]?.relrowsecurity) throw new Error(`${table} RLS not enabled after upgrade`);
+      if (!rls[0]?.relforcerowsecurity) throw new Error(`${table} FORCE RLS not set after upgrade`);
+      console.log(`OK upgrade table+RLS ${table}`);
+    }
+    const commissionCountAfter = await post.commissionAccrual.count();
+    if (commissionCountAfter !== commissionCount) {
+      throw new Error('commission_accruals count changed during Wave G upgrade');
+    }
+    const migs = await post.$queryRawUnsafe(`
+      SELECT migration_name FROM _prisma_migrations
+      WHERE finished_at IS NOT NULL
+        AND (
+          migration_name LIKE '%phase48_wave_g1_availability_exception%'
+          OR migration_name LIKE '%phase48_wave_g2_waitlist_offer%'
+          OR migration_name LIKE '%phase48_wave_g3_recall_sor%'
+        )
+    `);
+    if (migs.length < 3) {
+      throw new Error(`Expected 3 Wave G migrations after upgrade, got ${migs.length}`);
+    }
+    console.log('PHASE48_WAVE_G_UPGRADE_VALIDATOR_PASSED');
     await post.$disconnect();
   } catch (err) {
     if (parked) {
       try {
         restore(parkedMigrations);
       } catch (restoreErr) {
-        console.error('Failed to restore parked Wave E migrations:', restoreErr);
+        console.error('FAILED to restore parked Wave G migrations:', restoreErr);
       }
     }
     throw err;
   } finally {
-    restoreLaterPhase48Migrations(migrationsDir, parkLaterDir);
+    await withAdmin(async (admin) => {
+      await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS ${upgradeDb} WITH (FORCE)`);
+    }).catch(() => undefined);
   }
 }
 

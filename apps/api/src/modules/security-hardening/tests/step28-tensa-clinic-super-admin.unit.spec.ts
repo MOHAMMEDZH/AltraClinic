@@ -28,7 +28,7 @@ describe('Step 28 TENSA01–TENSA20 clinic legacy super_admin residual', () => {
     });
   }
 
-  function mkPermissionCtx(user: JwtClaimsVO, required = { resource: 'patients', action: 'read' as const }) {
+  function mkPermissionCtx(user: JwtClaimsVO, required = { resource: 'api.patients', action: 'view' as const }) {
     const reflector = {
       getAllAndOverride: () => required,
     } as unknown as Reflector;

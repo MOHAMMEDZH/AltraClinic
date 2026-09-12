@@ -8,11 +8,16 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+import {
+  parkLaterPhase48Migrations,
+  restoreLaterPhase48Migrations,
+} from './phase48-park-later-migrations.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, '..');
 const migrationsDir = path.join(apiRoot, 'prisma', 'migrations');
 const parkDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_d_upgrade');
+const parkLaterDir = path.join(apiRoot, 'prisma', '_parked_phase48_wave_d_upgrade_later');
 const upgradeDb = `test_p48wd_upgrade_${Date.now()}`;
 const WAVE_D_SUFFIX = '_phase48_wave_d_';
 
@@ -64,6 +69,7 @@ function park() {
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
     fs.renameSync(src, dest);
   }
+  parkLaterPhase48Migrations(migrationsDir, parkLaterDir, waveDMigrations);
   return waveDMigrations;
 }
 
@@ -131,6 +137,8 @@ async function main() {
       }
     }
     throw err;
+  } finally {
+    restoreLaterPhase48Migrations(migrationsDir, parkLaterDir);
   }
 }
 

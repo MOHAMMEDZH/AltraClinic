@@ -12,17 +12,21 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:phase48-p1-arabic-rtl-e2e": "playwright test e2e/wave-h2-arabic-rtl-booking.spec.ts",
+    "test:phase48-p1-accessibility-tablet": "playwright test e2e/wave-h3-a11y-tablet.spec.ts",
+    "test:phase48-owner-ux": "playwright test e2e/wave-h4-owner-ux.spec.ts"
   },
   "dependencies": {
     "@booking/dashboard-export": "*",
     "@booking/design-tokens": "*",
     "@booking/i18n": "*",
-    "@booking/permissions": "*",
     "@booking/module-registry": "*",
+    "@booking/permissions": "*",
     "@tanstack/react-query": "^5.56.2",
     "dicom-parser": "^1.8.21",
     "lucide-react": "^0.441.0",
+    "postcss": "^8.5.28",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
