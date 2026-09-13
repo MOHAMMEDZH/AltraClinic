@@ -5,7 +5,7 @@
 | **Branch** | `cursor/phase51-commercial-launch-kickoff` |
 | **Canonical base** | `9a2e89d` (Phase 50 PR #6 merge) |
 | **L6 tip** | `786bd29` |
-| **L7 tip** | *(this packaging tip — pin after commit)* |
+| **L7 tip** | `9af4a72` |
 | **Purpose** | Lean implementation review — Phase 51 PA **PENDING EXTERNAL** |
 
 ```text
@@ -29,7 +29,7 @@ Wave A–I / Phase 49 / Phase 50 SoR reopen = NOT AUTHORIZED
 | L4 | `abf055b` | Support / ops launch handoff |
 | L5 | `77a7091` | Legal / commercial boundary register |
 | L6 | `786bd29` | Launch smoke evidence format + thin run (docs tip; evidence uncommitted) |
-| L7 | *(this tip)* | Deferred register + this review / PA precheck |
+| L7 | `9af4a72` | Deferred register + this review / PA precheck |
 
 ## Index
 

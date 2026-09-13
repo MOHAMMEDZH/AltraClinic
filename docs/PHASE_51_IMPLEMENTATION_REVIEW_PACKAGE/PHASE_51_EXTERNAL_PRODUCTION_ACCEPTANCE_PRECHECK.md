@@ -5,7 +5,7 @@
 | **Branch** | `cursor/phase51-commercial-launch-kickoff` |
 | **Base** | `9a2e89d` |
 | **Evidence tip (PA)** | ________ (**PENDING EXTERNAL** — CTO fills) |
-| **Slice tips** | L0 `9dd3bd0` · L1 `f1006ea` · L2 `d0a47ce` · L3 `15e38b4` · L4 `abf055b` · L5 `77a7091` · L6 `786bd29` · L7 *(this tip)* |
+| **Slice tips** | L0 `9dd3bd0` · L1 `f1006ea` · L2 `d0a47ce` · L3 `15e38b4` · L4 `abf055b` · L5 `77a7091` · L6 `786bd29` · L7 `9af4a72` |
 | **Review package** | `docs/PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/` |
 | **Deferred register** | `docs/PHASE_51_DEFERRED_REGISTER/` |
 | **L6 smoke evidence (uncommitted OK)** | `apps/api/.ci-evidence/phase51-l6-77a7091/` |
@@ -37,7 +37,7 @@ Statuses: **PASS** = proven on tip packaging; **PARTIAL** = documented limit; **
 | L4 support / ops handoff | **PASS** @ `abf055b` |
 | L5 legal / commercial boundaries | **PASS** @ `77a7091` (ToS/privacy **MISSING**; Stripe **PARTIAL**; D-17/paging/PITR **EXTERNAL**) |
 | L6 launch smoke format + thin evidence | **PASS** @ `786bd29`; local smoke **PASS** cited under uncommitted `phase51-l6-77a7091/` |
-| L7 deferred register + this precheck | **PASS** (docs) @ L7 tip |
+| L7 deferred register + this precheck | **PASS** (docs) @ `9af4a72` |
 | Documented deferred items do not block PA | **PASS** (explicit in register) |
 | Agreed CI baselines / progressive stance | **PASS** lineage; full onepass **optional** |
 
@@ -58,7 +58,7 @@ L3 = 15e38b4
 L4 = abf055b
 L5 = 77a7091
 L6 = 786bd29
-L7 = ________ (this packaging tip)
+L7 = 9af4a72
 Pricing / packaging clarity = PASS (payment = PARTIAL)
 Tenant onboarding go-live checklist = PASS (≠ cutover evidence)
 Support / ops handoff = PASS

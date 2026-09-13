@@ -4,7 +4,7 @@
 |-------|--------|
 | Branch | `cursor/phase51-commercial-launch-kickoff` |
 | Base | `9a2e89d` |
-| Tip pins | L0 `9dd3bd0` · L1 `f1006ea` · L2 `d0a47ce` · L3 `15e38b4` · L4 `abf055b` · L5 `77a7091` · L6 `786bd29` · L7 *(this tip)* |
+| Tip pins | L0 `9dd3bd0` · L1 `f1006ea` · L2 `d0a47ce` · L3 `15e38b4` · L4 `abf055b` · L5 `77a7091` · L6 `786bd29` · L7 `9af4a72` |
 
 ## L0 — Kickoff
 
