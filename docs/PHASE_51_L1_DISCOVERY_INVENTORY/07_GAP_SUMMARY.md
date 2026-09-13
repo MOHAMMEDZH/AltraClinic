@@ -23,7 +23,7 @@
 | Rank | Gap | Status | Maps to |
 |------|-----|--------|---------|
 | 1 | No sale-facing pricing/packaging clarity package tying Super Admin SoR docs to “what we sell” | **PASS-local** @ L2 `PHASE_51_L2_PRICING_PACKAGING/` (payment still PARTIAL) | **L2** (done docs) |
-| 2 | No tenant go-live checklist (provision → license → smoke → handoff) linked from OPERATOR_INDEX | **MISSING** | **L3** |
+| 2 | No tenant go-live checklist (provision → license → smoke → handoff) linked from OPERATOR_INDEX | **PASS-local** @ L3 `PHASE_51_L3_GOLIVE_CHECKLIST/` (≠ executed cutover) | **L3** (done docs) |
 | 3 | No Phase 51 launch-day support/ops handoff pointer (K7 exists; launch-specific package does not) | **MISSING** | **L4** |
 | 4 | No unified in-product vs external legal/commercial boundary register (ToS/privacy/payment rails) | **MISSING** | **L5** |
 | 5 | No Phase 51 launch smoke / go-live evidence format (baselines exist) | **MISSING** | **L6** |

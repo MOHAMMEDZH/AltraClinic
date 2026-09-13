@@ -18,6 +18,7 @@
 | Cutover gates / ownership | [`RELEASE_47_STEP29_RELEASE_READINESS.md`](./RELEASE_47_STEP29_RELEASE_READINESS.md) §§7–14 |
 | Secrets / config hygiene packaging | [`PHASE_49_K2_SECRETS_CONFIG/`](./PHASE_49_K2_SECRETS_CONFIG/) |
 | Pricing / packaging (what we sell) | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
+| Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 
 ---
 
@@ -78,11 +79,13 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 | Kickoff (L0) | [`PHASE_51_KICKOFF_PACKAGE/`](./PHASE_51_KICKOFF_PACKAGE/) |
 | L1 Discovery | [`PHASE_51_L1_DISCOVERY_INVENTORY/`](./PHASE_51_L1_DISCOVERY_INVENTORY/) |
 | L2 Pricing / packaging clarity | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
+| L3 Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 
 ```text
 Phase 51 Production Acceptance = PENDING
-L3–L7 = NOT STARTED
+L4–L7 = NOT STARTED
 Stripe / payment live = NOT CLAIMED
+Go-live checklist ≠ executed cutover evidence
 ```
 
 ---
