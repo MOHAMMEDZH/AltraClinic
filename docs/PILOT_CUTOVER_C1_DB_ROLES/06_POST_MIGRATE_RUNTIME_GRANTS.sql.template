@@ -1,0 +1,7 @@
+-- C1 additive — run AFTER first successful migrate as {{MIGRATE_ROLE}}.
+-- Ensures {{RUNTIME_ROLE}} can DML existing tables (DEFAULT PRIVILEGES alone do not
+-- retroactively grant objects created in the migrate session before defaults applied).
+-- Placeholders only. Never commit filled passwords.
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{APP_SCHEMA}} TO {{RUNTIME_ROLE}};
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {{APP_SCHEMA}} TO {{RUNTIME_ROLE}};

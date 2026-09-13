@@ -25,6 +25,7 @@
 | Deferred register / Phase 51 review | [`PHASE_51_DEFERRED_REGISTER/`](./PHASE_51_DEFERRED_REGISTER/) · [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
 | Pilot production cutover (kickoff) | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
 | Pilot DB roles template (C1) | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
+| Pilot staging-or-local migrate proof (C2) | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 
 ---
 
@@ -113,12 +114,13 @@ PR merge = wait for CTO authorize
 |---------|------|
 | C0 Kickoff | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
 | C1 DB roles template | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
+| C2 Staging-or-local migrate proof | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 
 ```text
 Pilot cutover executed = NO
 Program PA = PENDING
-C0–C1 = docs/templates only (roles not claimed in prod)
-C2+ = NOT STARTED
+C0–C1 = docs/templates; C2 = PARTIAL (local PASS; real staging EXTERNAL)
+C3+ = NOT STARTED
 Phase 52 = NOT AUTHORIZED
 ```
 

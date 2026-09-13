@@ -33,6 +33,9 @@ Suggested placeholder names (match template):
 3. Run the script once as superuser / owner capable of `CREATE ROLE`.
 4. Store passwords only in the secret manager (see `04_SECRETS_MAPPING.md`).
 5. Run `03_VERIFY_QUERIES.sql` (substitute role names) and retain **redacted** evidence (role names + `rolbypassrls` only).
+6. After first `prisma migrate deploy` as migrate-admin, apply [`06_POST_MIGRATE_RUNTIME_GRANTS.sql.template`](./06_POST_MIGRATE_RUNTIME_GRANTS.sql.template).
+
+**Triggers apply note:** `apps/api/prisma/triggers.sql` ends with a bare `RAISE NOTICE 'Triggers applied successfully.';` which fails under `psql -v ON_ERROR_STOP=1`. Strip that line or wrap it in `DO $$ BEGIN … END $$;` before apply. Do not ignore real DDL errors.
 
 ```text
 API DATABASE_URL → {{RUNTIME_ROLE}} only (NOBYPASSRLS)

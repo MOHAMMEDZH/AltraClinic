@@ -17,6 +17,7 @@ CTO-authorized **C1 only**. Docs + parameterized SQL template.
 | [03_VERIFY_QUERIES.sql](./03_VERIFY_QUERIES.sql) | Prove `rolbypassrls=false` + memberships |
 | [04_SECRETS_MAPPING.md](./04_SECRETS_MAPPING.md) | Migrate job vs API vs backup secret names |
 | [05_EXPLICIT_OUT.md](./05_EXPLICIT_OUT.md) | Cloud create, vault, cutover, fake PASS |
+| [06_POST_MIGRATE_RUNTIME_GRANTS.sql.template](./06_POST_MIGRATE_RUNTIME_GRANTS.sql.template) | Post-migrate DML grants for runtime-app |
 
 **Aligns with:**
 
