@@ -71,13 +71,13 @@ L6 owns evidence format + authorized run record.
 
 ---
 
-## 5. Handoff (pointer — L4 owns launch handoff package)
+## 5. Handoff (launch-day support/ops)
 
 | # | Check | Pointer |
 |---|--------|---------|
 | 5.1 | Incident SEV / first 15 / RM path known to support | [`PHASE_49_K7_INCIDENT_BASICS/`](../PHASE_49_K7_INCIDENT_BASICS/) + [`SECURITY_RUNBOOKS.md`](../SECURITY_RUNBOOKS.md) |
 | 5.2 | Notification / DR / ops console paths known | [`NOTIFICATION_DELIVERY_OPERATIONS.md`](../NOTIFICATION_DELIVERY_OPERATIONS.md) · [`DISASTER_RECOVERY.md`](../DISASTER_RECOVERY.md) · OPERATOR_INDEX |
-| 5.3 | Launch-day support handoff package | **L4** (not started) — until then use K7 + OPERATOR_INDEX |
+| 5.3 | Launch-day support handoff package reviewed | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](../PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
 
 ---
 

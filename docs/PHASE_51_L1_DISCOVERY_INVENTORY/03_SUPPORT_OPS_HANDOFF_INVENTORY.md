@@ -17,15 +17,15 @@
 | Phase 49 K4 observability | `docs/PHASE_49_K4_OBSERVABILITY_ALERTING/` | **PASS-local** |
 | Operations Console runbooks | `docs/OPERATIONS_CONSOLE_RUNBOOKS.md` | **PASS-local** |
 | Patient portal ops | `docs/PATIENT_PORTAL_OPS_RUNBOOKS.md` | **PASS-local** |
-| Phase 51 commercial launch handoff package | — | **MISSING** |
+| Phase 51 commercial launch handoff package | `docs/PHASE_51_L4_SUPPORT_OPS_HANDOFF/` | **PASS-local** (docs; paging SaaS still EXTERNAL) |
 
 ---
 
-## Gaps (for L4)
+## Gaps (for L4) — addressed by L4 package
 
-1. Hardening handoff exists; **launch-day support handoff** (who owns what after first sale go-live) is not packaged.  
-2. Paging / ticketing SaaS remain EXTERNAL (K7 OUT) — handoff must point, not invent.  
-3. Reuse OPERATOR_INDEX + K7 — thin launch pointer doc only when L4 authorized.
+1. Launch-day support handoff → **`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`**.  
+2. Paging / ticketing SaaS remain EXTERNAL — L4 points, does not invent.  
+3. Linked from OPERATOR_INDEX + L3 checklist §5.3.
 
 ## Explicit OUT for L1
 
