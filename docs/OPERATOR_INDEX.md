@@ -17,6 +17,7 @@
 | Incident SEV / first 15 / RM | [`PHASE_49_K7_INCIDENT_BASICS/`](./PHASE_49_K7_INCIDENT_BASICS/) + [`SECURITY_RUNBOOKS.md`](./SECURITY_RUNBOOKS.md) |
 | Cutover gates / ownership | [`RELEASE_47_STEP29_RELEASE_READINESS.md`](./RELEASE_47_STEP29_RELEASE_READINESS.md) §§7–14 |
 | Secrets / config hygiene packaging | [`PHASE_49_K2_SECRETS_CONFIG/`](./PHASE_49_K2_SECRETS_CONFIG/) |
+| Pricing / packaging (what we sell) | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
 
 ---
 
@@ -61,10 +62,27 @@ self-granted Phase 49 PA = NO (CTO-granted)
 |---------|------|
 | Kickoff (D0) | [`PHASE_50_KICKOFF_PACKAGE/`](./PHASE_50_KICKOFF_PACKAGE/) |
 | D1 Discovery | [`PHASE_50_D1_DISCOVERY_INVENTORY/`](./PHASE_50_D1_DISCOVERY_INVENTORY/) |
+| Review / PA | [`PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_50_IMPLEMENTATION_REVIEW_PACKAGE/) |
 
 ```text
-Phase 50 Production Acceptance = PENDING
+Phase 50 Production Acceptance = ACCEPTED (CTO @ 2d1f3ec; merge 9a2e89d)
 D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
+```
+
+---
+
+## Phase 51 (Commercial Launch)
+
+| Package | Path |
+|---------|------|
+| Kickoff (L0) | [`PHASE_51_KICKOFF_PACKAGE/`](./PHASE_51_KICKOFF_PACKAGE/) |
+| L1 Discovery | [`PHASE_51_L1_DISCOVERY_INVENTORY/`](./PHASE_51_L1_DISCOVERY_INVENTORY/) |
+| L2 Pricing / packaging clarity | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
+
+```text
+Phase 51 Production Acceptance = PENDING
+L3–L7 = NOT STARTED
+Stripe / payment live = NOT CLAIMED
 ```
 
 ---
@@ -72,5 +90,6 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 ## Explicit non-goals of this index
 
 - Not a deploy engine / CD pipeline  
-- Not Production Acceptance for Phase 50  
-- Topology (D-17), offsite/PITR, paging SaaS remain **EXTERNAL** (see Phase 49 packages)
+- Not Production Acceptance for Phase 51  
+- Topology (D-17), offsite/PITR, paging SaaS remain **EXTERNAL** (see Phase 49 packages)  
+- Not a billing/payment engine

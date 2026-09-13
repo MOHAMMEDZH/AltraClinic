@@ -22,15 +22,15 @@
 | Plans / entitlements / add-ons / assignment docs | `docs/SUPER_ADMIN_PLANS_AND_PLAN_VERSIONS.md`, `SUPER_ADMIN_PLAN_ENTITLEMENTS_AND_LIMITS.md`, `SUPER_ADMIN_ADD_ONS_AND_COMMERCIAL_OVERRIDES.md`, `SUPER_ADMIN_SUBSCRIPTION_MANAGEMENT_AND_COMMERCIAL_ASSIGNMENT.md` | **PASS-local** |
 | Licensing architecture (Stripe sync noted as future) | `docs/LICENSING_ARCHITECTURE.md` | **PARTIAL** |
 | Usage metering / limits (not sale packaging) | `docs/USAGE_METERING_AND_LIMIT_ENFORCEMENT.md` | **PARTIAL** |
-| Phase 51 “pricing clarity for sale” package | — | **MISSING** |
+| Phase 51 “pricing clarity for sale” package | `docs/PHASE_51_L2_PRICING_PACKAGING/` | **PASS-local** (L2 docs; payment still PARTIAL) |
 
 ---
 
-## Gaps (for L2)
+## Gaps (for L2) — addressed by L2 package
 
-1. No single sale-facing packaging clarity doc that ties plans/entitlements/add-ons to “what we sell.”  
-2. Payment-provider / Stripe path remains future/partial — do not claim commercial payment complete.  
-3. Prefer reuse of Super Admin SoR docs — thin clarity + OPERATOR_INDEX cross-links only (L2).
+1. Sale-facing packaging clarity package → **`PHASE_51_L2_PRICING_PACKAGING/`**.  
+2. Payment-provider / Stripe path remains future/partial — see L2 `02_WHAT_IS_NOT_SOLD.md`.  
+3. Prefer reuse of Super Admin SoR docs — L2 is pointers + OPERATOR_INDEX link only.
 
 ## Explicit OUT for L1
 
