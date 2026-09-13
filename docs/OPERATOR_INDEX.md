@@ -28,6 +28,7 @@
 | Pilot staging-or-local migrate proof (C2) | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 | Pilot Neon migrate proof (C2b) | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
 | Pilot backup/restore drill (C3) | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
+| Pilot K5 dry-run evidence (C4) | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
 
 ---
 
@@ -119,13 +120,14 @@ PR merge = wait for CTO authorize
 | C2 Staging-or-local migrate proof | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 | C2b Neon migrate proof | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
 | C3 Backup/restore drill | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
+| C4 K5 dry-run evidence | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
 
 ```text
 Pilot cutover executed = NO
 Program PA = PENDING
-C2 = PARTIAL (local); C2b = PASS (Neon); C3 = PARTIAL (schema drill; full-data needs owner dump role)
-C4+ = NOT STARTED
-Offsite / PITR = EXTERNAL
+C2/C3/C4 = PARTIAL (honest gaps); C2b = PASS (Neon)
+C5 = NOT STARTED
+Offsite / PITR / D-17 CD = EXTERNAL
 Phase 52 = NOT AUTHORIZED
 ```
 

@@ -9,12 +9,12 @@ CTO authorizes slices in order. **C0 does not start C1.**
 | **C2** | Staging migrate / RLS apply / K6-style isolation evidence | **PARTIAL** @ [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](../PILOT_CUTOVER_C2_STAGING_MIGRATE/) — local disposable PASS; real staging EXTERNAL |
 | **C2b** | Neon staging/pilot migrate → RLS → isolation | **PASS** @ [`PILOT_CUTOVER_C2B_NEON/`](../PILOT_CUTOVER_C2B_NEON/) — Neon `neondb` (Frankfurt); branch label ≠ product prod |
 | **C3** | Backup / restore on clone (K3 SoR) | **PARTIAL** @ [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](../PILOT_CUTOVER_C3_BACKUP_RESTORE/) — schema drill PASS; full-data blocked by FORCE RLS w/o owner dump role; offsite/PITR EXTERNAL |
-| **C4** | K5 dry-run **execution** evidence | Honest FAIL/PARTIAL if blocked; no fake cutover |
+| **C4** | K5 dry-run **execution** evidence | **PARTIAL** @ [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](../PILOT_CUTOVER_C4_K5_DRY_RUN/) — migrate status + obs readiness + rollback rehearsal; health/CD SKIP; no fake cutover |
 | **C5** | Pilot go-live packet | Ties gates + evidence; program PA still CTO-external |
 
 ```text
-C0–C3 delivered (C2 local PARTIAL; C2b Neon PASS; C3 backup PARTIAL schema drill)
-C3 alone ≠ C4 authorize
+C0–C4 delivered (C2/C3/C4 PARTIAL honesty; C2b Neon PASS)
+C4 alone ≠ C5 authorize
 Neon branch label "production" ≠ product production cutover
 Offsite / PITR = EXTERNAL
 Green docs ≠ cutover executed
