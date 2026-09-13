@@ -4,7 +4,7 @@
 |-------|--------|
 | **Branch** | `cursor/phase51-commercial-launch-kickoff` |
 | **Base** | `9a2e89d` |
-| **Evidence tip (PA)** | ________ (**PENDING EXTERNAL** — CTO fills) |
+| **Evidence tip (PA)** | `67a6391` (CTO-granted) |
 | **Slice tips** | L0 `9dd3bd0` · L1 `f1006ea` · L2 `d0a47ce` · L3 `15e38b4` · L4 `abf055b` · L5 `77a7091` · L6 `786bd29` · L7 `9af4a72` |
 | **Review package** | `docs/PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/` |
 | **Deferred register** | `docs/PHASE_51_DEFERRED_REGISTER/` |
@@ -48,8 +48,8 @@ Self-granted PA · payment-live claim · fake cutover · D5 picker delivery · W
 ## 3. Exit sign-off block (CTO)
 
 ```text
-PHASE 51 PRODUCTION ACCEPTANCE = ________ (PENDING / ACCEPTED)
-Evidence tip = ________
+PHASE 51 PRODUCTION ACCEPTANCE = ACCEPTED
+Evidence tip = 67a6391
 Authority = CTO-granted (not self-grant)
 L0 = 9dd3bd0
 L1 = f1006ea
@@ -66,7 +66,7 @@ Legal / commercial boundaries = PASS (ToS/privacy = MISSING; Stripe = PARTIAL; D
 Launch smoke / go-live evidence = PASS (thin local; evidence uncommitted OK)
 Deferred items register = PASS (D5 picker = DEFERRED; contrast/widget DEFERs documented)
 Documented deferred / PARTIAL / MISSING / EXTERNAL do NOT block PA = YES
-CI baselines remain green = ________ (lineage / CTO)
+CI baselines remain green = PASS (lineage / CTO)
 Wave A–I / Phase 49 / Phase 50 SoR reopen = NOT REQUIRED
 payment live = NOT CLAIMED
 fake cutover = NOT CLAIMED
@@ -76,9 +76,9 @@ self-granted Phase 51 PA = NO
 ---
 
 ```text
-Phase 51 Production Acceptance = PENDING EXTERNAL
+Phase 51 Production Acceptance = ACCEPTED (CTO @ 67a6391)
 self-granted Phase 51 PA = NO
-PR open = wait for CTO authorize
+PR merge = wait for CTO authorize
 D5 picker = DEFERRED
-Green launch smoke ≠ Phase 51 PA
+Green launch smoke ≠ payment live ≠ cutover
 ```

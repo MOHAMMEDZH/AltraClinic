@@ -6,12 +6,13 @@
 | **Canonical base** | `9a2e89d` (Phase 50 PR #6 merge) |
 | **L6 tip** | `786bd29` |
 | **L7 tip** | `9af4a72` |
-| **Purpose** | Lean implementation review — Phase 51 PA **PENDING EXTERNAL** |
+| **Evidence tip (PA)** | `67a6391` (CTO-granted) |
+| **Purpose** | Lean implementation review — Phase 51 PA **ACCEPTED** by CTO |
 
 ```text
-Phase 51 Production Acceptance = PENDING EXTERNAL (CTO decides)
+Phase 51 Production Acceptance = ACCEPTED (CTO @ 67a6391)
 self-granted Phase 51 PA = NO
-Green launch smoke ≠ Phase 51 PA
+Green launch smoke ≠ payment live ≠ cutover
 Stripe / payment live = NOT CLAIMED
 Fake production cutover = NOT CLAIMED
 D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
@@ -41,7 +42,7 @@ Wave A–I / Phase 49 / Phase 50 SoR reopen = NOT AUTHORIZED
 | [TEST_PLAN.md](./TEST_PLAN.md) | How to run packaged checks |
 | [TEST_RESULTS.md](./TEST_RESULTS.md) | Local proofs |
 | [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) | Accepted / deferred gaps |
-| [PHASE_51_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./PHASE_51_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | Checklist — PA **PENDING EXTERNAL** |
+| [PHASE_51_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./PHASE_51_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | Checklist — PA **ACCEPTED** by CTO @ `67a6391` |
 
 ## Package index (slice folders)
 

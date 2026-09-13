@@ -1,6 +1,6 @@
 # Phase 51 — Known Limitations
 
-- **Phase 51 PA** = **PENDING EXTERNAL** until CTO decides (not self-granted).
+- **Phase 51 PA** = **ACCEPTED** by CTO @ evidence tip `67a6391` (not self-granted).
 - **D5** AppointmentForm clinical-catalog picker = **DEFERRED (CTO)** — not required for Phase 51 exit if documented; not implemented.
 - **Beauty / beauty-workspace / encounters-detail** and full **`#scheduling-region`** `color-contrast` = **DEFERRED** (Phase 50 D4 carry-forward).
 - **DashboardWidgets** patient primary name = **DEFERRED** (DTO `patientId` only).

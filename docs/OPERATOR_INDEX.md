@@ -91,16 +91,16 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 | L7 Review / PA precheck | [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
 
 ```text
-Phase 51 Production Acceptance = PENDING EXTERNAL (CTO decides)
-L7 packaging = delivered (PA not self-granted)
+Phase 51 Production Acceptance = ACCEPTED (CTO @ 67a6391)
+L7 packaging = delivered (PA CTO-granted; not self-grant)
 Stripe / payment live = NOT CLAIMED
 Go-live checklist ≠ executed cutover evidence
 Paging / SOC SaaS / D-17 / PITR = EXTERNAL
 ToS / privacy policy in docs/ = MISSING (honest)
 D5 AppointmentForm catalog picker = DEFERRED
 Documented deferred items do NOT block Phase 51 PA
-Green launch smoke ≠ Phase 51 PA
-PR = wait for CTO authorize
+Green launch smoke ≠ payment live ≠ cutover
+PR merge = wait for CTO authorize
 ```
 
 ---

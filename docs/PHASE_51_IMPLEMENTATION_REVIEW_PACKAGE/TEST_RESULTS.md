@@ -17,6 +17,6 @@ Overall Phase 51 packaging proofs = PASS (docs + L6 thin smoke)
 Payment live = NOT CLAIMED
 Fake cutover = NOT CLAIMED
 D5 picker implemented = NO (DEFERRED)
-Phase 51 PA = PENDING EXTERNAL
+Phase 51 PA = ACCEPTED (CTO @ 67a6391)
 self-granted Phase 51 PA = NO
 ```
