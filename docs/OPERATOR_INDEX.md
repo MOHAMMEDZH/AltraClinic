@@ -27,6 +27,7 @@
 | Pilot DB roles template (C1) | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
 | Pilot staging-or-local migrate proof (C2) | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 | Pilot Neon migrate proof (C2b) | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
+| Pilot backup/restore drill (C3) | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
 
 ---
 
@@ -117,12 +118,14 @@ PR merge = wait for CTO authorize
 | C1 DB roles template | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
 | C2 Staging-or-local migrate proof | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
 | C2b Neon migrate proof | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
+| C3 Backup/restore drill | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
 
 ```text
 Pilot cutover executed = NO
 Program PA = PENDING
-C2 = PARTIAL (local); C2b = PASS (Neon neondb; branch label ≠ product prod)
-C3+ = NOT STARTED
+C2 = PARTIAL (local); C2b = PASS (Neon); C3 = PARTIAL (schema drill; full-data needs owner dump role)
+C4+ = NOT STARTED
+Offsite / PITR = EXTERNAL
 Phase 52 = NOT AUTHORIZED
 ```
 
