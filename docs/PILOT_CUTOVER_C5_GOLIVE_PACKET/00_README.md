@@ -5,7 +5,7 @@
 | **Program** | Pilot Production Cutover (P0) — NOT Phase 52 |
 | **Branch** | `cursor/pilot-production-cutover-kickoff` |
 | **C4 tip** | `5c5698e` |
-| **C5 tip** | *(this packaging tip)* |
+| **C5 tip** | `e58995d` |
 | **Program PA** | **PENDING EXTERNAL** (CTO decides — not self-granted) |
 
 ```text

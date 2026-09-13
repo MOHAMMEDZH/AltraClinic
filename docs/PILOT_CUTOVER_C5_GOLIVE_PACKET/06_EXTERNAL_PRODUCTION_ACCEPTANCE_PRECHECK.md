@@ -5,7 +5,7 @@
 | **Branch** | `cursor/pilot-production-cutover-kickoff` |
 | **Base merge** | `64eb2a9` (Phase 51 PR #7) |
 | **Evidence tip (PA)** | ________ (**PENDING EXTERNAL** — CTO fills) |
-| **Slice tips** | C0 `2d1158d` · C1 `54d9983` · C2 `224229e` · C2b `b7bbf3a` · C3 `1b8b56e` · C4 `5c5698e` · C5 *(this tip)* |
+| **Slice tips** | C0 `2d1158d` · C1 `54d9983` · C2 `224229e` · C2b `b7bbf3a` · C3 `1b8b56e` · C4 `5c5698e` · C5 `e58995d` |
 | **Go-live packet** | `docs/PILOT_CUTOVER_C5_GOLIVE_PACKET/` |
 
 Statuses below are packaging honesty — **not** a self-granted PA.
@@ -44,7 +44,7 @@ C2 = 224229e
 C2b = b7bbf3a (Neon PASS)
 C3 = 1b8b56e (PARTIAL schema)
 C4 = 5c5698e (PARTIAL dry-run)
-C5 = ________ (this packaging tip)
+C5 = e58995d
 STOP S1 full-data backup (owner) = ________
 STOP S2 API /health on pilot host = ________
 STOP S3 D-17 topology recorded = ________
