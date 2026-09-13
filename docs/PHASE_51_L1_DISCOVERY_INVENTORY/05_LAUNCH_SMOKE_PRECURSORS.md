@@ -20,15 +20,15 @@
 | Phase 49 observability wrapper | `test:phase49-observability-readiness` | **PASS-local** |
 | Phase 49 tenant isolation wrapper | `test:phase49-tenant-isolation-check` | **PASS-local** |
 | Phase 49 K3 restore drill helper | `apps/api/scripts/phase49-k3-restore-drill.ps1` | **PARTIAL** |
-| Phase 51 launch smoke evidence format | — | **MISSING** |
+| Phase 51 launch smoke evidence format | `docs/PHASE_51_L6_LAUNCH_SMOKE/` | **PASS-local** (docs + thin local run; evidence uncommitted) |
 
 ---
 
-## Gaps (for L6)
+## Gaps (for L6) — addressed by L6 package
 
-1. Baselines exist; **Phase 51 go-live evidence format** (what to capture, where to cite) is MISSING.  
-2. Do not invent a new GH Checks brand — map launch smoke onto existing Wave I / Step 28–29 / Progressive / Inventory.  
-3. Manual pack-matrix workflow remains optional — not a required PR gate invention.
+1. Evidence format + thin map → **`PHASE_51_L6_LAUNCH_SMOKE/`**.  
+2. Reuses K4/K6 wrappers + optional alias `test:phase51-launch-smoke` — no new GH Checks.  
+3. Local evidence: `apps/api/.ci-evidence/phase51-l6-<shortsha>/` (uncommitted).
 
 ## Explicit OUT for L1
 
