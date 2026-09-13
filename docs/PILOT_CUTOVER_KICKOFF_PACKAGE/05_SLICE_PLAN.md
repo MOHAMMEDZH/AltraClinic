@@ -10,13 +10,14 @@ CTO authorizes slices in order. **C0 does not start C1.**
 | **C2b** | Neon staging/pilot migrate → RLS → isolation | **PASS** @ [`PILOT_CUTOVER_C2B_NEON/`](../PILOT_CUTOVER_C2B_NEON/) — Neon `neondb` (Frankfurt); branch label ≠ product prod |
 | **C3** | Backup / restore on clone (K3 SoR) | **PARTIAL** @ [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](../PILOT_CUTOVER_C3_BACKUP_RESTORE/) — schema drill PASS; full-data blocked by FORCE RLS w/o owner dump role; offsite/PITR EXTERNAL |
 | **C4** | K5 dry-run **execution** evidence | **PARTIAL** @ [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](../PILOT_CUTOVER_C4_K5_DRY_RUN/) — migrate status + obs readiness + rollback rehearsal; health/CD SKIP; no fake cutover |
-| **C5** | Pilot go-live packet | Ties gates + evidence; program PA still CTO-external |
+| **C5** | Pilot go-live packet | **PASS** (docs) @ [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](../PILOT_CUTOVER_C5_GOLIVE_PACKET/) — PA **PENDING EXTERNAL**; STOP S1–S4 open |
 
 ```text
-C0–C4 delivered (C2/C3/C4 PARTIAL honesty; C2b Neon PASS)
-C4 alone ≠ C5 authorize
+C0–C5 packaging delivered (C2/C3/C4 PARTIAL; C2b PASS; C5 packet PASS docs)
+Program PA = PENDING EXTERNAL (CTO)
+STOP S1–S4 remain open before real tenant pilot
 Neon branch label "production" ≠ product production cutover
 Offsite / PITR = EXTERNAL
 Green docs ≠ cutover executed
-Program PA = PENDING until CTO after authorized exit slice
+PR = wait for CTO authorize
 ```

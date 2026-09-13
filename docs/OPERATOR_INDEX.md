@@ -29,6 +29,7 @@
 | Pilot Neon migrate proof (C2b) | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
 | Pilot backup/restore drill (C3) | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
 | Pilot K5 dry-run evidence (C4) | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
+| Pilot go-live packet (C5) | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
 
 ---
 
@@ -121,14 +122,16 @@ PR merge = wait for CTO authorize
 | C2b Neon migrate proof | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
 | C3 Backup/restore drill | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
 | C4 K5 dry-run evidence | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
+| C5 Go-live packet | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
 
 ```text
 Pilot cutover executed = NO
-Program PA = PENDING
-C2/C3/C4 = PARTIAL (honest gaps); C2b = PASS (Neon)
-C5 = NOT STARTED
+Program PA = PENDING EXTERNAL (CTO decides)
+C2b = PASS (Neon); C2/C3/C4 = PARTIAL; C5 = packet delivered
+STOP S1–S4 open before real tenant pilot
 Offsite / PITR / D-17 CD = EXTERNAL
 Phase 52 = NOT AUTHORIZED
+PR = wait for CTO authorize
 ```
 
 ---
