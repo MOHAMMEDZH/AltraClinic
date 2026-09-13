@@ -37,9 +37,9 @@
 
 ## Boot note (operator)
 
-Default Nest `onModuleInit` **AnalyticsDemoSeedService** attempts demo `analytics_reports` upserts **without** tenant GUC and **fails under FORCE RLS** on Neon runtime-app (Prisma `42501`). For this S2 proof only, boot used an **out-of-repo** temp wrapper that no-ops that seed (no product commit). Prisma still logged **Prisma connected** as runtime role before health served.
+S2 proof initially used an **out-of-repo** no-op of **AnalyticsDemoSeedService** because demo upserts without tenant GUC hit FORCE RLS (`42501`) on Neon runtime-app.
 
-Follow-up (not this STOP): gate demo seed behind explicit opt-in so plain `npm run dev`/`start` is safe against pilot Neon.
+**In-repo follow-up (this PR):** `AnalyticsDemoSeedService` fail-softs on RLS/permission denied (warn + skip; boot continues). Plain Nest boot against pilot runtime no longer requires out-of-repo hacks.
 
 ## Explicit
 

@@ -2,7 +2,6 @@ import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import {
   AnalyticsReport,
   ReportFormat,
-  ReportStatus,
 } from '../../domain/entities/analytics-report.entity';
 import { AnalyticsReportRepository } from '../../domain/repositories/analytics-report.repository.interface';
 import { ANALYTICS_REPORT_REPOSITORY } from '../../../../infrastructure/provider.tokens';
@@ -26,6 +25,21 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    try {
+      await this.seedDemoReports();
+    } catch (err) {
+      // Pilot / FORCE RLS / NOBYPASSRLS runtime: demo upserts without tenant GUC must not abort Nest boot.
+      if (isRlsOrPermissionDenied(err)) {
+        this.logger.warn(
+          'Skipping analytics demo seed (RLS/permission denied under current DB role). Boot continues.',
+        );
+        return;
+      }
+      throw err;
+    }
+  }
+
+  private async seedDemoReports(): Promise<void> {
     const seeds = [
       {
         name: 'Monthly revenue summary',
@@ -82,4 +96,13 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
       this.logger.log(`Seeded ${created} demo analytics reports with files`);
     }
   }
+}
+
+function isRlsOrPermissionDenied(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return (
+    /row-level security/i.test(msg) ||
+    /\b42501\b/.test(msg) ||
+    /permission denied/i.test(msg)
+  );
 }
