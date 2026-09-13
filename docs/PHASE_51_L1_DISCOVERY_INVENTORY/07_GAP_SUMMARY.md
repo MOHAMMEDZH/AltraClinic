@@ -26,7 +26,7 @@
 | 2 | No tenant go-live checklist (provision → license → smoke → handoff) linked from OPERATOR_INDEX | **PASS-local** @ L3 `PHASE_51_L3_GOLIVE_CHECKLIST/` (≠ executed cutover) | **L3** (done docs) |
 | 3 | No Phase 51 launch-day support/ops handoff pointer (K7 exists; launch-specific package does not) | **PASS-local** @ L4 `PHASE_51_L4_SUPPORT_OPS_HANDOFF/` | **L4** (done docs) |
 | 4 | No unified in-product vs external legal/commercial boundary register (ToS/privacy/payment rails) | **PASS-local** @ L5 register (ToS/privacy still **MISSING**; Stripe **PARTIAL**) | **L5** (done docs) |
-| 5 | No Phase 51 launch smoke / go-live evidence format (baselines exist) | **MISSING** | **L6** |
+| 5 | No Phase 51 launch smoke / go-live evidence format (baselines exist) | **PASS-local** @ L6 `PHASE_51_L6_LAUNCH_SMOKE/` (+ local thin run evidence uncommitted) | **L6** (done docs) |
 | 6 | No Phase 51 deferred-items register package + review/PA precheck | **MISSING** | **L7** |
 | 7 | Payment/Stripe path still future/partial — must not be claimed complete | **PARTIAL** | L2/L5 notes |
 | 8 | D5 AppointmentForm catalog picker remains **DEFERRED** | **DEFERRED** | L7 register (not L2–L6) |

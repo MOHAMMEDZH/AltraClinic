@@ -21,6 +21,7 @@
 | Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 | Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
 | Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
+| Launch smoke evidence format | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
 
 ---
 
@@ -84,14 +85,16 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 | L3 Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 | L4 Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
 | L5 Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
+| L6 Launch smoke evidence | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
 
 ```text
 Phase 51 Production Acceptance = PENDING
-L6–L7 = NOT STARTED
+L7 = NOT STARTED
 Stripe / payment live = NOT CLAIMED
 Go-live checklist ≠ executed cutover evidence
 Paging / SOC SaaS = EXTERNAL
 ToS / privacy policy in docs/ = MISSING (honest)
+Green launch smoke ≠ Phase 51 PA
 ```
 
 ---

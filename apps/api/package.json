@@ -118,7 +118,8 @@
     "test:phase48-onepass": "node scripts/run-phase48-onepass.mjs",
     "test:phase48-onepass:with-e2e": "node scripts/run-phase48-onepass.mjs --with-e2e",
     "test:phase49-observability-readiness": "jest --config jest.config.cjs --runInBand --testPathPattern \"observability-foundation.spec|tracing-and-health.spec|dashboards-and-alerting.spec\"",
-    "test:phase49-tenant-isolation-check": "node scripts/run-phase49-tenant-isolation-check.mjs"
+    "test:phase49-tenant-isolation-check": "node scripts/run-phase49-tenant-isolation-check.mjs",
+    "test:phase51-launch-smoke": "npm run test:phase49-observability-readiness && npm run test:phase49-tenant-isolation-check"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

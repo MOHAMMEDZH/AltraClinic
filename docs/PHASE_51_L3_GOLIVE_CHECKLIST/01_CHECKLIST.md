@@ -52,23 +52,22 @@ K5 dry-run remains **PARTIAL** without real prod cutover — see K5 `05_DRY_RUN_
 
 ---
 
-## 4. Smoke (list only — run / evidence in L6)
+## 4. Smoke (evidence format + thin run — L6)
 
-When L6 is authorized, capture evidence per L6 format. **Here = what to run, not that it passed.**
+Capture evidence per [`PHASE_51_L6_LAUNCH_SMOKE/`](../PHASE_51_L6_LAUNCH_SMOKE/). Local thin map: observability + tenant-isolation wrappers. Complementary: Clinic Progressive + Inventory CI.
 
-| # | Precursor (list) | Pointer |
-|---|------------------|---------|
-| 4.1 | Wave I packs / onepass (optional/heavy) | [`PHASE_51_L1_DISCOVERY_INVENTORY/05_LAUNCH_SMOKE_PRECURSORS.md`](../PHASE_51_L1_DISCOVERY_INVENTORY/05_LAUNCH_SMOKE_PRECURSORS.md) · `test:phase48-onepass` |
-| 4.2 | Step 28 / Step 29 final onepass (as required by release gate) | `test:step28-security-final-onepass` · `test:step29-release-final-onepass` · Step 29 doc |
-| 4.3 | Clinic Progressive Inventory + Inventory E2E (path-filtered CI) | `.github/workflows/clinic-dashboard-ci.yml` |
-| 4.4 | Licensing matrix / subscription licensing (if commercial path touched) | `e2e/licensing-matrix.spec.ts` · Phase 28 licensing CI |
-| 4.5 | K6 tenant isolation check (when test Postgres available) | `test:phase49-tenant-isolation-check` |
+| # | Precursor | Pointer |
+|---|-----------|---------|
+| 4.1 | Thin local smoke (K4 + K6 wrappers) | [`PHASE_51_L6_LAUNCH_SMOKE/02_SMOKE_MAP.md`](../PHASE_51_L6_LAUNCH_SMOKE/02_SMOKE_MAP.md) · `npm run test:phase51-launch-smoke` |
+| 4.2 | Wave I packs / onepass (optional/heavy) | L1 `05_LAUNCH_SMOKE_PRECURSORS.md` · `test:phase48-onepass` |
+| 4.3 | Step 28 / Step 29 final onepass (optional) | `test:step28-security-final-onepass` · `test:step29-release-final-onepass` |
+| 4.4 | Clinic Progressive Inventory + Inventory E2E | `.github/workflows/clinic-dashboard-ci.yml` |
+| 4.5 | Licensing matrix (if commercial path touched) | `e2e/licensing-matrix.spec.ts` · Phase 28 licensing CI |
 
 ```text
-L3 does not claim smoke green.
-L6 owns evidence format + authorized run record.
+Green smoke ≠ Phase 51 PA / payment live / fake cutover.
+Evidence: apps/api/.ci-evidence/phase51-l6-<shortsha>/ (uncommitted).
 ```
-
 ---
 
 ## 5. Handoff (launch-day support/ops)
