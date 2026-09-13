@@ -32,8 +32,8 @@
 ## Authority model
 
 ```text
-CTO slice authorize L0→L7 packaging = YES (as accepted through L6; L7 this slice)
-Phase 51 PA = PENDING EXTERNAL (CTO decides; not self-grant)
+CTO slice authorize L0→L7 packaging = YES (as accepted through L7)
+Phase 51 PA = ACCEPTED (CTO @ 67a6391; not self-grant)
 Kickoff alone ≠ PA
 D5 picker = DEFERRED (CTO) — not started
 Wave A–I / Phase 49 / Phase 50 SoR reopen = NOT AUTHORIZED
