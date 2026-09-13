@@ -15,11 +15,26 @@ import {
 import { hasPermission } from '@booking/permissions';
 import { useI18n } from '@booking/i18n/react';
 import { formatMessage } from '@/i18n/messages';
+import { NamedIdentityDisplay } from '@/components/NamedIdentityDisplay';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { AuthAlert } from '@/features/auth/components/AuthAlert';
 import { AuthButton } from '@/features/auth/components/AuthButton';
-import { canViewInventory, formatCurrency, movementTypeLabelKey, canExportInventory } from './config/inventory-config';
-import { useInventoryAnalytics, useExportInventoryAnalytics, useInventoryUsageOwnerReport } from './hooks/useInventory';
+import { canViewUsers, buildIdentityPermCheck } from '@/features/user-management/config/user-management-config';
+import { useUsers } from '@/features/user-management/hooks/useUserManagement';
+import {
+  canViewInventory,
+  formatCurrency,
+  itemDisplayName,
+  movementTypeLabelKey,
+  canExportInventory,
+} from './config/inventory-config';
+import {
+  useInventoryAnalytics,
+  useExportInventoryAnalytics,
+  useInventoryUsageOwnerReport,
+  useInventoryItems,
+} from './hooks/useInventory';
+import { staffOptionLabel } from './utils/accountable-staff-options';
 import { downloadInventoryBlob } from './utils/inventory-export';
 import styles from './InventoryReportsPage.module.css';
 
@@ -34,10 +49,43 @@ export function InventoryReportsPage() {
   const [days, setDays] = useState<(typeof PERIOD_OPTIONS)[number]>(30);
   const canView = canViewInventory(perm);
   const canExport = canExportInventory(perm);
+  const canListStaff = canViewUsers(buildIdentityPermCheck(roles));
   const analyticsQuery = useInventoryAnalytics(days, canView);
   const ownerReportQuery = useInventoryUsageOwnerReport(days, canExport);
+  const staffDirectoryQuery = useUsers({ status: 'active', limit: 200 }, canExport && canListStaff);
+  const itemsCatalogQuery = useInventoryItems({
+    page: 1,
+    pageSize: 200,
+    enabled: canExport,
+  });
   const exportMutation = useExportInventoryAnalytics();
   const data = analyticsQuery.data;
+
+  const staffNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    if (user?.userId) {
+      const selfLabel = staffOptionLabel({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      });
+      if (selfLabel) map.set(user.userId, selfLabel);
+    }
+    for (const u of staffDirectoryQuery.data?.items ?? []) {
+      const label = staffOptionLabel(u);
+      if (u.id && label) map.set(u.id, label);
+    }
+    return map;
+  }, [staffDirectoryQuery.data?.items, user?.email, user?.firstName, user?.lastName, user?.userId]);
+
+  const itemNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of itemsCatalogQuery.data?.items ?? []) {
+      const label = itemDisplayName(item, locale);
+      if (item.itemId && label) map.set(item.itemId, label);
+    }
+    return map;
+  }, [itemsCatalogQuery.data?.items, locale]);
 
   const consumptionChart = useMemo(
     () =>
@@ -395,8 +443,26 @@ export function InventoryReportsPage() {
                             }).format(new Date(row.occurredAt))}
                           </td>
                           <td>{row.usageType}</td>
-                          <td>{row.inventoryItemId.slice(0, 8)}…</td>
-                          <td>{row.usedByUserId ? `${row.usedByUserId.slice(0, 8)}…` : '—'}</td>
+                          <td>
+                            <NamedIdentityDisplay
+                              id={row.inventoryItemId}
+                              name={itemNameById.get(row.inventoryItemId)}
+                              fieldLabel={t('inventory.reports.itemId')}
+                              idClassName={styles.idCell}
+                            />
+                          </td>
+                          <td>
+                            {row.usedByUserId ? (
+                              <NamedIdentityDisplay
+                                id={row.usedByUserId}
+                                name={staffNameById.get(row.usedByUserId)}
+                                fieldLabel={t('inventory.reports.usedBy')}
+                                idClassName={styles.idCell}
+                              />
+                            ) : (
+                              '—'
+                            )}
+                          </td>
                           <td>
                             {row.signedQuantity} {row.unit}
                           </td>

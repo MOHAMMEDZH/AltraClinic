@@ -1,6 +1,6 @@
 # K1 — Gap Summary (ranked → K2–K7 inputs)
 
-**Lineage:** `9eac595+` · Inventory only · **Phase 49 PA = PENDING** (not granted)
+**Lineage:** `9eac595+` · Inventory only · **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`)
 
 ---
 

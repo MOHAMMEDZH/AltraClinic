@@ -1,6 +1,7 @@
 # Operations Console Runbooks (Flexible Step 22)
 
-Authority: `docs/OPERATIONS_CONSOLE.md`. Aggregation only — never invent engines.
+Authority: `docs/OPERATIONS_CONSOLE.md`. Aggregation only — never invent engines.  
+**Operator hub:** `docs/OPERATOR_INDEX.md`. Deploy/rollback: `docs/PHASE_49_K5_DEPLOY_ROLLBACK/`. Incidents: `docs/PHASE_49_K7_INCIDENT_BASICS/` · `docs/SECURITY_RUNBOOKS.md`.
 
 **Status:** Accepted and complete (2026-08-10). Case C one-pass green on frozen `booking_test`. Step 23 unauthorized.
 

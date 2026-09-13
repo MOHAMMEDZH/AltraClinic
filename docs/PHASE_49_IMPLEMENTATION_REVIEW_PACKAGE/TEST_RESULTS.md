@@ -16,5 +16,5 @@ Statuses reflect slice evidence as packaged on this branch. Uncommitted paths ar
 ```text
 Overall Phase 49 packaging proofs = PASS where DB available
 Production cutover executed = NO
-Phase 49 PA = PENDING EXTERNAL
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 ```

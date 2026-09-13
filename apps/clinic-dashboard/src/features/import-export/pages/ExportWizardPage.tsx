@@ -39,7 +39,10 @@ export function ExportsPage() {
         ) : null}
       </div>
       {(jobs.data ?? []).length === 0 ? (
-        <EmptyState title="No export jobs" />
+        <EmptyState
+          title="No export jobs"
+          detail="Start a new export wizard to create work, or check Jobs if filters hide existing exports."
+        />
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>

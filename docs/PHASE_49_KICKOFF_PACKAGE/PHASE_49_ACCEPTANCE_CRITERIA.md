@@ -78,23 +78,26 @@ Kickoff checklist for **future** Phase 49 Production Acceptance.
 
 ---
 
-## 4. Exit sign-off block (for later CTO use)
+## 4. Exit sign-off block (CTO — filled)
 
 ```text
-PHASE 49 PRODUCTION ACCEPTANCE = ________ (PENDING / ACCEPTED)
-Evidence SHA = ________
-Secrets/config hygiene = ________
-Backup/restore posture = ________
-Observability/alerting readiness = ________
-Deploy/rollback runbooks = ________
-Tenant isolation production checks = ________
-Incident basics = ________
-Step 28/29 (+ baselines) remain green = ________
-Phase 50 polish dump / Phase 51 launch = NOT REQUIRED
+PHASE 49 PRODUCTION ACCEPTANCE = ACCEPTED
+Evidence tip = 5bfda08
+Merge = 1501190
+Authority = CTO-granted (not self-grant)
+Secrets/config hygiene = PASS
+Backup/restore posture = PASS (schema drill); full booking_test restore = PARTIAL (fixture debt)
+Observability/alerting readiness = PASS in-repo; EXTERNAL paging not claimed
+Deploy/rollback runbooks = PASS; prod cutover = NOT EXECUTED in packaging
+Tenant isolation production checks = PASS
+Incident basics = PASS
+Step 28/29 (+ baselines) remain green = PASS (lineage)
+Phase 50 polish dump / Phase 51 launch = NOT REQUIRED for Phase 49 PA
 Wave A–I SoR reopen = NOT REQUIRED
+Operator hub (Phase 50 D2) = docs/OPERATOR_INDEX.md
 ```
 
 ```text
 self-granted Phase 49 PA = NO
-Phase 49 Production Acceptance = PENDING
+Phase 49 Production Acceptance = ACCEPTED (CTO)
 ```

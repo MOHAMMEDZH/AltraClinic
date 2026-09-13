@@ -5,13 +5,15 @@
 | **Release** | 47 — Flexible Healthcare Super Admin MVP |
 | **Step** | 28 — Security Hardening and Compliance Review |
 | **Status** | Accepted / Complete with Step 28; Step 29 handover: `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
-| **Related** | `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md`, `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` |
+| **Related** | `docs/SECURITY_HARDENING_AND_COMPLIANCE_REVIEW.md`, `docs/RELEASE_47_STEP29_RELEASE_READINESS.md`, `docs/PHASE_49_K7_INCIDENT_BASICS/`, `docs/OPERATOR_INDEX.md` |
 
 **Rules:** Never paste real secrets, tokens, MFA seeds, connection strings, or PHI into tickets, chat, or this document. Use redaction and secret-manager references only.
 
 **Ownership default:** Platform Security on-call → escalate to Platform Engineering lead → Release Manager for release-blocking decisions.
 
 **Step 29 cutover ownership:** Accountable operational roles for backup/restore, deploy topology/edge CSP, monitoring/on-call, rollback authorization, and production access are defined in `docs/RELEASE_47_STEP29_RELEASE_READINESS.md` §§7–14. Step 29 acceptance does **not** authorize production cutover; unmet cutover gates **block** production deployment.
+
+**Phase 49 incident basics (SEV / first 15):** `docs/PHASE_49_K7_INCIDENT_BASICS/00_README.md` — thin wrap; this document remains class-playbook SSOT. Deploy/rollback: `docs/PHASE_49_K5_DEPLOY_ROLLBACK/`. Cross-tenant production-check packaging: `docs/PHASE_49_K6_TENANT_ISOLATION/`.
 
 ---
 

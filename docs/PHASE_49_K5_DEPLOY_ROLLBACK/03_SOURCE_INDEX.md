@@ -10,10 +10,11 @@ Pointers only — authoritative detail remains in linked docs.
 | Security runbooks | `docs/SECURITY_RUNBOOKS.md` | Incident escalation; Release Manager; CSP §11 |
 | Operations console runbooks | `docs/OPERATIONS_CONSOLE_RUNBOOKS.md` | Ops console day-2 (not deploy engine) |
 | Patient portal ops + rollback | `docs/PATIENT_PORTAL_OPS_RUNBOOKS.md` | Portal-scoped deploy/rollback notes |
-| Disaster recovery | `docs/DISASTER_RECOVERY.md` | Restore path / RTO-RPO ops ownership |
+| Disaster recovery | `docs/DISASTER_RECOVERY.md` | Strategy + **day-2 pointer** to K3 cutover SoR; offsite/PITR EXTERNAL |
 | Phase 49 K3 backup/restore | `docs/PHASE_49_K3_BACKUP_RESTORE/` | Cutover backup SoR + drill posture |
 | Phase 49 K4 observability | `docs/PHASE_49_K4_OBSERVABILITY_ALERTING/` | Health/metrics surfaces for post-deploy verify |
-| Phase 49 K1 deploy inventory | `docs/PHASE_49_K1_DISCOVERY_INVENTORY/04_DEPLOY_ROLLBACK_INVENTORY.md` | Gap that K5 closes (unified SSOT) |
+| Phase 49 K1 deploy inventory | `docs/PHASE_49_K1_DISCOVERY_INVENTORY/04_DEPLOY_ROLLBACK_INVENTORY.md` | Gap that K5 closed (unified SSOT) |
+| Operator day-2 hub | `docs/OPERATOR_INDEX.md` | Phase 50 D2 front door |
 | Phase 47 D-17 | `docs/PHASE_47_EXECUTION_PLAN.md` (D-17) | Deploy topology deferred to Step 29 / external |
 | CI workflows | `.github/workflows/*` | **Regression / merge readiness — not CD** |
 

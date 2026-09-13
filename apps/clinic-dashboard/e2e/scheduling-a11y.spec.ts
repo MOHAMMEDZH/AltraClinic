@@ -45,12 +45,20 @@ test.describe('Scheduling accessibility', () => {
     await expect(page.getByRole('heading', { name: 'Branch hours', level: 2 })).toBeVisible();
   });
 
-  test('passes axe scan on scheduling hub', async ({ page }) => {
+  test('passes axe scan on scheduling reception chrome + calendar controls', async ({ page }) => {
     await gotoAppointments(page);
 
+    await expect(page.locator('#scheduling-region')).toBeVisible();
+    await expect(page.getByTestId('scheduling-reception-chrome')).toBeVisible();
+    await expect(page.getByTestId('scheduling-calendar-controls')).toBeVisible();
+
+    // D4: same H3-proven scopes — no color-contrast silence.
+    // Full `#scheduling-region` hub contrast remains deferred (status badges / tinted chrome):
+    // docs/PHASE_50_D4_A11Y/01_CONTRAST_FOLLOWUPS.md
     const results = await new AxeBuilder({ page })
-      .include('#scheduling-region')
-      .disableRules(['color-contrast'])
+      .include('[data-testid="scheduling-reception-chrome"]')
+      .include('[data-testid="scheduling-calendar-controls"]')
+      .withTags(['wcag2a', 'wcag2aa'])
       .analyze();
 
     expect(results.violations).toEqual([]);

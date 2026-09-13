@@ -16,5 +16,5 @@
 ```text
 dry-run overall = PARTIAL
 production cutover claimed = NO
-Phase 49 PA = PENDING
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 ```

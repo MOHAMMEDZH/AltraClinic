@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K5 — Unified thin Deploy + Rollback runbooks |
-| **Status** | Docs packaging on existing surfaces; **Phase 49 PA = PENDING** |
+| **Status** | Docs packaging on existing surfaces; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K4 tip** | `614b733` |
@@ -23,7 +23,7 @@
 ## Claims
 
 ```text
-Phase 49 PA = PENDING
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 Topology (D-17) = EXTERNAL — no in-repo k8s/Docker prod platform
 CI = regression / merge readiness — NOT CD
 K6–K7 = NOT AUTHORIZED

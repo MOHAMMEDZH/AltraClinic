@@ -72,11 +72,11 @@ test.describe('AI workspace accessibility', () => {
     await page.goto('/ai');
     await expect(page.getByRole('heading', { name: /AI|الذكاء/i })).toBeVisible({ timeout: 15_000 });
 
+    // D4: locked workspace cards already use AA text tokens (ai-enterprise.module.css);
+    // do not silence color-contrast. If CI regresses, fix CSS — do not re-add disableRules.
     const results = await new AxeBuilder({ page })
       .include('#ai-region')
       .withTags(['wcag2a', 'wcag2aa'])
-      // Locked workspace cards use muted text; same policy as beauty/scheduling a11y.
-      .disableRules(['color-contrast'])
       .analyze();
 
     expect(results.violations).toEqual([]);

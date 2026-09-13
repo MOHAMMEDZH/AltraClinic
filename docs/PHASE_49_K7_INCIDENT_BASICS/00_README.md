@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K7 — Incident basics |
-| **Status** | Thin packaging; **Phase 49 PA = PENDING EXTERNAL** |
+| **Status** | Thin packaging; **Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)** |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **K6 tip** | `6164d05` |
 | **K7 tip** | `72aeb9a` |
@@ -88,7 +88,9 @@ Do **not** invent IR/SOC product or require commercial APM/SIEM in-repo for Phas
 - Review / PA precheck: `docs/PHASE_49_IMPLEMENTATION_REVIEW_PACKAGE/`
 
 ```text
-Phase 49 PA = PENDING EXTERNAL
-self-granted Phase 49 PA = NO
-Phase 50 / Phase 51 = NOT AUTHORIZED
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
+self-granted Phase 49 PA = NO (CTO-granted)
+Operator hub = docs/OPERATOR_INDEX.md
+Phase 50 Docs/UX Polish = in progress (D5 picker DEFERRED)
+Phase 51 = NOT AUTHORIZED
 ```

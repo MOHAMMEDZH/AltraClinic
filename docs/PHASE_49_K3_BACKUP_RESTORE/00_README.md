@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Slice** | K3 — Backup/restore posture |
-| **Status** | Docs + thin restore drill; **Phase 49 PA = PENDING** |
+| **Status** | Docs + thin restore drill; **Phase 49 PA = ACCEPTED** (CTO @ `5bfda08`; merge `1501190`) |
 | **Branch** | `cursor/phase49-production-hardening-kickoff` |
 | **Base lineage** | `9eac595` |
 | **K2 tip** | `521bdaf` |
@@ -30,7 +30,8 @@ apps/api/scripts/phase49-k3-restore-drill.ps1 — Windows/Docker disposable dril
 ```
 
 ```text
-Phase 49 PA = PENDING
+Phase 49 PA = ACCEPTED (CTO @ 5bfda08; merge 1501190)
 Backup Center flag-OFF product ≠ Phase 49 cutover SoR
-K4–K7 = NOT AUTHORIZED
+Day-2 DR pointer = docs/DISASTER_RECOVERY.md (cutover SoR remains this package)
+Operator hub = docs/OPERATOR_INDEX.md
 ```

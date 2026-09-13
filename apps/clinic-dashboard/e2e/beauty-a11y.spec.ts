@@ -20,6 +20,8 @@ test.describe('Beauty accessibility', () => {
     const results = await new AxeBuilder({ page })
       .include('#beauty-region')
       .withTags(['wcag2a', 'wcag2aa'])
+      // D4 DEFER: beauty dashboard contrast needs surface redesign — see
+      // docs/PHASE_50_D4_A11Y/01_CONTRAST_FOLLOWUPS.md (do not expand disableRules).
       .disableRules(['color-contrast'])
       .analyze();
 
