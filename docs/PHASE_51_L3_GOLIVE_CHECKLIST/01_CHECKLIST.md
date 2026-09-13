@@ -84,6 +84,6 @@ Evidence: apps/api/.ci-evidence/phase51-l6-<shortsha>/ (uncommitted).
 
 | # | Check |
 |---|--------|
-| 6.1 | Deferred items still deferred (D5 picker, etc.) — [`06_DEFERRED_REGISTER_SEED.md`](../PHASE_51_L1_DISCOVERY_INVENTORY/06_DEFERRED_REGISTER_SEED.md) |
+| 6.1 | Deferred items still deferred (D5 picker, etc.) — [`PHASE_51_DEFERRED_REGISTER/`](../PHASE_51_DEFERRED_REGISTER/) (seed: [`06_DEFERRED_REGISTER_SEED.md`](../PHASE_51_L1_DISCOVERY_INVENTORY/06_DEFERRED_REGISTER_SEED.md)) |
 | 6.2 | No claim of Phase 51 PA or 100% commercial complete |
 | 6.3 | If production cutover was **not** executed, record that honestly (K5 PARTIAL remains) |
