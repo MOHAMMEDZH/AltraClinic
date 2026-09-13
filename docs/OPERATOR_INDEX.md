@@ -23,6 +23,13 @@
 | Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 | Launch smoke evidence format | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
 | Deferred register / Phase 51 review | [`PHASE_51_DEFERRED_REGISTER/`](./PHASE_51_DEFERRED_REGISTER/) · [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
+| Pilot production cutover (kickoff) | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
+| Pilot DB roles template (C1) | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
+| Pilot staging-or-local migrate proof (C2) | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
+| Pilot Neon migrate proof (C2b) | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
+| Pilot backup/restore drill (C3) | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
+| Pilot K5 dry-run evidence (C4) | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
+| Pilot go-live packet (C5) | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
 
 ---
 
@@ -100,6 +107,31 @@ ToS / privacy policy in docs/ = MISSING (honest)
 D5 AppointmentForm catalog picker = DEFERRED
 Documented deferred items do NOT block Phase 51 PA
 Green launch smoke ≠ payment live ≠ cutover
+PR merge = wait for CTO authorize
+```
+
+---
+
+## Pilot Production Cutover (P0)
+
+| Package | Path |
+|---------|------|
+| C0 Kickoff | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
+| C1 DB roles template | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
+| C2 Staging-or-local migrate proof | [`PILOT_CUTOVER_C2_STAGING_MIGRATE/`](./PILOT_CUTOVER_C2_STAGING_MIGRATE/) |
+| C2b Neon migrate proof | [`PILOT_CUTOVER_C2B_NEON/`](./PILOT_CUTOVER_C2B_NEON/) |
+| C3 Backup/restore drill | [`PILOT_CUTOVER_C3_BACKUP_RESTORE/`](./PILOT_CUTOVER_C3_BACKUP_RESTORE/) |
+| C4 K5 dry-run evidence | [`PILOT_CUTOVER_C4_K5_DRY_RUN/`](./PILOT_CUTOVER_C4_K5_DRY_RUN/) |
+| C5 Go-live packet | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
+
+```text
+Packaging PA = ACCEPTED (CTO @ b2e1b40)
+STOP S1–S4 = OPEN (full-data backup, /health, D-17, secret rotation)
+Real tenant pilot = NOT AUTHORIZED
+C2b = PASS (Neon); C2/C3/C4 = PARTIAL; C5 = packet delivered
+Offsite / PITR / D-17 CD = EXTERNAL
+Neon pilot ≠ product production
+Phase 52 = NOT AUTHORIZED
 PR merge = wait for CTO authorize
 ```
 
