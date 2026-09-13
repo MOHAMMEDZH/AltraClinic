@@ -1,0 +1,73 @@
+-- =============================================================================
+-- PILOT CUTOVER C1 — CREATE PROD DB ROLES (TEMPLATE ONLY)
+-- =============================================================================
+-- SUBSTITUTE placeholders out-of-band. NEVER commit filled passwords or real hosts.
+-- Pattern analog (test only): docker/postgres-test-init/01-app-role.sql (booking_app)
+-- Model: docs/PILOT_CUTOVER_KICKOFF_PACKAGE/03_DB_CREDENTIAL_MODEL.md
+-- Migrate pointer: docs/PRODUCTION_MIGRATION_WORKFLOW.md (do not rewrite SoR)
+--
+-- Placeholders:
+--   {{DB_NAME}}
+--   {{MIGRATE_ROLE}}
+--   {{RUNTIME_ROLE}}
+--   {{PASSWORD_MIGRATE}}
+--   {{PASSWORD_RUNTIME}}
+--   {{APP_SCHEMA}}     -- typically public
+--
+-- Run as instance superuser / owner capable of CREATE ROLE.
+-- This file does NOT provision cloud Postgres and does NOT claim roles exist in prod.
+-- =============================================================================
+
+-- ----- migrate-admin: elevated for migrate / RLS / triggers window ONLY -------
+-- NOT the API default connection role.
+CREATE ROLE {{MIGRATE_ROLE}} LOGIN
+  PASSWORD '{{PASSWORD_MIGRATE}}'
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE {{DB_NAME}} TO {{MIGRATE_ROLE}};
+GRANT CREATE ON DATABASE {{DB_NAME}} TO {{MIGRATE_ROLE}};
+GRANT USAGE, CREATE ON SCHEMA {{APP_SCHEMA}} TO {{MIGRATE_ROLE}};
+
+-- DDL / policy apply during migrate window (least privilege short of superuser).
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA {{APP_SCHEMA}} TO {{MIGRATE_ROLE}};
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA {{APP_SCHEMA}} TO {{MIGRATE_ROLE}};
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA {{APP_SCHEMA}} TO {{MIGRATE_ROLE}};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{APP_SCHEMA}}
+  GRANT ALL PRIVILEGES ON TABLES TO {{MIGRATE_ROLE}};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{APP_SCHEMA}}
+  GRANT ALL PRIVILEGES ON SEQUENCES TO {{MIGRATE_ROLE}};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{APP_SCHEMA}}
+  GRANT ALL PRIVILEGES ON FUNCTIONS TO {{MIGRATE_ROLE}};
+
+-- ----- runtime-app: API DATABASE_URL role — MUST remain NOBYPASSRLS ------------
+CREATE ROLE {{RUNTIME_ROLE}} LOGIN
+  PASSWORD '{{PASSWORD_RUNTIME}}'
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE {{DB_NAME}} TO {{RUNTIME_ROLE}};
+GRANT USAGE ON SCHEMA {{APP_SCHEMA}} TO {{RUNTIME_ROLE}};
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{APP_SCHEMA}} TO {{RUNTIME_ROLE}};
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {{APP_SCHEMA}} TO {{RUNTIME_ROLE}};
+
+ALTER DEFAULT PRIVILEGES FOR ROLE {{MIGRATE_ROLE}} IN SCHEMA {{APP_SCHEMA}}
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{RUNTIME_ROLE}};
+ALTER DEFAULT PRIVILEGES FOR ROLE {{MIGRATE_ROLE}} IN SCHEMA {{APP_SCHEMA}}
+  GRANT USAGE, SELECT ON SEQUENCES TO {{RUNTIME_ROLE}};
+
+-- Optional hardening after first migrate (run once objects exist; safe to re-run):
+-- REVOKE CREATE ON SCHEMA {{APP_SCHEMA}} FROM {{RUNTIME_ROLE}};
+-- REVOKE ALL ON DATABASE {{DB_NAME}} FROM PUBLIC;
+
+-- =============================================================================
+-- END TEMPLATE — verify with 03_VERIFY_QUERIES.sql (substitute role names)
+-- =============================================================================

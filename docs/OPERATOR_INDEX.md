@@ -24,6 +24,7 @@
 | Launch smoke evidence format | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
 | Deferred register / Phase 51 review | [`PHASE_51_DEFERRED_REGISTER/`](./PHASE_51_DEFERRED_REGISTER/) · [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
 | Pilot production cutover (kickoff) | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
+| Pilot DB roles template (C1) | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
 
 ---
 
@@ -111,11 +112,13 @@ PR merge = wait for CTO authorize
 | Package | Path |
 |---------|------|
 | C0 Kickoff | [`PILOT_CUTOVER_KICKOFF_PACKAGE/`](./PILOT_CUTOVER_KICKOFF_PACKAGE/) |
+| C1 DB roles template | [`PILOT_CUTOVER_C1_DB_ROLES/`](./PILOT_CUTOVER_C1_DB_ROLES/) |
 
 ```text
 Pilot cutover executed = NO
 Program PA = PENDING
-C0 = kickoff docs only (not C1+)
+C0–C1 = docs/templates only (roles not claimed in prod)
+C2+ = NOT STARTED
 Phase 52 = NOT AUTHORIZED
 ```
 

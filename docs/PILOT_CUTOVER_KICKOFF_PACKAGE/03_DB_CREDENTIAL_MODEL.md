@@ -9,8 +9,8 @@
 
 | Role class | Intended use | RLS posture | Exists in-repo today |
 |------------|--------------|-------------|----------------------|
-| **migrate-admin** (privileged) | `prisma migrate deploy`, schema/RLS apply jobs, fixture/admin maintenance | May hold elevated privileges for migrate window only; not API default | **No prod bootstrap script** — C1 delivers SQL template + runbook |
-| **runtime-app** (API) | Nest/Prisma application `DATABASE_URL` | **MUST** be `NOSUPERUSER` + **NOBYPASSRLS** (`rolbypassrls = false`) | Test analog: `booking_app` in `docker/postgres-test-init/01-app-role.sql` |
+| **migrate-admin** (privileged) | `prisma migrate deploy`, schema/RLS apply jobs, fixture/admin maintenance | Elevated GRANTs for migrate window only; not API default; prefer **NOBYPASSRLS** (not SUPERUSER) | **C1 template** — [`PILOT_CUTOVER_C1_DB_ROLES/`](../PILOT_CUTOVER_C1_DB_ROLES/) (not claimed applied in prod) |
+| **runtime-app** (API) | Nest/Prisma application `DATABASE_URL` | **MUST** be `NOSUPERUSER` + **NOBYPASSRLS** (`rolbypassrls = false`) | Test analog: `booking_app`; **C1 template** for prod naming |
 | Platform maintenance bypass | Controlled platform ops / tests via session var patterns — not clinic default | Documented in K6 / SECURITY_RUNBOOKS §3 | In-product session patterns; not a substitute for NOBYPASSRLS runtime role |
 
 ---
@@ -35,4 +35,4 @@ Do not commit role passwords or connection strings with secrets
 | Migrate job can deploy; runtime cannot BYPASSRLS | C2 |
 | K6-style isolation against staging/pilot target | C2 |
 
-**C0 claim:** model documented only — roles **not** provisioned by this slice.
+**C0 claim:** model documented. **C1** delivers SQL template + runbook — roles **still not** claimed provisioned in production until ops applies out-of-band + C2 verifies.
