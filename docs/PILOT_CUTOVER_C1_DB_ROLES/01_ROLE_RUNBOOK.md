@@ -37,6 +37,8 @@ Suggested placeholder names (match template):
 
 **Triggers apply note:** `apps/api/prisma/triggers.sql` ends with a bare `RAISE NOTICE 'Triggers applied successfully.';` which fails under `psql -v ON_ERROR_STOP=1`. Strip that line or wrap it in `DO $$ BEGIN … END $$;` before apply. Do not ignore real DDL errors.
 
+**Neon note:** `ALTER DEFAULT PRIVILEGES FOR ROLE <migrate>` as the cloud owner may be denied. Connect **as migrate-admin** to set default privileges for objects it creates, and always run post-migrate [`06_POST_MIGRATE_RUNTIME_GRANTS.sql.template`](./06_POST_MIGRATE_RUNTIME_GRANTS.sql.template).
+
 ```text
 API DATABASE_URL → {{RUNTIME_ROLE}} only (NOBYPASSRLS)
 Migrate / RLS / triggers job → {{MIGRATE_ROLE}} only
