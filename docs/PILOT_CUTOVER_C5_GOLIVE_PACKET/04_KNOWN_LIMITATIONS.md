@@ -1,6 +1,8 @@
 # C5 — Known limitations
 
-- **Program PA** = **PENDING EXTERNAL** until CTO decides.
+- **Packaging PA** = **ACCEPTED** by CTO @ `b2e1b40` (not self-granted).
+- **Real tenant pilot** = **NOT AUTHORIZED** until STOP S1–S4 clear.
+- **STOP S1–S4** remain **OPEN** (not PASS).
 - **C2b** Neon migrate/RLS/isolation = **PASS**; does not equal product production cutover.
 - **C3** = **PARTIAL** — schema restore PASS; full-data dump still blocked without owner dump role; offsite/PITR **EXTERNAL**.
 - **C4** = **PARTIAL** — dry-run execution evidence; health/CD SKIP; no fake cutover.
