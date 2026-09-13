@@ -22,6 +22,7 @@
 | Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
 | Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 | Launch smoke evidence format | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
+| Deferred register / Phase 51 review | [`PHASE_51_DEFERRED_REGISTER/`](./PHASE_51_DEFERRED_REGISTER/) · [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
 
 ---
 
@@ -86,15 +87,20 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 | L4 Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
 | L5 Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 | L6 Launch smoke evidence | [`PHASE_51_L6_LAUNCH_SMOKE/`](./PHASE_51_L6_LAUNCH_SMOKE/) |
+| Deferred register | [`PHASE_51_DEFERRED_REGISTER/`](./PHASE_51_DEFERRED_REGISTER/) |
+| L7 Review / PA precheck | [`PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/`](./PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/) |
 
 ```text
-Phase 51 Production Acceptance = PENDING
-L7 = NOT STARTED
+Phase 51 Production Acceptance = PENDING EXTERNAL (CTO decides)
+L7 packaging = delivered (PA not self-granted)
 Stripe / payment live = NOT CLAIMED
 Go-live checklist ≠ executed cutover evidence
-Paging / SOC SaaS = EXTERNAL
+Paging / SOC SaaS / D-17 / PITR = EXTERNAL
 ToS / privacy policy in docs/ = MISSING (honest)
+D5 AppointmentForm catalog picker = DEFERRED
+Documented deferred items do NOT block Phase 51 PA
 Green launch smoke ≠ Phase 51 PA
+PR = wait for CTO authorize
 ```
 
 ---

@@ -7,7 +7,7 @@ CTO-authorized **L0 kickoff docs only**. No implementation in this package.
 | **Canonical base** | `release47-step22-transfer-20260810-0353` @ `9a2e89d` (Phase 50 PR #6 merge) |
 | **Prior program** | Phase 50 Docs and UX Polish **PA = ACCEPTED** (CTO @ `2d1f3ec`; merge `9a2e89d`) |
 | **Branch** | `cursor/phase51-commercial-launch-kickoff` |
-| **Status** | **L0 kickoff only**; Phase 51 PA = **PENDING**; L1+ **NOT STARTED**; Phase 50 SoR reopen **NOT AUTHORIZED** |
+| **Status** | L0–L7 packaging on branch; Phase 51 PA = **PENDING EXTERNAL**; L7 tip pin in review package; Phase 50 SoR reopen **NOT AUTHORIZED** |
 
 | File | Purpose |
 |------|---------|

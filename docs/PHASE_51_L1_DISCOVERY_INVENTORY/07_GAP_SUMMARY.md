@@ -14,7 +14,7 @@
 | Support / ops handoff | **PARTIAL** (launch handoff **MISSING**) | **L4** |
 | Legal / commercial boundaries | **PARTIAL** (unified register **MISSING**) | **L5** |
 | Launch smoke precursors | **PASS-local** (evidence format **MISSING**) | **L6** |
-| Deferred register | **PARTIAL** (seed here; package **MISSING**) | **L7** |
+| Deferred register | **PASS-local** @ `PHASE_51_DEFERRED_REGISTER/` (+ L7 review) | **L7** (done docs) |
 
 ---
 
@@ -27,7 +27,7 @@
 | 3 | No Phase 51 launch-day support/ops handoff pointer (K7 exists; launch-specific package does not) | **PASS-local** @ L4 `PHASE_51_L4_SUPPORT_OPS_HANDOFF/` | **L4** (done docs) |
 | 4 | No unified in-product vs external legal/commercial boundary register (ToS/privacy/payment rails) | **PASS-local** @ L5 register (ToS/privacy still **MISSING**; Stripe **PARTIAL**) | **L5** (done docs) |
 | 5 | No Phase 51 launch smoke / go-live evidence format (baselines exist) | **PASS-local** @ L6 `PHASE_51_L6_LAUNCH_SMOKE/` (+ local thin run evidence uncommitted) | **L6** (done docs) |
-| 6 | No Phase 51 deferred-items register package + review/PA precheck | **MISSING** | **L7** |
+| 6 | No Phase 51 deferred-items register package + review/PA precheck | **PASS-local** @ `PHASE_51_DEFERRED_REGISTER/` + `PHASE_51_IMPLEMENTATION_REVIEW_PACKAGE/` (PA still PENDING EXTERNAL) | **L7** (done docs) |
 | 7 | Payment/Stripe path still future/partial — must not be claimed complete | **PARTIAL** | L2/L5 notes |
 | 8 | D5 AppointmentForm catalog picker remains **DEFERRED** | **DEFERRED** | L7 register (not L2–L6) |
 
@@ -45,4 +45,4 @@
 
 ## Recommended CTO next authorize
 
-**L2 — Pricing / packaging clarity (thin docs)** after accepting this L1 inventory.
+**Phase 51 PA decision** (external) after reviewing L7 package — **no** self-grant; **no** PR until CTO authorizes.
