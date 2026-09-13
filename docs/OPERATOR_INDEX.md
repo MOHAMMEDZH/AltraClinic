@@ -20,6 +20,7 @@
 | Pricing / packaging (what we sell) | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
 | Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 | Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
+| Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 
 ---
 
@@ -82,13 +83,15 @@ D5 AppointmentForm clinical-catalog picker = DEFERRED (CTO)
 | L2 Pricing / packaging clarity | [`PHASE_51_L2_PRICING_PACKAGING/`](./PHASE_51_L2_PRICING_PACKAGING/) |
 | L3 Tenant go-live checklist | [`PHASE_51_L3_GOLIVE_CHECKLIST/`](./PHASE_51_L3_GOLIVE_CHECKLIST/) |
 | L4 Support / ops launch handoff | [`PHASE_51_L4_SUPPORT_OPS_HANDOFF/`](./PHASE_51_L4_SUPPORT_OPS_HANDOFF/) |
+| L5 Legal / commercial boundaries | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](./PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 
 ```text
 Phase 51 Production Acceptance = PENDING
-L5–L7 = NOT STARTED
+L6–L7 = NOT STARTED
 Stripe / payment live = NOT CLAIMED
 Go-live checklist ≠ executed cutover evidence
 Paging / SOC SaaS = EXTERNAL
+ToS / privacy policy in docs/ = MISSING (honest)
 ```
 
 ---

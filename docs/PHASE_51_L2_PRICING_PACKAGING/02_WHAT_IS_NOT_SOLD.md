@@ -13,6 +13,7 @@
 | **In-repo payment rails / checkout** | No Phase 51 claim of end-to-end payment live | L1 inventory: PARTIAL |
 | **Deploy topology / CD as commercial SKU** | D-17 topology remains **EXTERNAL** — not an in-product sale item | [`RELEASE_47_STEP29_RELEASE_READINESS.md`](../RELEASE_47_STEP29_RELEASE_READINESS.md); Phase 49 K5 |
 | **Paging / APM / SIEM / offsite DR** | EXTERNAL ops services — not sold as in-product modules via this clarity pack | Phase 49 K3/K4/K7 OUT docs; [`OPERATOR_INDEX.md`](../OPERATOR_INDEX.md) |
+| **Full in-product vs external register** | Consolidated boundary table (ops + commercial honesty) | [`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`](../PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/) |
 
 ---
 

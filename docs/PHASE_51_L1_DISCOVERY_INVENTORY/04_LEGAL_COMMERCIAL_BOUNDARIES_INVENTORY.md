@@ -18,15 +18,15 @@
 | Licensing — Stripe sync “future” | `docs/LICENSING_ARCHITECTURE.md` | **PARTIAL** |
 | Catalog discovery — external billing partial | `docs/SUPER_ADMIN_V4_STEP01_CATALOG_ENTITLEMENT_DISCOVERY.md` | **PARTIAL** |
 | Terms of service / privacy policy docs in `docs/` | — | **MISSING** |
-| Unified Phase 51 in-product vs external register | — | **MISSING** |
+| Unified Phase 51 in-product vs external register | `docs/PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/` | **PASS-local** (docs register; ToS/privacy still MISSING) |
 
 ---
 
-## Gaps (for L5)
+## Gaps (for L5) — addressed by L5 package
 
-1. Phase 49 documents **ops/topology** EXTERNAL well; no single **legal/commercial** boundary register (ToS, privacy, payment rails, what is sold in-product).  
-2. Payment collection path is PARTIAL/future — must not be claimed complete.  
-3. L5 = documentation consolidation only — not legal advice as code.
+1. Unified in-product vs external register → **`PHASE_51_L5_LEGAL_COMMERCIAL_BOUNDARIES/`**.  
+2. Payment collection path remains PARTIAL — register + L2 honesty.  
+3. ToS/privacy remain **MISSING** in-repo — honest row; not invented.
 
 ## Explicit OUT for L1
 
