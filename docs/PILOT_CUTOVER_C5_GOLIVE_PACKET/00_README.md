@@ -6,13 +6,14 @@
 | **Branch** | `cursor/pilot-production-cutover-kickoff` |
 | **C4 tip** | `5c5698e` |
 | **C5 tip** | `e58995d` |
-| **Program PA** | **PENDING EXTERNAL** (CTO decides — not self-granted) |
+| **Packaging PA tip** | `b2e1b40` (CTO-granted) |
+| **Program status** | Packaging PA **ACCEPTED** @ `b2e1b40`; real tenant pilot **NOT AUTHORIZED** |
 
 ```text
-Product production cutover = NOT CLAIMED
-Pilot go-live packet ≠ program PA
+Packaging PA = ACCEPTED (CTO @ b2e1b40)
+STOP S1–S4 = OPEN (not PASS)
+Real tenant / product production cutover = NOT CLAIMED
 C2b Neon PASS · C3 schema restore PARTIAL · C4 dry-run PARTIAL
-STOP-the-line items remain (see 03_STOP_THE_LINE.md)
 self-granted Pilot Cutover PA = NO
 ```
 
@@ -23,6 +24,6 @@ self-granted Pilot Cutover PA = NO
 | [03_STOP_THE_LINE.md](./03_STOP_THE_LINE.md) | Must clear before real tenant pilot |
 | [04_KNOWN_LIMITATIONS.md](./04_KNOWN_LIMITATIONS.md) | Carry-forward honesty |
 | [05_EXPLICIT_OUT.md](./05_EXPLICIT_OUT.md) | Fake cutover / payment / Phase 52 |
-| [06_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./06_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | CTO PA block — **PENDING** |
+| [06_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md](./06_EXTERNAL_PRODUCTION_ACCEPTANCE_PRECHECK.md) | Packaging PA **ACCEPTED** @ `b2e1b40`; STOP S1–S4 **OPEN** |
 
 **Entry:** [`OPERATOR_INDEX.md`](../OPERATOR_INDEX.md) · Kickoff [`05_SLICE_PLAN.md`](../PILOT_CUTOVER_KICKOFF_PACKAGE/05_SLICE_PLAN.md)

@@ -13,11 +13,11 @@ CTO authorizes slices in order. **C0 does not start C1.**
 | **C5** | Pilot go-live packet | **PASS** (docs) @ [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](../PILOT_CUTOVER_C5_GOLIVE_PACKET/) — PA **PENDING EXTERNAL**; STOP S1–S4 open |
 
 ```text
-C0–C5 packaging delivered (C2/C3/C4 PARTIAL; C2b PASS; C5 packet PASS docs)
-Program PA = PENDING EXTERNAL (CTO)
-STOP S1–S4 remain open before real tenant pilot
+C0–C5 packaging delivered; Packaging PA = ACCEPTED (CTO @ b2e1b40)
+STOP S1–S4 remain OPEN before real tenant pilot
 Neon branch label "production" ≠ product production cutover
 Offsite / PITR = EXTERNAL
 Green docs ≠ cutover executed
-PR = wait for CTO authorize
+Real tenant pilot = NOT AUTHORIZED
+PR merge = wait for CTO authorize
 ```

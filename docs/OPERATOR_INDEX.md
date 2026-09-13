@@ -125,13 +125,14 @@ PR merge = wait for CTO authorize
 | C5 Go-live packet | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
 
 ```text
-Pilot cutover executed = NO
-Program PA = PENDING EXTERNAL (CTO decides)
+Packaging PA = ACCEPTED (CTO @ b2e1b40)
+STOP S1–S4 = OPEN (full-data backup, /health, D-17, secret rotation)
+Real tenant pilot = NOT AUTHORIZED
 C2b = PASS (Neon); C2/C3/C4 = PARTIAL; C5 = packet delivered
-STOP S1–S4 open before real tenant pilot
 Offsite / PITR / D-17 CD = EXTERNAL
+Neon pilot ≠ product production
 Phase 52 = NOT AUTHORIZED
-PR = wait for CTO authorize
+PR merge = wait for CTO authorize
 ```
 
 ---
