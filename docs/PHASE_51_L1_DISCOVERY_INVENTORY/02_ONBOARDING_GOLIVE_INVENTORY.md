@@ -18,16 +18,16 @@
 | SA tenant directory / detail docs | `docs/SUPER_ADMIN_TENANT_DIRECTORY_AND_DETAIL.md` | **PASS-local** |
 | SA TenantOnboarding / TenantDetail UI | `apps/super-admin/src/pages/TenantOnboardingPage.tsx`, `TenantDetailPage.tsx` | **PASS-local** |
 | Tenant directory tests | `apps/super-admin/src/tenants/tenant-directory.spec.tsx` | **PASS-local** |
-| Phase 51 go-live checklist package | — | **MISSING** |
+| Phase 51 go-live checklist package | `docs/PHASE_51_L3_GOLIVE_CHECKLIST/` | **PASS-local** (docs; ≠ executed cutover) |
 
 ---
 
-## Gaps (for L3)
+## Gaps (for L3) — addressed by L3 package
 
-1. No single **tenant go-live checklist** that sequences provision → license assign → smoke → handoff.  
-2. K5 dry-run remains PARTIAL (no production cutover) — go-live checklist must not invent cutover.  
-3. Prefer linking from `OPERATOR_INDEX` rather than a new ops product.
+1. Tenant go-live checklist (provision → license → smoke list → handoff pointer) → **`PHASE_51_L3_GOLIVE_CHECKLIST/`**.  
+2. K5 dry-run remains PARTIAL — checklist must not invent cutover (see L3 OUT).  
+3. Linked from `OPERATOR_INDEX`.
 
 ## Explicit OUT for L1
 
-No writing “done” go-live checklists as L3 work inside L1. No fake production cutover.
+No writing "done" go-live checklists as L3 work inside L1. No fake production cutover.
