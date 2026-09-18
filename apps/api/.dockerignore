@@ -1,0 +1,18 @@
+# Clinic-test API image context (repo root)
+.git
+**/.ci-evidence
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/backups
+**/*.tmp
+**/*.tmp.ico
+apps/clinic-dashboard
+apps/patient-portal
+apps/super-admin
+phase48_wave_a_external_review_bundle
+docs
+*.md
+!apps/api/README.md

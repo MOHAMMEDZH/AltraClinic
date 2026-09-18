@@ -33,6 +33,7 @@
 | Pilot STOP clearance (S1–S4) | [`PILOT_CUTOVER_STOP_CLEARANCE/`](./PILOT_CUTOVER_STOP_CLEARANCE/) |
 | Internal pilot tenant (not prod cutover) | [`PILOT_CUTOVER_STOP_CLEARANCE/07_INTERNAL_PILOT_TENANT.md`](./PILOT_CUTOVER_STOP_CLEARANCE/07_INTERNAL_PILOT_TENANT.md) |
 | Clinic test deploy (P1 kickoff) | [`CLINIC_TEST_DEPLOY_KICKOFF/`](./CLINIC_TEST_DEPLOY_KICKOFF/) |
+| Clinic test Azure API (D1) | [`CLINIC_TEST_DEPLOY_D1_AZURE_API/`](./CLINIC_TEST_DEPLOY_D1_AZURE_API/) |
 
 ---
 
@@ -145,9 +146,12 @@ PR merge = wait for CTO authorize
 | Package | Path |
 |---------|------|
 | D0 Kickoff | [`CLINIC_TEST_DEPLOY_KICKOFF/`](./CLINIC_TEST_DEPLOY_KICKOFF/) |
+| D1 Azure API | [`CLINIC_TEST_DEPLOY_D1_AZURE_API/`](./CLINIC_TEST_DEPLOY_D1_AZURE_API/) |
 
 ```text
-D0 = docs only; D1+ = wait for CTO authorize
+D0 = ACCEPTED (CTO @ dd48e85)
+D1 = PARTIAL (runbook + Dockerfile; public /health pending human Azure)
+D2+ = wait for CTO authorize
 Pages = UI only; Azure = API only; Neon pilot reuse
 Product production cutover = NOT CLAIMED
 Phase 52 / Stripe = NOT IN SCOPE
