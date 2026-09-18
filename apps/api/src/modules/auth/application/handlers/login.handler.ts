@@ -25,6 +25,7 @@ import {
 import { LoginCompletionService } from '../services/login-completion.service';
 import { TenantPolicyService } from '../../../settings/application/services/tenant-policy.service';
 import { PrismaService } from '../../../../infrastructure/prisma.service';
+import { TenantExecutionService } from '../../../../infrastructure/tenant-execution.service';
 
 const RATE_LIMIT_WINDOW_MINUTES = 15;
 const IP_RATE_LIMIT = 30;
@@ -43,9 +44,19 @@ export class LoginHandler {
     private readonly loginCompletion: LoginCompletionService,
     private readonly tenantPolicy: TenantPolicyService,
     private readonly prisma: PrismaService,
+    private readonly tenantExecution: TenantExecutionService,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<LoginResult> {
+    const tenantId = cmd.tenantId?.trim();
+    if (tenantId) {
+      // FORCE RLS / NOBYPASSRLS: login_attempts + users require app.current_tenant_id.
+      return this.tenantExecution.runAsTenant(tenantId, () => this.executeInContext(cmd));
+    }
+    return this.executeInContext(cmd);
+  }
+
+  private async executeInContext(cmd: LoginCommand): Promise<LoginResult> {
     const email = cmd.email.toLowerCase().trim();
     const device = new DeviceInfoVO({
       ipAddress: cmd.ipAddress,
