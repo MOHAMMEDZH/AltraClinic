@@ -32,6 +32,7 @@
 | Pilot go-live packet (C5) | [`PILOT_CUTOVER_C5_GOLIVE_PACKET/`](./PILOT_CUTOVER_C5_GOLIVE_PACKET/) |
 | Pilot STOP clearance (S1–S4) | [`PILOT_CUTOVER_STOP_CLEARANCE/`](./PILOT_CUTOVER_STOP_CLEARANCE/) |
 | Internal pilot tenant (not prod cutover) | [`PILOT_CUTOVER_STOP_CLEARANCE/07_INTERNAL_PILOT_TENANT.md`](./PILOT_CUTOVER_STOP_CLEARANCE/07_INTERNAL_PILOT_TENANT.md) |
+| Clinic test deploy (P1 kickoff) | [`CLINIC_TEST_DEPLOY_KICKOFF/`](./CLINIC_TEST_DEPLOY_KICKOFF/) |
 
 ---
 
@@ -135,6 +136,21 @@ Offsite / PITR / D-17 CD = EXTERNAL
 Neon pilot ≠ product production
 Phase 52 = NOT AUTHORIZED
 PR merge = wait for CTO authorize
+```
+
+---
+
+## Clinic Test Deploy (P1)
+
+| Package | Path |
+|---------|------|
+| D0 Kickoff | [`CLINIC_TEST_DEPLOY_KICKOFF/`](./CLINIC_TEST_DEPLOY_KICKOFF/) |
+
+```text
+D0 = docs only; D1+ = wait for CTO authorize
+Pages = UI only; Azure = API only; Neon pilot reuse
+Product production cutover = NOT CLAIMED
+Phase 52 / Stripe = NOT IN SCOPE
 ```
 
 ---
