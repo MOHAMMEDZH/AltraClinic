@@ -7,4 +7,6 @@
 | S2 API `/health` | **PASS** | [`05_S2_HEALTH_RESULTS.md`](./05_S2_HEALTH_RESULTS.md) · uncommitted `.ci-evidence/pilot-s2-7e9953a/` |
 | S3 topology | **PASS** (docs) | [`02_S3_TOPOLOGY.md`](./02_S3_TOPOLOGY.md) |
 
-Updated: 2026-09-13 (S2 cleared).
+Plain Nest boot soft-fail note: [`06_ANALYTICS_DEMO_SEED_SOFTFAIL.md`](./06_ANALYTICS_DEMO_SEED_SOFTFAIL.md)
+
+Updated: 2026-09-17 (analytics demo seed soft-fail verified on plain boot).

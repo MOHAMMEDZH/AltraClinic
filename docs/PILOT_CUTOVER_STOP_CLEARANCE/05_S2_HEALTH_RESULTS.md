@@ -39,7 +39,7 @@
 
 S2 proof initially used an **out-of-repo** no-op of **AnalyticsDemoSeedService** because demo upserts without tenant GUC hit FORCE RLS (`42501`) on Neon runtime-app.
 
-**In-repo follow-up (this PR):** `AnalyticsDemoSeedService` fail-softs on RLS/permission denied (warn + skip; boot continues). Plain Nest boot against pilot runtime no longer requires out-of-repo hacks.
+**In-repo soft-fail:** `AnalyticsDemoSeedService` fail-softs on RLS/permission denied (warn + skip; boot continues). Verified plain Nest boot (no out-of-repo no-op): see [`06_ANALYTICS_DEMO_SEED_SOFTFAIL.md`](./06_ANALYTICS_DEMO_SEED_SOFTFAIL.md).
 
 ## Explicit
 

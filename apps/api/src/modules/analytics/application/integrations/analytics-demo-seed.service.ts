@@ -99,10 +99,27 @@ export class AnalyticsDemoSeedService implements OnModuleInit {
 }
 
 function isRlsOrPermissionDenied(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err ?? '');
+  const msg = collectErrorText(err);
   return (
     /row-level security/i.test(msg) ||
     /\b42501\b/.test(msg) ||
     /permission denied/i.test(msg)
   );
+}
+
+/** Flatten Error + nested cause / string forms for RLS detection (Prisma wraps PG 42501). */
+function collectErrorText(err: unknown, depth = 0): string {
+  if (err == null || depth > 5) return '';
+  if (typeof err === 'string') return err;
+  if (err instanceof Error) {
+    const withCause = err as Error & { cause?: unknown };
+    return [err.message, collectErrorText(withCause.cause, depth + 1)]
+      .filter(Boolean)
+      .join('\n');
+  }
+  try {
+    return String(err);
+  } catch {
+    return '';
+  }
 }
