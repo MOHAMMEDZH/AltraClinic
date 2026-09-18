@@ -28,17 +28,19 @@ export class LicensingLifecycleStateService {
     licenseStatus: string,
     uiPlan?: string,
   ): Promise<void> {
-    await this.prisma.tenantLicenseLifecycleState.upsert({
-      where: { tenantId },
-      create: {
-        tenantId,
-        licenseStatus,
-        uiPlan: uiPlan ?? null,
-      },
-      update: {
-        licenseStatus,
-        uiPlan: uiPlan ?? null,
-      },
+    await this.prisma.withTenantContext(tenantId, async (tx) => {
+      await tx.tenantLicenseLifecycleState.upsert({
+        where: { tenantId },
+        create: {
+          tenantId,
+          licenseStatus,
+          uiPlan: uiPlan ?? null,
+        },
+        update: {
+          licenseStatus,
+          uiPlan: uiPlan ?? null,
+        },
+      });
     });
   }
 
@@ -50,71 +52,75 @@ export class LicensingLifecycleStateService {
     tenantId: string,
     license: Pick<TenantLicense, 'status' | 'uiPlan'>,
   ): Promise<void> {
-    const existing = await this.prisma.tenantLicenseLifecycleState.findUnique({
-      where: { tenantId },
-    });
+    // FORCE RLS: lifecycle table policies cast app.current_tenant_id to uuid —
+    // must not run with empty GUC (e.g. after a nested platform bypass cleared it).
+    await this.prisma.withTenantContext(tenantId, async (tx) => {
+      const existing = await tx.tenantLicenseLifecycleState.findUnique({
+        where: { tenantId },
+      });
 
-    if (!existing) {
-      await this.prisma.tenantLicenseLifecycleState.create({
+      if (!existing) {
+        await tx.tenantLicenseLifecycleState.create({
+          data: {
+            tenantId,
+            licenseStatus: license.status,
+            uiPlan: license.uiPlan,
+          },
+        });
+        return;
+      }
+
+      if (existing.licenseStatus === license.status) {
+        if (existing.uiPlan !== license.uiPlan) {
+          await tx.tenantLicenseLifecycleState.update({
+            where: { tenantId },
+            data: { uiPlan: license.uiPlan },
+          });
+        }
+        return;
+      }
+
+      const previousStatus = existing.licenseStatus;
+      const newStatus = license.status;
+
+      let transitionRecorded = false;
+      try {
+        await tx.licenseLifecycleTransition.create({
+          data: {
+            tenantId,
+            previousStatus,
+            newStatus,
+          },
+        });
+        transitionRecorded = true;
+      } catch (error) {
+        if (this.isUniqueViolation(error)) {
+          this.logger.debug(
+            `Lifecycle transition already recorded tenant=${tenantId} ${previousStatus}→${newStatus}`,
+          );
+        } else {
+          throw error;
+        }
+      }
+
+      await tx.tenantLicenseLifecycleState.update({
+        where: { tenantId },
         data: {
-          tenantId,
-          licenseStatus: license.status,
+          licenseStatus: newStatus,
           uiPlan: license.uiPlan,
         },
       });
-      return;
-    }
 
-    if (existing.licenseStatus === license.status) {
-      if (existing.uiPlan !== license.uiPlan) {
-        await this.prisma.tenantLicenseLifecycleState.update({
-          where: { tenantId },
-          data: { uiPlan: license.uiPlan },
-        });
-      }
-      return;
-    }
-
-    const previousStatus = existing.licenseStatus;
-    const newStatus = license.status;
-
-    let transitionRecorded = false;
-    try {
-      await this.prisma.licenseLifecycleTransition.create({
-        data: {
+      if (transitionRecorded) {
+        await this.commercialAudit.recordLicenseStatusTransition({
           tenantId,
           previousStatus,
           newStatus,
-        },
-      });
-      transitionRecorded = true;
-    } catch (error) {
-      if (this.isUniqueViolation(error)) {
-        this.logger.debug(
-          `Lifecycle transition already recorded tenant=${tenantId} ${previousStatus}→${newStatus}`,
-        );
-      } else {
-        throw error;
+          uiPlan: license.uiPlan,
+          source: 'licensing.lifecycle.sync',
+        });
       }
-    }
-
-    await this.prisma.tenantLicenseLifecycleState.update({
-      where: { tenantId },
-      data: {
-        licenseStatus: newStatus,
-        uiPlan: license.uiPlan,
-      },
     });
-
-    if (transitionRecorded) {
-      await this.commercialAudit.recordLicenseStatusTransition({
-        tenantId,
-        previousStatus,
-        newStatus,
-        uiPlan: license.uiPlan,
-        source: 'licensing.lifecycle.sync',
-      });
-    }
   }
 
   private isUniqueViolation(error: unknown): boolean {

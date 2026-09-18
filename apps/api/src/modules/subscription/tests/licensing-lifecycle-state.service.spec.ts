@@ -3,16 +3,26 @@ import { LicensingCommercialAuditService } from '../application/services/licensi
 import { Prisma } from '@prisma/client';
 
 describe('LicensingLifecycleStateService', () => {
+  const tenantLicenseLifecycleState = {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    upsert: jest.fn(),
+  };
+  const licenseLifecycleTransition = {
+    create: jest.fn(),
+  };
+  /** Same object graph passed into withTenantContext(fn) as production tx. */
+  const tx = {
+    tenantLicenseLifecycleState,
+    licenseLifecycleTransition,
+  };
   const prisma = {
-    tenantLicenseLifecycleState: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      upsert: jest.fn(),
-    },
-    licenseLifecycleTransition: {
-      create: jest.fn(),
-    },
+    withTenantContext: jest.fn(
+      async (_tenantId: string, fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
+    ),
+    tenantLicenseLifecycleState,
+    licenseLifecycleTransition,
   };
 
   const commercialAudit = {
@@ -24,29 +34,30 @@ describe('LicensingLifecycleStateService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('bootstraps persisted state on first resolve without audit', async () => {
-    prisma.tenantLicenseLifecycleState.findUnique.mockResolvedValue(null);
-    prisma.tenantLicenseLifecycleState.create.mockResolvedValue({});
+    tenantLicenseLifecycleState.findUnique.mockResolvedValue(null);
+    tenantLicenseLifecycleState.create.mockResolvedValue({});
 
     await svc.syncFromResolvedLicense('t1', { status: 'active', uiPlan: 'professional' });
 
-    expect(prisma.tenantLicenseLifecycleState.create).toHaveBeenCalledWith({
+    expect(prisma.withTenantContext).toHaveBeenCalledWith('t1', expect.any(Function));
+    expect(tenantLicenseLifecycleState.create).toHaveBeenCalledWith({
       data: { tenantId: 't1', licenseStatus: 'active', uiPlan: 'professional' },
     });
     expect(commercialAudit.recordLicenseStatusTransition).not.toHaveBeenCalled();
   });
 
   it('records grace transition exactly once with durable ledger', async () => {
-    prisma.tenantLicenseLifecycleState.findUnique.mockResolvedValue({
+    tenantLicenseLifecycleState.findUnique.mockResolvedValue({
       tenantId: 't1',
       licenseStatus: 'active',
       uiPlan: 'professional',
     });
-    prisma.licenseLifecycleTransition.create.mockResolvedValue({});
-    prisma.tenantLicenseLifecycleState.update.mockResolvedValue({});
+    licenseLifecycleTransition.create.mockResolvedValue({});
+    tenantLicenseLifecycleState.update.mockResolvedValue({});
 
     await svc.syncFromResolvedLicense('t1', { status: 'grace', uiPlan: 'professional' });
 
-    expect(prisma.licenseLifecycleTransition.create).toHaveBeenCalledWith({
+    expect(licenseLifecycleTransition.create).toHaveBeenCalledWith({
       data: { tenantId: 't1', previousStatus: 'active', newStatus: 'grace' },
     });
     expect(commercialAudit.recordLicenseStatusTransition).toHaveBeenCalledWith(
@@ -55,28 +66,29 @@ describe('LicensingLifecycleStateService', () => {
   });
 
   it('skips duplicate audit when transition ledger unique constraint fires', async () => {
-    prisma.tenantLicenseLifecycleState.findUnique.mockResolvedValue({
+    tenantLicenseLifecycleState.findUnique.mockResolvedValue({
       tenantId: 't1',
       licenseStatus: 'grace',
       uiPlan: 'professional',
     });
-    prisma.licenseLifecycleTransition.create.mockRejectedValue(
+    licenseLifecycleTransition.create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Unique', {
         code: 'P2002',
         clientVersion: 'test',
       }),
     );
-    prisma.tenantLicenseLifecycleState.update.mockResolvedValue({});
+    tenantLicenseLifecycleState.update.mockResolvedValue({});
 
     await svc.syncFromResolvedLicense('t1', { status: 'expired', uiPlan: 'professional' });
 
     expect(commercialAudit.recordLicenseStatusTransition).not.toHaveBeenCalled();
-    expect(prisma.tenantLicenseLifecycleState.update).toHaveBeenCalled();
+    expect(tenantLicenseLifecycleState.update).toHaveBeenCalled();
   });
 
   it('persistKnownStatus upserts durable state', async () => {
-    prisma.tenantLicenseLifecycleState.upsert.mockResolvedValue({});
+    tenantLicenseLifecycleState.upsert.mockResolvedValue({});
     await svc.persistKnownStatus('t1', 'suspended', 'professional');
-    expect(prisma.tenantLicenseLifecycleState.upsert).toHaveBeenCalled();
+    expect(prisma.withTenantContext).toHaveBeenCalledWith('t1', expect.any(Function));
+    expect(tenantLicenseLifecycleState.upsert).toHaveBeenCalled();
   });
 });

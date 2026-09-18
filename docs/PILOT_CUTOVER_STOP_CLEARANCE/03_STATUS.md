@@ -9,4 +9,6 @@
 
 Plain Nest boot soft-fail note: [`06_ANALYTICS_DEMO_SEED_SOFTFAIL.md`](./06_ANALYTICS_DEMO_SEED_SOFTFAIL.md)
 
-Updated: 2026-09-17 (analytics demo seed soft-fail verified on plain boot).
+Internal pilot tenant (not production cutover): [`07_INTERNAL_PILOT_TENANT.md`](./07_INTERNAL_PILOT_TENANT.md) · slug `pilot-internal-23662564`
+
+Updated: 2026-09-18 (internal pilot tenant onboard evidence).

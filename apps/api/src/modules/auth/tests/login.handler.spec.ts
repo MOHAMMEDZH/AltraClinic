@@ -88,6 +88,9 @@ describe('LoginHandler', () => {
         findUnique: platformTenantFindUnique,
       },
     };
+    const tenantExecution = {
+      runAsTenant: jest.fn(async (_tenantId: string, fn: () => Promise<unknown>) => fn()),
+    };
 
     handler = new LoginHandler(
       userRepo,
@@ -98,6 +101,7 @@ describe('LoginHandler', () => {
       loginCompletion,
       tenantPolicy,
       prisma as never,
+      tenantExecution as never,
     );
   });
 
