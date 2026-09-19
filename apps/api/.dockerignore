@@ -9,9 +9,13 @@
 **/backups
 **/*.tmp
 **/*.tmp.ico
-apps/clinic-dashboard
-apps/patient-portal
-apps/super-admin
+# Keep package.json for npm workspaces; exclude the rest of those apps
+apps/clinic-dashboard/**
+!apps/clinic-dashboard/package.json
+apps/patient-portal/**
+!apps/patient-portal/package.json
+apps/super-admin/**
+!apps/super-admin/package.json
 phase48_wave_a_external_review_bundle
 docs
 *.md
